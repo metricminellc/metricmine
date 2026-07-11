@@ -51,3 +51,20 @@ datacontract-cli installed as an isolated [duckdb] tool. GitHub Actions for CI.
 - Small, reviewed pull requests with meaningful commit messages.
 - Use plan mode for any multi-file change; show the plan before editing.
 - Prefer editing existing files over creating new ones.
+
+### Commit and PR conventions
+Every commit and PR follows these:
+
+- **Commit subject:** a Conventional Commits prefix, then a concise summary.
+  Allowed prefixes: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `ci`,
+  `build`. Example:
+  `docs: pin datacontract-cli 1.0.12 and add isolated-tool guardrail`.
+- **Commit body:** explain WHY the change was made, not just what changed. The
+  diff already shows what. State the reasoning, the decision it implements (cite
+  the D-0x number when one applies), or the problem it solves.
+- **PR description:** three sections, in this order:
+  - **Summary** — one or two sentences on the intent.
+  - **What changed** — the concrete edits, as a short list.
+  - **Why** — the reasoning or the decision/phase this advances.
+- Keep it honest and specific. Do not pad. A one-line chore does not need a
+  three-paragraph body; match the depth to the change.
