@@ -4,7 +4,7 @@ Scratch gate proof run July 11, 2026, prior to Phase 1 exit (Decision D-12).
 Toolchain: dbt-core 1.11.12 · dbt-duckdb 1.10.1 · DuckDB engine 1.4.3 ·
 datacontract-cli 1.0.12 (isolated uv tool). All findings below were observed
 directly, not inferred from documentation. They supersede any conflicting
-guidance in older references. Governing rules: CLAUDE.md rules 11–12.
+guidance in older references. Governing rules: CLAUDE.md rules 10–11.
 
 ## Command surface (datacontract-cli 1.0.12)
 
