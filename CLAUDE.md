@@ -27,6 +27,15 @@ approves every contract.
    from its baseline. Flag the drift instead.
 9. The auto-modeling engine emits dbt model files; it does not execute DDL
    directly. Mapping contract in, gold model files out; dbt builds them.
+10. Gate three runs as: `uv run datacontract dbt sync ...` then
+    `uv run datacontract dbt test ...`. The `uv run` prefix is mandatory:
+    the isolated tool cannot find dbt on PATH by itself. Never use
+    `datacontract test` against DuckDB (server type unsupported at 1.0.12).
+11. dbt properties files are hand-authored. Treat `datacontract export
+    dbt-models` output and sync-generated tests as proposals requiring
+    review, never auto-merged. Known sync bug at 1.0.12: duplicateValues
+    quality rules mistranslate into accepted_values tests (severity warn).
+    Delete such tests on sight; keep uniqueness as a data_test.
 
 ## Architecture boundaries
 - Exactly two agents exist in the pipeline: a silver cleanup proposer and a
@@ -50,6 +59,10 @@ the dbt-duckdb adapter for transforms. ODCS v3.1.0 for contracts, executed via
 datacontract-cli 1.0.12, installed as an isolated tool with
 `uv tool install --python 3.12 "datacontract-cli[duckdb]"` — never added to
 pyproject.toml as a project dependency. GitHub Actions for CI.
+
+Toolchain behavior was verified empirically before Phase 1 exit. Before
+working on contracts, CI, or dbt models, read
+`docs/verification/gate_proof_findings.md`.
 
 ## Conventions
 - Small, reviewed pull requests with meaningful commit messages.
