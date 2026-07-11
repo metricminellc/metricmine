@@ -8,9 +8,11 @@ Agents propose data contracts; deterministic code and dbt execute them; a human
 approves every contract.
 
 ## Hard rules (do not violate)
-1. Pinned versions only: dbt-core 1.11.x, dbt-duckdb 1.10.x, datacontract-cli
-   0.11.x. Never upgrade to `latest`.
-2. dbt Core v2 and dbt 1.12 are deliberately deferred. Do not upgrade to them.
+1. Pinned versions only: dbt-core 1.11.x (resolved 1.11.12), dbt-duckdb 1.10.x
+   (resolved 1.10.1), datacontract-cli 1.0.12. Never upgrade to `latest`, and
+   never upgrade any of these without a Decision Record amendment.
+2. dbt Core v2 and dbt Core 1.12 are deliberately deferred. Do not upgrade to
+   them.
 3. Profiling is standalone Python and carries no contract. Contracted transforms
    are SQL dbt models with `contract: enforced: true`.
 4. Contracts are all-or-nothing: every column declares `name` and `data_type`.
@@ -45,7 +47,9 @@ production SLAs.
 ## Toolchain
 Python 3.12, uv for packaging, ruff for linting, pytest for tests. dbt Core with
 the dbt-duckdb adapter for transforms. ODCS v3.1.0 for contracts, executed via
-datacontract-cli installed as an isolated [duckdb] tool. GitHub Actions for CI.
+datacontract-cli 1.0.12, installed as an isolated tool with
+`uv tool install --python 3.12 "datacontract-cli[duckdb]"` — never added to
+pyproject.toml as a project dependency. GitHub Actions for CI.
 
 ## Conventions
 - Small, reviewed pull requests with meaningful commit messages.
