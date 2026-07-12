@@ -1,0 +1,65 @@
+%% MetricMine Gold Layer — The Unified Event Star (target state)
+%% Machine-readable companion to gold_unified_event_star_flow.svg
+%% and to Gold Layer Design 001 (July 11, 2026).
+%% Decisions: D-07 engine emits dbt models; D-17 star is terminal gold;
+%% D-18 canonical_key v2; D-19 context binds by schema key.
+
+flowchart TB
+
+  subgraph UPSTREAM["Upstream — unchanged by this spec"]
+    SRC["Sources<br/>committed sample + faker"]
+    ING["PyAirbyte ingest<br/>lands raw, one-to-one, no agent"]
+    BRZ[("bronze<br/>raw schema, as landed")]
+    PRF["Profiler<br/>deterministic Python<br/>+ duplicate-row rate"]
+    CP["Cleanup proposer agent (Phase 6)<br/>proposes only; human approves (D-10)<br/>hand-written contracts in the spine"]
+    CC["Cleanup contract<br/>ODCS v3.1.0, human-approved<br/>grain + dedupe decisions"]
+    SLV[("silver<br/>contracted SQL dbt models")]
+    SRC --> ING --> BRZ --> PRF
+    PRF -- "profile artifact" --> CP -. proposes .-> CC -. governs .-> SLV
+    BRZ --> SLV
+  end
+
+  subgraph MODELING["Modeling plane — mapping contract in, dbt models out"]
+    MP["Mapping proposer agent (Phase 6)<br/>proposes only; human approves (D-10)"]
+    MC["Mapping contract<br/>ODCS v3.1.0, human-approved<br/>declares facts, dims, entity groups,<br/>grain (aggregated or transaction),<br/>time columns, aggregation per measure"]
+    ENG["Auto-modeling engine<br/>deterministic Python<br/>consumes mapping contract,<br/>emits dbt model files per category,<br/>never DDL (D-07)<br/>canonical_key v2 (D-18)<br/>writes only via PR + ownership manifest (D-09)"]
+    EMF["Emitted model files<br/>transform/models/gold/<br/>star SQL + properties,<br/>projection view SQL,<br/>generated-by headers + checksums"]
+    BLD["dbt build<br/>dbt-core 1.11.x + dbt-duckdb 1.10.x<br/>contracts enforced at compile time,<br/>star materializes as table"]
+    MP -. proposes .-> MC
+    MC -. contract .-> ENG --> EMF -- "pull request through the three gates" --> BLD
+    SLV -- "model input" --> BLD
+  end
+
+  subgraph GOLD["GOLD — the unified event star (terminal layer, D-17)"]
+    DV[("Values dimensions<br/>dim_source / dim_run / dim_timeframe /<br/>dim_&lt;category&gt;_values<br/>PK record hash = canonical_key(payload)<br/>JSON payload, deduped by content")]
+    DC[("Columns dimensions (schema registry)<br/>dim_&lt;group&gt;_columns<br/>PK schema hash = canonical_key(manifest)<br/>schema-key change announces drift")]
+    FT[("fact_&lt;category&gt;_values<br/>PK = (fact, source, timeframe, dim) hashes<br/>run hash as non-key lineage attribute<br/>measure payload JSON<br/>grain per contract: aggregated (+_row_count) or transaction")]
+    CR[("context_registry (D-19)<br/>schema_key → contract name + version,<br/>entity group, compiled context<br/>meaning is one join away, never embedded")]
+    VW["vw_&lt;category&gt;_typed (views)<br/>engine-emitted json_extract + cast<br/>uncontracted, labeled derivative<br/>the 2023 deserialization ETL, now a view"]
+    FT --- DV
+    FT --- DC
+    FT --- VW
+  end
+
+  CMP["Context compiler<br/>merges profiles + both approved contracts,<br/>writes one registry row per schema key"]
+
+  subgraph SERVING["Serving — one shared query module, read-only (D-11)"]
+    QM["Shared query module<br/>payload accessors, context lookup,<br/>row-limited queries, ~5-method protocol"]
+    MCP["MCP server — primary consumer<br/>list categories / get schema / get context /<br/>row-limited query / lookup by content key"]
+    AGT["Claude + agents<br/>answers grounded in data + meaning,<br/>cites exact records by content key"]
+    HD["Hosted demo (optional)<br/>Streamlit over demo/gold.duckdb,<br/>same module"]
+    QM --> MCP --> AGT
+    QM -.-> HD
+  end
+
+  BLD -- "materializes" --> GOLD
+  CC -. context .-> CMP
+  MC -. context .-> CMP
+  CMP --> CR
+  GOLD -- "read-only" --> QM
+
+  %% Conservation tests (dbt, run in CI):
+  %% C1 silver rows = fact rows (or sum _row_count)
+  %% C2 every group key resolves (relationships)
+  %% C3 every schema key exists in context_registry
+  %% C4 every payload parses as valid JSON

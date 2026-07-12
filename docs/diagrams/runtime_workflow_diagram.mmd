@@ -1,0 +1,68 @@
+%% MetricMine · Runtime Workflow — machine-readable twin of
+%% docs/diagrams/runtime_workflow_diagram.svg
+%% Contract-driven medallion pipeline on a dbt plane, serving the unified event star.
+%% Decisions (see docs/decisions/decision-register.md): D-03 warehouse files,
+%% D-04 dbt plane, D-07 engine emits models, D-09 PR + ownership manifest,
+%% D-10 two agents, D-11 shared query module, D-17 unified event star,
+%% D-18 canonical_key v2, D-19 context registry.
+%% Runtime principle: make demo replays the committed contracts and the committed
+%% engine-emitted models (keyless, deterministic); the regenerate flag invokes the
+%% two agents live; the engine writes only via pull request — the gates judge output.
+
+flowchart TB
+
+  SRC1["Sample CSV / Parquet<br/>committed to the repo (D-15)"]
+  SRC2["Faker connector<br/>synthetic, keyless"]
+  ING["PyAirbyte ingest<br/>pure-Python connectors, no server<br/>one-to-one raw landing, no transforms"]
+  BRZ[("bronze schema · DuckDB<br/>raw tables, exactly as landed")]
+  NOTE1["One working DuckDB file, three schemas,<br/>at warehouse/, gitignored (D-03).<br/>Committed artifact: demo/gold.duckdb<br/>via make export-demo (gold + context only)."]
+
+  SRC1 --> ING
+  SRC2 --> ING
+  ING --> BRZ
+  BRZ -.- NOTE1
+
+  PRF["Profiler (deterministic)<br/>columns, types, null rates, cardinality,<br/>duplicate-row rate"]
+  PA["Profile artifact<br/>versioned, committed · DRE observability layer"]
+  CP["Cleanup proposer agent (D-10)<br/>one structured API call:<br/>profile in → cleanup contract out"]
+  HA1{"Human approval<br/>review, edit, add business context"}
+  CC["Cleanup contract · ODCS v3.1.0, committed<br/>renames, casts, dedupe, null rules ·<br/>grain decisions · context fields"]
+  SLVM["Contracted silver dbt model<br/>SQL, executed by dbt build ·<br/>shape at compile time, content by tests (D-04)"]
+  SLV[("silver schema · DuckDB<br/>clean, typed, business-ready")]
+
+  BRZ --> PRF --> PA --> CP --> HA1 --> CC
+  CC -. "runs once approved" .-> SLVM
+  BRZ --> SLVM --> SLV
+
+  PRF2["Profiler · silver pass<br/>same code, now on silver"]
+  SPA["Silver profile artifact · committed"]
+  MP["Mapping proposer agent (D-10)<br/>silver profile in → fact & dimension<br/>mapping out: groups, grain, rationale"]
+  HA2{"Human approval<br/>confirm facts, dimensions, groups, grain"}
+  MC["Mapping contract · ODCS v3.1.0, committed<br/>facts · dimensions · entity groups · time columns ·<br/>grain (aggregated | transaction) · engine input interface"]
+
+  SLV --> PRF2 --> SPA --> MP --> HA2 --> MC
+
+  ENG["MetricMine auto-modeling engine<br/>deterministic, rebuilt from the clean-room spec ·<br/>emits dbt model files per fact category, never DDL (D-07) ·<br/>canonical_key v2 (D-18) · writes via PR + ownership manifest (D-09)"]
+  BLD["dbt build · gold<br/>contracts enforced at compile time ·<br/>star materializes as tables (D-17)"]
+  GOLD[("gold schema · the unified event star<br/>values + columns dimensions, content-addressed ·<br/>fact_&lt;category&gt; at declared grain · run lineage attribute ·<br/>context_registry: schema_key → contract + meaning (D-19) ·<br/>vw_&lt;category&gt;_typed projection views ·<br/>new sources add rows, not schema · tests C1-C4 in CI")]
+  CMP["Context compiler · deterministic<br/>merges all profiles + both approved contracts ·<br/>one context_registry row per schema key"]
+
+  MC -. "runs once approved" .-> ENG
+  ENG -- "committed, reviewed gold models" --> BLD
+  SLV -- "model input" --> BLD
+  BLD -- "materializes" --> GOLD
+  CC -. "context" .-> CMP
+  MC -. "context" .-> CMP
+  CMP --> GOLD
+
+  QM["Shared query module<br/>query · schema · context · payload accessors ·<br/>read-only protocol (D-11)"]
+  MCP["Local MCP server<br/>list_categories · get_schema · get_context (schema key) ·<br/>run_query (row-limited) · lookup_record (content key)"]
+  AGT["Claude Desktop / Claude Code<br/>remote model, local hands ·<br/>answers carry data + meaning, cite exact records"]
+  HD["Phase 7 · optional hosted demo<br/>Streamlit Community Cloud over demo/gold.duckdb ·<br/>public link · read-only, no uploads"]
+
+  GOLD -- "read-only" --> QM
+  QM --> MCP --> AGT
+  QM -.-> HD
+
+  %% Privacy note: only tool results travel to the model;
+  %% the DuckDB file never leaves the machine.
