@@ -114,7 +114,7 @@ alone and flags the drift. (Enforced as CLAUDE.md rule 8.)
 
 ### D-10
 **Agent boundary.** Exactly two agents exist in the pipeline: the silver
-cleanup proposer and the fact-and-dimension mapping proposer. Both emit ODCS
+cleanup proposer and the gold mapping proposer. Both emit ODCS
 contracts; neither writes code, touches data, or runs transformations. The
 generate-and-verify authoring loop lives in the AI-assisted SDLC layer as
 reviewed pull requests, never as a third runtime agent.
@@ -269,7 +269,8 @@ tests/agents/. Offline assertions run keyless in the pytest lane every CI
 run (render path against recorded proposals, validator against
 constructed inputs). A manual live lane, make eval-agents, reports
 first-attempt lint pass rate and first-attempt groundedness pass rate
-with cost actuals, the same metric family D-10 assigned to the SDLC loop.
+with cost actuals, echoing the generate-and-verify posture D-10 keeps in
+the SDLC loop.
 LLM-as-judge and automated optimization are deferred by intent. Phase 6
 exits with fixtures committed, offline assertions green, and one recorded
 live run.
@@ -307,14 +308,16 @@ authority. The mapping:
 | 12 (unified event star; tables; projections as views) | D-17 |
 | 13 (canonical_key v2, deterministic payloads) | D-18 |
 | 14 (registry binding; fact key; declared grain) | D-19 |
-| 15 | D-21, D-23 |
-| 16 | D-22 |
-| 17 | D-24, D-08 |
+| 15 (proposer runtime: one structured call; no tools/MCP/loops; outbox-only) | D-21, D-23 |
+| 16 (versioned prompts; contract provenance) | D-22 |
+| 17 (human-only draft-to-contract flow; keyless make demo) | D-24, D-08 |
 
-All decisions in this register are adopted as of the July 11, 2026
-decision-record revision. D-20 has no dedicated CLAUDE.md rule; its substance
+All decisions in this register are adopted: D-01 through D-20 as of the
+July 11, 2026 revision (Decision Record 001 Rev. 3), and D-21 through D-25 as
+of the July 12, 2026 revision (Decision Record 002). D-20 has no dedicated
+CLAUDE.md rule; its substance
 is encoded directly in
 [`.github/workflows/contract-gate.yml`](../../.github/workflows/contract-gate.yml),
 and its guard-split obligation lands with the pull request that initializes
-the dbt project. Implementation of D-17 through D-19 lands in the gold phase;
-adoption is not contingent on it.
+the dbt project. Implementation of D-17 through D-19 lands in the gold phase
+and D-21 through D-25 in Phase 6; adoption is not contingent on it.

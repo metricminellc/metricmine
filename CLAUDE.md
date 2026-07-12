@@ -86,7 +86,7 @@ approves every contract.
 
 ## Architecture boundaries
 - Exactly two agents exist in the pipeline: a silver cleanup proposer and a
-  fact-and-dimension mapping proposer. Both emit ODCS contracts. Neither writes
+  gold mapping proposer. Both emit ODCS contracts. Neither writes
   code, touches data, or runs transformations.
 - All query, schema, and context-retrieval logic lives in one shared module
   (`src/metricmine/query.py`). The MCP server and the hosted app both import it.
