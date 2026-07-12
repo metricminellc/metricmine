@@ -1,0 +1,53 @@
+%% MetricMine agent layer: the proposer runtime (propose, validate, approve)
+%% Companion to Agent Layer Design 001 and Decision Record 002 (D-21..D-25), July 12, 2026.
+%% Both proposers share this shape: cleanup (bronze profile -> cleanup contract),
+%% mapping (silver profile -> mapping contract). One structured API call each, no tools,
+%% no MCP, no loops (D-21). Human-readable companion: MetricMine_Agent_Proposal_Flow_07122026.svg
+flowchart TD
+    subgraph CTX["Context (D-23): no retrieval, the profile is the whole worldview"]
+        PROF["Profile artifact (committed, versioned)<br/>deterministic JSON, stable ordering<br/>schema_version + content hash + token caps"]
+        PROMPT["Prompt file (committed)<br/>src/metricmine/agents/prompts/*.md<br/>semver header, changed only by PR (D-22)"]
+    end
+
+    subgraph CALL["The proposal call: one structured API call (D-21)"]
+        HARNESS["Proposer harness (agent)<br/>claude-sonnet-5, pinned<br/>structured outputs: output_config.format json_schema<br/>effort set explicitly, max_tokens capped<br/>no tools, no MCP"]
+        JSON["Structured proposal JSON<br/>schema-guaranteed by constrained decoding"]
+        VAL["Deterministic validator<br/>groundedness: every column exists in profile<br/>staleness: bound to profile hash<br/>completeness: grain declared per category<br/>datacontract lint"]
+        RENDER["Canonical render<br/>proposal JSON to ODCS YAML<br/>stable key order, clean diffs"]
+    end
+
+    subgraph OUTBOX["Outbox: proposals/ (gitignored, local)"]
+        DRAFT["Draft contract YAML<br/>+ provenance customProperties:<br/>proposedBy, proposerVersion, promptVersion,<br/>modelId, profileHash, proposedAt (D-22)"]
+        RECORD["Proposal record JSON<br/>params, tokens, cost, response id,<br/>validation outcomes, disposition"]
+        SUMMARY["Terminal summary<br/>what + why, profile evidence,<br/>diff vs current contract on regeneration"]
+    end
+
+    subgraph APPROVE["Approval: the existing door (D-24, D-08)"]
+        REVIEW["Human review and edit<br/>business context enters the contract fields<br/>the context compiler already harvests"]
+        PR["Contract-only pull request<br/>version bump per D-08"]
+        GATES["Three CI gates<br/>lint, dbt build, sync + test<br/>symmetric for humans and agents"]
+        MERGED["Merged, approved contract in contracts/<br/>merge is approval"]
+    end
+
+    PROF --> HARNESS
+    PROMPT --> HARNESS
+    HARNESS --> JSON --> VAL
+    VAL -- "fail: at most 2 retries with errors fed back,<br/>then fail closed: exit nonzero, nothing written" --> HARNESS
+    VAL -- pass --> RENDER
+    RENDER --> DRAFT
+    RENDER --> RECORD
+    DRAFT --> SUMMARY --> REVIEW --> PR --> GATES --> MERGED
+    MERGED -- "cleanup contract" --> SILVER["Contracted silver dbt model (D-04)"]
+    MERGED -- "mapping contract" --> ENGINE["Auto-modeling engine (D-07, D-17)"]
+    MERGED -.-> REPLAY["Replay vs regenerate<br/>make demo replays committed contracts and models,<br/>keyless, never invoking the proposers.<br/>A separate regenerate path chains<br/>the propose targets live."]
+
+    style HARNESS fill:#EFE6F7,stroke:#7E57A5
+    style REVIEW fill:#FDF3E3,stroke:#C8863B
+    style PR fill:#FDF3E3,stroke:#C8863B
+    style PROF fill:#FFFFFF,stroke:#5B6B84,stroke-dasharray: 4 3
+    style PROMPT fill:#FFFFFF,stroke:#5B6B84,stroke-dasharray: 4 3
+    style MERGED fill:#FFFFFF,stroke:#5B6B84,stroke-dasharray: 4 3
+    style DRAFT fill:#F4F4F4,stroke:#9AA3AD
+    style RECORD fill:#F4F4F4,stroke:#9AA3AD
+    style SUMMARY fill:#F4F4F4,stroke:#9AA3AD
+    style REPLAY fill:#FFF8EC,stroke:#E0A33E
