@@ -36,6 +36,19 @@ adds rows, not schema. See the
 [gold layer spec](docs/spec/gold-unified-event-star.md) and the
 [diagrams](docs/diagrams/).
 
+### The two agents
+
+Exactly two runtime agents, both contract proposers: the silver cleanup
+proposer (bronze profile in, ODCS cleanup contract out) and the gold mapping
+proposer (silver profile in, ODCS mapping contract out). Each is one
+structured API call against a pinned model; a deterministic validator
+enforces that every proposal is grounded in the profile it consumed, and
+approval is a contract-only pull request through the same three gates as
+any human change. Agents propose, code executes, a human approves.
+`make demo` replays committed contracts with no API key; a regenerate path
+invokes the agents live. Design: [docs/spec/agent-layer.md](docs/spec/agent-layer.md).
+The agents land in Phase 6; the spine runs on hand-written contracts first.
+
 ## Governance and discipline
 
 Governance is the point, not an afterthought. I record every architectural

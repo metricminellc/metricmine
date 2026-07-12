@@ -1,0 +1,257 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 1120" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#33507A"/>
+    </marker>
+    <marker id="arrG" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#9AA3AD"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="1500" height="1120" fill="#FFFFFF"/>
+
+  <!-- header -->
+  <text x="40" y="48" font-size="27" font-weight="700" fill="#1F3550">MetricMine Agent Layer — Propose, Validate, Approve</text>
+  <text x="40" y="72" font-size="14" fill="#2E4A7A">The two-proposer runtime · companion to Agent Layer Design 001 and Decision Record 002 · July 12, 2026</text>
+  <text x="40" y="92" font-size="11" fill="#5B6470">one structured API call per proposer (D-21) · prompts versioned by PR (D-22) · grounding without retrieval (D-23) · approval is the contract-only PR (D-24) · golden-profile evals (D-25)</text>
+
+  <!-- legend -->
+  <g font-size="10.5" fill="#3A4553">
+    <rect x="1012" y="30" width="14" height="11" fill="#FFFFFF" stroke="#33507A" stroke-width="1.6"/><text x="1032" y="39">Deterministic code</text>
+    <rect x="1150" y="30" width="14" height="11" fill="#F3ECFA" stroke="#7E57A5" stroke-width="1.4"/><text x="1170" y="39">Agent call (proposes only)</text>
+    <rect x="1372" y="30" width="14" height="11" fill="#FDF3E3" stroke="#C8863B" stroke-width="1.4"/><text x="1392" y="39">Human gate</text>
+    <rect x="1012" y="50" width="14" height="11" fill="#FFFFFF" stroke="#5B6B84" stroke-width="1.2" stroke-dasharray="3 2"/><text x="1032" y="59">Committed artifact</text>
+    <rect x="1150" y="50" width="14" height="11" fill="#F4F4F4" stroke="#9AA3AD" stroke-width="1.2"/><text x="1170" y="59">Local, gitignored</text>
+    <rect x="1372" y="50" width="14" height="11" fill="#FFF8EC" stroke="#E0A33E" stroke-width="1.4"/><text x="1392" y="59">Governance note</text>
+  </g>
+
+  <!-- BAND A: context -->
+  <rect x="40" y="112" width="920" height="158" rx="8" fill="none" stroke="#C9D2DE" stroke-width="1.4" stroke-dasharray="5 4"/>
+  <text x="58" y="134" font-size="11.5" font-weight="700" fill="#5B6470" letter-spacing="1.2">CONTEXT — WHAT THE PROPOSER SEES (D-23)</text>
+
+  <g>
+    <rect x="60" y="150" width="265" height="102" rx="5" fill="#FFFFFF" stroke="#5B6B84" stroke-width="1.3" stroke-dasharray="4 3"/>
+    <text x="74" y="171" font-size="13" font-weight="700" fill="#1F3550">Profile artifact</text>
+    <text x="74" y="188" font-size="10.5" fill="#3A4553">versioned, committed · deterministic JSON</text>
+    <text x="74" y="202" font-size="10.5" fill="#3A4553">stable ordering · schema_version field</text>
+    <text x="74" y="216" font-size="10.5" fill="#3A4553">content hash · token-budget caps</text>
+    <text x="74" y="230" font-size="10.5" fill="#3A4553">null rates, cardinality, samples,</text>
+    <text x="74" y="244" font-size="10.5" fill="#3A4553">duplicate-row rate (grain evidence)</text>
+  </g>
+  <g>
+    <rect x="355" y="150" width="265" height="102" rx="5" fill="#FFFFFF" stroke="#5B6B84" stroke-width="1.3" stroke-dasharray="4 3"/>
+    <text x="369" y="171" font-size="13" font-weight="700" fill="#1F3550">Prompt file</text>
+    <text x="369" y="188" font-size="10.5" fill="#3A4553">src/metricmine/agents/prompts/*.md</text>
+    <text x="369" y="202" font-size="10.5" fill="#3A4553">semver header + changelog, read at runtime</text>
+    <text x="369" y="216" font-size="10.5" fill="#3A4553">changed only by pull request (D-22)</text>
+    <text x="369" y="230" font-size="10.5" fill="#3A4553">shared template anatomy across proposers</text>
+    <text x="369" y="244" font-size="10.5" fill="#3A4553">text authored Phase 6, after the spine</text>
+  </g>
+  <g>
+    <rect x="650" y="150" width="290" height="102" rx="5" fill="#F8FAFC" stroke="#C9D2DE" stroke-width="1.2"/>
+    <text x="664" y="171" font-size="12" font-weight="700" fill="#2E4A7A">No retrieval, on purpose</text>
+    <text x="664" y="188" font-size="10.5" fill="#3A4553">No vector store, no embeddings, no similarity</text>
+    <text x="664" y="202" font-size="10.5" fill="#3A4553">search. The profile is a closed, curated context,</text>
+    <text x="664" y="216" font-size="10.5" fill="#3A4553">injected complete into the call. Sample values are</text>
+    <text x="664" y="230" font-size="10.5" fill="#3A4553">treated as untrusted data: delimited, schema-</text>
+    <text x="664" y="244" font-size="10.5" fill="#3A4553">constrained, validated, human-gated.</text>
+  </g>
+
+  <!-- gold callout: provenance -->
+  <g>
+    <rect x="990" y="112" width="470" height="158" rx="6" fill="#FFF8EC" stroke="#E0A33E" stroke-width="1.4"/>
+    <text x="1006" y="136" font-size="12" font-weight="700" fill="#B57A19" letter-spacing="0.8">PROVENANCE, ONE HOP EACH WAY (D-22)</text>
+    <text x="1006" y="156" font-size="10.5" fill="#3A4553">Every draft stamps ODCS customProperties: proposedBy ·</text>
+    <text x="1006" y="170" font-size="10.5" fill="#3A4553">proposerVersion · promptVersion · modelId · profileHash ·</text>
+    <text x="1006" y="184" font-size="10.5" fill="#3A4553">proposedAt. Hand-written contracts carry the same keys with</text>
+    <text x="1006" y="198" font-size="10.5" fill="#3A4553">proposedBy: human, from the first Phase 3 contract onward.</text>
+    <text x="1006" y="218" font-size="10.5" fill="#3A4553">An approved contract names the exact prompt version and</text>
+    <text x="1006" y="232" font-size="10.5" fill="#3A4553">profile hash that produced it. Full request detail lives in the</text>
+    <text x="1006" y="246" font-size="10.5" fill="#3A4553">proposal record. Outcome-to-prompt lineage is one committed hop.</text>
+  </g>
+
+  <!-- arrows A -> B -->
+  <path d="M192,252 V296" fill="none" stroke="#33507A" stroke-width="1.6" marker-end="url(#arr)"/>
+  <path d="M487,252 V278 H262 V296" fill="none" stroke="#33507A" stroke-width="1.6" marker-end="url(#arr)"/>
+
+  <!-- BAND B: the call -->
+  <rect x="40" y="300" width="920" height="212" rx="8" fill="none" stroke="#C9D2DE" stroke-width="1.4" stroke-dasharray="5 4"/>
+  <text x="58" y="322" font-size="11.5" font-weight="700" fill="#5B6470" letter-spacing="1.2">THE PROPOSAL CALL — ONE STRUCTURED API CALL · NO TOOLS · NO MCP · NO LOOPS (D-21)</text>
+
+  <g>
+    <rect x="60" y="338" width="275" height="130" rx="5" fill="#F3ECFA" stroke="#7E57A5" stroke-width="1.6"/>
+    <rect x="60" y="338" width="5" height="130" fill="#7E57A5"/>
+    <text x="78" y="360" font-size="13.5" font-weight="700" fill="#4A2E66">Proposer harness</text>
+    <text x="78" y="378" font-size="10.5" fill="#3A4553">claude-sonnet-5, pinned (the ID is a snapshot)</text>
+    <text x="78" y="392" font-size="10.5" fill="#3A4553">GA structured outputs: output_config.format</text>
+    <text x="78" y="406" font-size="10.5" fill="#3A4553">json_schema; response cannot violate the schema</text>
+    <text x="78" y="420" font-size="10.5" fill="#3A4553">effort set explicitly · max_tokens capped</text>
+    <text x="78" y="434" font-size="10.5" fill="#3A4553">anthropic SDK locked by uv · key from env only</text>
+    <text x="78" y="448" font-size="10.5" fill="#3A4553">reads one profile, writes only to the outbox</text>
+  </g>
+  <g>
+    <rect x="380" y="338" width="275" height="130" rx="5" fill="#FFFFFF" stroke="#33507A" stroke-width="1.6"/>
+    <rect x="380" y="338" width="5" height="130" fill="#1F3550"/>
+    <text x="398" y="360" font-size="13.5" font-weight="700" fill="#1F3550">Deterministic validator</text>
+    <text x="398" y="378" font-size="10.5" fill="#3A4553">groundedness: every referenced column exists</text>
+    <text x="398" y="392" font-size="10.5" fill="#3A4553">in the profile — hallucinated columns: zero, enforced</text>
+    <text x="398" y="406" font-size="10.5" fill="#3A4553">staleness: proposal bound to the profile hash</text>
+    <text x="398" y="420" font-size="10.5" fill="#3A4553">completeness: grain declared per category</text>
+    <text x="398" y="434" font-size="10.5" fill="#3A4553">datacontract lint: the same check CI runs,</text>
+    <text x="398" y="448" font-size="10.5" fill="#3A4553">so first-attempt lint pass is visible at propose time</text>
+  </g>
+  <g>
+    <rect x="700" y="338" width="240" height="130" rx="5" fill="#FFFFFF" stroke="#33507A" stroke-width="1.6"/>
+    <rect x="700" y="338" width="5" height="130" fill="#1F3550"/>
+    <text x="718" y="360" font-size="13.5" font-weight="700" fill="#1F3550">Canonical render</text>
+    <text x="718" y="378" font-size="10.5" fill="#3A4553">proposal JSON to ODCS YAML</text>
+    <text x="718" y="392" font-size="10.5" fill="#3A4553">stable key order, stable formatting</text>
+    <text x="718" y="406" font-size="10.5" fill="#3A4553">clean, reviewable diffs</text>
+    <text x="718" y="420" font-size="10.5" fill="#3A4553">atomic write: temp file, then rename</text>
+    <text x="718" y="440" font-size="10.5" font-style="italic" fill="#5B6470">judgment proposes; code serializes</text>
+  </g>
+  <path d="M335,403 H374" fill="none" stroke="#33507A" stroke-width="1.6" marker-end="url(#arr)"/>
+  <text x="340" y="396" font-size="9.5" fill="#5B6470">JSON</text>
+  <path d="M655,403 H694" fill="none" stroke="#33507A" stroke-width="1.6" marker-end="url(#arr)"/>
+  <text x="662" y="396" font-size="9.5" fill="#5B6470">pass</text>
+  <path d="M517,468 V488 H198 V474" fill="none" stroke="#7E57A5" stroke-width="1.4" stroke-dasharray="5 3" marker-end="url(#arr)"/>
+  <text x="230" y="484" font-size="9.5" fill="#7E57A5">fail: at most 2 retries with errors fed back, then fail closed — exit nonzero, nothing written</text>
+
+  <!-- gold callout: economics -->
+  <g>
+    <rect x="990" y="300" width="470" height="120" rx="6" fill="#FFF8EC" stroke="#E0A33E" stroke-width="1.4"/>
+    <text x="1006" y="324" font-size="12" font-weight="700" fill="#B57A19" letter-spacing="0.8">ECONOMICS, VISIBLE AND SMALL (D-21)</text>
+    <text x="1006" y="344" font-size="10.5" fill="#3A4553">Tokens and computed cost land in every proposal record. A</text>
+    <text x="1006" y="358" font-size="10.5" fill="#3A4553">regeneration prices under roughly twenty cents worst case at</text>
+    <text x="1006" y="372" font-size="10.5" fill="#3A4553">standard rates, typically under a dime. Caps bound the worst case.</text>
+    <text x="1006" y="392" font-size="10.5" fill="#3A4553">Budget infrastructure is deliberately not built: at one operator</text>
+    <text x="1006" y="406" font-size="10.5" fill="#3A4553">and cents per run, enforced budgets would be theater.</text>
+  </g>
+
+  <!-- gold callout: evals -->
+  <g>
+    <rect x="990" y="440" width="470" height="140" rx="6" fill="#FFF8EC" stroke="#E0A33E" stroke-width="1.4"/>
+    <text x="1006" y="464" font-size="12" font-weight="700" fill="#B57A19" letter-spacing="0.8">EVALUATION — THE GOLDEN-PROFILE SET (D-25)</text>
+    <text x="1006" y="484" font-size="10.5" fill="#3A4553">Committed fixture profiles: Online Retail II (D-15), the faker path,</text>
+    <text x="1006" y="498" font-size="10.5" fill="#3A4553">optionally one pathological case. Offline assertions run keyless in</text>
+    <text x="1006" y="512" font-size="10.5" fill="#3A4553">the existing pytest lane on every CI run. A manual live lane,</text>
+    <text x="1006" y="526" font-size="10.5" fill="#3A4553">make eval-agents, reports first-attempt lint pass rate and first-</text>
+    <text x="1006" y="540" font-size="10.5" fill="#3A4553">attempt groundedness pass rate, with cost actuals. LLM-as-judge</text>
+    <text x="1006" y="554" font-size="10.5" fill="#3A4553">scoring and automated optimization: deferred by intent, named</text>
+    <text x="1006" y="568" font-size="10.5" fill="#3A4553">as future increments.</text>
+  </g>
+
+  <!-- arrow B -> C -->
+  <path d="M820,468 V500 H420 V524" fill="none" stroke="#33507A" stroke-width="1.6" marker-end="url(#arr)"/>
+
+  <!-- BAND C: outbox -->
+  <rect x="40" y="528" width="920" height="150" rx="8" fill="none" stroke="#C9D2DE" stroke-width="1.4" stroke-dasharray="5 4"/>
+  <text x="58" y="550" font-size="11.5" font-weight="700" fill="#5B6470" letter-spacing="1.2">OUTBOX AND REVIEW — proposals/ IS LOCAL AND GITIGNORED (D-24)</text>
+
+  <g>
+    <rect x="60" y="566" width="205" height="96" rx="5" fill="#F4F4F4" stroke="#9AA3AD" stroke-width="1.3"/>
+    <text x="74" y="587" font-size="12.5" font-weight="700" fill="#3A4553">Draft contract YAML</text>
+    <text x="74" y="604" font-size="10.5" fill="#3A4553">nothing under contracts/ touched</text>
+    <text x="74" y="618" font-size="10.5" fill="#3A4553">provenance customProperties inside</text>
+    <text x="74" y="632" font-size="10.5" fill="#3A4553">rejected drafts never leave the</text>
+    <text x="74" y="646" font-size="10.5" fill="#3A4553">outbox; the outbox is disposable</text>
+  </g>
+  <g>
+    <rect x="290" y="566" width="205" height="96" rx="5" fill="#F4F4F4" stroke="#9AA3AD" stroke-width="1.3"/>
+    <text x="304" y="587" font-size="12.5" font-weight="700" fill="#3A4553">Proposal record JSON</text>
+    <text x="304" y="604" font-size="10.5" fill="#3A4553">params · tokens · cost · response id</text>
+    <text x="304" y="618" font-size="10.5" fill="#3A4553">validation outcomes · attempts</text>
+    <text x="304" y="632" font-size="10.5" fill="#3A4553">disposition: draft written or</text>
+    <text x="304" y="646" font-size="10.5" fill="#3A4553">failed closed · the execution trace</text>
+  </g>
+  <g>
+    <rect x="520" y="566" width="195" height="96" rx="5" fill="#F4F4F4" stroke="#9AA3AD" stroke-width="1.3"/>
+    <text x="534" y="587" font-size="12.5" font-weight="700" fill="#3A4553">Terminal summary</text>
+    <text x="534" y="604" font-size="10.5" fill="#3A4553">what was proposed and why,</text>
+    <text x="534" y="618" font-size="10.5" fill="#3A4553">citing profile evidence · unified</text>
+    <text x="534" y="632" font-size="10.5" fill="#3A4553">diff against the current contract</text>
+    <text x="534" y="646" font-size="10.5" fill="#3A4553">on regeneration</text>
+  </g>
+  <g>
+    <rect x="740" y="566" width="200" height="96" rx="5" fill="#FDF3E3" stroke="#C8863B" stroke-width="1.5"/>
+    <text x="754" y="587" font-size="12.5" font-weight="700" fill="#8A5A1E">Review and edit</text>
+    <text x="754" y="604" font-size="10.5" fill="#3A4553">in the editor; the draft is mine</text>
+    <text x="754" y="618" font-size="10.5" fill="#3A4553">to change · business context added</text>
+    <text x="754" y="632" font-size="10.5" fill="#3A4553">here lands in the fields the context</text>
+    <text x="754" y="646" font-size="10.5" fill="#3A4553">compiler already harvests (D-19)</text>
+  </g>
+  <path d="M715,614 H734" fill="none" stroke="#9AA3AD" stroke-width="1.6" marker-end="url(#arrG)"/>
+
+  <!-- arrow C -> D -->
+  <path d="M840,662 V694" fill="none" stroke="#33507A" stroke-width="1.6" marker-end="url(#arr)"/>
+
+  <!-- BAND D: approval -->
+  <rect x="40" y="698" width="920" height="164" rx="8" fill="none" stroke="#C9D2DE" stroke-width="1.4" stroke-dasharray="5 4"/>
+  <text x="58" y="720" font-size="11.5" font-weight="700" fill="#5B6470" letter-spacing="1.2">APPROVAL — THE EXISTING DOOR, UNCHANGED (D-24 · D-08)</text>
+
+  <g>
+    <rect x="60" y="738" width="210" height="106" rx="5" fill="#FDF3E3" stroke="#C8863B" stroke-width="1.5"/>
+    <text x="74" y="759" font-size="12.5" font-weight="700" fill="#8A5A1E">Contract-only pull request</text>
+    <text x="74" y="776" font-size="10.5" fill="#3A4553">copy the reviewed draft into</text>
+    <text x="74" y="790" font-size="10.5" fill="#3A4553">contracts/ on a branch</text>
+    <text x="74" y="804" font-size="10.5" fill="#3A4553">version bump per D-08</text>
+    <text x="74" y="818" font-size="10.5" fill="#3A4553">gh one-liner documented</text>
+    <text x="74" y="832" font-size="10.5" fill="#3A4553">in the README</text>
+  </g>
+  <g>
+    <rect x="300" y="738" width="210" height="106" rx="5" fill="#FFFFFF" stroke="#33507A" stroke-width="1.6"/>
+    <rect x="300" y="738" width="5" height="106" fill="#1F3550"/>
+    <text x="318" y="759" font-size="12.5" font-weight="700" fill="#1F3550">Three CI gates</text>
+    <text x="318" y="776" font-size="10.5" fill="#3A4553">datacontract lint</text>
+    <text x="318" y="790" font-size="10.5" fill="#3A4553">dbt build (compile-time shape)</text>
+    <text x="318" y="804" font-size="10.5" fill="#3A4553">sync + dbt test (content)</text>
+    <text x="318" y="822" font-size="10.5" font-style="italic" fill="#5B6470">symmetric: humans and agents</text>
+    <text x="318" y="836" font-size="10.5" font-style="italic" fill="#5B6470">pass the same gates (D-08)</text>
+  </g>
+  <g>
+    <rect x="540" y="738" width="195" height="106" rx="5" fill="#FFFFFF" stroke="#5B6B84" stroke-width="1.3" stroke-dasharray="4 3"/>
+    <text x="554" y="759" font-size="12.5" font-weight="700" fill="#1F3550">Approved contract</text>
+    <text x="554" y="776" font-size="10.5" fill="#3A4553">merge is approval</text>
+    <text x="554" y="790" font-size="10.5" fill="#3A4553">lives in contracts/, committed</text>
+    <text x="554" y="804" font-size="10.5" fill="#3A4553">provenance travels with it</text>
+    <text x="554" y="818" font-size="10.5" fill="#3A4553">replayed forever by make demo,</text>
+    <text x="554" y="832" font-size="10.5" fill="#3A4553">keyless and deterministic</text>
+  </g>
+  <g>
+    <rect x="765" y="738" width="175" height="106" rx="5" fill="#FFFFFF" stroke="#33507A" stroke-width="1.6"/>
+    <rect x="765" y="738" width="5" height="106" fill="#1F3550"/>
+    <text x="783" y="759" font-size="12.5" font-weight="700" fill="#1F3550">Downstream</text>
+    <text x="783" y="776" font-size="10.5" fill="#3A4553">cleanup contract feeds the</text>
+    <text x="783" y="790" font-size="10.5" fill="#3A4553">contracted silver model (D-04)</text>
+    <text x="783" y="808" font-size="10.5" fill="#3A4553">mapping contract feeds the</text>
+    <text x="783" y="822" font-size="10.5" fill="#3A4553">auto-modeling engine</text>
+    <text x="783" y="836" font-size="10.5" fill="#3A4553">(D-07, D-17)</text>
+  </g>
+  <path d="M270,791 H294" fill="none" stroke="#33507A" stroke-width="1.6" marker-end="url(#arr)"/>
+  <path d="M510,791 H534" fill="none" stroke="#33507A" stroke-width="1.6" marker-end="url(#arr)"/>
+  <path d="M735,791 H759" fill="none" stroke="#33507A" stroke-width="1.6" marker-end="url(#arr)"/>
+
+  <!-- gold callout: replay + boundary -->
+  <g>
+    <rect x="990" y="698" width="470" height="164" rx="6" fill="#FFF8EC" stroke="#E0A33E" stroke-width="1.4"/>
+    <text x="1006" y="722" font-size="12" font-weight="700" fill="#B57A19" letter-spacing="0.8">THE BOUNDARIES THAT HOLD</text>
+    <text x="1006" y="742" font-size="10.5" fill="#3A4553">Exactly two agents (D-10): this shape, instantiated twice. No third</text>
+    <text x="1006" y="756" font-size="10.5" fill="#3A4553">runtime agent; the authoring loop stays in the SDLC layer as</text>
+    <text x="1006" y="770" font-size="10.5" fill="#3A4553">Claude Code pull requests. No MCP at proposer runtime: the MCP</text>
+    <text x="1006" y="784" font-size="10.5" fill="#3A4553">server serves gold at Phase 5, and the dev-time interrogation</text>
+    <text x="1006" y="798" font-size="10.5" fill="#3A4553">nicety stays documented-optional, unbuilt (Rev. 4 s8).</text>
+    <text x="1006" y="818" font-size="10.5" fill="#3A4553">make demo replays committed contracts and models, no API key.</text>
+    <text x="1006" y="832" font-size="10.5" fill="#3A4553">A regenerate path chains the proposers live. Determinism belongs</text>
+    <text x="1006" y="846" font-size="10.5" fill="#3A4553">to replay; the human gate contains live variance.</text>
+  </g>
+
+  <!-- footer band -->
+  <rect x="40" y="892" width="1420" height="86" rx="8" fill="#1F3550"/>
+  <text x="750" y="926" font-size="13" fill="#E8EDF5" text-anchor="middle">make propose-silver · make propose-mapping — draft, record, and rationale in the terminal; review in the editor; approval is the pull request</text>
+  <text x="750" y="956" font-size="15" font-weight="700" fill="#FFFFFF" text-anchor="middle">agents propose · code executes · you approve</text>
+
+  <!-- footer notes -->
+  <text x="40" y="1010" font-size="10.5" fill="#5B6470">Both proposers share this shape: the cleanup proposer (bronze profile in, cleanup contract out) and the mapping proposer (silver profile in, mapping contract out). Neither touches data, writes code, or runs transformations.</text>
+  <text x="40" y="1028" font-size="10.5" fill="#5B6470">The runtime workflow diagram (July 11, 2026) is unchanged by this specification: it already shows the proposers, the approval gates, and the committed contracts at plan altitude. This diagram is the zoom-in companion.</text>
+  <text x="40" y="1046" font-size="10.5" fill="#5B6470">Machine-readable companion: docs/diagrams/agent_proposal_flow.mmd (Mermaid) · Spec: Agent Layer Design 001 · Decisions: D-21 to D-25, Decision Record 002 · July 12, 2026</text>
+  <text x="1460" y="1046" font-size="10.5" fill="#8896A8" text-anchor="end">MetricMine · agent layer</text>
+</svg>

@@ -63,9 +63,30 @@ approves every contract.
     _row_count, or transaction with a degenerate id); never emit a fact model
     without a declared grain.
 
+15. The two proposer agents are each ONE structured API call: model
+    claude-sonnet-5 (pinned; never latest), GA structured outputs
+    (output_config.format json_schema), effort explicit, max_tokens capped.
+    No tools, no MCP, no loops at proposer runtime. A proposer reads one
+    profile artifact and writes ONLY to the gitignored proposals/ outbox,
+    never to contracts/, transform/, or the warehouse. Validation failures
+    retry at most twice, then fail closed with nothing written.
+
+16. Agent prompts are versioned artifacts in src/metricmine/agents/prompts/
+    with semver headers; change them only via pull request. Every proposed
+    contract carries provenance customProperties (proposedBy,
+    proposerVersion, promptVersion, modelId, profileHash, proposedAt);
+    hand-written contracts use the same keys with proposedBy: human.
+    Never strip or fabricate provenance.
+
+17. Agent drafts become contracts only through the human flow: review, copy
+    into contracts/ on a branch, version bump, contract-only PR (rule 6
+    holds). Never auto-merge a proposal, never write an agent draft
+    directly into contracts/, and never let an agent weaken a contract to
+    pass a gate. make demo must always run with no API key.
+
 ## Architecture boundaries
 - Exactly two agents exist in the pipeline: a silver cleanup proposer and a
-  fact-and-dimension mapping proposer. Both emit ODCS contracts. Neither writes
+  gold mapping proposer. Both emit ODCS contracts. Neither writes
   code, touches data, or runs transformations.
 - All query, schema, and context-retrieval logic lives in one shared module
   (`src/metricmine/query.py`). The MCP server and the hosted app both import it.
@@ -90,8 +111,10 @@ Toolchain behavior was verified empirically before Phase 1 exit. Before
 working on contracts, CI, or dbt models, read
 `docs/verification/gate_proof_findings.md`. Before working on gold models,
 the engine, or the context compiler, read
-`docs/spec/gold-unified-event-star.md`. Decisions cited anywhere as D-0x
-resolve in `docs/decisions/decision-register.md`.
+`docs/spec/gold-unified-event-star.md`. Before working on the agent layer —
+the proposers, their prompts, or the proposal validator — read
+`docs/spec/agent-layer.md`. Decisions cited anywhere as D-0x resolve in
+`docs/decisions/decision-register.md`.
 
 ## Conventions
 - Small, reviewed pull requests with meaningful commit messages.
