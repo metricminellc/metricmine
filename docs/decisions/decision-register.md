@@ -11,7 +11,9 @@ Decisions were made in working sessions during July 2026 and are condensed
 here in full operational substance. D-01 through D-14 were settled July 10 to
 11; D-15 through D-20 were adopted in the July 11 decision-record revision.
 Extended context and analysis live in project records maintained outside the
-repository; nothing in this repo depends on those records.
+repository; nothing in this repo depends on those records. Decision Record 002
+(July 12, 2026) carries D-21 through D-25; Decision Record 001 Rev. 3 carries
+D-01 through D-20 unchanged.
 
 **Status meanings.** `adopted` — in force. `proposed` — agreed in working
 session, applied by the plans below, formal adoption pending; treat as binding
@@ -41,6 +43,11 @@ unless amended.
 | [D-18](#d-18) | Keying scheme v2 (canonical_key v2) | adopted |
 | [D-19](#d-19) | Context binds by content address (schema-key registry) | adopted |
 | [D-20](#d-20) | Gate-two invocation and CI profile resolution | adopted |
+| [D-21](#d-21) | Proposer invocation architecture | adopted |
+| [D-22](#d-22) | Prompt governance and lineage | adopted |
+| [D-23](#d-23) | Context discipline: grounding without retrieval | adopted |
+| [D-24](#d-24) | Agent UX: propose, review, approve on existing surfaces | adopted |
+| [D-25](#d-25) | Evaluation: the golden-profile set | adopted |
 
 ## The decisions
 
@@ -205,6 +212,68 @@ project splits the guard to per-gate granularity — gate one activates on a
 contract alone, gate two on the dbt project alone, gate three on both.
 Clarifies D-12; complements D-16.
 
+### D-21
+**Proposer invocation architecture.** Each proposer is one structured
+call to the Messages API: claude-sonnet-5, pinned (the model ID is a
+fixed snapshot); GA structured outputs (output_config.format
+json_schema), so the response cannot violate the proposal schema; effort
+explicit, max_tokens capped; the anthropic SDK is a locked dependency
+from Phase 6. The model emits a structured proposal; deterministic code
+renders canonical ODCS YAML with stable key order. Validation failures
+retry at most twice with errors fed back, then fail closed with nothing
+written; writes are atomic. No tools, no MCP, no loops: a proposer reads
+one profile artifact and writes only to the gitignored proposals/ outbox.
+Full text: Decision Record 002; design: docs/spec/agent-layer.md.
+
+### D-22
+**Prompt governance and lineage.** Prompts are versioned repository
+artifacts at src/metricmine/agents/prompts/ with semver-and-changelog
+headers read at runtime, changed only by pull request under D-14, rolled
+back by revert. Every proposed contract stamps provenance into ODCS
+customProperties (proposedBy, proposerVersion, promptVersion, modelId,
+profileHash, proposedAt); hand-written contracts carry the same keys with
+proposedBy: human from Phase 3 onward. Full request detail lives in a
+local proposal record. The injection posture is stated: profile sample
+values are untrusted data; defense is layered (delimiting,
+schema-constrained output, validator, lint, human gate); contracts are
+never executed as code. Prompt text is authored in Phase 6, after the
+spine.
+
+### D-23
+**Context discipline: grounding without retrieval.** The proposers use no
+retrieval: no vector store, no embeddings, no similarity search. The
+versioned profile artifact is the sole context, injected complete. The
+profiler owes the agents deterministic serialization, a schema_version
+field, a content hash, and token-budget caps (requirements for
+docs/spec/profiler.md). A deterministic validator gates every proposal:
+groundedness (every referenced column exists in the profile; hallucinated
+columns enforced to zero), staleness (bound to the profile hash),
+completeness (grain declared per category), and datacontract lint.
+
+### D-24
+**Agent UX: propose, review, approve on existing surfaces.** make
+propose-silver and make propose-mapping write a validated draft contract
+plus proposal record to proposals/ (gitignored) and print a rationale
+summary with profile evidence, plus a diff against the current contract
+on regeneration. Review and edit happen in the editor; business context
+added there lands in the contract fields the context compiler harvests.
+Approval is the existing contract-only pull request with a version bump
+(D-08); merge is approval; rejected drafts never leave the outbox. make
+demo stays keyless replay; a regenerate path chains the proposers live.
+No new UI surface in the MVP.
+
+### D-25
+**Evaluation: the golden-profile set.** Committed fixture profiles (Online
+Retail II per D-15, faker, optionally one pathological case) under
+tests/agents/. Offline assertions run keyless in the pytest lane every CI
+run (render path against recorded proposals, validator against
+constructed inputs). A manual live lane, make eval-agents, reports
+first-attempt lint pass rate and first-attempt groundedness pass rate
+with cost actuals, the same metric family D-10 assigned to the SDLC loop.
+LLM-as-judge and automated optimization are deferred by intent. Phase 6
+exits with fixtures committed, offline assertions green, and one recorded
+live run.
+
 ## Session-decision and finding IDs
 
 IDs of the form `A<n>` (working-session decisions, e.g. A4) and `F-0x`
@@ -238,6 +307,9 @@ authority. The mapping:
 | 12 (unified event star; tables; projections as views) | D-17 |
 | 13 (canonical_key v2, deterministic payloads) | D-18 |
 | 14 (registry binding; fact key; declared grain) | D-19 |
+| 15 | D-21, D-23 |
+| 16 | D-22 |
+| 17 | D-24, D-08 |
 
 All decisions in this register are adopted as of the July 11, 2026
 decision-record revision. D-20 has no dedicated CLAUDE.md rule; its substance
