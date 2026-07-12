@@ -16,6 +16,7 @@ jobs:
   lint-and-unit:
     name: Lint and unit (py3.12)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -43,6 +44,7 @@ jobs:
   contract-gates:
     name: Contract gates (lint / build / sync+test)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     # profiles.yml lives inside transform/ (D-11); CI runs from repo root, so
     # dbt/datacontract need DBT_PROFILES_DIR to resolve the profile. Inert until
     # transform/ is populated (PR 8); gates skip today regardless.
@@ -51,19 +53,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up uv + Python 3.12
-        uses: astral-sh/setup-uv@v6
-        with:
-          python-version: "3.12"
-
-      - name: Install project (uv sync — provides dbt on PATH for `uv run`, F-04)
-        run: uv sync
-
-      - name: Install datacontract-cli (isolated uv tool, pinned per rule 1)
-        run: |
-          uv tool install 'datacontract-cli[duckdb]==1.0.12'
-          echo "$(uv tool dir --bin)" >> "$GITHUB_PATH"
-
+      # Guard first, before any install: an empty contracts/ or a missing
+      # dbt_project.yml means there is nothing to gate, so we skip the costly
+      # uv sync + tool install entirely rather than set up and then skip.
       - name: Detect contracts + dbt project (guard)
         id: gate
         run: |
@@ -74,9 +66,31 @@ jobs:
             echo "::notice::No contracts/*.odcs.yaml or transform/dbt_project.yml yet — contract gates skipped."
           fi
 
+      - name: Set up uv + Python 3.12
+        if: steps.gate.outputs.ready == 'true'
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install project (uv sync — provides dbt on PATH for `uv run`, F-04)
+        if: steps.gate.outputs.ready == 'true'
+        run: uv sync
+
+      - name: Install datacontract-cli (isolated uv tool, pinned per rule 1)
+        if: steps.gate.outputs.ready == 'true'
+        run: |
+          uv tool install 'datacontract-cli[duckdb]==1.0.12'
+          echo "$(uv tool dir --bin)" >> "$GITHUB_PATH"
+
+      # `datacontract lint` takes a single [LOCATION]; a glob of ≥2 contracts
+      # would be an "unexpected extra argument". Lint each contract. (sync/test
+      # below accept variadic [CONTRACT]... globs, so they keep the glob form.)
       - name: Gate 1 — datacontract lint
         if: steps.gate.outputs.ready == 'true'
-        run: datacontract lint contracts/*.odcs.yaml
+        run: |
+          for contract in contracts/*.odcs.yaml; do
+            datacontract lint "$contract"
+          done
 
       - name: Gate 2 — dbt build (compile-time shape enforcement)
         if: steps.gate.outputs.ready == 'true'
