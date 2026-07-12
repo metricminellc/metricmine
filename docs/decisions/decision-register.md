@@ -217,8 +217,9 @@ authority. The mapping:
 | 9 (engine emits models, never DDL) | D-07 |
 | 10 (gate three under uv run; top-level `datacontract test` unused) | D-12, D-16 |
 | 11 (properties hand-authored; sync output reviewed) | D-16, evidence [F-02](../verification/gate_proof_findings.md#f-02)/[F-05](../verification/gate_proof_findings.md#f-05) |
-| 12 (unified event star; tables; projections as views) — planned | D-17 |
-| 13 (canonical_key v2, deterministic payloads) — planned | D-18 |
-| 14 (registry binding; fact key; declared grain) — planned | D-19 |
+| 12 (unified event star; tables; projections as views) | D-17 |
+| 13 (canonical_key v2, deterministic payloads) | D-18 |
+| 14 (registry binding; fact key; declared grain) | D-19 |
 
-Rules marked planned land with the gold specification pull requests.
+Rules 12–14 are in force; their governing decisions (D-17 to D-19) remain
+proposed until their implementation pull requests land.

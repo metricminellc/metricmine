@@ -40,6 +40,28 @@ approves every contract.
     review, never auto-merged. Known sync bug at 1.0.12: duplicateValues
     quality rules mistranslate into accepted_values tests (severity warn).
     Delete such tests on sight; keep uniqueness as a data_test.
+12. Gold is the unified event star per docs/spec/gold-unified-event-star.md:
+    content-addressed values/columns dimensions, category-parameterized fact
+    tables, context_registry, and typed projection views. Star tables and the
+    registry materialize as `table` (contract enforcement requires it).
+    Projections (vw_<category>_typed) are views, uncontracted, and carry a
+    derivative header. Never propose a mart layer, a fourth schema, or a view
+    materialization for any contracted gold object.
+
+13. Hash keys use canonical_key v2 and nothing else. Payloads: parse, compact
+    serialization with sorted keys, lowercase everything, SHA-256, hex.
+    Scalars/manifests: text, lowercase, strip whitespace, KEEP hyphens;
+    manifests are compact JSON arrays in declared order. Hashed payloads carry
+    deterministic content only; audit stamps (loaded_at) stay outside
+    payloads. Never put run timestamps or build ids inside a hashed payload.
+
+14. Context binds by content address: schema_key rows in context_registry
+    point to contract name + version and compiled context. Never embed
+    contract text or context prose inside value payloads. The fact primary
+    key is (fact, source, timeframe, dim) hashes; run_hash_id is a non-key
+    attribute. Grain is declared in the mapping contract (aggregated with
+    _row_count, or transaction with a degenerate id); never emit a fact model
+    without a declared grain.
 
 ## Architecture boundaries
 - Exactly two agents exist in the pipeline: a silver cleanup proposer and a
