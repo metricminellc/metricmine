@@ -6,12 +6,14 @@
 
 | Path | What it is |
 |---|---|
-| [`decisions/decision-register.md`](decisions/decision-register.md) | The authoritative index of project decisions (D-01 to D-19), their status, and the CLAUDE.md rule crosswalk. Every `D-0x` citation in the repo resolves here. |
+| [`decisions/decision-register.md`](decisions/decision-register.md) | The authoritative index of project decisions (D-01 to D-25), their status, and the CLAUDE.md rule crosswalk. Every `D-0x` citation in the repo resolves here. |
 | [`spec/`](spec/) | Component specifications, the living source of truth for each component. Spec PRs merge before their implementation PRs open. |
 | [`spec/gold-unified-event-star.md`](spec/gold-unified-event-star.md) | Gold layer source of truth: the unified event star (D-17, D-18, D-19). |
+| [`spec/agent-layer.md`](spec/agent-layer.md) | The two proposer agents: invocation (one structured API call, pinned model, structured outputs), prompt governance and provenance, grounding without retrieval, the propose/review/approve CLI flow, and the golden-profile evaluation set (D-21 to D-25). Implements in Phase 6. |
 | [`spec/current-state/data-capture-baseline.md`](spec/current-state/data-capture-baseline.md) | Abridged clean-room baseline of the 2023 capture pipeline. Historical record and provenance artifact; its acquisition machinery is not a rebuild target. |
 | [`verification/gate_proof_findings.md`](verification/gate_proof_findings.md) | Empirical findings ([F-01](verification/gate_proof_findings.md#f-01) to [F-07](verification/gate_proof_findings.md#f-07)) from the pre-Phase-1 scratch gate proof of the pinned toolchain. Read before working on contracts, CI, or dbt models. |
 | [`diagrams/runtime_workflow_diagram.svg`](diagrams/runtime_workflow_diagram.svg) (+ [`.mmd`](diagrams/runtime_workflow_diagram.mmd)) | End-to-end runtime workflow: the `make demo` path from sources through bronze, silver, the engine, and the unified event star to MCP serving. |
+| [`diagrams/agent_proposal_flow.svg`](diagrams/agent_proposal_flow.svg) (+ [`.mmd`](diagrams/agent_proposal_flow.mmd)) | The proposer runtime: propose, validate, approve. Zoom-in companion to the runtime workflow diagram, which is unchanged. |
 | [`diagrams/gold_unified_event_star_flow.svg`](diagrams/gold_unified_event_star_flow.svg) (+ [`.mmd`](diagrams/gold_unified_event_star_flow.mmd)) | Gold layer target-state flow: modeling plane, star objects, serving posture. Companion to the gold spec. |
 
 Every SVG under `diagrams/` has a machine-readable Mermaid (`.mmd`) twin.
