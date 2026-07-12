@@ -10,7 +10,8 @@ approves every contract.
 ## Hard rules (do not violate)
 1. Pinned versions only: dbt-core 1.11.x (resolved 1.11.12), dbt-duckdb 1.10.x
    (resolved 1.10.1), datacontract-cli 1.0.12. Never upgrade to `latest`, and
-   never upgrade any of these without a Decision Record amendment.
+   never upgrade any of these without an amendment to
+   docs/decisions/decision-register.md in its own documentation PR.
 2. dbt Core v2 and dbt Core 1.12 are deliberately deferred. Do not upgrade to
    them.
 3. Profiling is standalone Python and carries no contract. Contracted transforms
@@ -65,7 +66,10 @@ pyproject.toml as a project dependency. GitHub Actions for CI.
 
 Toolchain behavior was verified empirically before Phase 1 exit. Before
 working on contracts, CI, or dbt models, read
-`docs/verification/gate_proof_findings.md`.
+`docs/verification/gate_proof_findings.md`. Before working on gold models,
+the engine, or the context compiler, read
+`docs/spec/gold-unified-event-star.md`. Decisions cited anywhere as D-0x
+resolve in `docs/decisions/decision-register.md`.
 
 ## Conventions
 - Small, reviewed pull requests with meaningful commit messages.
@@ -80,8 +84,9 @@ Every commit and PR follows these:
   `build`. Example:
   `docs: pin datacontract-cli 1.0.12 and add isolated-tool guardrail`.
 - **Commit body:** explain WHY the change was made, not just what changed. The
-  diff already shows what. State the reasoning, the decision it implements (cite
-  the D-0x number when one applies), or the problem it solves.
+  diff already shows what. State the reasoning, the decision it implements
+  (cite the D-0x number when one applies; every D-0x resolves in
+  docs/decisions/decision-register.md), or the problem it solves.
 - **PR description:** three sections, in this order:
   - **Summary** — one or two sentences on the intent.
   - **What changed** — the concrete edits, as a short list.
