@@ -29,8 +29,11 @@ approves every contract.
    directly. Mapping contract in, gold model files out; dbt builds them.
 10. Gate three runs as: `uv run datacontract dbt sync ...` then
     `uv run datacontract dbt test ...`. The `uv run` prefix is mandatory:
-    the isolated tool cannot find dbt on PATH by itself. Never use
-    `datacontract test` against DuckDB (server type unsupported at 1.0.12).
+    the isolated tool cannot find dbt on PATH by itself. The TOP-LEVEL
+    `datacontract test` command (no `dbt`) is a different, unsupported path
+    against DuckDB (server type unsupported at 1.0.12) — never use it. The
+    gate's `datacontract dbt test` subcommand is required and is not the
+    same command.
 11. dbt properties files are hand-authored. Treat `datacontract export
     dbt-models` output and sync-generated tests as proposals requiring
     review, never auto-merged. Known sync bug at 1.0.12: duplicateValues
