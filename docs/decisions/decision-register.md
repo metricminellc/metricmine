@@ -8,9 +8,10 @@
 > documentation pull request before the implementing change lands.
 
 Decisions were made in working sessions during July 2026 and are condensed
-here in full operational substance. Extended context and analysis live in
-project records maintained outside the repository; nothing in this repo
-depends on those records.
+here in full operational substance. D-01 through D-14 were settled July 10 to
+11; D-15 through D-20 were adopted in the July 11 decision-record revision.
+Extended context and analysis live in project records maintained outside the
+repository; nothing in this repo depends on those records.
 
 **Status meanings.** `adopted` — in force. `proposed` — agreed in working
 session, applied by the plans below, formal adoption pending; treat as binding
@@ -34,11 +35,12 @@ unless amended.
 | [D-12](#d-12) | CI is the three-gate contract workflow; gate proof first | adopted |
 | [D-13](#d-13) | CLAUDE.md guardrails fixed before agent contact | adopted |
 | [D-14](#d-14) | Commit and pull request conventions | adopted |
-| [D-15](#d-15) | Committed sample dataset: Online Retail II | proposed |
-| [D-16](#d-16) | Gate-three mechanism: sync then test under uv run | proposed |
-| [D-17](#d-17) | Gold is the unified event star | proposed |
-| [D-18](#d-18) | Keying scheme v2 (canonical_key v2) | proposed |
-| [D-19](#d-19) | Context binds by content address (schema-key registry) | proposed |
+| [D-15](#d-15) | Committed sample dataset: Online Retail II | adopted |
+| [D-16](#d-16) | Gate-three mechanism: sync then test under uv run | adopted |
+| [D-17](#d-17) | Gold is the unified event star | adopted |
+| [D-18](#d-18) | Keying scheme v2 (canonical_key v2) | adopted |
+| [D-19](#d-19) | Context binds by content address (schema-key registry) | adopted |
+| [D-20](#d-20) | Gate-two invocation and CI profile resolution | adopted |
 
 ## The decisions
 
@@ -120,10 +122,12 @@ gold. The README claims only the isolation that exists.
 
 ### D-12
 **CI gates.** Every pull request runs the three-gate contract workflow —
-gate one `datacontract lint`, gate two `dbt build` (compile-time shape
-enforcement), gate three per D-16 — alongside ruff and pytest. The toolchain
-was proven end to end in a scratch gate-proof session before Phase 1 exit;
-findings in [`docs/verification/gate_proof_findings.md`](../verification/gate_proof_findings.md).
+gate one `datacontract lint`, run once per contract (the lint command takes a
+single location, not a glob); gate two `dbt build` (compile-time shape
+enforcement), exact invocation per D-20; gate three per D-16 — alongside ruff
+and pytest. The toolchain was proven end to end in a scratch gate-proof
+session before Phase 1 exit; findings in
+[`docs/verification/gate_proof_findings.md`](../verification/gate_proof_findings.md).
 
 ### D-13
 **Guardrails before contact.** CLAUDE.md carries a fixed guardrail set
@@ -139,14 +143,14 @@ delete-branch-on-merge. The PR title and description become the permanent
 commit on `main`.
 
 ### D-15
-**Committed sample dataset (proposed).** Online Retail II (Daqing Chen, UCI
+**Committed sample dataset.** Online Retail II (Daqing Chen, UCI
 Machine Learning Repository, CC BY 4.0): a deterministic, complete-invoice,
 one-month extract under 5 MB, produced by a committed fetch script; the raw
 download stays gitignored. The Kaggle mirror is acceptable with UCI cited.
 `source-faker` remains the keyless synthetic path.
 
 ### D-16
-**Gate-three mechanism (proposed).** Gate three is
+**Gate-three mechanism.** Gate three is
 `uv run datacontract dbt sync ...` followed by
 `uv run datacontract dbt test ...`. The `uv run` prefix is mandatory (the
 isolated tool cannot find dbt on PATH). The top-level `datacontract test`
@@ -158,7 +162,7 @@ Evidence: findings F-01 to F-07 in
 [`docs/verification/gate_proof_findings.md`](../verification/gate_proof_findings.md).
 
 ### D-17
-**Gold is the unified event star (proposed).** The terminal gold layer is the
+**Gold is the unified event star.** The terminal gold layer is the
 unified event star: content-addressed values and columns dimensions,
 category-parameterized fact tables, and a context registry, all emitted by
 the engine as dbt models per D-07 and materialized as tables (contract
@@ -170,7 +174,7 @@ the MCP server primary. Full design:
 [`docs/spec/gold-unified-event-star.md`](../spec/gold-unified-event-star.md).
 
 ### D-18
-**Keying scheme v2 (proposed).** All record and schema keys use
+**Keying scheme v2.** All record and schema keys use
 `canonical_key` v2: payloads parse and serialize compact with sorted keys,
 lowercase, SHA-256, hex; scalars and manifests cast to text, lowercase,
 whitespace stripped, hyphens preserved. Deterministic, case-, whitespace-,
@@ -180,12 +184,26 @@ rebuild carries zero legacy data, so no key migration exists. Baseline
 record: [`docs/spec/current-state/data-capture-baseline.md`](../spec/current-state/data-capture-baseline.md).
 
 ### D-19
-**Context binds by content address (proposed).** Business context and
+**Context binds by content address.** Business context and
 contract references attach to data through schema keys in the
 `context_registry` table: one row per schema key carrying the entity group,
 the governing contract name and version, and the compiled context. Contracts
 are never embedded in payloads. The context compiler owns the registry; the
 MCP context tools read it.
+
+### D-20
+**Gate-two invocation and CI profile resolution.** Gate two is
+`uv run dbt build --project-dir transform --target local`, parallel to gate
+three. The contract-gates CI job sets `DBT_PROFILES_DIR=transform`:
+`--project-dir` governs only where dbt finds `dbt_project.yml`, while dbt
+resolves `profiles.yml` from the working directory and then `~/.dbt/` unless
+the profiles directory is set, and `profiles.yml` lives inside `transform/`
+per D-11 while CI runs from the repository root. Every gate step is guarded
+to skip cleanly while `contracts/` is empty or `transform/dbt_project.yml` is
+absent. Standing obligation: the pull request that initializes the dbt
+project splits the guard to per-gate granularity — gate one activates on a
+contract alone, gate two on the dbt project alone, gate three on both.
+Clarifies D-12; complements D-16.
 
 ## Session-decision and finding IDs
 
@@ -215,11 +233,16 @@ authority. The mapping:
 | 7 (no materialized views) | D-07 |
 | 8 (ownership-manifest checksums) | D-09 |
 | 9 (engine emits models, never DDL) | D-07 |
-| 10 (gate three under uv run; top-level `datacontract test` unused) | D-12, D-16 |
+| 10 (gate three under uv run; top-level `datacontract test` unused) | D-12, D-16; gate-two mechanics per D-20 |
 | 11 (properties hand-authored; sync output reviewed) | D-16, evidence [F-02](../verification/gate_proof_findings.md#f-02)/[F-05](../verification/gate_proof_findings.md#f-05) |
 | 12 (unified event star; tables; projections as views) | D-17 |
 | 13 (canonical_key v2, deterministic payloads) | D-18 |
 | 14 (registry binding; fact key; declared grain) | D-19 |
 
-Rules 12–14 are in force; their governing decisions (D-17 to D-19) remain
-proposed until their implementation pull requests land.
+All decisions in this register are adopted as of the July 11, 2026
+decision-record revision. D-20 has no dedicated CLAUDE.md rule; its substance
+is encoded directly in
+[`.github/workflows/contract-gate.yml`](../../.github/workflows/contract-gate.yml),
+and its guard-split obligation lands with the pull request that initializes
+the dbt project. Implementation of D-17 through D-19 lands in the gold phase;
+adoption is not contingent on it.

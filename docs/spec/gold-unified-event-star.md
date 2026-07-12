@@ -122,7 +122,7 @@ performance claims without measurement. Non-goals in the README remain standing.
 In this repository:
 
 - [`docs/decisions/decision-register.md`](../decisions/decision-register.md) —
-  D-07, D-08, D-09, D-11 (adopted) and D-17, D-18, D-19 (proposed), with the
+  D-07, D-08, D-09, D-11, D-17, D-18, D-19 (all adopted), with the
   CLAUDE.md rule crosswalk.
 - [`docs/spec/current-state/data-capture-baseline.md`](current-state/data-capture-baseline.md) —
   the abridged clean-room baseline: packet model, 2023 canonicalization
