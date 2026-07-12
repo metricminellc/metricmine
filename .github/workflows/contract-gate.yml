@@ -1,0 +1,103 @@
+name: contract-gate
+
+on:
+  pull_request:
+
+# Least privilege: the workflow only reads the checked-out code.
+permissions:
+  contents: read
+
+# Cancel superseded runs on the same PR branch.
+concurrency:
+  group: contract-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-and-unit:
+    name: Lint and unit (py3.12)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up uv + Python 3.12
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install project (uv sync)
+        run: uv sync
+
+      - name: Ruff (lint)
+        run: uv run ruff check .
+
+      - name: Unit tests (tolerate exit 5 = no tests collected)
+        run: |
+          uv run pytest -q || code=$?
+          code=${code:-0}
+          if [ "$code" -eq 5 ]; then
+            echo "::notice::pytest collected no tests (exit 5) — treated as success"
+            exit 0
+          fi
+          exit "$code"
+
+  contract-gates:
+    name: Contract gates (lint / build / sync+test)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # profiles.yml lives inside transform/ (D-11); CI runs from repo root, so
+    # dbt/datacontract need DBT_PROFILES_DIR to resolve the profile. Inert until
+    # transform/ is populated (PR 8); gates skip today regardless.
+    env:
+      DBT_PROFILES_DIR: transform
+    steps:
+      - uses: actions/checkout@v4
+
+      # Guard first, before any install: an empty contracts/ or a missing
+      # dbt_project.yml means there is nothing to gate, so we skip the costly
+      # uv sync + tool install entirely rather than set up and then skip.
+      - name: Detect contracts + dbt project (guard)
+        id: gate
+        run: |
+          if [ -f transform/dbt_project.yml ] && ls contracts/*.odcs.yaml >/dev/null 2>&1; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No contracts/*.odcs.yaml or transform/dbt_project.yml yet — contract gates skipped."
+          fi
+
+      - name: Set up uv + Python 3.12
+        if: steps.gate.outputs.ready == 'true'
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install project (uv sync — provides dbt on PATH for `uv run`, F-04)
+        if: steps.gate.outputs.ready == 'true'
+        run: uv sync
+
+      - name: Install datacontract-cli (isolated uv tool, pinned per rule 1)
+        if: steps.gate.outputs.ready == 'true'
+        run: |
+          uv tool install 'datacontract-cli[duckdb]==1.0.12'
+          echo "$(uv tool dir --bin)" >> "$GITHUB_PATH"
+
+      # `datacontract lint` takes a single [LOCATION]; a glob of ≥2 contracts
+      # would be an "unexpected extra argument". Lint each contract. (sync/test
+      # below accept variadic [CONTRACT]... globs, so they keep the glob form.)
+      - name: Gate 1 — datacontract lint
+        if: steps.gate.outputs.ready == 'true'
+        run: |
+          for contract in contracts/*.odcs.yaml; do
+            datacontract lint "$contract"
+          done
+
+      - name: Gate 2 — dbt build (compile-time shape enforcement)
+        if: steps.gate.outputs.ready == 'true'
+        run: uv run dbt build --project-dir transform --target local
+
+      - name: Gate 3 — datacontract dbt sync + test
+        if: steps.gate.outputs.ready == 'true'
+        run: |
+          uv run datacontract dbt sync contracts/*.odcs.yaml --project-dir transform --target local
+          uv run datacontract dbt test contracts/*.odcs.yaml --project-dir transform --target local
