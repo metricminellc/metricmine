@@ -46,14 +46,22 @@ def ensure_raw() -> Path:
         req = urllib.request.Request(
             SOURCE_URL, headers={"User-Agent": "metricmine-fetch-sample/0.1"}
         )
-        with urllib.request.urlopen(req) as resp, open(RAW_ZIP, "wb") as out:
+        # Atomic write: an interrupted download leaves only the .part file, so
+        # RAW_ZIP exists only once complete and the next run re-downloads cleanly.
+        part = RAW_ZIP.with_name(RAW_ZIP.name + ".part")
+        with urllib.request.urlopen(req) as resp, open(part, "wb") as out:
             shutil.copyfileobj(resp, out)
+        part.replace(RAW_ZIP)
     if not XLSX_PATH.exists():
         with zipfile.ZipFile(RAW_ZIP) as zf:
             print("zip contents:", zf.namelist())
             member = next(
-                n for n in zf.namelist() if n.lower().endswith(".xlsx")
+                (n for n in zf.namelist() if n.lower().endswith(".xlsx")), None
             )
+            if member is None:
+                raise SystemExit(
+                    f"ERROR: no .xlsx member in {RAW_ZIP}: {zf.namelist()}"
+                )
             zf.extract(member, RAW_DIR)
             extracted = RAW_DIR / member
             if extracted != XLSX_PATH:
@@ -90,10 +98,16 @@ def main() -> int:
     header = [str(h) for h in raw_header]
     print("header as landed:", header)
     date_idx = next(
-        i
-        for i, h in enumerate(header)
-        if h.strip().lower().replace(" ", "") == "invoicedate"
+        (
+            i
+            for i, h in enumerate(header)
+            if h.strip().lower().replace(" ", "") == "invoicedate"
+        ),
+        None,
     )
+    if date_idx is None:
+        print(f"ERROR: no InvoiceDate column in header {header}.")
+        return 1
 
     months: Counter[str] = Counter()
     window_rows = []
@@ -102,7 +116,7 @@ def main() -> int:
         row = row[: len(header)]
         if all(v is None for v in row):
             continue
-        ts = row[date_idx]
+        ts = row[date_idx] if date_idx < len(row) else None
         if not isinstance(ts, datetime):
             skipped += 1
             continue
