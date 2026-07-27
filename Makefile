@@ -10,7 +10,8 @@ CONNECTOR_PYTHON := 3.10
 
 $(CONNECTOR_VENV)/bin/source-file:
 	uv venv --python $(CONNECTOR_PYTHON) $(CONNECTOR_VENV)
-	uv pip install --python $(CONNECTOR_VENV)/bin/python "airbyte-source-file==0.3.15"
+# pandas 1.4.3 wheels are built against the numpy 1.x ABI; cap numpy<2.
+	uv pip install --python $(CONNECTOR_VENV)/bin/python "airbyte-source-file==0.3.15" "numpy<2"
 
 .PHONY: ingest
 ingest: $(CONNECTOR_VENV)/bin/source-file
