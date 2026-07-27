@@ -6,3 +6,6 @@ ingestion:
   sample_csv: data/samples/online_retail_ii/online_retail_ii_2009-12.csv
   warehouse_path: warehouse/metricmine.duckdb
   schema: bronze
+  # Invoice carries C-prefixed cancellation ids; pin it to string at the
+  # reader so inference and records agree.
+  reader_options: '{"dtype": {"Invoice": "str"}}'

@@ -36,20 +36,22 @@ def main() -> int:
     # PyAirbyte runs the connector in a local venv, so a plain absolute path is
     # used — the Docker-era "/local/" prefix from the platform docs does not
     # apply here.
-    source = ab.get_source(
-        "source-file",
-        config={
-            "dataset_name": cfg["dataset_name"],
-            "format": "csv",
-            "url": str(csv_path),
-            "provider": {"storage": "local"},
-        },
-    )
+    source_config = {
+        "dataset_name": cfg["dataset_name"],
+        "format": "csv",
+        "url": str(csv_path),
+        "provider": {"storage": "local"},
+    }
+    if cfg.get("reader_options"):
+        # JSON string of pandas read_csv options, passed through as-is.
+        source_config["reader_options"] = cfg["reader_options"]
+    source = ab.get_source("source-file", config=source_config)
     source.check()
     source.select_all_streams()
     result = source.read(
         cache=DuckDBCache(db_path=str(warehouse_path), schema_name=cfg["schema"]),
         write_strategy="replace",
+        force_full_refresh=True,
     )
 
     counts = {name: len(dataset) for name, dataset in result.streams.items()}
