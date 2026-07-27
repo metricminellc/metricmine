@@ -23,19 +23,13 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 CONFIG_PATH = REPO_ROOT / "config" / "default.yaml"
 
 
-def main() -> int:
-    cfg = yaml.safe_load(CONFIG_PATH.read_text())["ingestion"]
-    csv_path = (REPO_ROOT / cfg["sample_csv"]).resolve()
-    warehouse_path = (REPO_ROOT / cfg["warehouse_path"]).resolve()
-    if not csv_path.is_file():
-        print(f"ERROR: sample CSV not found at {csv_path}; run scripts/fetch_sample.py")
-        return 1
-    warehouse_path.parent.mkdir(parents=True, exist_ok=True)
+def build_source_config(cfg: dict, csv_path: Path) -> dict:
+    """Build the source-file connector config from the ingestion block.
 
-    # source-file config keys verified against connector docs v0.6.0 (spec §2).
-    # PyAirbyte runs the connector in a local venv, so a plain absolute path is
-    # used — the Docker-era "/local/" prefix from the platform docs does not
-    # apply here.
+    Config keys verified against connector docs v0.6.0 (spec §2). PyAirbyte
+    runs the connector in a local venv, so a plain absolute path is used —
+    the Docker-era "/local/" prefix from the platform docs does not apply.
+    """
     source_config = {
         "dataset_name": cfg["dataset_name"],
         "format": "csv",
@@ -45,7 +39,19 @@ def main() -> int:
     if cfg.get("reader_options"):
         # JSON string of pandas read_csv options, passed through as-is.
         source_config["reader_options"] = cfg["reader_options"]
-    source = ab.get_source("source-file", config=source_config)
+    return source_config
+
+
+def main() -> int:
+    cfg = yaml.safe_load(CONFIG_PATH.read_text())["ingestion"]
+    csv_path = (REPO_ROOT / cfg["sample_csv"]).resolve()
+    warehouse_path = (REPO_ROOT / cfg["warehouse_path"]).resolve()
+    if not csv_path.is_file():
+        print(f"ERROR: sample CSV not found at {csv_path}; run scripts/fetch_sample.py")
+        return 1
+    warehouse_path.parent.mkdir(parents=True, exist_ok=True)
+
+    source = ab.get_source("source-file", config=build_source_config(cfg, csv_path))
     source.check()
     source.select_all_streams()
     result = source.read(
