@@ -15,6 +15,11 @@ dependencies = [
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.pytest.ini_options]
+markers = [
+    "local: needs the locally built warehouse (make ingest); deselected in CI",
+]
+
 [dependency-groups]
 dev = [
     "openpyxl>=3.1.5",
