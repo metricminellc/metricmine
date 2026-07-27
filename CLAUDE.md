@@ -9,8 +9,9 @@ approves every contract.
 
 ## Hard rules (do not violate)
 1. Pinned versions only: dbt-core 1.11.x (resolved 1.11.12), dbt-duckdb 1.10.x
-   (resolved 1.10.1), datacontract-cli 1.0.12. Never upgrade to `latest`, and
-   never upgrade any of these without an amendment to
+   (resolved 1.10.1), datacontract-cli 1.0.12, airbyte (PyAirbyte) >=0.53,<0.54
+   (resolved in uv.lock; PyAirbyte pins duckdb==1.4.3). Never upgrade to
+   `latest`, and never upgrade any of these without an amendment to
    docs/decisions/decision-register.md in its own documentation PR.
 2. dbt Core v2 and dbt Core 1.12 are deliberately deferred. Do not upgrade to
    them.
