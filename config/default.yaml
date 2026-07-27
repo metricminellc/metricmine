@@ -1,0 +1,11 @@
+# MetricMine default configuration.
+# Ingestion per docs/spec/ingestion.md: the committed Online Retail II sample
+# (D-15) lands into the bronze schema of the working warehouse (D-03).
+ingestion:
+  dataset_name: online_retail_ii
+  sample_csv: data/samples/online_retail_ii/online_retail_ii_2009-12.csv
+  warehouse_path: warehouse/metricmine.duckdb
+  schema: bronze
+  # Invoice carries C-prefixed cancellation ids; pin it to string at the
+  # reader so inference and records agree.
+  reader_options: '{"dtype": {"Invoice": "str"}}'

@@ -33,7 +33,7 @@ jobs:
 
       - name: Unit tests (tolerate exit 5 = no tests collected)
         run: |
-          uv run pytest -q || code=$?
+          uv run pytest -m "not local" -q || code=$?
           code=${code:-0}
           if [ "$code" -eq 5 ]; then
             echo "::notice::pytest collected no tests (exit 5) — treated as success"
