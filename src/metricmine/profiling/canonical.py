@@ -15,7 +15,11 @@ from typing import Any
 
 
 def canonical_bytes(obj: Any) -> bytes:
-    text = json.dumps(obj, ensure_ascii=False, indent=2, sort_keys=True)
+    # allow_nan=False fails closed: non-finite floats would otherwise emit
+    # bare NaN/Infinity tokens, committing artifacts that are not JSON.
+    text = json.dumps(
+        obj, ensure_ascii=False, indent=2, sort_keys=True, allow_nan=False
+    )
     return text.encode("utf-8") + b"\n"
 
 

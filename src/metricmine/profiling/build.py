@@ -9,6 +9,7 @@ codepoint order via Python's sorted(), the spec's collation guarantee.
 from __future__ import annotations
 
 import datetime as dt
+import uuid
 from decimal import Decimal
 from typing import Any
 
@@ -32,7 +33,7 @@ CAPS = {
 
 AIRBYTE_PREFIX = "_airbyte_"
 
-_NUMERIC_PREFIXES = (
+_NUMERIC_TYPES = {
     "DECIMAL",
     "NUMERIC",
     "TINYINT",
@@ -48,16 +49,31 @@ _NUMERIC_PREFIXES = (
     "FLOAT",
     "DOUBLE",
     "REAL",
-)
-_TEMPORAL_PREFIXES = ("TIMESTAMP", "DATE", "TIME")
+}
+_TEMPORAL_TYPES = {
+    "DATE",
+    "TIME",
+    "TIME WITH TIME ZONE",
+    "TIMESTAMP",
+    "TIMESTAMP WITH TIME ZONE",
+    "TIMESTAMP_S",
+    "TIMESTAMP_MS",
+    "TIMESTAMP_NS",
+}
+
+
+def _base_type(physical_type: str) -> str:
+    # Strip type parameters only: DECIMAL(38,9) -> DECIMAL. Array/struct
+    # suffixes survive, so INTEGER[] is never mistaken for INTEGER.
+    return physical_type.upper().split("(")[0].strip()
 
 
 def is_numeric(physical_type: str) -> bool:
-    return physical_type.upper().startswith(_NUMERIC_PREFIXES)
+    return _base_type(physical_type) in _NUMERIC_TYPES
 
 
 def is_temporal(physical_type: str) -> bool:
-    return physical_type.upper().startswith(_TEMPORAL_PREFIXES)
+    return _base_type(physical_type) in _TEMPORAL_TYPES
 
 
 def normalize_value(value: Any) -> Any:
@@ -65,6 +81,8 @@ def normalize_value(value: Any) -> Any:
 
     Floats round to 6 decimal places; temporal values become ISO 8601
     strings; strings over the cap truncate with the in-band marker.
+    Anything else fails closed: nested and binary types have no canonical
+    scalar form, and a Python repr must never reach a hashed artifact.
     """
     if isinstance(value, bool):
         return value
@@ -74,10 +92,16 @@ def normalize_value(value: Any) -> Any:
         return value
     if isinstance(value, dt.datetime | dt.date | dt.time):
         return value.isoformat()
-    text = str(value)
-    if len(text) > MAX_STRING_CHARS:
-        text = text[:MAX_STRING_CHARS] + TRUNCATION_SUFFIX
-    return text
+    if isinstance(value, uuid.UUID):
+        value = str(value)
+    if isinstance(value, str):
+        if len(value) > MAX_STRING_CHARS:
+            return value[:MAX_STRING_CHARS] + TRUNCATION_SUFFIX
+        return value
+    raise TypeError(
+        f"unsupported observed value type {type(value).__name__}: the"
+        " profiler serializes scalar values only (docs/spec/profiler.md §3)"
+    )
 
 
 def build_column_entry(
@@ -106,7 +130,13 @@ def build_column_entry(
             entry["min"] = normalize_value(stats.min)
         if stats.max is not None:
             entry["max"] = normalize_value(stats.max)
-    ordered = sorted(values)
+    try:
+        ordered = sorted(values)
+    except TypeError as exc:
+        raise TypeError(
+            f"column {name!r} ({physical_type}) has unorderable values:"
+            " the profiler supports scalar column types only"
+        ) from exc
     if stats.distinct_count <= MAX_DISTINCT_VALUES:
         entry["distinct_values"] = [normalize_value(v) for v in ordered]
     else:
@@ -158,12 +188,9 @@ def profile_table(warehouse: Warehouse, schema: str, table: str) -> dict:
     entries = []
     for name, physical_type in cols:
         stats = warehouse.column_profile(schema, table, name)
-        limit = (
-            MAX_DISTINCT_VALUES
-            if stats.distinct_count <= MAX_DISTINCT_VALUES
-            else MAX_SAMPLE_VALUES
-        )
-        values = warehouse.sample_values(schema, table, name, limit)
+        # Always fetch up to the distinct cap; build_column_entry owns the
+        # only cap branch, so the two sites cannot drift apart.
+        values = warehouse.sample_values(schema, table, name, MAX_DISTINCT_VALUES)
         entries.append(
             build_column_entry(name, physical_type, stats, values, row_count)
         )

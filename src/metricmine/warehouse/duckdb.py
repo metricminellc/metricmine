@@ -23,6 +23,9 @@ def _ident(name: str) -> str:
 class DuckDBWarehouse:
     def __init__(self, path: Path | str) -> None:
         self._con = duckdb.connect(str(path), read_only=True)
+        # Session setting, not DML: pin the zone so TIMESTAMPTZ values
+        # render identically on every machine (spec §4 byte-determinism).
+        self._con.execute("set timezone = 'UTC'")
 
     def close(self) -> None:
         self._con.close()

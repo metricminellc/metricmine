@@ -20,7 +20,7 @@ from pathlib import Path
 import duckdb
 import yaml
 
-from metricmine.profiling.build import SCHEMA_VERSION, profile_table
+from metricmine.profiling.build import AIRBYTE_PREFIX, SCHEMA_VERSION, profile_table
 from metricmine.profiling.canonical import canonical_bytes
 from metricmine.profiling.writer import write_if_changed
 from metricmine.warehouse.duckdb import DuckDBWarehouse
@@ -39,6 +39,13 @@ def main() -> int:
         )
         return 1
     schema, table = cfg["schema"], cfg["table"]
+    if table.startswith(AIRBYTE_PREFIX):
+        print(
+            f"ERROR: {schema}.{table} is PyAirbyte connector bookkeeping,"
+            " not a data stream; the profiler skips _airbyte_* tables"
+            " (docs/spec/profiler.md §8)"
+        )
+        return 1
     with DuckDBWarehouse(warehouse_path) as warehouse:
         if table not in warehouse.list_tables(schema):
             print(
