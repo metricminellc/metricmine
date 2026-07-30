@@ -69,7 +69,10 @@ One JSON document per profiled table. Top-level layout:
   at `"1.0.0"`. Additive fields bump minor; anything else bumps major.
 - `content_hash` — `"sha256:<hex>"` (64 hex chars) over the canonical
   serialization of the `dataset` section only. `schema_version`, `caps`,
-  and the sidecar are outside the hashed region.
+  and the sidecar are outside the hashed region; versioning nonetheless
+  keys on the whole artifact (section 6). This hash is the value the
+  agent layer's provenance and proposal records carry as `profileHash` /
+  `profile_hash` — one field, same `sha256:<hex>` format everywhere.
 - `caps` — the token-budget constants in force when the profile was
   produced (section 5), echoed so a reader never guesses which limits
   shaped the artifact.
@@ -81,9 +84,10 @@ One JSON document per profiled table. Top-level layout:
     `physical_type`, `null_count`, `null_rate`, `distinct_count`, `min`
     and `max` (present for numeric and temporal types only; temporal
     values serialize as ISO 8601 strings), `sample_values`
-    (deterministic, capped per section 5), `distinct_values` (the full
-    value list, present only when `distinct_count` is at or under the
-    cap), and `is_airbyte_metadata` (true for `_airbyte_*` columns).
+    (deterministic, capped per section 5; omitted when `distinct_values`
+    is present, which it would merely duplicate), `distinct_values` (the
+    full value list, present only when `distinct_count` is at or under
+    the cap), and `is_airbyte_metadata` (true for `_airbyte_*` columns).
     Inapplicable fields are omitted, never null.
 
 `duplicate_row_rate` is computed over source columns only, excluding
@@ -97,8 +101,11 @@ rows are not unique as a tuple, so the category either aggregates or needs
 a degenerate identifier.
 
 One consequence worth stating: because `min`/`max` applies to numeric and
-temporal types only and `invoicedate` lands VARCHAR in bronze, date-range
-evidence rides `sample_values` until silver casts it.
+temporal types only and `invoicedate` lands VARCHAR in bronze, the
+artifact carries only the low end of its date range — ascending
+`sample_values` show the earliest values, and nothing marks the last.
+Full date-range evidence arrives once silver casts the column and
+`min`/`max` applies.
 
 ### Annotated example
 
@@ -210,10 +217,7 @@ evidence rides `sample_values` until silver casts it.
         "name": "country",
         "null_count": 0,
         "null_rate": 0.0,
-        "physical_type": "VARCHAR",
-        "sample_values": ["Australia", "Austria", "Belgium", "Channel Islands",
-                          "Cyprus", "Denmark", "EIRE", "France", "Germany",
-                          "Greece"]
+        "physical_type": "VARCHAR"
       },
       {
         "distinct_count": 45228,
@@ -237,8 +241,7 @@ evidence rides `sample_values` until silver casts it.
         "name": "_airbyte_extracted_at",
         "null_count": 0,
         "null_rate": 0.0,
-        "physical_type": "TIMESTAMP",
-        "sample_values": ["2026-07-26T18:04:11"]
+        "physical_type": "TIMESTAMP"
       },
       {
         "distinct_count": 1,
@@ -247,8 +250,7 @@ evidence rides `sample_values` until silver casts it.
         "name": "_airbyte_meta",
         "null_count": 0,
         "null_rate": 0.0,
-        "physical_type": "JSON",
-        "sample_values": ["{\"changes\": [], \"sync_id\": 26}"]
+        "physical_type": "JSON"
       }
     ],
     "duplicate_row_rate": 0.000199,
@@ -272,8 +274,8 @@ Walkthrough, keyed to the example:
 - **`invoicedate`** has no `min`/`max` because it is VARCHAR — the
   consequence stated above. Its samples are the date-range evidence.
 - **`country`** sits at or under the distinct-values cap, so the full
-  sorted `distinct_values` list appears alongside the capped
-  `sample_values`.
+  sorted `distinct_values` list appears and `sample_values` is omitted
+  as redundant (section 3).
 - **`customer_id`** shows nullability evidence (`null_count`,
   `null_rate`) the silver contract author will weigh; the profiler does
   not declare `required` either way.
@@ -292,22 +294,32 @@ byte-identical artifacts. The rules that guarantee it:
 1. **Canonical JSON.** UTF-8, sorted keys, 2-space indent, `ensure_ascii`
    false, single trailing newline.
 2. **Ordering.** `columns` is in warehouse ordinal order; every other list
-   (`sample_values`, `distinct_values`) is explicitly sorted.
+   (`sample_values`, `distinct_values`) is explicitly sorted. String
+   ordering is Unicode codepoint order — no locale collation, no case
+   folding; an engine ORDER BY must be pinned to it (binary collation) or
+   the sort happens in Python, so a DuckDB or ICU change cannot shift the
+   artifact.
 3. **Samples.** `sample_values` is the first N distinct non-null values in
    ascending value order — a fixed ORDER BY, no randomness, and never a
    LIMIT without an ORDER BY.
 4. **Floats.** Rounded to 6 decimal places before serialization. This spec
    fixes the float rule for profile artifacts; bronze's `DECIMAL(38,9)`
    columns make it load-bearing.
-5. **No time inside the artifact.** Nothing time-dependent goes in the
-   profile. Run metadata — timestamp, library versions — lives in a
+5. **No profiler-injected time.** The profiler writes nothing
+   time-dependent of its own into the artifact — no run timestamp, no
+   build id. Run metadata — timestamp, library versions — lives in a
    sidecar `vNNNN.meta.json` that is exempt from the determinism
-   guarantee. The guarantee is over identical bronze: re-landing bronze
-   legitimately changes `_airbyte_extracted_at` values, and with them the
-   content hash.
-6. **Write-if-changed.** When the computed `content_hash` equals the
-   existing artifact's, the profiler writes nothing. A rerun over
-   unchanged bronze leaves `git status` clean.
+   guarantee. Observed values of audit-stamp columns
+   (`_airbyte_extracted_at`) are source data, not artifact metadata, and
+   stay. The guarantee is over identical bronze: re-landing bronze
+   legitimately changes those values, and with them the content hash —
+   accepted behavior; re-landed bronze is new bronze.
+6. **Write-if-changed.** When the newly serialized artifact is
+   byte-identical to the newest committed `vNNNN.json`, the profiler
+   writes nothing; a rerun over unchanged bronze leaves `git status`
+   clean. The comparison is over the whole artifact, not `content_hash`
+   alone, so a caps or `schema_version` change mints a new version even
+   when the dataset bytes are unchanged.
 
 This mirrors the canonical_key v2 discipline (CLAUDE.md rule 13): hashed
 payloads carry deterministic content only; audit stamps stay outside. The
@@ -325,16 +337,24 @@ block; changing any of them is a profiler version change:
 | `max_distinct_values` | 20 | `distinct_values` emitted only when `distinct_count <= 20` |
 | `max_string_chars` | 120 | longer strings cut at 120 chars and suffixed `…[truncated]` |
 
-Worst-case size arithmetic (D-23): a column at every cap carries 10
-samples plus 20 distinct values — 30 strings of ≤120 characters, about
-3,600 characters, roughly 900 tokens at ~4 characters per token, call it
-~1k tokens with keys and punctuation. Table-level fields are noise. A sane
-wide table of 25–30 columns therefore lands at 25–30k tokens — inside the
-case the [agent layer spec](agent-layer.md) already prices: "A bounding
-case (profile near the 30k-input-token cap, contract near 5k output
-tokens) prices under roughly twenty cents at standard rates."
-`bronze.online_retail_ii`, at 11
-columns mostly far under the caps, runs a few thousand tokens.
+`max_string_chars` governs every emitted string value — `sample_values`
+and `distinct_values` alike — and applies after distinctness is computed,
+so `distinct_count` stays authoritative even when truncation collapses
+two long values to the same emitted string. The `…[truncated]` marker is
+deliberately in-band: a truncated sample that reaches a proposed
+contract's `examples` field stays visibly marked, and the human reviewer
+strips or replaces it before approval.
+
+Worst-case size arithmetic (D-23): a column emits either up to 10 samples
+or, at or under the distinct cap, up to 20 distinct values — at most 20
+strings of ≤120 characters, about 2,400 characters, roughly 600 tokens at
+~4 characters per token, call it ~750 with keys and punctuation.
+Table-level fields are noise. Even a 40-column table lands near 30k
+tokens — inside the case the [agent layer spec](agent-layer.md) already
+prices: "A bounding case (profile near the 30k-input-token cap, contract
+near 5k output tokens) prices under roughly twenty cents at standard
+rates." `bronze.online_retail_ii`, at 11 columns mostly far under the
+caps, runs a few thousand tokens.
 
 Sample values are untrusted source data carried verbatim (agent layer
 spec, threat model). Truncation is a budget control, not a security
@@ -348,15 +368,18 @@ that defense.
   committed (it exists today with a `.gitkeep`). It is unrelated to dbt's
   connection profiles, which arrive as `transform/profiles.yml` with the
   dbt project PR.
-- Artifacts are immutable once committed and monotonically numbered. A
-  changed `content_hash` mints the next number; an existing file is never
-  edited. `v0001` is a table's first profile.
+- Artifacts are immutable once committed and monotonically numbered. Any
+  changed artifact byte — dataset, caps, or `schema_version` — mints the
+  next number (determinism rule 6); an existing file is never edited.
+  `v0001` is a table's first profile.
 
 ## 7. Read-only warehouse protocol (D-11)
 
 D-11 places a thin read-only protocol in `src/metricmine/warehouse/`; the
 profiler is its first consumer, so the protocol is specified here. Its
-second consumer is the shared query module serving gold, later.
+second consumer, the shared query module serving gold, arrives later and
+will extend the protocol with serving methods of its own — the six below
+are the profiling surface, not the whole of D-11.
 
 - `src/metricmine/warehouse/base.py` (created by the implementation PR)
   defines a thin engine-agnostic protocol — D-11's "~5 methods", six as
@@ -371,8 +394,9 @@ second consumer is the shared query module serving gold, later.
 Scope, in full:
 
 - Profiles `bronze.online_retail_ii` only for now.
-- Skips PyAirbyte's internal `bronze._airbyte_streams` registry table: it
-  is connector bookkeeping, not a data stream.
+- Skips PyAirbyte's internal tables — any `_airbyte_*`-prefixed table
+  (`_airbyte_streams` today; state tables appear under other sync
+  modes): they are connector bookkeeping, not data streams.
 - `_airbyte_*` columns are profiled and flagged `is_airbyte_metadata: true`
   but excluded from `duplicate_row_rate` (section 3).
 - The runtime workflow diagram records a later silver pass running the
