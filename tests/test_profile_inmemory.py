@@ -78,6 +78,23 @@ def test_two_serializations_byte_identical(tiny_db, artifact):
     assert canonical_bytes(second) == canonical_bytes(artifact)
 
 
+def test_timestamptz_renders_utc_regardless_of_host_zone(tmp_path):
+    # DuckDBWarehouse pins the session zone to UTC so TIMESTAMPTZ values
+    # serialize identically on every machine (spec §4).
+    db = tmp_path / "tz.duckdb"
+    con = duckdb.connect(str(db))
+    con.execute("set timezone = 'America/New_York'")
+    con.execute("create schema bronze")
+    con.execute("create table bronze.tz (ts timestamptz)")
+    con.execute("insert into bronze.tz values ('2026-01-01 12:00:00+00')")
+    con.close()
+    with DuckDBWarehouse(db) as warehouse:
+        artifact = profile_table(warehouse, "bronze", "tz")
+    (col,) = artifact["dataset"]["columns"]
+    assert col["min"] == "2026-01-01T12:00:00+00:00"
+    assert col["distinct_values"] == ["2026-01-01T12:00:00+00:00"]
+
+
 def test_warehouse_is_read_only(tiny_db):
     with DuckDBWarehouse(tiny_db) as warehouse:
         with pytest.raises(duckdb.Error):

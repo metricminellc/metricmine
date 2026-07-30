@@ -8,15 +8,19 @@ versioning of §6.
 
 import re
 
+import pytest
+
 from metricmine.profiling.build import (
     MAX_SAMPLE_VALUES,
     MAX_STRING_CHARS,
     TRUNCATION_SUFFIX,
     build_column_entry,
     build_profile,
+    is_numeric,
+    is_temporal,
 )
 from metricmine.profiling.canonical import canonical_bytes, content_hash
-from metricmine.profiling.writer import write_if_changed
+from metricmine.profiling.writer import latest_version, write_if_changed
 from metricmine.warehouse.base import ColumnStats
 
 
@@ -97,6 +101,41 @@ def test_string_ordering_is_unicode_codepoint():
     assert entry["distinct_values"] == ["A", "Z", "b", "é"]
 
 
+def test_non_finite_floats_fail_closed():
+    # Bare NaN/Infinity tokens are not JSON; the artifact must never
+    # serialize them.
+    with pytest.raises(ValueError):
+        canonical_bytes({"x": float("nan")})
+    with pytest.raises(ValueError):
+        canonical_bytes({"x": float("inf")})
+
+
+def test_type_classing_exact_not_prefix():
+    assert is_numeric("DECIMAL(38,9)")
+    assert is_temporal("TIMESTAMP WITH TIME ZONE")
+    # INTEGER[] is a list, not a number; STRUCT(...) is nested.
+    assert not is_numeric("INTEGER[]")
+    assert not is_numeric("STRUCT(a INTEGER)")
+    assert not is_temporal("TIMESTAMP[]")
+
+
+def test_nested_values_fail_closed():
+    # STRUCT/MAP columns arrive as dicts: unorderable, no scalar form.
+    with pytest.raises(TypeError, match="unorderable"):
+        _entry(
+            physical_type="STRUCT(a INTEGER)",
+            stats=ColumnStats(0, 2, None, None),
+            values=[{"a": 1}, {"a": 2}],
+        )
+    # BLOB values must never serialize as a Python repr.
+    with pytest.raises(TypeError, match="scalar"):
+        _entry(
+            physical_type="BLOB",
+            stats=ColumnStats(0, 1, None, None),
+            values=[b"\x00"],
+        )
+
+
 def test_min_max_only_for_numeric_and_temporal():
     varchar = _entry(stats=ColumnStats(0, 30, "a", "z"), values=["a"])
     assert "min" not in varchar and "max" not in varchar
@@ -136,3 +175,13 @@ def test_write_if_changed_whole_artifact_bytes(tmp_path):
     assert minted is not None and minted.name == "v0002.json"
     # Immutability: v0001 is never edited.
     assert (tmp_path / "v0001.json").read_bytes() == first
+    # Atomic writes leave no temp files behind.
+    assert not list(tmp_path.glob("*.tmp"))
+
+
+def test_latest_version_survives_rollover(tmp_path):
+    (tmp_path / "v9999.json").write_bytes(b"a\n")
+    (tmp_path / "v10000.json").write_bytes(b"b\n")
+    assert latest_version(tmp_path) == 10000
+    minted = write_if_changed(tmp_path, b"c\n", {})
+    assert minted is not None and minted.name == "v10001.json"
