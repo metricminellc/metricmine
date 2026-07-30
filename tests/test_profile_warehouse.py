@@ -18,11 +18,11 @@ _WAREHOUSE = Path(__file__).resolve().parents[1] / "warehouse" / "metricmine.duc
 # The committed sample's row count (see tests/test_land_sample.py).
 EXPECTED_ROWS = 45228
 
-# TODO: pin after the first real `make profile` run mints v0001. These are
-# observed measurements of the committed sample, not spec values; None
-# skips the assertion until they are pinned.
-CUSTOMER_ID_NULL_RATE = None
-DUPLICATE_ROW_RATE = None
+# Pinned observed measurements of the committed sample (6-dp rounded per
+# the spec's float rule), not spec values; regressions in the rate
+# computations fail here.
+CUSTOMER_ID_NULL_RATE = 0.29778
+DUPLICATE_ROW_RATE = 0.011188
 
 pytestmark = pytest.mark.local
 
