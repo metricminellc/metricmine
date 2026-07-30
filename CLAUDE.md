@@ -10,7 +10,8 @@ approves every contract.
 ## Hard rules (do not violate)
 1. Pinned versions only: dbt-core 1.11.x (resolved 1.11.12), dbt-duckdb 1.10.x
    (resolved 1.10.1), datacontract-cli 1.0.12, airbyte (PyAirbyte) >=0.53,<0.54
-   (resolved in uv.lock; PyAirbyte pins duckdb==1.4.3), and the connector
+   (resolved in uv.lock), duckdb==1.4.3 (explicit runtime dependency as of
+   the profiler PR, matching PyAirbyte's pin), and the connector
    airbyte-source-file==0.3.15 with numpy<2 on uv-provisioned CPython 3.10
    (Makefile). Never upgrade to `latest`, and never upgrade any of these
    without an amendment to docs/decisions/decision-register.md in its own
