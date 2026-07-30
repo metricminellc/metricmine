@@ -12,7 +12,9 @@ transform/dbt_packages/
 transform/logs/
 
 # ---- working warehouse: never committed (Decision D-03) ----
-warehouse/
+# Anchored to the repo root: src/metricmine/warehouse/ is code and IS
+# committed (D-11).
+/warehouse/
 *.duckdb
 *.duckdb.wal
 

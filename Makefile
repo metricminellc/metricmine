@@ -16,3 +16,7 @@ $(CONNECTOR_VENV)/bin/source-file:
 .PHONY: ingest
 ingest: $(CONNECTOR_VENV)/bin/source-file
 	uv run python -m metricmine.ingest.land_sample
+
+.PHONY: profile
+profile:
+	uv run python -m metricmine.profiling.run

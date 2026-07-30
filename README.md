@@ -17,9 +17,10 @@ Phases 1 and 2 are complete. Built so far: the repository scaffold, the pinned
 toolchain, the three-gate contract CI workflow, the CLAUDE.md guardrails, the
 decision register, the gold layer design spec and diagram, the ingestion,
 profiler, and agent-layer specs, a seeded roadmap,
-the committed Online Retail II sample (D-15) with its fetch script, and the
-PyAirbyte bronze landing (`make ingest`). The pipeline is not yet runnable end
-to end. Profiling, silver, and gold are the next phases. The live roadmap is
+the committed Online Retail II sample (D-15) with its fetch script, the
+PyAirbyte bronze landing (`make ingest`), and the deterministic profiler
+(`make profile`). The pipeline is not yet runnable end
+to end. Silver and gold are the next phases. The live roadmap is
 the [Issues tab](https://github.com/metricminellc/metricmine/issues).
 
 ## Architecture
