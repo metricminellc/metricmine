@@ -114,7 +114,9 @@ Toolchain behavior was verified empirically before Phase 1 exit. Before
 working on contracts, CI, or dbt models, read
 `docs/verification/gate_proof_findings.md`. Before working on gold models,
 the engine, or the context compiler, read
-`docs/spec/gold-unified-event-star.md`. Before working on the agent layer —
+`docs/spec/gold-unified-event-star.md`. Before working on the profiler or
+the read-only warehouse protocol, read `docs/spec/profiler.md`. Before
+working on the agent layer —
 the proposers, their prompts, or the proposal validator — read
 `docs/spec/agent-layer.md`. Decisions cited anywhere as D-0x resolve in
 `docs/decisions/decision-register.md`.
