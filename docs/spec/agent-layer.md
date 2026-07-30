@@ -33,7 +33,7 @@ The mid-pipeline agents do not use MCP. The MCP server exists at the serving lay
 
 The proposers use **no RAG**: no vector store, no embeddings, no similarity search. The versioned profile artifact is the sole context, injected complete into the call. Deterministic full-context injection is a stronger guarantee than retrieval at this scale, and that is the claim made.
 
-**The profiler owes the agents** (requirements for `docs/spec/profiler.md`):
+**The profiler owes the agents** (discharged by [the profiler spec](profiler.md)):
 
 - deterministic serialization with stable ordering,
 - a `schema_version` field,

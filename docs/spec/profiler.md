@@ -1,7 +1,7 @@
 # Profiler Component Specification
 
-**Status:** drafted (spec PR, issue #21). Merges before the implementation
-PR opens.
+**Status:** adopted (spec PR, issue #21). Implements in Phase 3
+(issue #22).
 **Governing decisions:** [D-11](../decisions/decision-register.md#d-11)
 (read-only warehouse protocol), [D-23](../decisions/decision-register.md#d-23)
 (profile artifact as sole agent context),
@@ -32,9 +32,8 @@ artifact. Three consumers, in the order they arrive:
    debt D-23 records: deterministic serialization, a `schema_version`
    field, a content hash, and token-budget caps.
 3. **Tests.** Committed profiles serve as fixtures, including the
-   golden-profile evaluation set (D-25). Their layout is a Phase 6
-   decision; this spec only guarantees the artifacts are deterministic and
-   committable.
+   golden-profile evaluation set, whose location D-25 fixes; this spec
+   only guarantees the artifacts are deterministic and committable.
 
 ## 2. Authority: what the profiler may propose
 
@@ -264,8 +263,9 @@ evidence rides `sample_values` until silver casts it.
 Walkthrough, keyed to the example:
 
 - **Keys are sorted everywhere; only `columns` carries meaning in its
-  order** (warehouse ordinal order, section 4). The example is written the
-  way the profiler serializes.
+  order** (warehouse ordinal order, section 4). Key order matches the
+  canonical serialization; arrays are wrapped here for page width, where
+  the canonical form puts one element per line.
 - **`quantity.sample_values`** shows the ascending-order rule's effect on
   numerics: samples are the low tail (here, cancellation quantities);
   `min`/`max` carry the range. Both together are the evidence.
@@ -297,7 +297,7 @@ byte-identical artifacts. The rules that guarantee it:
    ascending value order — a fixed ORDER BY, no randomness, and never a
    LIMIT without an ORDER BY.
 4. **Floats.** Rounded to 6 decimal places before serialization. This spec
-   mints the float rule for the repository; bronze's `DECIMAL(38,9)`
+   fixes the float rule for profile artifacts; bronze's `DECIMAL(38,9)`
    columns make it load-bearing.
 5. **No time inside the artifact.** Nothing time-dependent goes in the
    profile. Run metadata — timestamp, library versions — lives in a
@@ -310,7 +310,9 @@ byte-identical artifacts. The rules that guarantee it:
    unchanged bronze leaves `git status` clean.
 
 This mirrors the canonical_key v2 discipline (CLAUDE.md rule 13): hashed
-payloads carry deterministic content only; audit stamps stay outside.
+payloads carry deterministic content only; audit stamps stay outside. The
+`content_hash` itself is an artifact checksum, not a warehouse hash key;
+canonical_key v2 governs warehouse keys and is untouched here.
 
 ## 5. Token-budget caps
 
@@ -357,8 +359,8 @@ profiler is its first consumer, so the protocol is specified here. Its
 second consumer is the shared query module serving gold, later.
 
 - `src/metricmine/warehouse/base.py` (created by the implementation PR)
-  defines an engine-agnostic protocol of about five methods:
-  `list_tables`, `columns`, `row_count`, `column_profile`,
+  defines a thin engine-agnostic protocol — D-11's "~5 methods", six as
+  specified here: `list_tables`, `columns`, `row_count`, `column_profile`,
   `sample_values`, `duplicate_row_count`.
 - The DuckDB implementation opens the warehouse with `read_only=True`.
   No DDL, no DML. The profiler cannot write to the warehouse even by
@@ -373,6 +375,10 @@ Scope, in full:
   is connector bookkeeping, not a data stream.
 - `_airbyte_*` columns are profiled and flagged `is_airbyte_metadata: true`
   but excluded from `duplicate_row_rate` (section 3).
+- The runtime workflow diagram records a later silver pass running the
+  same code over silver. The header boundary is about authority — the
+  profiler describes and proposes, contracts decide — not about which
+  schema may ever be profiled.
 
 Interface: `make profile` wraps a config-driven entry point that reads a
 `profiling:` block in `config/default.yaml`. No CLI arguments — the same
