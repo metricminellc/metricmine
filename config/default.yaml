@@ -9,3 +9,12 @@ ingestion:
   # Invoice carries C-prefixed cancellation ids; pin it to string at the
   # reader so inference and records agree.
   reader_options: '{"dtype": {"Invoice": "str"}}'
+
+# Profiling per docs/spec/profiler.md: the deterministic profiler reads the
+# working warehouse read-only (D-11) and writes committed artifacts under
+# profiles/<schema>.<table>/.
+profiling:
+  warehouse_path: warehouse/metricmine.duckdb
+  schema: bronze
+  table: online_retail_ii
+  output_dir: profiles
