@@ -9,6 +9,7 @@
 | [`decisions/decision-register.md`](decisions/decision-register.md) | The authoritative index of project decisions (D-01 to D-25), their status, and the CLAUDE.md rule crosswalk. Every `D-0x` citation in the repo resolves here. |
 | [`spec/`](spec/) | Component specifications, the living source of truth for each component. Spec PRs merge before their implementation PRs open. |
 | [`spec/ingestion.md`](spec/ingestion.md) | Phase 2 ingestion: PyAirbyte lands the committed Online Retail II sample through the `source-file` connector into bronze; `source-faker` stays the keyless synthetic path. Verified connector config, bronze conventions, PyAirbyte runtime, and Phase 2 exit criteria (D-15, D-04, D-03). |
+| [`spec/profiler.md`](spec/profiler.md) | Phase 3 profiler: deterministic bronze profiling into a committed, versioned JSON artifact — authority boundary (observable facts vs human judgment), canonical serialization and determinism rules, token-budget caps, artifact versioning, and the read-only warehouse protocol (D-11, D-23, D-04). |
 | [`spec/gold-unified-event-star.md`](spec/gold-unified-event-star.md) | Gold layer source of truth: the unified event star (D-17, D-18, D-19). |
 | [`spec/agent-layer.md`](spec/agent-layer.md) | The two proposer agents: invocation (one structured API call, pinned model, structured outputs), prompt governance and provenance, grounding without retrieval, the propose/review/approve CLI flow, and the golden-profile evaluation set (D-21 to D-25). Implements in Phase 6. |
 | [`spec/current-state/data-capture-baseline.md`](spec/current-state/data-capture-baseline.md) | Abridged clean-room baseline of the 2023 capture pipeline. Historical record and provenance artifact; its acquisition machinery is not a rebuild target. |
@@ -20,7 +21,7 @@
 Every SVG under `diagrams/` has a machine-readable Mermaid (`.mmd`) twin.
 
 Planned additions (each lands with its component's spec PR):
-`spec/profiler.md`, `verification/duckdb_constraint_matrix.md`.
+`verification/duckdb_constraint_matrix.md`.
 
 Conventions: specs are written in engineering voice, self-contained, and cite
 decisions by `D-0x` anchor into the register. Extended working history lives
