@@ -14,7 +14,9 @@ metricmine:
   outputs:
     local:
       type: duckdb
-      path: "warehouse/metricmine.duckdb"
+      # Resolved via env var because `datacontract dbt test` invokes dbt from
+      # inside transform/ (gate three). Default preserves repo-root local runs.
+      path: "{{ env_var('MM_WAREHOUSE_PATH', 'warehouse/metricmine.duckdb') }}"
       schema: main
       threads: 1
     snowflake:
