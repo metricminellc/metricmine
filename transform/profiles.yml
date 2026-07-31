@@ -1,0 +1,29 @@
+# transform/profiles.yml — connection targets (D-11).
+#
+# local: the working DuckDB file. The path is relative to the process working
+# directory, so every dbt invocation runs from the REPO ROOT with
+# --project-dir transform (exactly as CI does under D-20). Do not run dbt from
+# inside transform/; the path would resolve one level too deep.
+#
+# snowflake: the portability demonstration target, expressed entirely through
+# environment variables. No secrets live in git; empty-string defaults keep
+# local runs parse-clean when the variables are unset. The swap is documented,
+# not performed (D-11).
+metricmine:
+  target: local
+  outputs:
+    local:
+      type: duckdb
+      path: "warehouse/metricmine.duckdb"
+      schema: main
+      threads: 1
+    snowflake:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT', '') }}"
+      user: "{{ env_var('SNOWFLAKE_USER', '') }}"
+      password: "{{ env_var('SNOWFLAKE_PASSWORD', '') }}"
+      role: "{{ env_var('SNOWFLAKE_ROLE', '') }}"
+      database: "{{ env_var('SNOWFLAKE_DATABASE', '') }}"
+      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE', '') }}"
+      schema: "{{ env_var('SNOWFLAKE_SCHEMA', 'silver') }}"
+      threads: 4
