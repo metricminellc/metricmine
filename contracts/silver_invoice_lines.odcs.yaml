@@ -1,0 +1,168 @@
+# Contract: silver.silver_invoice_lines v1.0.0 (ODCS v3.1.0)
+# Hand-authored from profiles/bronze.online_retail_ii/v0001.json plus judgment
+# (the profiler proposes, never decides — docs/spec/profiler.md). Every
+# documented wart of the bronze table is an explicit decision here, recorded
+# in descriptions and customProperties. The duplicate and cancellation
+# decisions are load-bearing for star grain: they flow into the Phase 4
+# mapping contract's grain declaration (Gold Layer Design 001 §5.2).
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_invoice_lines
+name: Silver invoice lines
+version: 1.0.0
+status: active
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+
+description:
+  purpose: >
+    The cleaned, typed, one-row-per-invoice-line view of the Online Retail II
+    sample: the first contracted silver table and the sole silver input to the
+    gold unified event star.
+  usage: >
+    Read silver.silver_invoice_lines for line-level retail sales analysis.
+    Cancellation lines are RETAINED and flagged (is_cancellation); consumers
+    aggregating revenue must filter or net them deliberately. Zero-price lines
+    are retained.
+  limitations: >
+    Exact duplicate bronze rows (rate 0.011188 at profile v0001) are treated
+    as capture artifacts and excluded, so identical legitimate re-scans are
+    indistinguishable and also excluded; the residual grain is the distinct
+    line. customer_id is null on 29.778% of bronze rows at v0001 (guest or
+    unregistered checkouts); those rows are retained with customer_id null.
+
+schema:
+  - name: silver_invoice_lines
+    physicalName: silver_invoice_lines
+    logicalType: object
+    physicalType: table
+    description: >
+      One row per distinct invoice line surviving exact-duplicate exclusion.
+      Grain key: (invoice_id, stock_code, quantity, unit_price) is unique by
+      construction after exclusion. The four columns are flagged primaryKey so
+      sync generates the composite uniqueness test; the tool emits it as a
+      singular test, never a constraint, which is rule 5 exactly.
+    dataGranularityDescription: >
+      One row per distinct invoice line (invoice_id, stock_code, quantity,
+      unit_price) after exact-duplicate exclusion. Transaction grain; feeds
+      the mapping contract's grain declaration at Phase 4.
+    properties:
+      - name: invoice_id
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        description: >
+          Invoice number, kept as text (identifiers are text; Session D rule).
+          A leading C marks a cancellation invoice; see is_cancellation.
+        examples:
+          - "489434"
+          - "C489449"
+      - name: is_cancellation
+        logicalType: boolean
+        physicalType: BOOLEAN
+        required: true
+        description: >
+          True when invoice_id carries the C cancellation prefix. Decision:
+          cancellations are retained and flagged, not dropped, so conservation
+          arithmetic against bronze stays auditable; exclusion is a consumer
+          decision made at the mapping contract, not silently here.
+      - name: stock_code
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 2
+        description: >
+          Product code as landed, kept as text; alphanumeric suffixes and
+          non-product adjustment codes (for example POST, M) occur.
+      - name: product_description
+        logicalType: string
+        physicalType: VARCHAR
+        required: false
+        description: >
+          Product description, whitespace-trimmed. Null rate 0.005041 at
+          profile v0001; nulls retained rather than imputed.
+      - name: quantity
+        logicalType: integer
+        physicalType: INTEGER
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 3
+        description: >
+          Units on the line, cast DECIMAL(38,9) to INTEGER (integral min,
+          max, and samples at v0001; range -1395 to 5184). Negative only on
+          cancellation lines.
+      - name: invoiced_at
+        logicalType: date
+        physicalType: TIMESTAMP
+        required: true
+        description: >
+          Invoice timestamp. Decision: strict cast from the VARCHAR landing
+          ("YYYY-MM-DD HH:MM:SS"); an unparseable value fails the build
+          loudly rather than becoming a silent null.
+      - name: unit_price
+        logicalType: number
+        physicalType: DECIMAL(10,2)
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 4
+        description: >
+          Unit price in sterling, cast from DECIMAL(38,9). Observed range 0.00
+          to 1998.49 at v0001. Decision: zero-price lines (freebies and
+          adjustments) are retained; negative prices are contract-invalid.
+        quality:
+          - type: sql
+            description: Unit price is never negative.
+            query: |
+              SELECT COUNT(*) FROM silver.silver_invoice_lines WHERE unit_price < 0
+            mustBe: 0
+      - name: customer_id
+        logicalType: integer
+        physicalType: INTEGER
+        required: false
+        description: >
+          Customer identifier, cast DECIMAL(38,9) to INTEGER (integral min,
+          max, and samples, 12346 to 18287 at v0001). Decision: the 0.29778
+          bronze null rate is retained as null (guest or unregistered
+          checkouts), not dropped and not imputed.
+      - name: country
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        description: Customer country as landed (24 distinct at v0001).
+    quality:
+      - type: library
+        metric: rowCount
+        description: >
+          The table is never empty; the committed sample yields tens of
+          thousands of surviving lines.
+        mustBeGreaterThan: 0
+
+servers:
+  - server: local
+    type: duckdb
+    database: warehouse/metricmine.duckdb
+    schema: silver
+
+customProperties:
+  - property: proposedBy
+    value: human
+  - property: profileHash
+    value: "sha256:79f801e1d8182ee55a32a0e3323134a27fec839c5a5478edfb8f5683cf5221f0"
+  - property: proposedAt
+    value: "2026-07-31"
+  - property: decisionCancellations
+    value: retained-and-flagged
+  - property: decisionExactDuplicates
+    value: excluded-as-capture-artifacts
+  - property: decisionNullCustomerId
+    value: retained-nullable
+  - property: decisionZeroPriceLines
+    value: retained
+  - property: decisionInvoicedateCast
+    value: strict-timestamp-cast
+  - property: grain
+    value: invoice_id, stock_code, quantity, unit_price (unique after exact-duplicate exclusion)
