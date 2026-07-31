@@ -51,9 +51,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     # profiles.yml lives inside transform/ (D-11); CI runs from repo root, so
-    # dbt/datacontract need DBT_PROFILES_DIR to resolve the profile.
+    # dbt/datacontract need DBT_PROFILES_DIR to resolve the profile. The path
+    # must be ABSOLUTE: `datacontract dbt test` re-invokes dbt from inside the
+    # project directory, where a relative "transform" does not exist (observed
+    # at PR 9's first gate-three run; verified locally at the pinned toolchain).
     env:
-      DBT_PROFILES_DIR: transform
+      DBT_PROFILES_DIR: ${{ github.workspace }}/transform
     steps:
       - uses: actions/checkout@v4
 
