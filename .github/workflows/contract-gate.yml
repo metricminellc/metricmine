@@ -57,6 +57,12 @@ jobs:
     # at PR 9's first gate-three run; verified locally at the pinned toolchain).
     env:
       DBT_PROFILES_DIR: ${{ github.workspace }}/transform
+      # Same disease one level deeper (found in the Sitting 2 rehearsal
+      # before it could fail live): `datacontract dbt test` runs dbt from
+      # inside transform/, so the profile's RELATIVE db path resolves to
+      # transform/warehouse/. The profile now reads this env var with the
+      # repo-root-relative default; CI pins it absolute.
+      MM_WAREHOUSE_PATH: ${{ github.workspace }}/warehouse/metricmine.duckdb
     steps:
       - uses: actions/checkout@v4
 
@@ -109,6 +115,18 @@ jobs:
         run: |
           mkdir -p warehouse
           uv run dbt deps --project-dir transform
+
+      # Bronze in CI (D-27): gate two builds silver from real bronze, landed
+      # by the same PyAirbyte path the Mac runs. The Makefile pre-provisions
+      # the connector venv, so offline mode is safe: the Airbyte registry is
+      # never consulted and telemetry is off, keeping CI hermetic and
+      # deterministic from the committed sample. Rehearsed cold at ~30s;
+      # budget 1-2 min on a runner.
+      - name: Land bronze (make ingest)
+        if: steps.gate.outputs.gate2 == 'true' || steps.gate.outputs.gate3 == 'true'
+        env:
+          AIRBYTE_OFFLINE_MODE: "1"
+        run: make ingest
 
       # `datacontract lint` takes a single [LOCATION]; a glob of ≥2 contracts
       # would be an "unexpected extra argument". Lint each contract. (sync/test
