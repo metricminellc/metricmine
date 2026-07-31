@@ -1,0 +1,43 @@
+version: 2
+
+sources:
+  - name: bronze
+    description: >
+      Raw landings, one table per stream, exactly as PyAirbyte delivered them
+      (D-15, docs/spec/ingestion.md): no renames, no casts, _airbyte_* metadata
+      columns kept. Profiled evidence for each table lives under
+      profiles/<schema>.<table>/ (docs/spec/profiler.md).
+    schema: bronze
+    tables:
+      - name: online_retail_ii
+        description: >
+          Online Retail II sample extract as landed (45,228 rows at profile
+          v0001; full content hash in the artifact, sha256:79f801e1...5221f0).
+          invoicedate lands as VARCHAR and
+          customer_id as DECIMAL; casting either is a silver-contract
+          decision, made in contracts/, never here.
+        columns:
+          - name: invoice
+            description: >
+              Invoice number as landed (VARCHAR). A C prefix marks a
+              cancellation; kept as text per the Session D identifier rule.
+          - name: stockcode
+            description: Product code as landed (VARCHAR; alphanumeric suffixes occur).
+          - name: description
+            description: Product description as landed (VARCHAR; 0.5% null at v0001).
+          - name: quantity
+            description: Units per invoice line as landed (DECIMAL(38,9); negative on cancellations).
+          - name: invoicedate
+            description: Invoice timestamp as landed (VARCHAR, "YYYY-MM-DD HH:MM:SS").
+          - name: price
+            description: Unit price in sterling as landed (DECIMAL(38,9); zero-price lines occur).
+          - name: customer_id
+            description: Customer identifier as landed (DECIMAL(38,9); null rate 0.29778 at v0001).
+          - name: country
+            description: Customer country as landed (VARCHAR, 24 distinct at v0001).
+          - name: _airbyte_raw_id
+            description: PyAirbyte per-record id (VARCHAR), kept as landed.
+          - name: _airbyte_extracted_at
+            description: PyAirbyte extraction timestamp (TIMESTAMP), kept as landed.
+          - name: _airbyte_meta
+            description: PyAirbyte per-record metadata (JSON), kept as landed.
