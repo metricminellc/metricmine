@@ -2,12 +2,17 @@ name: contract-gate
 
 on:
   pull_request:
+  # Public main earns its own green check after every squash-merge (July 30
+  # governance sitting rider). Same jobs, same names; required PR contexts
+  # are unchanged.
+  push:
+    branches: [main]
 
 # Least privilege: the workflow only reads the checked-out code.
 permissions:
   contents: read
 
-# Cancel superseded runs on the same PR branch.
+# Cancel superseded runs on the same ref (PR branch, or main on push).
 concurrency:
   group: contract-gate-${{ github.ref }}
   cancel-in-progress: true
@@ -46,58 +51,78 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     # profiles.yml lives inside transform/ (D-11); CI runs from repo root, so
-    # dbt/datacontract need DBT_PROFILES_DIR to resolve the profile. Inert until
-    # transform/ is populated (PR 8); gates skip today regardless.
+    # dbt/datacontract need DBT_PROFILES_DIR to resolve the profile.
     env:
       DBT_PROFILES_DIR: transform
     steps:
       - uses: actions/checkout@v4
 
-      # Guard first, before any install: an empty contracts/ or a missing
-      # dbt_project.yml means there is nothing to gate, so we skip the costly
-      # uv sync + tool install entirely rather than set up and then skip.
-      - name: Detect contracts + dbt project (guard)
+      # Per-gate guard (D-20, split at the dbt-init PR as the decision
+      # records): gate one activates on a contract alone, gate two on the dbt
+      # project alone, gate three on both. Guard first, before any install, so
+      # a repo state with nothing to gate skips the costly setup entirely.
+      # Verified at the pinned toolchain: sync and test both exit 0 with a
+      # notice while a contract exists but its model does not yet, so gate
+      # three is safe in the contract-before-model window.
+      - name: Detect gate inputs (per-gate guard)
         id: gate
         run: |
-          if [ -f transform/dbt_project.yml ] && ls contracts/*.odcs.yaml >/dev/null 2>&1; then
-            echo "ready=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::No contracts/*.odcs.yaml or transform/dbt_project.yml yet — contract gates skipped."
-          fi
+          has_contracts=false; has_dbt=false; gate3=false; any=false
+          ls contracts/*.odcs.yaml >/dev/null 2>&1 && has_contracts=true
+          [ -f transform/dbt_project.yml ] && has_dbt=true
+          [ "$has_contracts" = true ] && [ "$has_dbt" = true ] && gate3=true
+          { [ "$has_contracts" = true ] || [ "$has_dbt" = true ]; } && any=true
+          {
+            echo "gate1=$has_contracts"
+            echo "gate2=$has_dbt"
+            echo "gate3=$gate3"
+            echo "any=$any"
+          } >> "$GITHUB_OUTPUT"
+          echo "::notice::Gates — lint:$has_contracts build:$has_dbt sync+test:$gate3"
 
       - name: Set up uv + Python 3.12
-        if: steps.gate.outputs.ready == 'true'
+        if: steps.gate.outputs.any == 'true'
         uses: astral-sh/setup-uv@v6
         with:
           python-version: "3.12"
 
       - name: Install project (uv sync — provides dbt on PATH for `uv run`, F-04)
-        if: steps.gate.outputs.ready == 'true'
+        if: steps.gate.outputs.gate2 == 'true' || steps.gate.outputs.gate3 == 'true'
         run: uv sync
 
       - name: Install datacontract-cli (isolated uv tool, pinned per rule 1)
-        if: steps.gate.outputs.ready == 'true'
+        if: steps.gate.outputs.gate1 == 'true' || steps.gate.outputs.gate3 == 'true'
         run: |
           uv tool install 'datacontract-cli[duckdb]==1.0.12'
           echo "$(uv tool dir --bin)" >> "$GITHUB_PATH"
+
+      # dbt_packages/ and warehouse/ are gitignored, so neither exists in a
+      # fresh checkout. dbt deps installs the pinned packages (packages.yml +
+      # committed package-lock.yml). DuckDB does not create missing parent
+      # directories for its database file, so the warehouse directory is
+      # created here before any dbt command opens a connection.
+      - name: Build prerequisites (dbt deps + warehouse dir)
+        if: steps.gate.outputs.gate2 == 'true' || steps.gate.outputs.gate3 == 'true'
+        run: |
+          mkdir -p warehouse
+          uv run dbt deps --project-dir transform
 
       # `datacontract lint` takes a single [LOCATION]; a glob of ≥2 contracts
       # would be an "unexpected extra argument". Lint each contract. (sync/test
       # below accept variadic [CONTRACT]... globs, so they keep the glob form.)
       - name: Gate 1 — datacontract lint
-        if: steps.gate.outputs.ready == 'true'
+        if: steps.gate.outputs.gate1 == 'true'
         run: |
           for contract in contracts/*.odcs.yaml; do
             datacontract lint "$contract"
           done
 
       - name: Gate 2 — dbt build (compile-time shape enforcement)
-        if: steps.gate.outputs.ready == 'true'
+        if: steps.gate.outputs.gate2 == 'true'
         run: uv run dbt build --project-dir transform --target local
 
       - name: Gate 3 — datacontract dbt sync + test
-        if: steps.gate.outputs.ready == 'true'
+        if: steps.gate.outputs.gate3 == 'true'
         run: |
           uv run datacontract dbt sync contracts/*.odcs.yaml --project-dir transform --target local
           uv run datacontract dbt test contracts/*.odcs.yaml --project-dir transform --target local

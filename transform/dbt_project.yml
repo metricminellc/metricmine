@@ -1,0 +1,27 @@
+# transform/dbt_project.yml — the dbt project (D-04). Initialized at the
+# Session F dbt-init PR. The engine emits models into models/gold/ (D-07);
+# humans author models/silver/. Contract enforcement is declared per model in
+# its hand-authored properties file (rules 3 and 11), never blanket here,
+# because gold will also carry uncontracted typed projection views (D-17).
+name: "metricmine"
+version: "1.0.0"
+profile: "metricmine"
+
+# Mirror of the D-05 pin, enforced by dbt itself at parse time.
+require-dbt-version: [">=1.11.0", "<1.12.0"]
+
+model-paths: ["models"]
+macro-paths: ["macros"]
+test-paths: ["tests"]
+
+target-path: "target"
+clean-targets: ["target", "dbt_packages", "logs"]
+
+models:
+  metricmine:
+    silver:
+      +materialized: table # contract enforcement requires table/incremental (rule 7)
+      +schema: silver
+    gold:
+      +materialized: table
+      +schema: gold

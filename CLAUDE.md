@@ -13,7 +13,9 @@ approves every contract.
    (resolved in uv.lock), duckdb==1.4.3 (explicit runtime dependency as of
    the profiler PR, matching PyAirbyte's pin), and the connector
    airbyte-source-file==0.3.15 with numpy<2 on uv-provisioned CPython 3.10
-   (Makefile). Never upgrade to `latest`, and never upgrade any of these
+   (Makefile), and the dbt package dbt_utils ==1.3.3 (transform/packages.yml
+   with the committed transform/package-lock.yml). Never upgrade to `latest`,
+   and never upgrade any of these
    without an amendment to docs/decisions/decision-register.md in its own
    documentation PR.
 2. dbt Core v2 and dbt Core 1.12 are deliberately deferred. Do not upgrade to
