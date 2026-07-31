@@ -1,0 +1,143 @@
+# Hand-authored properties file (F-02, rule 11): export output is scaffold
+# only and is never committed here. Contract enforcement is declared per
+# model (rule 3); every column carries name + data_type (rule 4). Only
+# not_null is a trusted constraint; uniqueness lives in contract-generated
+# tests (rule 5).
+version: 2
+
+models:
+  - name: silver_invoice_lines
+    description: >-
+      One row per distinct invoice line surviving capture-artifact exclusion (exact duplicates and within-invoice clock-drift re-scans). Grain key: (invoice_id, stock_code, quantity, unit_price) is unique by measurement at v0001 after exclusion. The four columns are flagged primaryKey so sync generates the composite uniqueness test; the tool emits it as a singular test, never a constraint, which is rule 5 exactly. That generated test is warn-severity by tool design at 1.0.12; the model-level grain-enforcement quality rule below is the error-severity twin that actually gates.
+    config:
+      contract:
+        enforced: true
+      meta:
+        datacontract_cli:
+          contract_id: silver_invoice_lines
+    columns:
+      - name: invoice_id
+        data_type: VARCHAR
+        constraints:
+          - type: not_null
+        description: Invoice number, kept as text (identifiers are text; Session D rule). A leading C marks a cancellation invoice; see is_cancellation.
+        data_tests:
+          - not_null:
+              config:
+                severity: warn
+                meta:
+                  datacontract_cli:
+                    check: silver_invoice_lines__invoice_id__field_required
+                    include_in_tests: true
+                    contract_versions:
+                      - 1.1.0
+                    generated: true
+              description: Check that field invoice_id has no missing values
+      - name: is_cancellation
+        data_type: BOOLEAN
+        constraints:
+          - type: not_null
+        description: 'True when invoice_id carries the C cancellation prefix. Decision: cancellations are retained and flagged, not dropped, so conservation arithmetic against bronze stays auditable; exclusion is a consumer decision made at the mapping contract, not silently here.'
+        data_tests:
+          - not_null:
+              config:
+                severity: warn
+                meta:
+                  datacontract_cli:
+                    check: silver_invoice_lines__is_cancellation__field_required
+                    include_in_tests: true
+                    contract_versions:
+                      - 1.1.0
+                    generated: true
+              description: Check that field is_cancellation has no missing values
+      - name: stock_code
+        data_type: VARCHAR
+        constraints:
+          - type: not_null
+        description: Product code as landed, kept as text; alphanumeric suffixes and non-product adjustment codes (for example POST, M) occur.
+        data_tests:
+          - not_null:
+              config:
+                severity: warn
+                meta:
+                  datacontract_cli:
+                    check: silver_invoice_lines__stock_code__field_required
+                    include_in_tests: true
+                    contract_versions:
+                      - 1.1.0
+                    generated: true
+              description: Check that field stock_code has no missing values
+      - name: product_description
+        data_type: VARCHAR
+        description: Product description, whitespace-trimmed. Null rate 0.005041 at profile v0001; nulls retained rather than imputed.
+      - name: quantity
+        data_type: INTEGER
+        constraints:
+          - type: not_null
+        description: Units on the line, cast DECIMAL(38,9) to INTEGER (integral min, max, and samples at v0001; range -1395 to 5184). Negative only on cancellation lines.
+        data_tests:
+          - not_null:
+              config:
+                severity: warn
+                meta:
+                  datacontract_cli:
+                    check: silver_invoice_lines__quantity__field_required
+                    include_in_tests: true
+                    contract_versions:
+                      - 1.1.0
+                    generated: true
+              description: Check that field quantity has no missing values
+      - name: invoiced_at
+        data_type: TIMESTAMP
+        constraints:
+          - type: not_null
+        description: 'Invoice timestamp. Decision: strict cast from the VARCHAR landing ("YYYY-MM-DD HH:MM:SS"); an unparseable value fails the build loudly rather than becoming a silent null. On within-invoice clock-drift duplicates the earliest scan tick wins (min).'
+        data_tests:
+          - not_null:
+              config:
+                severity: warn
+                meta:
+                  datacontract_cli:
+                    check: silver_invoice_lines__invoiced_at__field_required
+                    include_in_tests: true
+                    contract_versions:
+                      - 1.1.0
+                    generated: true
+              description: Check that field invoiced_at has no missing values
+      - name: unit_price
+        data_type: DECIMAL(10,2)
+        constraints:
+          - type: not_null
+        description: 'Unit price in sterling, cast from DECIMAL(38,9). Observed range 0.00 to 1998.49 at v0001. Decision: zero-price lines (freebies and adjustments) are retained; negative prices are contract-invalid.'
+        data_tests:
+          - not_null:
+              config:
+                severity: warn
+                meta:
+                  datacontract_cli:
+                    check: silver_invoice_lines__unit_price__field_required
+                    include_in_tests: true
+                    contract_versions:
+                      - 1.1.0
+                    generated: true
+              description: Check that field unit_price has no missing values
+      - name: customer_id
+        data_type: INTEGER
+        description: 'Customer identifier, cast DECIMAL(38,9) to INTEGER (integral min, max, and samples, 12346 to 18287 at v0001). Decision: the 0.29778 bronze null rate is retained as null (guest or unregistered checkouts), not dropped and not imputed.'
+      - name: country
+        data_type: VARCHAR
+        constraints:
+          - type: not_null
+        description: Customer country as landed (24 distinct at v0001).
+        data_tests:
+          - not_null:
+              config:
+                severity: warn
+                meta:
+                  datacontract_cli:
+                    check: silver_invoice_lines__country__field_required
+                    include_in_tests: true
+                    contract_versions:
+                      - 1.1.0
+                    generated: true
+              description: Check that field country has no missing values
