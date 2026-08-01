@@ -31,7 +31,7 @@ select
     stock_code,
     product_description,
     quantity,
-    min(invoiced_at) as invoiced_at,
+    min(invoiced_at) as invoice_ts,
     unit_price,
     customer_id,
     country
