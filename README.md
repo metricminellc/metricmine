@@ -13,14 +13,16 @@ questions about it, on one machine with one command.
 
 ## Status
 
-Phases 1 and 2 are complete. Built so far: the repository scaffold, the pinned
-toolchain, the three-gate contract CI workflow, the CLAUDE.md guardrails, the
-decision register, the gold layer design spec and diagram, the ingestion,
-profiler, and agent-layer specs, a seeded roadmap,
-the committed Online Retail II sample (D-15) with its fetch script, the
-PyAirbyte bronze landing (`make ingest`), and the deterministic profiler
-(`make profile`). The pipeline is not yet runnable end
-to end. Silver and gold are the next phases. The live roadmap is
+Phases 1 through 3 are complete. Built so far: the repository scaffold, the
+pinned toolchain, the three-gate contract CI workflow (with bronze landed in
+CI), the CLAUDE.md guardrails, the decision register, the gold layer design
+spec and diagram, the ingestion, profiler, and agent-layer specs, a seeded
+roadmap, the committed Online Retail II sample (D-15) with its fetch script,
+the PyAirbyte bronze landing (`make ingest`), the deterministic profiler
+(`make profile`) with its committed v0001 artifact, and the first contracted
+silver model (`silver_invoice_lines`, contract v1.1.0) with all three gates
+live end to end. Bronze through contracted silver runs end to end locally
+and in CI; gold is the next phase. The live roadmap is
 the [Issues tab](https://github.com/metricminellc/metricmine/issues).
 
 ## Architecture
@@ -60,6 +62,26 @@ decision in the [decision register](docs/decisions/decision-register.md). The
 work touches the repository. The contract gates judge output, not authorship, and
 apply symmetrically to humans and agents: both pass or fail the same way. History
 is squash-only, and every change lands as a reviewed pull request.
+
+## The gate, demonstrated
+
+The contract gates were broken deliberately, in both directions, and the
+evidence is committed. A shape defect — a renamed column — fails at compile
+time, before any DDL runs: proven in the pre-Phase-1 gate proof and again
+live in [break-demo PR #45](https://github.com/metricminellc/metricmine/pull/45),
+opened against the real pipeline and closed unmerged by design, its red
+check permanent:
+
+![PR #45: the shape gate fails red in CI](docs/verification/evidence/2026-07-31_pr45_break_demo_red_check.png)
+
+A content defect — data violating a declared rule — builds, then fails as
+an error-severity contract test (the grain-enforcement rule, exercised in
+rehearsal):
+
+![A content defect fails as a contract test](docs/verification/evidence/2026-07-11_gate3_content_failure.png)
+
+The full captures, logs, and the DuckDB constraint enforcement matrix live
+in [docs/verification/](docs/verification/).
 
 ## Toolchain
 
