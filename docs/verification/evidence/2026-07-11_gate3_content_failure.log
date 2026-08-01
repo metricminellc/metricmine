@@ -1,0 +1,26 @@
+[0m15:46:57  Running with dbt=1.11.12
+[0m15:46:57  Registered adapter: duckdb=1.10.1
+[0m15:46:57  Found 7 data tests, 1 seed, 1 model, 485 macros
+[0m15:46:57  
+[0m15:46:57  Concurrency: 4 threads (target='local')
+[0m15:46:57  
+[0m15:46:57  1 of 7 START sql table model main.silver_orders ................................ [RUN]
+[0m15:46:57  1 of 7 OK created sql table model main.silver_orders ........................... [[32mOK[0m in 0.06s]
+[0m15:46:57  2 of 7 START test mm_gate_proof_silver_orders__1_0_0__silver_orders__q1 ........ [RUN]
+[0m15:46:57  3 of 7 START test not_null_silver_orders_amount ................................ [RUN]
+[0m15:46:57  4 of 7 START test not_null_silver_orders_email ................................. [RUN]
+[0m15:46:57  5 of 7 START test not_null_silver_orders_order_id .............................. [RUN]
+[0m15:46:57  2 of 7 PASS mm_gate_proof_silver_orders__1_0_0__silver_orders__q1 .............. [[32mPASS[0m in 0.03s]
+[0m15:46:57  4 of 7 PASS not_null_silver_orders_email ....................................... [[32mPASS[0m in 0.03s]
+[0m15:46:57  3 of 7 PASS not_null_silver_orders_amount ...................................... [[32mPASS[0m in 0.03s]
+[0m15:46:57  5 of 7 PASS not_null_silver_orders_order_id .................................... [[32mPASS[0m in 0.03s]
+[0m15:46:57  6 of 7 START test not_null_silver_orders_ordered_at ............................ [RUN]
+[0m15:46:57  7 of 7 START test unique_silver_orders_order_id ................................ [RUN]
+[0m15:46:57  6 of 7 PASS not_null_silver_orders_ordered_at .................................. [[32mPASS[0m in 0.01s]
+[0m15:46:57  7 of 7 PASS unique_silver_orders_order_id ...................................... [[32mPASS[0m in 0.01s]
+[0m15:46:57  
+[0m15:46:57  Finished running 1 table model, 6 data tests in 0 hours 0 minutes and 0.17 seconds (0.17s).
+[0m15:46:57  
+[0m15:46:57  [32mCompleted successfully[0m
+[0m15:46:57  
+[0m15:46:57  Done. PASS=7 WARN=0 ERROR=0 SKIP=0 NO-OP=0 TOTAL=7

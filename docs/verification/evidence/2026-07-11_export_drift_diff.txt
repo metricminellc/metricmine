@@ -1,0 +1,57 @@
+--- models/silver_orders.yml	2026-07-11 10:21:57
++++ export_check.yml	2026-07-11 10:19:19
+@@ -1,26 +1,27 @@
+-version: 2
+-models:
+-  - name: silver_orders
+-    config:
+-      materialized: table
+-      contract:
+-        enforced: true
+-    columns:
+-      - name: order_id
+-        data_type: integer
+-        constraints:
+-          - type: not_null
+-        data_tests:
+-          - unique
+-      - name: email
+-        data_type: varchar
+-        constraints:
+-          - type: not_null
+-      - name: amount
+-        data_type: double
+-        constraints:
+-          - type: not_null
+-      - name: ordered_at
+-        data_type: timestamp
+-        constraints:
+-          - type: not_null
+\ No newline at end of file
++version: 2
++models:
++- name: silver_orders
++  config:
++    meta:
++      data_contract: mm-gate-proof-silver-orders
++    materialized: table
++    contract:
++      enforced: true
++  columns:
++  - name: order_id
++    data_type: NUMBER
++    constraints:
++    - type: not_null
++    - type: unique
++  - name: email
++    data_type: VARCHAR
++    constraints:
++    - type: not_null
++  - name: amount
++    data_type: FLOAT
++    constraints:
++    - type: not_null
++  - name: ordered_at
++    data_type: TIMESTAMP_TZ
++    constraints:
++    - type: not_null
