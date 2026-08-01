@@ -33,7 +33,7 @@ memory:
 | `format` | `csv` | Enum: csv, json, jsonl, excel, excel_binary, fwf, feather, parquet, yaml |
 | `url` | path to `data/samples/online_retail_ii/online_retail_ii_<window>.csv` | The committed extract |
 | `provider` | `{"storage": "local"}` | Storage enum: HTTPS, GCS, S3, AzBlob, SSH, SCP, SFTP, local. `local` is restricted on Airbyte Cloud; PyAirbyte runs it locally, which is this system |
-| `reader_options` | omitted | Optional JSON string of pandas read_csv options. Start empty; any addition is recorded here first |
+| `reader_options` | `{"dtype": {"Invoice": "str"}}` | Optional JSON string of pandas read_csv options. The Invoice dtype pin keeps C-prefixed cancellation ids as text at the reader, so inference and records agree (set in config/default.yaml at the landing PR). Any further addition is recorded here first |
 
 ## 3. Bronze conventions
 
@@ -53,10 +53,16 @@ memory:
   schema_name="bronze")`. Parameters verified against the PyAirbyte API
   reference 2026-07-26; `schema_name` defaults to `main`, so it is set
   explicitly.
-- The end-to-end landing test stays a local make target. CI covers the
-  unit surface only.
-- PyAirbyte version: 0.49.0 at verification (2026-07-10). Re-verify at the
-  implementation PR and record there whether it is pinned.
+- The end-to-end landing runs in two places since the bronze-in-CI change
+  (D-27): locally as the make target, and in CI, where the contract-gates
+  job runs `make ingest` (offline mode, connector venv pre-provisioned by
+  the Makefile) before the gates. pytest in CI still covers the unit
+  surface only; the landing smoke test stays local-marked.
+- PyAirbyte version: 0.49.0 at spec verification (2026-07-10); pinned at
+  the implementation PR as airbyte >=0.53,<0.54 (resolved 0.53.2 in
+  uv.lock; CLAUDE.md rule 1). The connector is pinned separately:
+  airbyte-source-file 0.3.15 with numpy<2 on uv-provisioned CPython 3.10
+  (Makefile).
 
 ## 5. Acceptance criteria (Phase 2 exit)
 
