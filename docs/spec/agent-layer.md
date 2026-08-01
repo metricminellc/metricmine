@@ -86,7 +86,7 @@ No third runtime agent; the generate-and-verify authoring loop stays in the SDLC
 
 ## Appendix B: Contract provenance keys (ODCS customProperties)
 
-`proposedBy` (`human` | `silver-cleanup-proposer` | `gold-mapping-proposer`) · `proposerVersion` · `promptVersion` (absent for human) · `modelId` (absent for human) · `profileHash` · `proposedAt`
+`proposedBy` (`human` | `silver-cleanup-proposer` | `gold-mapping-proposer`) · `proposerVersion` (absent for human: it versions the proposer harness, which does not exist for a human author) · `promptVersion` (absent for human) · `modelId` (absent for human) · `profileHash` · `proposedAt`
 
 ## Appendix C: Layout delta (lands in Phase 6)
 
