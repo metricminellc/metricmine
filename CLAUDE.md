@@ -110,7 +110,7 @@ production SLAs.
 Python 3.12, uv for packaging, ruff for linting, pytest for tests. dbt Core with
 the dbt-duckdb adapter for transforms. ODCS v3.1.0 for contracts, executed via
 datacontract-cli 1.0.12, installed as an isolated tool with
-`uv tool install --python 3.12 "datacontract-cli[duckdb]"` — never added to
+`uv tool install --python 3.12 "datacontract-cli[duckdb]==1.0.12"` — never added to
 pyproject.toml as a project dependency. GitHub Actions for CI.
 
 Toolchain behavior was verified empirically before Phase 1 exit. Before
@@ -128,6 +128,9 @@ the proposers, their prompts, or the proposal validator — read
 - Small, reviewed pull requests with meaningful commit messages.
 - Use plan mode for any multi-file change; show the plan before editing.
 - Prefer editing existing files over creating new ones.
+- Never read or write paths outside the repository working tree.
+  External inputs are staged into the repo by Justin before a session
+  needs them.
 
 ### Commit and PR conventions
 Every commit and PR follows these:
