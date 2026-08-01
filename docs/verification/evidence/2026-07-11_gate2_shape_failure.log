@@ -1,0 +1,43 @@
+[0m15:40:44  Running with dbt=1.11.12
+[0m15:40:44  Registered adapter: duckdb=1.10.1
+[0m15:40:44  Unable to do partial parsing because config vars, config profile, or config target have changed
+[0m15:40:44  Found 1 model, 7 data tests, 1 seed, 485 macros
+[0m15:40:44  
+[0m15:40:44  Concurrency: 4 threads (target='local')
+[0m15:40:44  
+[0m15:40:44  1 of 7 START sql table model main.silver_orders ................................ [RUN]
+[0m15:40:45  1 of 7 ERROR creating sql table model main.silver_orders ....................... [[31mERROR[0m in 0.04s]
+[0m15:40:45  2 of 7 SKIP test mm_gate_proof_silver_orders__1_0_0__silver_orders__q1 ......... [[33mSKIP[0m]
+[0m15:40:45  3 of 7 SKIP test not_null_silver_orders_amount ................................. [[33mSKIP[0m]
+[0m15:40:45  4 of 7 SKIP test not_null_silver_orders_email .................................. [[33mSKIP[0m]
+[0m15:40:45  5 of 7 SKIP test not_null_silver_orders_order_id ............................... [[33mSKIP[0m]
+[0m15:40:45  6 of 7 SKIP test not_null_silver_orders_ordered_at ............................. [[33mSKIP[0m]
+[0m15:40:45  7 of 7 SKIP test unique_silver_orders_order_id ................................. [[33mSKIP[0m]
+[0m15:40:45  
+[0m15:40:45  Finished running 1 table model, 6 data tests in 0 hours 0 minutes and 0.13 seconds (0.13s).
+[0m15:40:45  
+[0m15:40:45  [31mCompleted with 1 error, 0 partial successes, and 0 warnings:[0m
+[0m15:40:45  
+[0m15:40:45  [31mFailure in model silver_orders (models/silver_orders.sql)[0m
+[0m15:40:45    Compilation Error in model silver_orders (models/silver_orders.sql)
+  This model has an enforced contract that failed.
+  Please ensure the name, data_type, and number of columns in your contract match the columns in your model's definition.
+  
+  | column_name   | definition_type | contract_type | mismatch_reason       |
+  | ------------- | --------------- | ------------- | --------------------- |
+  | email         |                 | VARCHAR       | missing in definition |
+  | email_address | VARCHAR         |               | missing in contract   |
+  
+  
+  > in macro assert_columns_equivalent (macros/relations/column/columns_spec_ddl.sql)
+  > called by macro default__get_assert_columns_equivalent (macros/relations/column/columns_spec_ddl.sql)
+  > called by macro get_assert_columns_equivalent (macros/relations/column/columns_spec_ddl.sql)
+  > called by macro duckdb__create_table_as (macros/adapters.sql)
+  > called by macro create_table_as (macros/relations/table/create.sql)
+  > called by macro statement (macros/etc/statement.sql)
+  > called by macro materialization_table_duckdb (macros/materializations/table.sql)
+  > called by model silver_orders (models/silver_orders.sql)
+[0m15:40:45  
+[0m15:40:45    compiled code at target/compiled/mm_gate_proof/models/silver_orders.sql
+[0m15:40:45  
+[0m15:40:45  Done. PASS=0 WARN=0 ERROR=1 SKIP=6 NO-OP=0 TOTAL=7

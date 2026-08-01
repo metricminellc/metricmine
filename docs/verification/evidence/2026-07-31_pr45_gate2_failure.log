@@ -1,0 +1,100 @@
+## DEMO CHECK FAIL RESULTS
+
+Run uv run dbt build --project-dir transform --target local
+  
+00:21:38  Running with dbt=1.11.12
+00:21:38  Registered adapter: duckdb=1.10.1
+00:21:38  Unable to do partial parsing because saved manifest not found. Starting full parse.
+00:21:40  [WARNING]: Configuration paths exist in your dbt_project.yml file which do not apply to any resources.
+There are 1 unused configuration paths:
+- models.metricmine.gold
+00:21:40  Found 1 model, 11 data tests, 1 source, 602 macros
+00:21:40  
+00:21:40  Concurrency: 1 threads (target='local')
+00:21:40  
+00:21:41  1 of 12 START sql table model silver.silver_invoice_lines ...................... [RUN]
+00:21:41  1 of 12 ERROR creating sql table model silver.silver_invoice_lines ............. [ERROR in 0.09s]
+00:21:41  2 of 12 START test silver_invoice_lines__1_1_0__silver_invoice_lines__grain_enforcement__no_duplicate__invoice  [RUN]
+00:21:41  2 of 12 ERROR silver_invoice_lines__1_1_0__silver_invoice_lines__grain_enforcement__no_duplicate__invoice  [ERROR in 0.04s]
+00:21:41  3 of 12 START test silver_invoice_lines__1_1_0__silver_invoice_lines__unit_price__unit_price_is_never_negative  [RUN]
+00:21:41  3 of 12 ERROR silver_invoice_lines__1_1_0__silver_invoice_lines__unit_price__unit_price_is_never_negative  [ERROR in 0.02s]
+00:21:41  4 of 12 SKIP test not_null_silver_invoice_lines_country ........................ [SKIP]
+00:21:41  5 of 12 SKIP test not_null_silver_invoice_lines_invoice_id ..................... [SKIP]
+00:21:41  6 of 12 SKIP test not_null_silver_invoice_lines_invoiced_at .................... [SKIP]
+00:21:41  7 of 12 SKIP test not_null_silver_invoice_lines_is_cancellation ................ [SKIP]
+00:21:41  8 of 12 SKIP test not_null_silver_invoice_lines_quantity ....................... [SKIP]
+00:21:41  9 of 12 SKIP test not_null_silver_invoice_lines_stock_code ..................... [SKIP]
+00:21:41  10 of 12 SKIP test not_null_silver_invoice_lines_unit_price .................... [SKIP]
+00:21:41  11 of 12 SKIP test silver_invoice_lines__1_1_0__silver_invoice_lines__the_table_is_never_empty__the_committed  [SKIP]
+00:21:41  12 of 12 SKIP test silver_invoice_lines__1_1_0__silver_invoice_lines__unique_combination  [SKIP]
+00:21:41  
+00:21:41  Finished running 1 table model, 11 data tests in 0 hours 0 minutes and 0.29 seconds (0.29s).
+00:21:41  
+00:21:41  Completed with 3 errors, 0 partial successes, and 0 warnings:
+00:21:41  
+00:21:41  Failure in model silver_invoice_lines (models/silver/silver_invoice_lines.sql)
+00:21:41    Compilation Error in model silver_invoice_lines (models/silver/silver_invoice_lines.sql)
+  This model has an enforced contract that failed.
+  Please ensure the name, data_type, and number of columns in your contract match the columns in your model's definition.
+  
+  | column_name | definition_type | contract_type | mismatch_reason       |
+  | ----------- | --------------- | ------------- | --------------------- |
+  | invoice_ts  | TIMESTAMP       |               | missing in contract   |
+  | invoiced_at |                 | TIMESTAMP     | missing in definition |
+  
+  
+  > in macro assert_columns_equivalent (macros/relations/column/columns_spec_ddl.sql)
+  > called by macro default__get_assert_columns_equivalent (macros/relations/column/columns_spec_ddl.sql)
+  > called by macro get_assert_columns_equivalent (macros/relations/column/columns_spec_ddl.sql)
+  > called by macro duckdb__create_table_as (macros/adapters.sql)
+  > called by macro create_table_as (macros/relations/table/create.sql)
+  > called by macro statement (macros/etc/statement.sql)
+  > called by macro materialization_table_duckdb (macros/materializations/table.sql)
+  > called by model silver_invoice_lines (models/silver/silver_invoice_lines.sql)
+00:21:41  
+00:21:41    compiled code at target/compiled/metricmine/models/silver/silver_invoice_lines.sql
+00:21:41  
+00:21:41  Failure in test silver_invoice_lines__1_1_0__silver_invoice_lines__grain_enforcement__no_duplicate__invoice (tests/datacontract_cli/silver_invoice_lines/silver_invoice_lines__1_1_0__silver_invoice_lines__grain_enforcement__no_duplicate__invoice.sql)
+00:21:41    Runtime Error in test silver_invoice_lines__1_1_0__silver_invoice_lines__grain_enforcement__no_duplicate__invoice (tests/datacontract_cli/silver_invoice_lines/silver_invoice_lines__1_1_0__silver_invoice_lines__grain_enforcement__no_duplicate__invoice.sql)
+  Catalog Error: Table with name silver_invoice_lines does not exist!
+  Did you mean "bronze.online_retail_ii"?
+  
+  LINE 17:   FROM silver.silver_invoice_lines
+                  ^
+00:21:41  
+00:21:41    compiled code at target/compiled/metricmine/tests/datacontract_cli/silver_invoice_lines/silver_invoice_lines__1_1_0__silver_invoice_lines__grain_enforcement__no_duplicate__invoice.sql
+00:21:41  
+00:21:41  Failure in test silver_invoice_lines__1_1_0__silver_invoice_lines__unit_price__unit_price_is_never_negative (tests/datacontract_cli/silver_invoice_lines/silver_invoice_lines__1_1_0__silver_invoice_lines__unit_price__unit_price_is_never_negative.sql)
+00:21:41    Runtime Error in test silver_invoice_lines__1_1_0__silver_invoice_lines__unit_price__unit_price_is_never_negative (tests/datacontract_cli/silver_invoice_lines/silver_invoice_lines__1_1_0__silver_invoice_lines__unit_price__unit_price_is_never_negative.sql)
+  Catalog Error: Table with name silver_invoice_lines does not exist!
+  Did you mean "bronze.online_retail_ii"?
+  
+  LINE 15: SELECT COUNT(*) FROM silver.silver_invoice_lines WHERE unit_price < 0
+                                ^
+00:21:41  
+00:21:41    compiled code at target/compiled/metricmine/tests/datacontract_cli/silver_invoice_lines/silver_invoice_lines__1_1_0__silver_invoice_lines__unit_price__unit_price_is_never_negative.sql
+00:21:41  
+00:21:41  Done. PASS=0 WARN=0 ERROR=3 SKIP=9 NO-OP=0 TOTAL=12
+Error: Process completed with exit code 1.
+
+## TERMINAL CHECK
+
+gh pr checks
+gh run view --log-failed
+Some checks were not successful
+0 cancelled, 1 failing, 1 successful, 0 skipped, and 0 pending checks
+
+   NAME                                   DESCRIPTION  ELAPSED  URL                                  
+X  contract-gate/Contract gates (lint...               48s      https://github.com/metricminellc/m...
+✓  contract-gate/Lint and unit (py3.1...               25s      https://github.com/metricminellc/m...
+? Select a workflow run  [Use arrows to move, type to filter]
+> X chore(demo): break the shape gate (never merge), contract-gate [demo/break-shape-gate] 5m52s ago
+  ✓ feat: add contracted silver_invoice_lines model (PR 10) (#44), contract-gate [main] 2h32m33s ago
+  ✓ feat: add contracted silver_invoice_lines model (PR 10), contract-gate [feat/pr10-silver-model] 2h54m46s ago
+  ✓ feat: amend silver_invoice_lines contract to v1.1.0 (#43), contract-gate [main] 3h8m43s ago
+  ✓ feat: amend silver_invoice_lines contract to v1.1.0, contract-gate [contract/silver-invoice-lines-v1.1.0] 3h13m30s ago
+  ✓ ci: land bronze in CI via make ingest and env-resolve the warehouse p…, contract-gate [main] 3h27m19s ago
+  ✓ ci: land bronze in CI via make ingest and env-resolve the warehouse path, contract-gate [ci/bronze-in-ci] 3h31m14s ago
+  ✓ feat: add silver_invoice_lines data contract v1.0.0 (#40), contract-gate [main] 14h50m51s ago
+  ✓ feat: add silver_invoice_lines data contract v1.0.0 (PR 9), contract-gate [feat/pr9-first-contract] 15h8m15s ago
+  ✓ ci: make DBT_PROFILES_DIR absolute for gate three (#41), contract-gate [main] 15h9m29s ago
