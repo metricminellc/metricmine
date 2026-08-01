@@ -21,6 +21,9 @@ order by design.
 | [F-05](#f-05) | Sync edits in place; known mistranslation bug | Gate-three mechanism |
 | [F-06](#f-06) | Constraint enforcement matrix | Constraint matrix |
 | [F-07](#f-07) | Break evidence, both directions | Two-gate asymmetry |
+| [F-08](#f-08) | Generated tests are warn-only; enforcement lives in contract severities | Model rung |
+| [F-09](#f-09) | `datacontract dbt test` runs dbt from inside the project directory | Model rung |
+| [F-10](#f-10) | Profile duplicate metrics cannot see near-duplicates | Model rung |
 
 ## Command surface (datacontract-cli 1.0.12)
 
@@ -74,13 +77,16 @@ mistranslation bug.** Observed sync behavior at 1.0.12:
 contract gate falsely. It also renders single-column PK uniqueness as a
 constraint, conflicting with rule 5. Therefore: dbt properties files are
 hand-authored; export output is scaffold/drift-check only, never committed
-as the properties file.
+as the properties file. The observed drift diff is preserved at
+[`evidence/2026-07-11_export_drift_diff.txt`](evidence/2026-07-11_export_drift_diff.txt).
 
 ## Constraint enforcement matrix (empirical)
 
 ### F-06
 **All five constraint types are enforced by DuckDB at build time; rule 5
-stands as a portability stance.**
+stands as a portability stance.** Full probe method, per-constraint error
+signatures, and the reconciliation narrative:
+[`duckdb_constraint_matrix.md`](duckdb_constraint_matrix.md).
 
 | Constraint  | Accepted | In DDL | Enforced at build | Notes |
 |-------------|----------|--------|-------------------|-------|
@@ -109,3 +115,41 @@ so uniqueness and referential integrity live in tests regardless. Do not
 
 Full narrative: Session A Gate Proof Findings, Rev. 1 (a project record,
 maintained outside the repository; nothing here depends on it).
+
+## Model rung (Session F, Sitting 2, July 31, 2026)
+
+Findings observed while landing the first contracted silver model
+(contract v1.1.0, PRs #42–#44) and in the live break demo (PR #45, closed
+unmerged by design). Same pinned toolchain as above.
+
+### F-08
+**All `datacontract dbt sync` generated tests carry severity warn at
+1.0.12, and the composite primaryKey uniqueness test is HARDCODED warn in
+the generator.** Enforcement therefore lives in contract-declared
+`severity: error` quality rules, honored via the tool's severity
+normalization (error/critical/high/fatal normalize to an error-severity dbt
+test; everything else generates warn); the warn composite test is a
+non-gating twin. Verified in the installed tool source and end to end.
+
+One behavioral nuance observed live at the #45 break demo: `sql` quality
+rules compile to schema-qualified raw SQL, not `ref()`, so when the model
+itself fails to build in a fresh warehouse they RUN and fail on a catalog
+error rather than skipping (3 errors, 9 skips at #45,
+[`evidence/2026-07-31_pr45_gate2_failure.log`](evidence/2026-07-31_pr45_gate2_failure.log)).
+Louder red, same verdict; ref-based tests skip as [F-07](#f-07) describes.
+
+### F-09
+**`datacontract dbt test` re-invokes dbt from INSIDE the project
+directory.** Both `DBT_PROFILES_DIR` and any path inside `profiles.yml`
+must be absolute or env-resolved there. The profile's relative db path
+failed exactly this way in rehearsal — resolving to `transform/warehouse/`,
+the same failure class as the #41 `DBT_PROFILES_DIR` fix one level deeper —
+and was fixed by `MM_WAREHOUSE_PATH` env indirection: CI pins it absolute;
+the default preserves repo-root runs.
+
+### F-10
+**Profile-level duplicate metrics cannot see near-duplicates.** v0001's
+`duplicate_row_rate` counted exact duplicates only, while a within-invoice
+clock-drift pair (invoice 492807, one minute apart) violated the declared
+grain and falsified the v1.0.0 uniqueness claim. Grain claims need direct
+measurement against bronze, not profile inference alone.
