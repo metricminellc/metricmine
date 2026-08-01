@@ -13,7 +13,8 @@ here in full operational substance. D-01 through D-14 were settled July 10 to
 Extended context and analysis live in project records maintained outside the
 repository; nothing in this repo depends on those records. Decision Record 002
 (July 12, 2026) carries D-21 through D-25; Decision Record 001 Rev. 3 carries
-D-01 through D-20 unchanged.
+D-01 through D-20 unchanged. Decision Record 003 (July 31, 2026) carries D-26
+through D-28 and Amendments A and B to Record 001.
 
 **Status meanings.** `adopted` — in force. `proposed` — agreed in working
 session, applied by the plans below, formal adoption pending; treat as binding
@@ -48,6 +49,9 @@ unless amended.
 | [D-23](#d-23) | Context discipline: grounding without retrieval | adopted |
 | [D-24](#d-24) | Agent UX: propose, review, approve on existing surfaces | adopted |
 | [D-25](#d-25) | Evaluation: the golden-profile set | adopted |
+| [D-26](#d-26) | Repository public before Phase 5 | adopted |
+| [D-27](#d-27) | Bronze lands in CI via make ingest | adopted |
+| [D-28](#d-28) | Contract-declared enforcement severity | adopted |
 
 ## The decisions
 
@@ -57,6 +61,8 @@ unless amended.
 locally, end to end, on one command. Private until the serving demo is
 presentable, then public with a `v0.1.0` tag. Any future cloud deployment is a
 separate repository that depends on this one, never a fork.
+Amended July 31, 2026 (Record 003, Amendment A): the publication-timing
+clause is superseded by [D-26](#d-26); every other clause stands.
 
 ### D-02
 **License and provenance.** Apache-2.0, chosen for the NOTICE vehicle. NOTICE
@@ -211,6 +217,14 @@ absent. Standing obligation: the pull request that initializes the dbt
 project splits the guard to per-gate granularity — gate one activates on a
 contract alone, gate two on the dbt project alone, gate three on both.
 Clarifies D-12; complements D-16.
+Amended July 31, 2026 (Record 003, Amendment B): decision text unchanged;
+the CI mechanization is recorded as an absolute DBT_PROFILES_DIR (#41), the
+profile database path env-resolved via MM_WAREHOUSE_PATH with a
+repo-root-relative default (#42; `datacontract dbt test` re-invokes dbt
+from inside the project directory,
+[F-09](../verification/gate_proof_findings.md#f-09)), and the
+bronze-landing step ([D-27](#d-27)) ordered before the gates. The relative
+forms are recorded failure modes.
 
 ### D-21
 **Proposer invocation architecture.** Each proposer is one structured
@@ -275,6 +289,41 @@ LLM-as-judge and automated optimization are deferred by intent. Phase 6
 exits with fixtures committed, offline assertions green, and one recorded
 live run.
 
+### D-26
+**Repository public before Phase 5.** Public as of July 30, 2026, with branch
+protection, PR-only squash-only merges, and the two required status
+contexts mechanized first, plus the on-push main trigger so every merge
+earns its own public check. The v0.1.0 tag remains a Phase 5 milestone;
+publication no longer waits for it. Clean-room and provenance rules are
+unaffected: NOTICE stands, the 2023 repository stays private. Supersedes
+D-01's publication-timing clause (Amendment A); every other D-01 clause
+stands. Ratified in Decision Record 003.
+
+### D-27
+**Bronze lands in CI via make ingest.** The contract-gates job lands bronze
+with the same command a laptop runs, guarded to run only when gate two or
+gate three will run, ordered before the gates. The Makefile pre-provisions
+the pinned connector venv (airbyte-source-file 0.3.15, numpy<2,
+uv-provisioned CPython 3.10), so the step runs with AIRBYTE_OFFLINE_MODE=1:
+no Airbyte registry dependency, no telemetry, deterministic from the
+committed sample (D-15). Rejected alternatives: a pinned seed script (a
+second loading path CI trusts but no laptop runs) and dbt-duckdb
+external_location (diverges from bronze-as-landed). Measured cost about 30
+seconds per gated PR. Mechanized at PR #42. Ratified in Decision Record 003.
+
+### D-28
+**Contract-declared enforcement severity.** Every quality rule intended to
+gate declares severity: error inside the contract. At datacontract-cli
+1.0.12 sync-generated tests default to warn and the composite primaryKey
+uniqueness test is hardcoded warn (evidence F-08), so contract-declared
+severity is the only gate-capable channel; the tool honors
+error/critical/high/fatal on quality rules carrying a query. The warn
+composite test is a non-gating advisory twin. Weakening a severity is
+weakening a contract and falls under D-08's version-bump discipline. Rule 5
+unchanged: uniqueness lives in tests, never trusted constraints. Exercised
+at contract v1.1.0 (#43); proven green at #44 and red at #45. Ratified in
+Decision Record 003.
+
 ## Session-decision and finding IDs
 
 IDs of the form `A<n>` (working-session decisions, e.g. A4) and `F-0x`
@@ -298,8 +347,8 @@ authority. The mapping:
 | 2 (1.12 / v2 deferred) | D-05 |
 | 3 (profiler uncontracted; transforms contracted SQL) | D-04 |
 | 4 (contracts all-or-nothing) | D-06, D-08 |
-| 5 (only not_null trusted; tests for the rest) | D-12, evidence [F-06](../verification/gate_proof_findings.md#f-06) |
-| 6 (never weaken a contract) | D-08 |
+| 5 (only not_null trusted; tests for the rest) | D-12, evidence [F-06](../verification/gate_proof_findings.md#f-06)/[F-08](../verification/gate_proof_findings.md#f-08) |
+| 6 (never weaken a contract) | D-08, D-28 |
 | 7 (no materialized views) | D-07 |
 | 8 (ownership-manifest checksums) | D-09 |
 | 9 (engine emits models, never DDL) | D-07 |
@@ -313,11 +362,17 @@ authority. The mapping:
 | 17 (human-only draft-to-contract flow; keyless make demo) | D-24, D-08 |
 
 All decisions in this register are adopted: D-01 through D-20 as of the
-July 11, 2026 revision (Decision Record 001 Rev. 3), and D-21 through D-25 as
-of the July 12, 2026 revision (Decision Record 002). D-20 has no dedicated
+July 11, 2026 revision (Decision Record 001 Rev. 3), D-21 through D-25 as
+of the July 12, 2026 revision (Decision Record 002), and D-26 through D-28
+as of the July 31, 2026 revision (Decision Record 003). D-20 has no dedicated
 CLAUDE.md rule; its substance
 is encoded directly in
 [`.github/workflows/contract-gate.yml`](../../.github/workflows/contract-gate.yml),
 and its guard-split obligation lands with the pull request that initializes
-the dbt project. Implementation of D-17 through D-19 lands in the gold phase
+the dbt project. Like D-20, D-26 through D-28 carry no dedicated CLAUDE.md
+rule: D-26 lives in the repository settings and branch protection, D-27 in
+the workflow's bronze-landing step, and D-28 in the contracts' severity
+declarations (evidence
+[F-08](../verification/gate_proof_findings.md#f-08)).
+Implementation of D-17 through D-19 lands in the gold phase
 and D-21 through D-25 in Phase 6; adoption is not contingent on it.
