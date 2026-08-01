@@ -1,5 +1,6 @@
-# Local entry points. CI covers the unit surface only; the end-to-end landing
-# stays a local target per docs/spec/ingestion.md §4.
+# Local entry points. Since the bronze-in-CI change (D-27), CI also runs
+# `make ingest` (offline mode) so the gates build silver from real bronze;
+# pytest still covers only the unit surface (docs/spec/ingestion.md §4).
 
 # PyPI's airbyte-source-file (0.3.15) pins pandas==1.4.3, which only has
 # wheels up to Python 3.10 — so the connector venv is pre-provisioned there.
