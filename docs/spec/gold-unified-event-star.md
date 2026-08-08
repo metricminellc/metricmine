@@ -79,11 +79,15 @@ context gathered at approval time. Contracts are never embedded in payloads.
 Enforced as dbt tests in CI on every pull request:
 
 - **C1** silver rows in scope = fact rows (transaction grain) or `sum(_row_count)` (aggregated grain).
-- **C2** every fact group key resolves to its values dimension (relationships tests).
+- **C2** every fact group key resolves to its values dimension (anti-join
+  key-resolution rules in the gold contract; mechanism per
+  [`engine.md`](engine.md) section 7).
 - **C3** every schema key present in gold exists in `context_registry`.
 - **C4** every payload parses as valid JSON.
 
-Engine build logs keep the arithmetic self-verification style (`N rows + offset = total`);
+Regeneration output and the regeneration PR narrative keep the arithmetic
+self-verification style (`N rows + offset = total`); the engine itself
+never queries the warehouse ([`engine.md`](engine.md) section 11), and
 enforcement lives in the tests.
 
 ## Materialization and contracts
