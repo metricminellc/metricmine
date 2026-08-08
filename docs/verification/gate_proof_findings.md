@@ -317,3 +317,30 @@ Generated-by headers survive sync verbatim, re-confirming F-14 over the
 real star.
 ([`evidence/2026-08-08_prei_sync_pass1_canonicalization.log`](evidence/2026-08-08_prei_sync_pass1_canonicalization.log);
 [`evidence/2026-08-08_prei_yaml_writer_probe.log`](evidence/2026-08-08_prei_yaml_writer_probe.log))
+
+### F-19
+**Contract-declared singular tests without ref() join the DAG root layer
+and break fresh-warehouse builds.** Sync passes contract quality-rule SQL
+through verbatim — a property this finding both exposed and now exploits.
+Raw schema-qualified references (`gold.<table>`) give dbt no dependency
+edge, so the generated singular tests schedule in the ROOT layer, before
+the models they query exist on a first-ever build. A warmed warehouse
+masks the hazard completely (early tests find the previous build's
+tables), which is why local runs and the pre-I rehearsal were green while
+CI's fresh build errored 12 of the 20 no-ref tests with catalog errors
+(PR #64, closed unmerged as this finding's primary evidence; the eight
+that passed cold did so only by root-layer ordering luck — all twenty
+were unordered). The fix, verified at the pinned toolchain over a fresh
+warehouse: gold references in quality SQL use `{{ ref('<model>') }}` —
+sync passes the Jinja through verbatim into the generated tests
+(measured, not assumed), dbt gains real edges, and the cold build goes
+green end to end (the fact model built at node 61, its C1 test ran at
+node 78; PASS=95 WARN=0 ERROR=0). C1's silver reference stays
+schema-qualified: the F-08 louder-red design is preserved, and the edge
+through the fact suffices because the fact depends on silver. Minted
+alongside, a rehearsal rule: every pre-sitting rehearsal ends with a
+fresh-warehouse cold build (rm warehouse, ingest, dbt build), because
+warmed state hides ordering hazards by construction.
+([PR #64 CI failure](evidence/2026-08-08_f19_pr64_ci_failure.log);
+[`evidence/2026-08-08_f19_coldbuild_pass95.log`](evidence/2026-08-08_f19_coldbuild_pass95.log);
+[`evidence/2026-08-08_f19_sync_ref_passthrough.log`](evidence/2026-08-08_f19_sync_ref_passthrough.log))

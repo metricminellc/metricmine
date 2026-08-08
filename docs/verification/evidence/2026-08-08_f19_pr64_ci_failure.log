@@ -1,0 +1,1098 @@
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	﻿2026-08-08T22:49:57.9899100Z Current runner version: '2.336.0'
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:57.9924694Z ##[group]Runner Image Provisioner
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:57.9925738Z Hosted Compute Agent
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:57.9926425Z Version: 20260707.563
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:57.9927224Z Commit: 02667638d2b423fbc733a8e32a88b44996a3ba6e
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:57.9928136Z Build Date: 2026-07-07T19:33:50Z
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:57.9929218Z Worker ID: {45d556a7-1982-4e01-a77d-2908bc4cf58d}
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:57.9930070Z Azure Region: westus2
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:57.9930733Z ##[endgroup]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:57.9932581Z ##[group]Operating System
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:57.9933407Z Ubuntu
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:57.9934052Z 24.04.4
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:57.9934677Z LTS
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:57.9935270Z ##[endgroup]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:57.9935876Z ##[group]Runner Image
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:57.9936592Z Image: ubuntu-24.04
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:57.9937259Z Version: 20260720.247.2
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:57.9938883Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260720.247/images/ubuntu/Ubuntu2404-Readme.md
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:57.9940537Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260720.247
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:57.9941626Z ##[endgroup]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:57.9942875Z ##[group]GITHUB_TOKEN Permissions
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:57.9944851Z Contents: read
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:57.9945543Z Metadata: read
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:57.9946185Z ##[endgroup]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:57.9948637Z Secret source: Actions
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:57.9949843Z Prepare workflow directory
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:58.0566989Z Prepare all required actions
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:58.0615304Z Getting action download info
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:58.4044433Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:58.6989976Z Download action repository 'astral-sh/setup-uv@v6' (SHA:d0cc045d04ccac9d8b7881df0226f9e82c39688e)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.0786809Z Complete job name: Contract gates (lint / build / sync+test)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.1699081Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.1710727Z ##[group]Run actions/checkout@v4
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.1712014Z with:
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.1712893Z   repository: metricminellc/metricmine
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.1722180Z   token: ***
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.1723037Z   ssh-strict: true
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.1723900Z   ssh-user: git
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.1724781Z   persist-credentials: true
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.1725753Z   clean: true
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.1726620Z   sparse-checkout-cone-mode: true
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.1727650Z   fetch-depth: 1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.1728641Z   fetch-tags: false
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.1729536Z   show-progress: true
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.1730441Z   lfs: false
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.1731369Z   submodules: false
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.1732270Z   set-safe-directory: true
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.1733291Z   allow-unsafe-pr-checkout: false
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.1734644Z env:
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.1735787Z   DBT_PROFILES_DIR: /home/runner/work/metricmine/metricmine/transform
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.1737795Z   MM_WAREHOUSE_PATH: /home/runner/work/metricmine/metricmine/warehouse/metricmine.duckdb
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.1739771Z ##[endgroup]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.2775530Z Syncing repository: metricminellc/metricmine
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.2779840Z ##[group]Getting Git version info
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.2782079Z Working directory is '/home/runner/work/metricmine/metricmine'
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.2785312Z [command]/usr/bin/git version
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.2907035Z git version 2.54.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.2965454Z ##[endgroup]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.2983135Z Temporarily overriding HOME='/home/runner/work/_temp/1761474e-197f-4829-87c6-5d2a1949964a' before making global git config changes
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.2988939Z Adding repository directory to the temporary git global config as a safe directory
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.2992912Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/metricmine/metricmine
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.3045449Z Deleting the contents of '/home/runner/work/metricmine/metricmine'
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.3049946Z ##[group]Initializing the repository
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.3053735Z [command]/usr/bin/git init /home/runner/work/metricmine/metricmine
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.3170456Z hint: Using 'master' as the name for the initial branch. This default branch name
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.3172920Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.3174865Z hint: to use in all of your new repositories, which will suppress this warning,
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.3176386Z hint: call:
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.3177187Z hint:
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.3178189Z hint: 	git config --global init.defaultBranch <name>
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.3179762Z hint:
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.3180960Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.3182876Z hint: 'development'. The just-created branch can be renamed via this command:
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.3184393Z hint:
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.3185194Z hint: 	git branch -m <name>
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.3186138Z hint:
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.3187397Z hint: Disable this message with "git config set advice.defaultBranchName false"
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.3195693Z Initialized empty Git repository in /home/runner/work/metricmine/metricmine/.git/
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.3208907Z [command]/usr/bin/git remote add origin https://github.com/metricminellc/metricmine
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.3262337Z ##[endgroup]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.3264989Z ##[group]Disabling automatic garbage collection
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.3266622Z [command]/usr/bin/git config --local gc.auto 0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.3308862Z ##[endgroup]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.3311384Z ##[group]Setting up auth
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.3317538Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.3358016Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.3824441Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.3862647Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.4092615Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.4130274Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.4357790Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.4396787Z ##[endgroup]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.4398566Z ##[group]Fetching the repository
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.4407293Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +780bbdc0c5ef5aa5e1f588534f51b95e1a9b1fd2:refs/remotes/pull/64/merge
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.9199283Z From https://github.com/metricminellc/metricmine
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.9201031Z  * [new ref]         780bbdc0c5ef5aa5e1f588534f51b95e1a9b1fd2 -> pull/64/merge
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.9256287Z ##[endgroup]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.9257221Z ##[group]Determining the checkout info
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.9260314Z ##[endgroup]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.9266756Z [command]/usr/bin/git sparse-checkout disable
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.9318936Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.9356983Z ##[group]Checking out the ref
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.9363009Z [command]/usr/bin/git checkout --progress --force refs/remotes/pull/64/merge
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.9701297Z Note: switching to 'refs/remotes/pull/64/merge'.
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.9702110Z 
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.9702606Z You are in 'detached HEAD' state. You can look around, make experimental
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.9703968Z changes and commit them, and you can discard any commits you make in this
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.9704956Z state without impacting any branches by switching back to a branch.
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.9705531Z 
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.9705930Z If you want to create a new branch to retain commits you create, you may
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.9706859Z do so (now or later) by using -c with the switch command. Example:
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.9707496Z 
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.9707962Z   git switch -c <new-branch-name>
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.9708238Z 
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.9708769Z Or undo this operation with:
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.9709163Z 
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.9709381Z   git switch -
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.9709691Z 
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.9710161Z Turn off this advice by setting config variable advice.detachedHead to false
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.9710705Z 
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.9711470Z HEAD is now at 780bbdc Merge 8082be828f27fd5a7104b560683d502d6e8fc580 into 622f266c36540c941b7eb9b004f3aff3b27ec22b
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.9713089Z ##[endgroup]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.9758026Z [command]/usr/bin/git log -1 --format=%H
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:49:59.9784949Z 780bbdc0c5ef5aa5e1f588534f51b95e1a9b1fd2
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:00.0006585Z ##[group]Run has_contracts=false; has_dbt=false; gate3=false; any=false
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:00.0007321Z ^[[36;1mhas_contracts=false; has_dbt=false; gate3=false; any=false^[[0m
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:00.0007929Z ^[[36;1mls contracts/*.odcs.yaml >/dev/null 2>&1 && has_contracts=true^[[0m
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:00.0008739Z ^[[36;1m[ -f transform/dbt_project.yml ] && has_dbt=true^[[0m
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:00.0009270Z ^[[36;1m[ "$has_contracts" = true ] && [ "$has_dbt" = true ] && gate3=true^[[0m
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:00.0009847Z ^[[36;1m{ [ "$has_contracts" = true ] || [ "$has_dbt" = true ]; } && any=true^[[0m
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:00.0010298Z ^[[36;1m{^[[0m
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:00.0010582Z ^[[36;1m  echo "gate1=$has_contracts"^[[0m
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:00.0010948Z ^[[36;1m  echo "gate2=$has_dbt"^[[0m
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:00.0011284Z ^[[36;1m  echo "gate3=$gate3"^[[0m
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:00.0011636Z ^[[36;1m  echo "any=$any"^[[0m
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:00.0011952Z ^[[36;1m} >> "$GITHUB_OUTPUT"^[[0m
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:00.0077442Z ^[[36;1mecho "::notice::Gates — lint:$has_contracts build:$has_dbt sync+test:$gate3"^[[0m
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:00.0130010Z shell: /usr/bin/bash -e {0}
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:00.0130395Z env:
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:00.0130807Z   DBT_PROFILES_DIR: /home/runner/work/metricmine/metricmine/transform
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:00.0131514Z   MM_WAREHOUSE_PATH: /home/runner/work/metricmine/metricmine/warehouse/metricmine.duckdb
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:00.0132091Z ##[endgroup]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:00.0255538Z ##[notice]Gates — lint:true build:true sync+test:true
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:00.0429582Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:00.0431486Z ##[group]Run astral-sh/setup-uv@v6
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:00.0431856Z with:
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:00.0432166Z   python-version: 3.12
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:00.0432525Z   activate-environment: false
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:00.0432980Z   working-directory: /home/runner/work/metricmine/metricmine
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:00.0433473Z   server-url: https://github.com
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:00.0436385Z   github-token: ***
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:00.0436726Z   enable-cache: auto
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:00.0437470Z   cache-dependency-glob: **/*requirements*.txt
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	**/*requirements*.in
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	**/*constraints*.txt
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	**/*constraints*.in
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	**/pyproject.toml
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	**/uv.lock
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	**/*.py.lock
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:00.0438546Z   restore-cache: true
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:00.0438899Z   save-cache: true
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:00.0439223Z   prune-cache: true
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:00.0439562Z   ignore-nothing-to-cache: false
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:00.0439968Z   ignore-empty-workdir: false
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:00.0440346Z   add-problem-matchers: true
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:00.0440699Z env:
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:00.0441314Z   DBT_PROFILES_DIR: /home/runner/work/metricmine/metricmine/transform
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:00.0442003Z   MM_WAREHOUSE_PATH: /home/runner/work/metricmine/metricmine/warehouse/metricmine.duckdb
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:00.0442572Z ##[endgroup]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:00.2275773Z (node:2280) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:00.2277425Z (Use `node --trace-deprecation ...` to show where the warning was created)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:00.2419861Z Trying to find version for uv in: /home/runner/work/metricmine/metricmine/uv.toml
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:00.2421549Z Could not find file: /home/runner/work/metricmine/metricmine/uv.toml
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:00.2422834Z Trying to find version for uv in: /home/runner/work/metricmine/metricmine/pyproject.toml
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:00.2439666Z Could not determine uv version from uv.toml or pyproject.toml. Falling back to latest.
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:00.2442888Z Getting latest version from GitHub API...
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:00.5001349Z manifest-file not provided, reading from local file.
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:00.5040517Z manifest-file does not contain version 0.12.3, arch x86_64, platform unknown-linux-gnu. Falling back to GitHub releases.
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:00.5042980Z Downloading uv from "https://github.com/astral-sh/uv/releases/download/0.12.3/uv-x86_64-unknown-linux-gnu.tar.gz" ...
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:00.8762715Z [command]/usr/bin/tar xz --warning=no-unknown-keyword --overwrite -C /home/runner/work/_temp/3b1c94b0-f399-4659-b994-2ab15a54a112 -f /home/runner/work/_temp/4634cc55-11b9-4cda-944b-e5c84ce3ecd6
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:01.3069642Z Added /home/runner/.local/bin to the path
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:01.3072750Z Added /opt/hostedtoolcache/uv/0.12.3/x86_64 to the path
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:01.3074837Z Set UV_PYTHON to 3.12
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:01.3103290Z Set UV_CACHE_DIR to /home/runner/work/_temp/setup-uv-cache
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:01.3103991Z Successfully installed uv version 0.12.3
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:01.3107179Z Searching files using cache dependency glob: /home/runner/work/metricmine/metricmine/**/*requirements*.txt,/home/runner/work/metricmine/metricmine/**/*requirements*.in,/home/runner/work/metricmine/metricmine/**/*constraints*.txt,/home/runner/work/metricmine/metricmine/**/*constraints*.in,/home/runner/work/metricmine/metricmine/**/pyproject.toml,/home/runner/work/metricmine/metricmine/**/uv.lock,/home/runner/work/metricmine/metricmine/**/*.py.lock
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:01.3395594Z /home/runner/work/metricmine/metricmine/pyproject.toml
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:01.3629165Z /home/runner/work/metricmine/metricmine/uv.lock
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:01.3641750Z Found 2 files to hash.
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:01.3707325Z Trying to restore uv cache from GitHub Actions cache with key: setup-uv-1-x86_64-unknown-linux-gnu-3.12-pruned-6b045d426dde43c5c13b360251f76c7f993defc6080359ec307a162b8572a3dd
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:01.6446623Z Cache hit for: setup-uv-1-x86_64-unknown-linux-gnu-3.12-pruned-6b045d426dde43c5c13b360251f76c7f993defc6080359ec307a162b8572a3dd
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:01.6550061Z (node:2280) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:02.1465820Z Received 74469 of 74469 (100.0%), 0.3 MBs/sec
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:02.1466540Z Cache Size: ~0 MB (74469 B)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:02.1505388Z [command]/usr/bin/tar -xf /home/runner/work/_temp/9c7e9b3b-73e4-4284-9aae-2fc1460910ee/cache.tzst -P -C /home/runner/work/metricmine/metricmine --use-compress-program unzstd
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:02.1599309Z Cache restored successfully
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:02.1604419Z uv cache restored from GitHub Actions cache with key: setup-uv-1-x86_64-unknown-linux-gnu-3.12-pruned-6b045d426dde43c5c13b360251f76c7f993defc6080359ec307a162b8572a3dd
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:02.1759747Z ##[group]Run uv sync
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:02.1760037Z ^[[36;1muv sync^[[0m
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:02.1806078Z shell: /usr/bin/bash -e {0}
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:02.1806343Z env:
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:02.1806637Z   DBT_PROFILES_DIR: /home/runner/work/metricmine/metricmine/transform
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:02.1807377Z   MM_WAREHOUSE_PATH: /home/runner/work/metricmine/metricmine/warehouse/metricmine.duckdb
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:02.1807806Z   UV_PYTHON: 3.12
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:02.1808066Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:02.1808689Z ##[endgroup]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:02.1949985Z Using CPython 3.12.3 interpreter at: /usr/bin/python3.12
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:02.1950680Z Creating virtual environment at: .venv
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:02.1981054Z Resolved 200 packages in 0.65ms
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:02.2124425Z    Building metricmine @ file:///home/runner/work/metricmine/metricmine
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:02.2792794Z Downloading pydantic-core (2.0MiB)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:02.2947780Z Downloading pip (1.7MiB)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:02.2951050Z Downloading beartype (1.3MiB)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:02.2951825Z Downloading setuptools (1.0MiB)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:02.2956487Z Downloading psycopg-binary (4.9MiB)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:02.2957525Z Downloading nltk (1.4MiB)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:02.2961513Z Downloading cryptography (4.3MiB)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:02.2964778Z Downloading ruff (11.0MiB)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:02.2965976Z Downloading grpcio (6.6MiB)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:02.2967557Z Downloading networkx (2.0MiB)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:02.2969592Z Downloading rapidfuzz (3.0MiB)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:02.2971171Z Downloading numpy (15.9MiB)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:02.2974598Z Downloading botocore (14.7MiB)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:02.2976117Z Downloading babel (9.7MiB)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:02.2977618Z Downloading duckdb (19.5MiB)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:02.2981019Z Downloading pygments (1.2MiB)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:02.2984040Z Downloading pandas (12.1MiB)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:02.2985692Z Downloading sqlalchemy (3.2MiB)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:02.2992527Z Downloading pyarrow (40.8MiB)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:02.2995251Z Downloading prefab-ui (1.8MiB)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:02.2998318Z Downloading snowflake-connector-python (2.6MiB)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:02.3001434Z Downloading dbt-core (1.0MiB)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:02.3003655Z Downloading psycopg2-binary (4.1MiB)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:02.3006421Z Downloading uv (20.3MiB)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:02.9978861Z  Downloaded dbt-core
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:03.3940763Z  Downloaded prefab-ui
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:03.4283683Z  Downloaded pygments
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:03.4491975Z  Downloaded pydantic-core
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:03.6963447Z  Downloaded beartype
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:03.7260082Z  Downloaded setuptools
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:03.7534526Z  Downloaded rapidfuzz
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:03.7555026Z  Downloaded nltk
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:03.7695885Z  Downloaded sqlalchemy
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:03.7885807Z  Downloaded pip
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:03.8769554Z  Downloaded snowflake-connector-python
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:03.9116954Z  Downloaded networkx
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:03.9155708Z  Downloaded psycopg2-binary
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:04.0180732Z  Downloaded cryptography
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:04.0381955Z  Downloaded psycopg-binary
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:04.2167393Z  Downloaded grpcio
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:04.2520506Z       Built metricmine @ file:///home/runner/work/metricmine/metricmine
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:04.4775263Z  Downloaded babel
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:04.6002033Z  Downloaded ruff
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:04.9057797Z  Downloaded uv
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:04.9606751Z  Downloaded numpy
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.0649453Z  Downloaded duckdb
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.1214637Z  Downloaded pandas
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.2685683Z  Downloaded botocore
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.2750672Z  Downloaded pyarrow
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.2753002Z Prepared 198 packages in 3.07s
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5133051Z Installed 198 packages in 237ms
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5134914Z  + agate==1.9.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5135611Z  + aiofile==3.11.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5136091Z  + airbyte==0.53.2
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5136562Z  + airbyte-api==0.53.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5137073Z  + airbyte-cdk==7.23.5
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5137645Z  + airbyte-protocol-models-dataclasses==0.17.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5138951Z  + airbyte-protocol-models-pdv2==0.18.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5139586Z  + annotated-types==0.7.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5140062Z  + anyascii==0.3.3
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5140484Z  + anyio==4.14.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5141108Z  + asn1crypto==1.5.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5141544Z  + attributes-doc==0.4.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5142018Z  + attrs==26.1.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5142412Z  + authlib==1.7.2
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5142807Z  + babel==2.18.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5143199Z  + backoff==2.2.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5143614Z  + beartype==0.22.9
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5144022Z  + boltons==25.0.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5144362Z  + boto3==1.43.46
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5144700Z  + botocore==1.43.46
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5145057Z  + bracex==3.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5145398Z  + cachetools==7.1.4
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5145742Z  + caio==0.9.25
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5146079Z  + cattrs==26.1.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5146424Z  + certifi==2026.6.17
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5146781Z  + cffi==1.17.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5147199Z  + charset-normalizer==3.4.9
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5147712Z  + click==8.4.2
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5148163Z  + colorama==0.4.6
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5148862Z  + cryptography==45.0.7
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5149351Z  + cyclopts==4.21.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5149841Z  + daff==1.4.2
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5150495Z  + dataclasses-json==0.6.7
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5151022Z  + dateparser==1.4.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5151618Z  + dbt-adapters==1.24.4
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5152204Z  + dbt-common==1.38.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5152775Z  + dbt-core==1.11.12
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5153412Z  + dbt-duckdb==1.10.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5153853Z  + dbt-extractor==0.6.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5154387Z  + dbt-protos==1.0.541
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5154815Z  + dbt-semantic-interfaces==0.9.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5155286Z  + deepdiff==8.6.2
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5155673Z  + dnspython==2.8.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5156077Z  + docstring-parser==0.18.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5156502Z  + dpath==2.2.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5156863Z  + duckdb==1.4.3
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5157254Z  + duckdb-engine==0.17.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5157664Z  + dunamai==1.26.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5158051Z  + email-validator==2.3.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5158654Z  + et-xmlfile==2.0.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5159068Z  + exceptiongroup==1.3.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5159498Z  + fastmcp==3.4.4
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5159906Z  + fastmcp-extensions==0.15.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5160375Z  + fastmcp-slim==3.4.4
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5160777Z  + filelock==3.29.7
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5161154Z  + genson==1.3.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5161579Z  + google-api-core==2.31.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5162023Z  + google-auth==2.55.2
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5162454Z  + google-cloud-bigquery==3.42.2
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5162968Z  + google-cloud-bigquery-storage==2.39.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5163503Z  + google-cloud-core==2.6.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5163988Z  + google-cloud-secret-manager==2.29.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5164470Z  + google-crc32c==1.8.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5164741Z  + google-resumable-media==2.10.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5165139Z  + googleapis-common-protos==1.75.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5165451Z  + greenlet==3.5.3
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5165656Z  + griffelib==2.1.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5166117Z  + grpc-google-iam-v1==0.14.4
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5166604Z  + grpcio==1.82.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5166982Z  + grpcio-status==1.81.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5167392Z  + h11==0.16.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5167750Z  + httpcore==1.0.9
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5168109Z  + httpx==0.28.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5168670Z  + httpx-sse==0.4.3
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5169053Z  + idna==3.18
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5169402Z  + ijson==3.5.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5169785Z  + importlib-metadata==8.9.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5170237Z  + iniconfig==2.3.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5170607Z  + isodate==0.6.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5171258Z  + jaraco-classes==3.4.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5171683Z  + jaraco-context==6.1.2
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5172107Z  + jaraco-functools==4.5.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5172520Z  + jeepney==0.9.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5172892Z  + jinja2==3.1.6
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5173259Z  + jmespath==1.1.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5173632Z  + joblib==1.5.3
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5174216Z  + joserfc==1.7.3
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5174638Z  + jsonpath-python==1.1.6
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5175059Z  + jsonref==1.1.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5175429Z  + jsonschema==4.26.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5176024Z  + jsonschema-path==0.5.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5176504Z  + jsonschema-specifications==2025.9.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5177044Z  + keyring==25.7.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5177410Z  + leather==0.4.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5177791Z  + markdown-it-py==4.2.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5178225Z  + markupsafe==3.0.3
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5178781Z  + marshmallow==3.26.2
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5179176Z  + mashumaro==3.14
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5179552Z  + mcp==1.28.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5179905Z  + mdurl==0.1.2
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5180495Z  + metricmine==0.1.0 (from file:///home/runner/work/metricmine/metricmine)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5181209Z  + more-itertools==10.8.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5181615Z  + msgpack==1.2.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5181991Z  + mypy-extensions==1.1.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5182403Z  + networkx==3.6.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5182779Z  + nltk==3.9.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5183127Z  + numpy==2.5.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5183509Z  + openapi-pydantic==0.5.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5183955Z  + openpyxl==3.1.5
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5184346Z  + opentelemetry-api==1.43.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5184800Z  + orderly-set==5.5.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5185193Z  + orjson==3.11.9
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5185562Z  + overrides==7.7.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5185936Z  + packaging==26.2
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5186310Z  + pandas==2.2.3
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5186682Z  + parsedatetime==2.6
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5187079Z  + pathable==0.6.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5187448Z  + pathspec==0.12.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5187809Z  + pip==26.1.2
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5188183Z  + platformdirs==4.10.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5191316Z  + pluggy==1.6.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5191712Z  + prefab-ui==0.20.2
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5192115Z  + proto-plus==1.28.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5192504Z  + protobuf==6.33.6
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5192901Z  + psycopg==3.3.4
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5193314Z  + psycopg-binary==3.3.4
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5193766Z  + psycopg-pool==3.3.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5194197Z  + psycopg2-binary==2.9.12
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5194643Z  + py-key-value-aio==0.4.5
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5195052Z  + pyarrow==21.0.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5195437Z  + pyasn1==0.6.4
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5195821Z  + pyasn1-modules==0.4.2
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5196241Z  + pycparser==3.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5196623Z  + pydantic==2.13.4
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5197014Z  + pydantic-core==2.46.4
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5197438Z  + pydantic-settings==2.14.2
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5197867Z  + pygments==2.20.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5198235Z  + pyjwt==2.13.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5198786Z  + pyopenssl==25.3.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5199179Z  + pyperclip==1.11.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5199568Z  + pyrate-limiter==3.1.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5199978Z  + pytest==9.1.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5200360Z  + python-dateutil==2.9.0.post0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5200821Z  + python-dotenv==1.2.2
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5201244Z  + python-multipart==0.0.32
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5201700Z  + python-slugify==8.0.4
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5202115Z  + python-ulid==3.1.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5202517Z  + pytimeparse==1.1.8
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5202916Z  + pytz==2026.2
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5203289Z  + pyyaml==6.0.3
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5203684Z  + rapidfuzz==3.14.5
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5204083Z  + referencing==0.37.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5204475Z  + regex==2026.6.28
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5204835Z  + requests==2.34.2
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5205220Z  + requests-cache==1.3.3
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5205620Z  + rich==13.9.4
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5205977Z  + rich-click==1.9.8
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5206354Z  + rich-rst==2.1.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5206717Z  + rpds-py==2026.6.3
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5207081Z  + ruff==0.15.21
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5207441Z  + s3transfer==0.19.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5207821Z  + secretstorage==3.5.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5208410Z  + segment-analytics-python==2.3.6
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5208911Z  + sentry-sdk==2.64.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5209291Z  + serpyco-rs==1.20.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5209855Z  + setuptools==80.10.2
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5210085Z  + six==1.17.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5210304Z  + snowflake-connector-python==3.18.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5210589Z  + snowflake-sqlalchemy==1.11.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5210839Z  + snowplow-tracker==1.1.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5211185Z  + sortedcontainers==2.4.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5211401Z  + sqlalchemy==2.0.43
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5211617Z  + sqlalchemy-bigquery==1.12.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5232544Z  + sqlparse==0.5.5
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5232985Z  + sse-starlette==3.4.5
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5233245Z  + starlette==1.3.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5233466Z  + structlog==24.4.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5233694Z  + text-unidecode==1.3
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5233924Z  + tomlkit==0.15.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5234142Z  + tqdm==4.68.4
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5234356Z  + typing-extensions==4.16.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5234614Z  + typing-inspect==0.9.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5234861Z  + typing-inspection==0.4.2
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5235090Z  + tzdata==2026.3
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5235287Z  + tzlocal==5.4.4
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5235503Z  + uncalled-for==0.3.2
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5235713Z  + unidecode==1.4.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5235922Z  + url-normalize==3.0.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5236133Z  + urllib3==2.7.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5236322Z  + uuid7==0.1.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5236513Z  + uv==0.8.24
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5236704Z  + uvicorn==0.51.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5236942Z  + watchfiles==1.2.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5237144Z  + wcmatch==10.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5237339Z  + websockets==16.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5237536Z  + whenever==0.8.10
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5237740Z  + xmltodict==0.14.2
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5237942Z  + zipp==4.1.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5352393Z ##[group]Run uv tool install 'datacontract-cli[duckdb]==1.0.12'
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5352886Z ^[[36;1muv tool install 'datacontract-cli[duckdb]==1.0.12'^[[0m
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5353265Z ^[[36;1mecho "$(uv tool dir --bin)" >> "$GITHUB_PATH"^[[0m
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5396469Z shell: /usr/bin/bash -e {0}
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5396716Z env:
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5397011Z   DBT_PROFILES_DIR: /home/runner/work/metricmine/metricmine/transform
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5397555Z   MM_WAREHOUSE_PATH: /home/runner/work/metricmine/metricmine/warehouse/metricmine.duckdb
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5397997Z   UV_PYTHON: 3.12
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5398527Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:05.5398954Z ##[endgroup]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:06.0147513Z Resolved 58 packages in 461ms
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:06.0459163Z Downloading duckdb (20.5MiB)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:06.0459571Z Downloading ibis-framework (2.0MiB)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:06.0484082Z Downloading pandas (10.5MiB)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:06.0565975Z Downloading pyarrow (47.8MiB)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:06.0568680Z Downloading botocore (14.9MiB)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:06.2416630Z Downloading datacontract-cli (2.9MiB)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:06.6047922Z  Downloaded datacontract-cli
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.1464203Z  Downloaded duckdb
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.2776290Z  Downloaded pandas
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.3837683Z  Downloaded pyarrow
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.3982301Z  Downloaded botocore
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.4397044Z  Downloaded ibis-framework
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.4399953Z Prepared 29 packages in 1.42s
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6244588Z Installed 58 packages in 184ms
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6245728Z  + annotated-doc==0.0.5
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6246286Z  + annotated-types==0.8.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6246786Z  + atpublic==7.0.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6247208Z  + attrs==26.1.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6247630Z  + boto3==1.43.67
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6248066Z  + botocore==1.43.67
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6248726Z  + cachebox==5.2.3
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6249181Z  + certifi==2026.7.22
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6249707Z  + charset-normalizer==3.4.9
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6250240Z  + click==8.4.2
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6250682Z  + datacontract-cli==1.0.12
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6251263Z  + datacontract-specification==1.2.3
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6252011Z  + deepdiff==9.1.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6252475Z  + duckdb==1.5.5
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6252943Z  + fastjsonschema==2.21.2
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6253460Z  + ibis-framework==12.0.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6253904Z  + idna==3.18
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6254290Z  + jinja-partials==0.3.2
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6254730Z  + jinja2==3.1.6
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6255181Z  + jmespath==1.1.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6255577Z  + jsonschema==4.26.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6256340Z  + jsonschema-specifications==2025.9.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6256870Z  + markdown-it-py==4.2.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6257306Z  + markupsafe==3.0.3
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6257697Z  + mdurl==0.1.2
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6258064Z  + numpy==2.5.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6258654Z  + open-data-contract-standard==3.1.2
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6259180Z  + orderly-set==5.5.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6259592Z  + packaging==26.3
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6259964Z  + pandas==3.0.5
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6260331Z  + parsy==2.2
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6260695Z  + pyarrow==25.0.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6261083Z  + pyarrow-hotfix==0.7
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6261492Z  + pydantic==2.13.4
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6261885Z  + pydantic-core==2.46.4
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6262304Z  + pygments==2.20.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6262712Z  + python-dateutil==2.9.0.post0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6263193Z  + python-dotenv==1.2.2
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6263631Z  + python-multipart==0.0.32
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6264062Z  + pytz==2026.3.post1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6264434Z  + pyyaml==6.0.3
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6264801Z  + referencing==0.37.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6265190Z  + requests==2.34.2
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6265547Z  + rich==15.0.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6265903Z  + rpds-py==2026.6.3
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6266152Z  + ruamel-yaml==0.18.17
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6266393Z  + ruamel-yaml-clib==0.2.15
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6266628Z  + s3transfer==0.19.2
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6267192Z  + shellingham==1.5.4
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6267465Z  + six==1.17.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6267675Z  + sqlglot==30.15.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6267906Z  + toolz==1.1.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6268102Z  + truststore==0.10.4
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6268765Z  + typer==0.26.8
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6268995Z  + typing-extensions==4.16.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6269250Z  + typing-inspection==0.4.2
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6269470Z  + tzdata==2026.3
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6269657Z  + urllib3==2.7.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6283485Z Installed 1 executable: datacontract
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6425132Z ##[group]Run mkdir -p warehouse
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6425460Z ^[[36;1mmkdir -p warehouse^[[0m
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6425760Z ^[[36;1muv run dbt deps --project-dir transform^[[0m
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6469992Z shell: /usr/bin/bash -e {0}
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6470242Z env:
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6470531Z   DBT_PROFILES_DIR: /home/runner/work/metricmine/metricmine/transform
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6471054Z   MM_WAREHOUSE_PATH: /home/runner/work/metricmine/metricmine/warehouse/metricmine.duckdb
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6471511Z   UV_PYTHON: 3.12
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6471771Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:07.6472071Z ##[endgroup]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:10.8934897Z ^[[0m22:50:10  Running with dbt=1.11.12
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:11.3679680Z ^[[0m22:50:11  Installing dbt-labs/dbt_utils
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:11.4941491Z ^[[0m22:50:11  Installed from version 1.3.3
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:11.4945680Z ^[[0m22:50:11  Updated version available: 1.4.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:11.4955487Z ^[[0m22:50:11  
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:11.4960882Z ^[[0m22:50:11  Updates available for packages: ['dbt-labs/dbt_utils']                 
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:11.4961816Z Update your versions in packages.yml, then run dbt deps
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:12.0559765Z ##[group]Run make ingest
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:12.0560191Z ^[[36;1mmake ingest^[[0m
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:12.0618173Z shell: /usr/bin/bash -e {0}
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:12.0618808Z env:
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:12.0619297Z   DBT_PROFILES_DIR: /home/runner/work/metricmine/metricmine/transform
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:12.0620183Z   MM_WAREHOUSE_PATH: /home/runner/work/metricmine/metricmine/warehouse/metricmine.duckdb
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:12.0620921Z   UV_PYTHON: 3.12
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:12.0621327Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:12.0621837Z   AIRBYTE_OFFLINE_MODE: 1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:12.0622206Z ##[endgroup]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:12.0729552Z uv venv --python 3.10 .venv-source-file
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:12.3039898Z Downloading cpython-3.10.20-linux-x86_64-gnu (download) (28.1MiB)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:13.2470487Z  Downloaded cpython-3.10.20-linux-x86_64-gnu (download)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:13.4694018Z Using CPython 3.10.20
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:13.4695591Z warning: The requested interpreter resolved to Python 3.10.20, which is incompatible with the project's Python requirement: `==3.12.*` (from `project.requires-python`)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:13.4696844Z Creating virtual environment at: .venv-source-file
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:13.4702119Z Activate with: .venv-source-file/bin/activate
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:13.4718238Z uv pip install --python .venv-source-file/bin/python "airbyte-source-file==0.3.15" "numpy<2"
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:13.6835674Z Using Python 3.10.20 environment at: .venv-source-file
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:15.1610809Z Resolved 91 packages in 1.47s
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:15.1884883Z Downloading pynacl (1.3MiB)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:15.1981254Z Downloading numpy (17.4MiB)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:15.1990315Z Downloading cryptography (4.5MiB)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:15.2002390Z Downloading botocore (8.2MiB)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:15.2004119Z Downloading lxml (6.6MiB)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:15.2005532Z Downloading pandas (11.1MiB)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:15.2007363Z Downloading pyarrow (33.6MiB)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:15.2009731Z Downloading pydantic (2.7MiB)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:15.2012641Z Downloading aiohttp (1.6MiB)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:15.3148187Z    Building genson==1.2.2
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:15.5592864Z       Built genson==1.2.2
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:15.5952101Z  Downloaded pynacl
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:15.6311927Z  Downloaded aiohttp
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:15.6937065Z  Downloaded pydantic
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:15.8299097Z  Downloaded cryptography
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:15.8771408Z  Downloaded lxml
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.3573006Z  Downloaded numpy
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.4783423Z  Downloaded botocore
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.5525484Z  Downloaded pyarrow
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.5581548Z  Downloaded pandas
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.5584208Z Prepared 69 packages in 1.39s
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6719598Z Installed 91 packages in 113ms
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6720420Z  + aiobotocore==2.3.4
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6720896Z  + aiohappyeyeballs==2.7.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6721332Z  + aiohttp==3.14.3
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6721708Z  + aioitertools==0.13.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6722129Z  + aiosignal==1.4.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6722506Z  + airbyte-cdk==0.51.44
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6722937Z  + airbyte-protocol-models==0.4.2
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6723426Z  + airbyte-source-file==0.3.15
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6723854Z  + async-timeout==5.0.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6724229Z  + attrs==26.1.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6724581Z  + azure-common==1.1.28
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6724955Z  + azure-core==1.41.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6725337Z  + azure-storage-blob==12.30.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6725742Z  + backoff==2.2.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6726078Z  + bcrypt==5.0.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6726434Z  + beautifulsoup4==4.11.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6726817Z  + boto3==1.21.21
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6727154Z  + botocore==1.24.21
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6727500Z  + bracex==3.0.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6727836Z  + cachetools==7.1.7
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6728182Z  + cattrs==26.1.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6728741Z  + certifi==2026.7.22
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6729087Z  + cffi==2.1.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6729438Z  + charset-normalizer==3.4.9
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6729873Z  + cryptography==50.0.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6730252Z  + decorator==5.3.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6730899Z  + deprecated==1.3.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6731265Z  + dpath==2.0.8
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6731600Z  + et-xmlfile==2.0.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6731973Z  + exceptiongroup==1.3.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6732367Z  + frozenlist==1.8.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6732715Z  + fsspec==2022.7.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6733062Z  + gcsfs==2022.7.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6733395Z  + genson==1.2.2
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6733749Z  + google-api-core==2.34.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6734140Z  + google-auth==2.56.3
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6734530Z  + google-auth-oauthlib==1.4.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6734966Z  + google-cloud-core==2.6.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6735379Z  + google-cloud-storage==2.5.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6735789Z  + google-crc32c==1.8.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6736187Z  + google-resumable-media==2.10.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6736655Z  + googleapis-common-protos==1.75.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6737110Z  + html5lib==1.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6737437Z  + idna==3.18
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6737981Z  + isodate==0.6.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6738517Z  + jinja2==3.1.6
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6738859Z  + jmespath==1.1.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6739211Z  + jsonref==0.3.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6739553Z  + jsonschema==3.2.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6739900Z  + lxml==4.9.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6740228Z  + markupsafe==3.0.3
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6740588Z  + multidict==6.7.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6740929Z  + numpy==1.26.4
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6741260Z  + oauthlib==3.3.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6741610Z  + openpyxl==3.0.10
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6741957Z  + pandas==1.4.3
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6742295Z  + paramiko==2.11.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6742638Z  + pendulum==3.2.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6742990Z  + platformdirs==4.11.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6743356Z  + propcache==0.5.2
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6743700Z  + proto-plus==1.28.3
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6744069Z  + protobuf==7.35.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6744403Z  + pyarrow==9.0.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6744731Z  + pyasn1==0.6.4
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6745085Z  + pyasn1-modules==0.4.2
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6745479Z  + pycparser==3.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6745821Z  + pydantic==1.10.26
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6746164Z  + pynacl==1.6.2
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6746498Z  + pyrsistent==0.20.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6746885Z  + python-dateutil==2.9.0.post0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6747313Z  + pytz==2026.3.post1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6747663Z  + pyxlsb==1.0.9
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6747997Z  + pyyaml==6.0.3
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6748577Z  + requests==2.34.2
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6748950Z  + requests-cache==1.3.3
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6749356Z  + requests-oauthlib==2.0.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6749745Z  + s3fs==2022.7.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6750080Z  + s3transfer==0.5.2
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6750435Z  + setuptools==84.0.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6750791Z  + six==1.17.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6751077Z  + smart-open==6.0.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6751381Z  + soupsieve==2.9.2
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6751707Z  + typing-extensions==4.16.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6752152Z  + tzdata==2026.3
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6752461Z  + url-normalize==3.0.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6752792Z  + urllib3==1.26.20
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6753095Z  + wcmatch==8.4
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6753400Z  + webencodings==0.5.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6753710Z  + wrapt==2.3.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6753989Z  + xlrd==2.0.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6754267Z  + yarl==1.24.5
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:16.6883502Z uv run python -m metricmine.ingest.land_sample
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:24.2806863Z Writing PyAirbyte logs to file: /tmp/airbyte/logs/2026-08-08/airbyte-log-KZHS404RN.log
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:24.2808081Z Writing `source-file` logs to file: /tmp/airbyte/logs/source-file/source-file-log-KZHS404RN.log
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:26.6698715Z /home/runner/work/metricmine/metricmine/.venv-source-file/lib/python3.10/site-packages/google/api_core/_python_version_support.py:254: FutureWarning: You are using a Python version (3.10.20) which Google will stop supporting in new releases of google.api_core once it reaches its end of life (2026-10-04). Please upgrade to the latest Python version, or at least Python 3.11, to continue receiving updates for google.api_core past that date.
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:26.6701627Z   warnings.warn(message, FutureWarning)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:27.1998734Z /home/runner/work/metricmine/metricmine/.venv-source-file/lib/python3.10/site-packages/paramiko/pkey.py:82: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:27.2001607Z   "cipher": algorithms.TripleDES,
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:27.2431143Z /home/runner/work/metricmine/metricmine/.venv-source-file/lib/python3.10/site-packages/paramiko/transport.py:253: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:27.2433693Z   "class": algorithms.TripleDES,
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:27.2665411Z Connection check succeeded for `source-file`.
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:28.0153475Z /home/runner/work/metricmine/metricmine/.venv-source-file/lib/python3.10/site-packages/google/api_core/_python_version_support.py:254: FutureWarning: You are using a Python version (3.10.20) which Google will stop supporting in new releases of google.api_core once it reaches its end of life (2026-10-04). Please upgrade to the latest Python version, or at least Python 3.11, to continue receiving updates for google.api_core past that date.
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:28.0157131Z   warnings.warn(message, FutureWarning)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:28.1652459Z /home/runner/work/metricmine/metricmine/.venv-source-file/lib/python3.10/site-packages/paramiko/pkey.py:82: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:28.1654622Z   "cipher": algorithms.TripleDES,
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:28.2329184Z /home/runner/work/metricmine/metricmine/.venv-source-file/lib/python3.10/site-packages/paramiko/transport.py:253: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:28.2331571Z   "class": algorithms.TripleDES,
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:29.0941590Z /home/runner/work/metricmine/metricmine/.venv-source-file/lib/python3.10/site-packages/google/api_core/_python_version_support.py:254: FutureWarning: You are using a Python version (3.10.20) which Google will stop supporting in new releases of google.api_core once it reaches its end of life (2026-10-04). Please upgrade to the latest Python version, or at least Python 3.11, to continue receiving updates for google.api_core past that date.
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:29.0944240Z   warnings.warn(message, FutureWarning)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:29.2430127Z /home/runner/work/metricmine/metricmine/.venv-source-file/lib/python3.10/site-packages/paramiko/pkey.py:82: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:29.2431967Z   "cipher": algorithms.TripleDES,
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:29.2528717Z /home/runner/work/metricmine/metricmine/.venv-source-file/lib/python3.10/site-packages/paramiko/transport.py:253: CryptographyDeprecationWarning: TripleDES has been moved to cryptography.hazmat.decrepit.ciphers.algorithms.TripleDES and will be removed from cryptography.hazmat.primitives.ciphers.algorithms in 48.0.0.
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:29.2530672Z   "class": algorithms.TripleDES,
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:33.0406482Z Writing PyAirbyte performance stats to file: /tmp/airbyte/logs/airbyte-stats.log
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:33.0432714Z Completed `source-file -> DuckDBCache` sync at `22:50:33` (`online_retail_ii` stream).
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:33.0433749Z landed {'online_retail_ii': 45228} into bronze of /home/runner/work/metricmine/metricmine/warehouse/metricmine.duckdb
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:33.5742923Z ##[group]Run for contract in contracts/*.odcs.yaml; do
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:33.5743361Z ^[[36;1mfor contract in contracts/*.odcs.yaml; do^[[0m
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:33.5743690Z ^[[36;1m  datacontract lint "$contract"^[[0m
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:33.5743952Z ^[[36;1mdone^[[0m
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:33.5788176Z shell: /usr/bin/bash -e {0}
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:33.5788702Z env:
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:33.5788997Z   DBT_PROFILES_DIR: /home/runner/work/metricmine/metricmine/transform
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:33.5789528Z   MM_WAREHOUSE_PATH: /home/runner/work/metricmine/metricmine/warehouse/metricmine.duckdb
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:33.5789961Z   UV_PYTHON: 3.12
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:33.5790211Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:33.5790504Z ##[endgroup]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:35.1747257Z ╭────────┬──────────────────────────────────────┬───────┬─────────╮
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:35.1747875Z │ Result │ Check                                │ Field │ Details │
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:35.1748971Z ├────────┼──────────────────────────────────────┼───────┼─────────┤
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:35.1750241Z │ passed │ Data contract is syntactically valid │       │         │
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:35.1750806Z ╰────────┴──────────────────────────────────────┴───────┴─────────╯
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:35.1799102Z 🟢 data contract is valid. Run 1 checks. Took 0.171159 seconds.
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:35.8890640Z ╭────────┬──────────────────────────────────────┬───────┬─────────╮
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:35.8891580Z │ Result │ Check                                │ Field │ Details │
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:35.8892177Z ├────────┼──────────────────────────────────────┼───────┼─────────┤
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:35.8892747Z │ passed │ Data contract is syntactically valid │       │         │
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:35.8893355Z ╰────────┴──────────────────────────────────────┴───────┴─────────╯
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:35.8913773Z 🟢 data contract is valid. Run 1 checks. Took 0.204272 seconds.
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:36.5718019Z ╭────────┬──────────────────────────────────────┬───────┬─────────╮
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:36.5719174Z │ Result │ Check                                │ Field │ Details │
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:36.5719810Z ├────────┼──────────────────────────────────────┼───────┼─────────┤
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:36.5720375Z │ passed │ Data contract is syntactically valid │       │         │
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:36.5720963Z ╰────────┴──────────────────────────────────────┴───────┴─────────╯
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:36.5741274Z 🟢 data contract is valid. Run 1 checks. Took 0.18063 seconds.
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:36.6472909Z ##[group]Run uv run dbt build --project-dir transform --target local
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:36.6473430Z ^[[36;1muv run dbt build --project-dir transform --target local^[[0m
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:36.6516853Z shell: /usr/bin/bash -e {0}
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:36.6517097Z env:
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:36.6517392Z   DBT_PROFILES_DIR: /home/runner/work/metricmine/metricmine/transform
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:36.6517950Z   MM_WAREHOUSE_PATH: /home/runner/work/metricmine/metricmine/warehouse/metricmine.duckdb
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:36.6518679Z   UV_PYTHON: 3.12
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:36.6518950Z   UV_CACHE_DIR: /home/runner/work/_temp/setup-uv-cache
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:36.6519287Z ##[endgroup]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:38.2812844Z ^[[0m22:50:38  Running with dbt=1.11.12
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:38.6643286Z ^[[0m22:50:38  Registered adapter: duckdb=1.10.1
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:38.7567749Z ^[[0m22:50:38  Unable to do partial parsing because saved manifest not found. Starting full parse.
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:41.2304849Z ^[[0m22:50:41  Found 10 models, 85 data tests, 1 source, 602 macros
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:41.2366341Z ^[[0m22:50:41  
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:41.2371764Z ^[[0m22:50:41  Concurrency: 1 threads (target='local')
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:41.2376395Z ^[[0m22:50:41  
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:41.3881641Z ^[[0m22:50:41  1 of 95 START sql table model gold.dim_invoice_lines_columns ................... [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:41.5295710Z ^[[0m22:50:41  1 of 95 OK created sql table model gold.dim_invoice_lines_columns .............. [^[[32mOK^[[0m in 0.14s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:41.5312386Z ^[[0m22:50:41  2 of 95 START sql table model gold.dim_run_columns ............................. [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:41.5629659Z ^[[0m22:50:41  2 of 95 OK created sql table model gold.dim_run_columns ........................ [^[[32mOK^[[0m in 0.03s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:41.5646302Z ^[[0m22:50:41  3 of 95 START sql table model gold.dim_run_values .............................. [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:41.5973520Z ^[[0m22:50:41  3 of 95 OK created sql table model gold.dim_run_values ......................... [^[[32mOK^[[0m in 0.03s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:41.5991220Z ^[[0m22:50:41  4 of 95 START sql table model gold.dim_source_columns .......................... [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:41.6298799Z ^[[0m22:50:41  4 of 95 OK created sql table model gold.dim_source_columns ..................... [^[[32mOK^[[0m in 0.03s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:41.6316396Z ^[[0m22:50:41  5 of 95 START sql table model gold.dim_source_values ........................... [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:41.6622084Z ^[[0m22:50:41  5 of 95 OK created sql table model gold.dim_source_values ...................... [^[[32mOK^[[0m in 0.03s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:41.6641497Z ^[[0m22:50:41  6 of 95 START sql table model gold.dim_timeframe_columns ....................... [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:41.6963298Z ^[[0m22:50:41  6 of 95 OK created sql table model gold.dim_timeframe_columns .................. [^[[32mOK^[[0m in 0.03s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:41.6980863Z ^[[0m22:50:41  7 of 95 START sql table model silver.silver_invoice_lines ...................... [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:41.8746348Z ^[[0m22:50:41  7 of 95 OK created sql table model silver.silver_invoice_lines ................. [^[[32mOK^[[0m in 0.17s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:41.8765747Z ^[[0m22:50:41  8 of 95 START test gold_unified_event_star__1_0_0__dim_invoice_lines_columns__schema_key_uniqueness__the_error_severit  [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:41.9142902Z ^[[0m22:50:41  8 of 95 PASS gold_unified_event_star__1_0_0__dim_invoice_lines_columns__schema_key_uniqueness__the_error_severit  [^[[32mPASS^[[0m in 0.04s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:41.9159782Z ^[[0m22:50:41  9 of 95 START test gold_unified_event_star__1_0_0__dim_invoice_lines_values__c4__every_dimension_payload_parses_as_va  [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:41.9346383Z ^[[0m22:50:41  9 of 95 ERROR gold_unified_event_star__1_0_0__dim_invoice_lines_values__c4__every_dimension_payload_parses_as_va  [^[[31mERROR^[[0m in 0.02s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:41.9363517Z ^[[0m22:50:41  10 of 95 START test gold_unified_event_star__1_0_0__dim_invoice_lines_values__content_key_uniqueness__the_error_severi  [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:41.9541494Z ^[[0m22:50:41  10 of 95 ERROR gold_unified_event_star__1_0_0__dim_invoice_lines_values__content_key_uniqueness__the_error_severi  [^[[31mERROR^[[0m in 0.02s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:41.9563786Z ^[[0m22:50:41  11 of 95 START test gold_unified_event_star__1_0_0__dim_run_columns__schema_key_uniqueness__the_error_severit  [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:41.9718221Z ^[[0m22:50:41  11 of 95 PASS gold_unified_event_star__1_0_0__dim_run_columns__schema_key_uniqueness__the_error_severit  [^[[32mPASS^[[0m in 0.01s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:41.9736405Z ^[[0m22:50:41  12 of 95 START test gold_unified_event_star__1_0_0__dim_run_values__c4__every_run_payload_parses_as_valid_js  [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:41.9902679Z ^[[0m22:50:41  12 of 95 PASS gold_unified_event_star__1_0_0__dim_run_values__c4__every_run_payload_parses_as_valid_js  [^[[32mPASS^[[0m in 0.02s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:41.9920596Z ^[[0m22:50:41  13 of 95 START test gold_unified_event_star__1_0_0__dim_run_values__content_key_uniqueness__the_error_severi  [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.0086579Z ^[[0m22:50:42  13 of 95 PASS gold_unified_event_star__1_0_0__dim_run_values__content_key_uniqueness__the_error_severi  [^[[32mPASS^[[0m in 0.02s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.0104459Z ^[[0m22:50:42  14 of 95 START test gold_unified_event_star__1_0_0__dim_source_columns__schema_key_uniqueness__the_error_severit  [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.0251823Z ^[[0m22:50:42  14 of 95 PASS gold_unified_event_star__1_0_0__dim_source_columns__schema_key_uniqueness__the_error_severit  [^[[32mPASS^[[0m in 0.01s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.0269585Z ^[[0m22:50:42  15 of 95 START test gold_unified_event_star__1_0_0__dim_source_values__c4__every_source_payload_parses_as_valid  [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.0414732Z ^[[0m22:50:42  15 of 95 PASS gold_unified_event_star__1_0_0__dim_source_values__c4__every_source_payload_parses_as_valid  [^[[32mPASS^[[0m in 0.01s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.0433017Z ^[[0m22:50:42  16 of 95 START test gold_unified_event_star__1_0_0__dim_source_values__content_key_uniqueness__the_error_severi  [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.0581660Z ^[[0m22:50:42  16 of 95 PASS gold_unified_event_star__1_0_0__dim_source_values__content_key_uniqueness__the_error_severi  [^[[32mPASS^[[0m in 0.01s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.0599543Z ^[[0m22:50:42  17 of 95 START test gold_unified_event_star__1_0_0__dim_timeframe_columns__schema_key_uniqueness__the_error_severit  [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.0755505Z ^[[0m22:50:42  17 of 95 PASS gold_unified_event_star__1_0_0__dim_timeframe_columns__schema_key_uniqueness__the_error_severit  [^[[32mPASS^[[0m in 0.01s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.0773603Z ^[[0m22:50:42  18 of 95 START test gold_unified_event_star__1_0_0__dim_timeframe_values__c4__every_timeframe_payload_parses_as_va  [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.0976011Z ^[[0m22:50:42  18 of 95 ERROR gold_unified_event_star__1_0_0__dim_timeframe_values__c4__every_timeframe_payload_parses_as_va  [^[[31mERROR^[[0m in 0.02s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.0999926Z ^[[0m22:50:42  19 of 95 START test gold_unified_event_star__1_0_0__dim_timeframe_values__content_key_uniqueness__the_error_severi  [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.1166917Z ^[[0m22:50:42  19 of 95 ERROR gold_unified_event_star__1_0_0__dim_timeframe_values__content_key_uniqueness__the_error_severi  [^[[31mERROR^[[0m in 0.02s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.1184819Z ^[[0m22:50:42  20 of 95 START test gold_unified_event_star__1_0_0__fact_invoice_lines_values__c1_conservation__silver_rows_in_scope_eq  [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.1355371Z ^[[0m22:50:42  20 of 95 ERROR gold_unified_event_star__1_0_0__fact_invoice_lines_values__c1_conservation__silver_rows_in_scope_eq  [^[[31mERROR^[[0m in 0.02s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.1379459Z ^[[0m22:50:42  21 of 95 START test gold_unified_event_star__1_0_0__fact_invoice_lines_values__c2__every_dim_hash_id_resolves_in_dim_in  [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.1546821Z ^[[0m22:50:42  21 of 95 ERROR gold_unified_event_star__1_0_0__fact_invoice_lines_values__c2__every_dim_hash_id_resolves_in_dim_in  [^[[31mERROR^[[0m in 0.02s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.1570924Z ^[[0m22:50:42  22 of 95 START test gold_unified_event_star__1_0_0__fact_invoice_lines_values__c2__every_fact_col_hash_id__measure_mani  [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.1734265Z ^[[0m22:50:42  22 of 95 ERROR gold_unified_event_star__1_0_0__fact_invoice_lines_values__c2__every_fact_col_hash_id__measure_mani  [^[[31mERROR^[[0m in 0.02s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.1757832Z ^[[0m22:50:42  23 of 95 START test gold_unified_event_star__1_0_0__fact_invoice_lines_values__c2__every_run_hash_id__non_key__resolves  [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.1956150Z ^[[0m22:50:42  23 of 95 ERROR gold_unified_event_star__1_0_0__fact_invoice_lines_values__c2__every_run_hash_id__non_key__resolves  [^[[31mERROR^[[0m in 0.02s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.1979850Z ^[[0m22:50:42  24 of 95 START test gold_unified_event_star__1_0_0__fact_invoice_lines_values__c2__every_source_hash_id_resolves_in_dim  [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.2143211Z ^[[0m22:50:42  24 of 95 ERROR gold_unified_event_star__1_0_0__fact_invoice_lines_values__c2__every_source_hash_id_resolves_in_dim  [^[[31mERROR^[[0m in 0.02s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.2166889Z ^[[0m22:50:42  25 of 95 START test gold_unified_event_star__1_0_0__fact_invoice_lines_values__c2__every_timeframe_hash_id_resolves_in  [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.2332475Z ^[[0m22:50:42  25 of 95 ERROR gold_unified_event_star__1_0_0__fact_invoice_lines_values__c2__every_timeframe_hash_id_resolves_in  [^[[31mERROR^[[0m in 0.02s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.2357193Z ^[[0m22:50:42  26 of 95 START test gold_unified_event_star__1_0_0__fact_invoice_lines_values__c4__every_measure_payload_parses_as_vali  [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.2525171Z ^[[0m22:50:42  26 of 95 ERROR gold_unified_event_star__1_0_0__fact_invoice_lines_values__c4__every_measure_payload_parses_as_vali  [^[[31mERROR^[[0m in 0.02s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.2548913Z ^[[0m22:50:42  27 of 95 START test gold_unified_event_star__1_0_0__fact_invoice_lines_values__grain_enforcement__zero_duplicate__fact  [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.2737412Z ^[[0m22:50:42  27 of 95 ERROR gold_unified_event_star__1_0_0__fact_invoice_lines_values__grain_enforcement__zero_duplicate__fact  [^[[31mERROR^[[0m in 0.02s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.2761077Z ^[[0m22:50:42  28 of 95 START test silver_invoice_lines__1_1_0__silver_invoice_lines__grain_enforcement__no_duplicate__invoice  [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.3039299Z ^[[0m22:50:42  28 of 95 PASS silver_invoice_lines__1_1_0__silver_invoice_lines__grain_enforcement__no_duplicate__invoice  [^[[32mPASS^[[0m in 0.03s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.3056922Z ^[[0m22:50:42  29 of 95 START test silver_invoice_lines__1_1_0__silver_invoice_lines__unit_price__unit_price_is_never_negative  [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.3211457Z ^[[0m22:50:42  29 of 95 PASS silver_invoice_lines__1_1_0__silver_invoice_lines__unit_price__unit_price_is_never_negative  [^[[32mPASS^[[0m in 0.01s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.3229599Z ^[[0m22:50:42  30 of 95 START test gold_unified_event_star__1_0_0__dim_invoice_lines_columns__the_dimension_is_never_empty_once_the_st  [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.3377826Z ^[[0m22:50:42  30 of 95 PASS gold_unified_event_star__1_0_0__dim_invoice_lines_columns__the_dimension_is_never_empty_once_the_st  [^[[32mPASS^[[0m in 0.01s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.3395553Z ^[[0m22:50:42  31 of 95 START test not_null_dim_invoice_lines_columns_dim_col_hash_id ......... [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.3614298Z ^[[0m22:50:42  31 of 95 PASS not_null_dim_invoice_lines_columns_dim_col_hash_id ............... [^[[32mPASS^[[0m in 0.02s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.3631636Z ^[[0m22:50:42  32 of 95 START test not_null_dim_invoice_lines_columns_dim_columns ............. [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.3802420Z ^[[0m22:50:42  32 of 95 PASS not_null_dim_invoice_lines_columns_dim_columns ................... [^[[32mPASS^[[0m in 0.02s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.3821888Z ^[[0m22:50:42  33 of 95 START test not_null_dim_invoice_lines_columns_loaded_at ............... [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.3981424Z ^[[0m22:50:42  33 of 95 PASS not_null_dim_invoice_lines_columns_loaded_at ..................... [^[[32mPASS^[[0m in 0.02s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.3999326Z ^[[0m22:50:42  34 of 95 START test unique_dim_invoice_lines_columns_dim_col_hash_id ........... [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.4179981Z ^[[0m22:50:42  34 of 95 PASS unique_dim_invoice_lines_columns_dim_col_hash_id ................. [^[[32mPASS^[[0m in 0.02s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.4197932Z ^[[0m22:50:42  35 of 95 START test gold_unified_event_star__1_0_0__dim_run_columns__the_dimension_is_never_empty_once_the_st  [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.4346927Z ^[[0m22:50:42  35 of 95 PASS gold_unified_event_star__1_0_0__dim_run_columns__the_dimension_is_never_empty_once_the_st  [^[[32mPASS^[[0m in 0.01s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.4364096Z ^[[0m22:50:42  36 of 95 START test not_null_dim_run_columns_loaded_at ......................... [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.4516585Z ^[[0m22:50:42  36 of 95 PASS not_null_dim_run_columns_loaded_at ............................... [^[[32mPASS^[[0m in 0.01s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.4533713Z ^[[0m22:50:42  37 of 95 START test not_null_dim_run_columns_run_col_hash_id ................... [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.4699807Z ^[[0m22:50:42  37 of 95 PASS not_null_dim_run_columns_run_col_hash_id ......................... [^[[32mPASS^[[0m in 0.02s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.4716799Z ^[[0m22:50:42  38 of 95 START test not_null_dim_run_columns_run_columns ....................... [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.4871101Z ^[[0m22:50:42  38 of 95 PASS not_null_dim_run_columns_run_columns ............................. [^[[32mPASS^[[0m in 0.01s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.4887652Z ^[[0m22:50:42  39 of 95 START test unique_dim_run_columns_run_col_hash_id ..................... [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.5050605Z ^[[0m22:50:42  39 of 95 PASS unique_dim_run_columns_run_col_hash_id ........................... [^[[32mPASS^[[0m in 0.02s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.5067647Z ^[[0m22:50:42  40 of 95 START test gold_unified_event_star__1_0_0__dim_run_values__the_dimension_is_never_empty_once_the_st  [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.5215728Z ^[[0m22:50:42  40 of 95 PASS gold_unified_event_star__1_0_0__dim_run_values__the_dimension_is_never_empty_once_the_st  [^[[32mPASS^[[0m in 0.01s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.5232548Z ^[[0m22:50:42  41 of 95 START test not_null_dim_run_values_loaded_at .......................... [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.5405154Z ^[[0m22:50:42  41 of 95 PASS not_null_dim_run_values_loaded_at ................................ [^[[32mPASS^[[0m in 0.02s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.5422085Z ^[[0m22:50:42  42 of 95 START test not_null_dim_run_values_run_col_hash_id .................... [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.6279939Z ^[[0m22:50:42  42 of 95 PASS not_null_dim_run_values_run_col_hash_id .......................... [^[[32mPASS^[[0m in 0.08s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.6295923Z ^[[0m22:50:42  43 of 95 START test not_null_dim_run_values_run_hash_id ........................ [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.6450071Z ^[[0m22:50:42  43 of 95 PASS not_null_dim_run_values_run_hash_id .............................. [^[[32mPASS^[[0m in 0.01s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.6466573Z ^[[0m22:50:42  44 of 95 START test not_null_dim_run_values_run_values ......................... [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.6619906Z ^[[0m22:50:42  44 of 95 PASS not_null_dim_run_values_run_values ............................... [^[[32mPASS^[[0m in 0.01s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.6636452Z ^[[0m22:50:42  45 of 95 START test unique_dim_run_values_run_hash_id .......................... [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.6793569Z ^[[0m22:50:42  45 of 95 PASS unique_dim_run_values_run_hash_id ................................ [^[[32mPASS^[[0m in 0.01s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.6811900Z ^[[0m22:50:42  46 of 95 START test gold_unified_event_star__1_0_0__dim_source_columns__the_dimension_is_never_empty_once_the_st  [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.6977562Z ^[[0m22:50:42  46 of 95 PASS gold_unified_event_star__1_0_0__dim_source_columns__the_dimension_is_never_empty_once_the_st  [^[[32mPASS^[[0m in 0.02s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.6994844Z ^[[0m22:50:42  47 of 95 START test not_null_dim_source_columns_loaded_at ...................... [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.7148055Z ^[[0m22:50:42  47 of 95 PASS not_null_dim_source_columns_loaded_at ............................ [^[[32mPASS^[[0m in 0.01s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.7164996Z ^[[0m22:50:42  48 of 95 START test not_null_dim_source_columns_source_col_hash_id ............. [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.7329889Z ^[[0m22:50:42  48 of 95 PASS not_null_dim_source_columns_source_col_hash_id ................... [^[[32mPASS^[[0m in 0.02s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.7346807Z ^[[0m22:50:42  49 of 95 START test not_null_dim_source_columns_source_columns ................. [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.7497893Z ^[[0m22:50:42  49 of 95 PASS not_null_dim_source_columns_source_columns ....................... [^[[32mPASS^[[0m in 0.01s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.7514806Z ^[[0m22:50:42  50 of 95 START test unique_dim_source_columns_source_col_hash_id ............... [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.7688380Z ^[[0m22:50:42  50 of 95 PASS unique_dim_source_columns_source_col_hash_id ..................... [^[[32mPASS^[[0m in 0.02s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.7705792Z ^[[0m22:50:42  51 of 95 START test gold_unified_event_star__1_0_0__dim_source_values__the_dimension_is_never_empty_once_the_st  [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.7866947Z ^[[0m22:50:42  51 of 95 PASS gold_unified_event_star__1_0_0__dim_source_values__the_dimension_is_never_empty_once_the_st  [^[[32mPASS^[[0m in 0.02s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.7883837Z ^[[0m22:50:42  52 of 95 START test not_null_dim_source_values_loaded_at ....................... [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.8035684Z ^[[0m22:50:42  52 of 95 PASS not_null_dim_source_values_loaded_at ............................. [^[[32mPASS^[[0m in 0.01s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.8052469Z ^[[0m22:50:42  53 of 95 START test not_null_dim_source_values_source_col_hash_id .............. [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.8204131Z ^[[0m22:50:42  53 of 95 PASS not_null_dim_source_values_source_col_hash_id .................... [^[[32mPASS^[[0m in 0.01s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.8220784Z ^[[0m22:50:42  54 of 95 START test not_null_dim_source_values_source_hash_id .................. [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.8379299Z ^[[0m22:50:42  54 of 95 PASS not_null_dim_source_values_source_hash_id ........................ [^[[32mPASS^[[0m in 0.02s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.8395903Z ^[[0m22:50:42  55 of 95 START test not_null_dim_source_values_source_values ................... [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.8568137Z ^[[0m22:50:42  55 of 95 PASS not_null_dim_source_values_source_values ......................... [^[[32mPASS^[[0m in 0.02s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.8585261Z ^[[0m22:50:42  56 of 95 START test unique_dim_source_values_source_hash_id .................... [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.8740885Z ^[[0m22:50:42  56 of 95 PASS unique_dim_source_values_source_hash_id .......................... [^[[32mPASS^[[0m in 0.01s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.8757828Z ^[[0m22:50:42  57 of 95 START test gold_unified_event_star__1_0_0__dim_timeframe_columns__the_dimension_is_never_empty_once_the_st  [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.8924737Z ^[[0m22:50:42  57 of 95 PASS gold_unified_event_star__1_0_0__dim_timeframe_columns__the_dimension_is_never_empty_once_the_st  [^[[32mPASS^[[0m in 0.02s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.8950162Z ^[[0m22:50:42  58 of 95 START test not_null_dim_timeframe_columns_loaded_at ................... [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.9109713Z ^[[0m22:50:42  58 of 95 PASS not_null_dim_timeframe_columns_loaded_at ......................... [^[[32mPASS^[[0m in 0.02s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.9126293Z ^[[0m22:50:42  59 of 95 START test not_null_dim_timeframe_columns_timeframe_col_hash_id ....... [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.9283809Z ^[[0m22:50:42  59 of 95 PASS not_null_dim_timeframe_columns_timeframe_col_hash_id ............. [^[[32mPASS^[[0m in 0.02s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.9300558Z ^[[0m22:50:42  60 of 95 START test not_null_dim_timeframe_columns_timeframe_columns ........... [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.9476504Z ^[[0m22:50:42  60 of 95 PASS not_null_dim_timeframe_columns_timeframe_columns ................. [^[[32mPASS^[[0m in 0.02s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.9494472Z ^[[0m22:50:42  61 of 95 START test unique_dim_timeframe_columns_timeframe_col_hash_id ......... [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.9659829Z ^[[0m22:50:42  61 of 95 PASS unique_dim_timeframe_columns_timeframe_col_hash_id ............... [^[[32mPASS^[[0m in 0.02s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.9676802Z ^[[0m22:50:42  62 of 95 START test not_null_silver_invoice_lines_country ...................... [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.9856275Z ^[[0m22:50:42  62 of 95 PASS not_null_silver_invoice_lines_country ............................ [^[[32mPASS^[[0m in 0.02s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:42.9873737Z ^[[0m22:50:42  63 of 95 START test not_null_silver_invoice_lines_invoice_id ................... [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:43.0026887Z ^[[0m22:50:43  63 of 95 PASS not_null_silver_invoice_lines_invoice_id ......................... [^[[32mPASS^[[0m in 0.01s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:43.0043777Z ^[[0m22:50:43  64 of 95 START test not_null_silver_invoice_lines_invoiced_at .................. [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:43.0216920Z ^[[0m22:50:43  64 of 95 PASS not_null_silver_invoice_lines_invoiced_at ........................ [^[[32mPASS^[[0m in 0.02s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:43.0233567Z ^[[0m22:50:43  65 of 95 START test not_null_silver_invoice_lines_is_cancellation .............. [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:43.0387381Z ^[[0m22:50:43  65 of 95 PASS not_null_silver_invoice_lines_is_cancellation .................... [^[[32mPASS^[[0m in 0.01s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:43.0404652Z ^[[0m22:50:43  66 of 95 START test not_null_silver_invoice_lines_quantity ..................... [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:43.0556061Z ^[[0m22:50:43  66 of 95 PASS not_null_silver_invoice_lines_quantity ........................... [^[[32mPASS^[[0m in 0.01s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:43.0572748Z ^[[0m22:50:43  67 of 95 START test not_null_silver_invoice_lines_stock_code ................... [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:43.0740712Z ^[[0m22:50:43  67 of 95 PASS not_null_silver_invoice_lines_stock_code ......................... [^[[32mPASS^[[0m in 0.02s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:43.0757334Z ^[[0m22:50:43  68 of 95 START test not_null_silver_invoice_lines_unit_price ................... [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:43.0936558Z ^[[0m22:50:43  68 of 95 PASS not_null_silver_invoice_lines_unit_price ......................... [^[[32mPASS^[[0m in 0.02s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:43.0955433Z ^[[0m22:50:43  69 of 95 START test silver_invoice_lines__1_1_0__silver_invoice_lines__the_table_is_never_empty__the_committed  [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:43.1126904Z ^[[0m22:50:43  69 of 95 PASS silver_invoice_lines__1_1_0__silver_invoice_lines__the_table_is_never_empty__the_committed  [^[[32mPASS^[[0m in 0.02s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:43.1145087Z ^[[0m22:50:43  70 of 95 START test silver_invoice_lines__1_1_0__silver_invoice_lines__unique_combination  [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:43.1414491Z ^[[0m22:50:43  70 of 95 PASS silver_invoice_lines__1_1_0__silver_invoice_lines__unique_combination  [^[[32mPASS^[[0m in 0.03s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:43.1437439Z ^[[0m22:50:43  71 of 95 START sql table model gold.dim_invoice_lines_values ................... [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:43.3147375Z ^[[0m22:50:43  71 of 95 OK created sql table model gold.dim_invoice_lines_values .............. [^[[32mOK^[[0m in 0.17s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:43.3164372Z ^[[0m22:50:43  72 of 95 START sql table model gold.dim_timeframe_values ....................... [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:43.4867382Z ^[[0m22:50:43  72 of 95 OK created sql table model gold.dim_timeframe_values .................. [^[[32mOK^[[0m in 0.17s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:43.4885684Z ^[[0m22:50:43  73 of 95 START sql table model gold.fact_invoice_lines_values .................. [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:43.7355048Z ^[[0m22:50:43  73 of 95 OK created sql table model gold.fact_invoice_lines_values ............. [^[[32mOK^[[0m in 0.25s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:43.7375149Z ^[[0m22:50:43  74 of 95 START test gold_unified_event_star__1_0_0__dim_invoice_lines_values__the_dimension_is_never_empty_once_the_st  [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:43.7546647Z ^[[0m22:50:43  74 of 95 PASS gold_unified_event_star__1_0_0__dim_invoice_lines_values__the_dimension_is_never_empty_once_the_st  [^[[32mPASS^[[0m in 0.02s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:43.7563288Z ^[[0m22:50:43  75 of 95 START test not_null_dim_invoice_lines_values_dim_col_hash_id .......... [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:43.7718841Z ^[[0m22:50:43  75 of 95 PASS not_null_dim_invoice_lines_values_dim_col_hash_id ................ [^[[32mPASS^[[0m in 0.01s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:43.7735062Z ^[[0m22:50:43  76 of 95 START test not_null_dim_invoice_lines_values_dim_hash_id .............. [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:43.7896787Z ^[[0m22:50:43  76 of 95 PASS not_null_dim_invoice_lines_values_dim_hash_id .................... [^[[32mPASS^[[0m in 0.02s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:43.7914291Z ^[[0m22:50:43  77 of 95 START test not_null_dim_invoice_lines_values_dim_values ............... [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:43.8069331Z ^[[0m22:50:43  77 of 95 PASS not_null_dim_invoice_lines_values_dim_values ..................... [^[[32mPASS^[[0m in 0.01s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:43.8084949Z ^[[0m22:50:43  78 of 95 START test not_null_dim_invoice_lines_values_loaded_at ................ [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:43.8261973Z ^[[0m22:50:43  78 of 95 PASS not_null_dim_invoice_lines_values_loaded_at ...................... [^[[32mPASS^[[0m in 0.02s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:43.8278581Z ^[[0m22:50:43  79 of 95 START test unique_dim_invoice_lines_values_dim_hash_id ................ [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:43.8549655Z ^[[0m22:50:43  79 of 95 PASS unique_dim_invoice_lines_values_dim_hash_id ...................... [^[[32mPASS^[[0m in 0.03s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:43.8566593Z ^[[0m22:50:43  80 of 95 START test gold_unified_event_star__1_0_0__dim_timeframe_values__the_dimension_is_never_empty_once_the_st  [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:43.8724293Z ^[[0m22:50:43  80 of 95 PASS gold_unified_event_star__1_0_0__dim_timeframe_values__the_dimension_is_never_empty_once_the_st  [^[[32mPASS^[[0m in 0.02s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:43.8741839Z ^[[0m22:50:43  81 of 95 START test not_null_dim_timeframe_values_loaded_at .................... [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:43.8898608Z ^[[0m22:50:43  81 of 95 PASS not_null_dim_timeframe_values_loaded_at .......................... [^[[32mPASS^[[0m in 0.02s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:43.8915335Z ^[[0m22:50:43  82 of 95 START test not_null_dim_timeframe_values_timeframe_col_hash_id ........ [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:43.9067391Z ^[[0m22:50:43  82 of 95 PASS not_null_dim_timeframe_values_timeframe_col_hash_id .............. [^[[32mPASS^[[0m in 0.01s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:43.9084121Z ^[[0m22:50:43  83 of 95 START test not_null_dim_timeframe_values_timeframe_hash_id ............ [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:43.9259119Z ^[[0m22:50:43  83 of 95 PASS not_null_dim_timeframe_values_timeframe_hash_id .................. [^[[32mPASS^[[0m in 0.02s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:43.9275734Z ^[[0m22:50:43  84 of 95 START test not_null_dim_timeframe_values_timeframe_values ............. [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:43.9434473Z ^[[0m22:50:43  84 of 95 PASS not_null_dim_timeframe_values_timeframe_values ................... [^[[32mPASS^[[0m in 0.02s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:43.9451252Z ^[[0m22:50:43  85 of 95 START test unique_dim_timeframe_values_timeframe_hash_id .............. [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:43.9618108Z ^[[0m22:50:43  85 of 95 PASS unique_dim_timeframe_values_timeframe_hash_id .................... [^[[32mPASS^[[0m in 0.02s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:43.9635528Z ^[[0m22:50:43  86 of 95 START test gold_unified_event_star__1_0_0__fact_invoice_lines_values__the_fact_is_never_empty_once_the_star_bu  [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:43.9787613Z ^[[0m22:50:43  86 of 95 PASS gold_unified_event_star__1_0_0__fact_invoice_lines_values__the_fact_is_never_empty_once_the_star_bu  [^[[32mPASS^[[0m in 0.01s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:43.9805634Z ^[[0m22:50:43  87 of 95 START test gold_unified_event_star__1_0_0__fact_invoice_lines_values__unique_combination  [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.0108921Z ^[[0m22:50:44  87 of 95 PASS gold_unified_event_star__1_0_0__fact_invoice_lines_values__unique_combination  [^[[32mPASS^[[0m in 0.03s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.0125460Z ^[[0m22:50:44  88 of 95 START test not_null_fact_invoice_lines_values_dim_hash_id ............. [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.0314709Z ^[[0m22:50:44  88 of 95 PASS not_null_fact_invoice_lines_values_dim_hash_id ................... [^[[32mPASS^[[0m in 0.02s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.0331872Z ^[[0m22:50:44  89 of 95 START test not_null_fact_invoice_lines_values_fact_col_hash_id ........ [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.0486435Z ^[[0m22:50:44  89 of 95 PASS not_null_fact_invoice_lines_values_fact_col_hash_id .............. [^[[32mPASS^[[0m in 0.01s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.0503770Z ^[[0m22:50:44  90 of 95 START test not_null_fact_invoice_lines_values_fact_hash_id ............ [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.0659337Z ^[[0m22:50:44  90 of 95 PASS not_null_fact_invoice_lines_values_fact_hash_id .................. [^[[32mPASS^[[0m in 0.01s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.0675972Z ^[[0m22:50:44  91 of 95 START test not_null_fact_invoice_lines_values_fact_values ............. [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.0840714Z ^[[0m22:50:44  91 of 95 PASS not_null_fact_invoice_lines_values_fact_values ................... [^[[32mPASS^[[0m in 0.02s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.0856951Z ^[[0m22:50:44  92 of 95 START test not_null_fact_invoice_lines_values_loaded_at ............... [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.1035073Z ^[[0m22:50:44  92 of 95 PASS not_null_fact_invoice_lines_values_loaded_at ..................... [^[[32mPASS^[[0m in 0.02s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.1050850Z ^[[0m22:50:44  93 of 95 START test not_null_fact_invoice_lines_values_run_hash_id ............. [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.1204342Z ^[[0m22:50:44  93 of 95 PASS not_null_fact_invoice_lines_values_run_hash_id ................... [^[[32mPASS^[[0m in 0.01s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.1220998Z ^[[0m22:50:44  94 of 95 START test not_null_fact_invoice_lines_values_source_hash_id .......... [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.1375610Z ^[[0m22:50:44  94 of 95 PASS not_null_fact_invoice_lines_values_source_hash_id ................ [^[[32mPASS^[[0m in 0.01s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.1393132Z ^[[0m22:50:44  95 of 95 START test not_null_fact_invoice_lines_values_timeframe_hash_id ....... [RUN]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.1547586Z ^[[0m22:50:44  95 of 95 PASS not_null_fact_invoice_lines_values_timeframe_hash_id ............. [^[[32mPASS^[[0m in 0.01s]
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.1620151Z ^[[0m22:50:44  
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.1625691Z ^[[0m22:50:44  Finished running 10 table models, 85 data tests in 0 hours 0 minutes and 2.92 seconds (2.92s).
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2322473Z ^[[0m22:50:44  
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2328751Z ^[[0m22:50:44  ^[[31mCompleted with 12 errors, 0 partial successes, and 0 warnings:^[[0m
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2333327Z ^[[0m22:50:44  
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2341618Z ^[[0m22:50:44  ^[[31mFailure in test gold_unified_event_star__1_0_0__dim_invoice_lines_values__c4__every_dimension_payload_parses_as_va (tests/datacontract_cli/gold_unified_event_star/gold_unified_event_star__1_0_0__dim_invoice_lines_values__c4__every_dimension_payload_parses_as_va.sql)^[[0m
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2349070Z ^[[0m22:50:44    Runtime Error in test gold_unified_event_star__1_0_0__dim_invoice_lines_values__c4__every_dimension_payload_parses_as_va (tests/datacontract_cli/gold_unified_event_star/gold_unified_event_star__1_0_0__dim_invoice_lines_values__c4__every_dimension_payload_parses_as_va.sql)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2351322Z   Catalog Error: Table with name dim_invoice_lines_values does not exist!
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2352057Z   Did you mean "dim_invoice_lines_columns"?
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2352551Z   
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2352989Z   LINE 15: SELECT COUNT(*) FROM gold.dim_invoice_lines_values
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2353564Z                                 ^
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2354083Z ^[[0m22:50:44  
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2360183Z ^[[0m22:50:44    compiled code at target/compiled/metricmine/tests/datacontract_cli/gold_unified_event_star/gold_unified_event_star__1_0_0__dim_invoice_lines_values__c4__every_dimension_payload_parses_as_va.sql
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2364304Z ^[[0m22:50:44  
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2372310Z ^[[0m22:50:44  ^[[31mFailure in test gold_unified_event_star__1_0_0__dim_invoice_lines_values__content_key_uniqueness__the_error_severi (tests/datacontract_cli/gold_unified_event_star/gold_unified_event_star__1_0_0__dim_invoice_lines_values__content_key_uniqueness__the_error_severi.sql)^[[0m
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2379286Z ^[[0m22:50:44    Runtime Error in test gold_unified_event_star__1_0_0__dim_invoice_lines_values__content_key_uniqueness__the_error_severi (tests/datacontract_cli/gold_unified_event_star/gold_unified_event_star__1_0_0__dim_invoice_lines_values__content_key_uniqueness__the_error_severi.sql)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2381493Z   Catalog Error: Table with name dim_invoice_lines_values does not exist!
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2382228Z   Did you mean "dim_invoice_lines_columns"?
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2382734Z   
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2383194Z   LINE 16:   SELECT dim_hash_id FROM gold.dim_invoice_lines_values
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2383804Z                                      ^
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2384348Z ^[[0m22:50:44  
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2390599Z ^[[0m22:50:44    compiled code at target/compiled/metricmine/tests/datacontract_cli/gold_unified_event_star/gold_unified_event_star__1_0_0__dim_invoice_lines_values__content_key_uniqueness__the_error_severi.sql
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2394701Z ^[[0m22:50:44  
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2402644Z ^[[0m22:50:44  ^[[31mFailure in test gold_unified_event_star__1_0_0__dim_timeframe_values__c4__every_timeframe_payload_parses_as_va (tests/datacontract_cli/gold_unified_event_star/gold_unified_event_star__1_0_0__dim_timeframe_values__c4__every_timeframe_payload_parses_as_va.sql)^[[0m
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2409588Z ^[[0m22:50:44    Runtime Error in test gold_unified_event_star__1_0_0__dim_timeframe_values__c4__every_timeframe_payload_parses_as_va (tests/datacontract_cli/gold_unified_event_star/gold_unified_event_star__1_0_0__dim_timeframe_values__c4__every_timeframe_payload_parses_as_va.sql)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2411732Z   Catalog Error: Table with name dim_timeframe_values does not exist!
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2412427Z   Did you mean "dim_timeframe_columns"?
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2412907Z   
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2413343Z   LINE 15: SELECT COUNT(*) FROM gold.dim_timeframe_values
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2413893Z                                 ^
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2414404Z ^[[0m22:50:44  
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2420798Z ^[[0m22:50:44    compiled code at target/compiled/metricmine/tests/datacontract_cli/gold_unified_event_star/gold_unified_event_star__1_0_0__dim_timeframe_values__c4__every_timeframe_payload_parses_as_va.sql
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2424947Z ^[[0m22:50:44  
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2432771Z ^[[0m22:50:44  ^[[31mFailure in test gold_unified_event_star__1_0_0__dim_timeframe_values__content_key_uniqueness__the_error_severi (tests/datacontract_cli/gold_unified_event_star/gold_unified_event_star__1_0_0__dim_timeframe_values__content_key_uniqueness__the_error_severi.sql)^[[0m
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2439802Z ^[[0m22:50:44    Runtime Error in test gold_unified_event_star__1_0_0__dim_timeframe_values__content_key_uniqueness__the_error_severi (tests/datacontract_cli/gold_unified_event_star/gold_unified_event_star__1_0_0__dim_timeframe_values__content_key_uniqueness__the_error_severi.sql)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2441964Z   Catalog Error: Table with name dim_timeframe_values does not exist!
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2442657Z   Did you mean "dim_timeframe_columns"?
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2443138Z   
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2443613Z   LINE 16:   SELECT timeframe_hash_id FROM gold.dim_timeframe_values
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2444241Z                                            ^
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2444784Z ^[[0m22:50:44  
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2451169Z ^[[0m22:50:44    compiled code at target/compiled/metricmine/tests/datacontract_cli/gold_unified_event_star/gold_unified_event_star__1_0_0__dim_timeframe_values__content_key_uniqueness__the_error_severi.sql
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2455306Z ^[[0m22:50:44  
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2463121Z ^[[0m22:50:44  ^[[31mFailure in test gold_unified_event_star__1_0_0__fact_invoice_lines_values__c1_conservation__silver_rows_in_scope_eq (tests/datacontract_cli/gold_unified_event_star/gold_unified_event_star__1_0_0__fact_invoice_lines_values__c1_conservation__silver_rows_in_scope_eq.sql)^[[0m
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2469976Z ^[[0m22:50:44    Runtime Error in test gold_unified_event_star__1_0_0__fact_invoice_lines_values__c1_conservation__silver_rows_in_scope_eq (tests/datacontract_cli/gold_unified_event_star/gold_unified_event_star__1_0_0__fact_invoice_lines_values__c1_conservation__silver_rows_in_scope_eq.sql)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2472202Z   Catalog Error: Table with name fact_invoice_lines_values does not exist!
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2472941Z   Did you mean "dim_invoice_lines_columns"?
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2473424Z   
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2473913Z   LINE 16:      - (SELECT COUNT(*) FROM gold.fact_invoice_lines_values)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2474545Z                                         ^
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2475098Z ^[[0m22:50:44  
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2481363Z ^[[0m22:50:44    compiled code at target/compiled/metricmine/tests/datacontract_cli/gold_unified_event_star/gold_unified_event_star__1_0_0__fact_invoice_lines_values__c1_conservation__silver_rows_in_scope_eq.sql
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2485473Z ^[[0m22:50:44  
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2493472Z ^[[0m22:50:44  ^[[31mFailure in test gold_unified_event_star__1_0_0__fact_invoice_lines_values__c2__every_dim_hash_id_resolves_in_dim_in (tests/datacontract_cli/gold_unified_event_star/gold_unified_event_star__1_0_0__fact_invoice_lines_values__c2__every_dim_hash_id_resolves_in_dim_in.sql)^[[0m
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2500308Z ^[[0m22:50:44    Runtime Error in test gold_unified_event_star__1_0_0__fact_invoice_lines_values__c2__every_dim_hash_id_resolves_in_dim_in (tests/datacontract_cli/gold_unified_event_star/gold_unified_event_star__1_0_0__fact_invoice_lines_values__c2__every_dim_hash_id_resolves_in_dim_in.sql)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2502545Z   Catalog Error: Table with name fact_invoice_lines_values does not exist!
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2503280Z   Did you mean "dim_invoice_lines_columns"?
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2503775Z   
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2504228Z   LINE 15: SELECT COUNT(*) FROM gold.fact_invoice_lines_values f
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2504827Z                                 ^
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2505394Z ^[[0m22:50:44  
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2511698Z ^[[0m22:50:44    compiled code at target/compiled/metricmine/tests/datacontract_cli/gold_unified_event_star/gold_unified_event_star__1_0_0__fact_invoice_lines_values__c2__every_dim_hash_id_resolves_in_dim_in.sql
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2515941Z ^[[0m22:50:44  
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2523707Z ^[[0m22:50:44  ^[[31mFailure in test gold_unified_event_star__1_0_0__fact_invoice_lines_values__c2__every_fact_col_hash_id__measure_mani (tests/datacontract_cli/gold_unified_event_star/gold_unified_event_star__1_0_0__fact_invoice_lines_values__c2__every_fact_col_hash_id__measure_mani.sql)^[[0m
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2530593Z ^[[0m22:50:44    Runtime Error in test gold_unified_event_star__1_0_0__fact_invoice_lines_values__c2__every_fact_col_hash_id__measure_mani (tests/datacontract_cli/gold_unified_event_star/gold_unified_event_star__1_0_0__fact_invoice_lines_values__c2__every_fact_col_hash_id__measure_mani.sql)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2532792Z   Catalog Error: Table with name fact_invoice_lines_values does not exist!
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2533530Z   Did you mean "dim_invoice_lines_columns"?
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2534037Z   
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2534494Z   LINE 15: SELECT COUNT(*) FROM gold.fact_invoice_lines_values f
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2535081Z                                 ^
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2535587Z ^[[0m22:50:44  
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2542140Z ^[[0m22:50:44    compiled code at target/compiled/metricmine/tests/datacontract_cli/gold_unified_event_star/gold_unified_event_star__1_0_0__fact_invoice_lines_values__c2__every_fact_col_hash_id__measure_mani.sql
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2546266Z ^[[0m22:50:44  
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2554054Z ^[[0m22:50:44  ^[[31mFailure in test gold_unified_event_star__1_0_0__fact_invoice_lines_values__c2__every_run_hash_id__non_key__resolves (tests/datacontract_cli/gold_unified_event_star/gold_unified_event_star__1_0_0__fact_invoice_lines_values__c2__every_run_hash_id__non_key__resolves.sql)^[[0m
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2560901Z ^[[0m22:50:44    Runtime Error in test gold_unified_event_star__1_0_0__fact_invoice_lines_values__c2__every_run_hash_id__non_key__resolves (tests/datacontract_cli/gold_unified_event_star/gold_unified_event_star__1_0_0__fact_invoice_lines_values__c2__every_run_hash_id__non_key__resolves.sql)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2563111Z   Catalog Error: Table with name fact_invoice_lines_values does not exist!
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2563837Z   Did you mean "dim_invoice_lines_columns"?
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2564327Z   
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2564785Z   LINE 15: SELECT COUNT(*) FROM gold.fact_invoice_lines_values f
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2565378Z                                 ^
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2565893Z ^[[0m22:50:44  
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2572213Z ^[[0m22:50:44    compiled code at target/compiled/metricmine/tests/datacontract_cli/gold_unified_event_star/gold_unified_event_star__1_0_0__fact_invoice_lines_values__c2__every_run_hash_id__non_key__resolves.sql
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2576396Z ^[[0m22:50:44  
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2584305Z ^[[0m22:50:44  ^[[31mFailure in test gold_unified_event_star__1_0_0__fact_invoice_lines_values__c2__every_source_hash_id_resolves_in_dim (tests/datacontract_cli/gold_unified_event_star/gold_unified_event_star__1_0_0__fact_invoice_lines_values__c2__every_source_hash_id_resolves_in_dim.sql)^[[0m
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2591394Z ^[[0m22:50:44    Runtime Error in test gold_unified_event_star__1_0_0__fact_invoice_lines_values__c2__every_source_hash_id_resolves_in_dim (tests/datacontract_cli/gold_unified_event_star/gold_unified_event_star__1_0_0__fact_invoice_lines_values__c2__every_source_hash_id_resolves_in_dim.sql)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2593603Z   Catalog Error: Table with name fact_invoice_lines_values does not exist!
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2594367Z   Did you mean "dim_invoice_lines_columns"?
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2594852Z   
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2595294Z   LINE 15: SELECT COUNT(*) FROM gold.fact_invoice_lines_values f
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2595881Z                                 ^
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2596390Z ^[[0m22:50:44  
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2602514Z ^[[0m22:50:44    compiled code at target/compiled/metricmine/tests/datacontract_cli/gold_unified_event_star/gold_unified_event_star__1_0_0__fact_invoice_lines_values__c2__every_source_hash_id_resolves_in_dim.sql
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2606611Z ^[[0m22:50:44  
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2614329Z ^[[0m22:50:44  ^[[31mFailure in test gold_unified_event_star__1_0_0__fact_invoice_lines_values__c2__every_timeframe_hash_id_resolves_in (tests/datacontract_cli/gold_unified_event_star/gold_unified_event_star__1_0_0__fact_invoice_lines_values__c2__every_timeframe_hash_id_resolves_in.sql)^[[0m
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2621499Z ^[[0m22:50:44    Runtime Error in test gold_unified_event_star__1_0_0__fact_invoice_lines_values__c2__every_timeframe_hash_id_resolves_in (tests/datacontract_cli/gold_unified_event_star/gold_unified_event_star__1_0_0__fact_invoice_lines_values__c2__every_timeframe_hash_id_resolves_in.sql)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2623969Z   Catalog Error: Table with name fact_invoice_lines_values does not exist!
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2624721Z   Did you mean "dim_invoice_lines_columns"?
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2625223Z   
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2625672Z   LINE 15: SELECT COUNT(*) FROM gold.fact_invoice_lines_values f
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2626270Z                                 ^
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2626795Z ^[[0m22:50:44  
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2632877Z ^[[0m22:50:44    compiled code at target/compiled/metricmine/tests/datacontract_cli/gold_unified_event_star/gold_unified_event_star__1_0_0__fact_invoice_lines_values__c2__every_timeframe_hash_id_resolves_in.sql
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2636984Z ^[[0m22:50:44  
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2644740Z ^[[0m22:50:44  ^[[31mFailure in test gold_unified_event_star__1_0_0__fact_invoice_lines_values__c4__every_measure_payload_parses_as_vali (tests/datacontract_cli/gold_unified_event_star/gold_unified_event_star__1_0_0__fact_invoice_lines_values__c4__every_measure_payload_parses_as_vali.sql)^[[0m
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2651692Z ^[[0m22:50:44    Runtime Error in test gold_unified_event_star__1_0_0__fact_invoice_lines_values__c4__every_measure_payload_parses_as_vali (tests/datacontract_cli/gold_unified_event_star/gold_unified_event_star__1_0_0__fact_invoice_lines_values__c4__every_measure_payload_parses_as_vali.sql)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2653891Z   Catalog Error: Table with name fact_invoice_lines_values does not exist!
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2654622Z   Did you mean "dim_invoice_lines_columns"?
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2655113Z   
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2655559Z   LINE 15: SELECT COUNT(*) FROM gold.fact_invoice_lines_values
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2656142Z                                 ^
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2656646Z ^[[0m22:50:44  
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2662952Z ^[[0m22:50:44    compiled code at target/compiled/metricmine/tests/datacontract_cli/gold_unified_event_star/gold_unified_event_star__1_0_0__fact_invoice_lines_values__c4__every_measure_payload_parses_as_vali.sql
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2667038Z ^[[0m22:50:44  
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2675053Z ^[[0m22:50:44  ^[[31mFailure in test gold_unified_event_star__1_0_0__fact_invoice_lines_values__grain_enforcement__zero_duplicate__fact (tests/datacontract_cli/gold_unified_event_star/gold_unified_event_star__1_0_0__fact_invoice_lines_values__grain_enforcement__zero_duplicate__fact.sql)^[[0m
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2681847Z ^[[0m22:50:44    Runtime Error in test gold_unified_event_star__1_0_0__fact_invoice_lines_values__grain_enforcement__zero_duplicate__fact (tests/datacontract_cli/gold_unified_event_star/gold_unified_event_star__1_0_0__fact_invoice_lines_values__grain_enforcement__zero_duplicate__fact.sql)
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2684044Z   Catalog Error: Table with name fact_invoice_lines_values does not exist!
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2684770Z   Did you mean "dim_invoice_lines_columns"?
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2685275Z   
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2685656Z   LINE 17:   FROM gold.fact_invoice_lines_values
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2686149Z                   ^
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2686586Z ^[[0m22:50:44  
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2692872Z ^[[0m22:50:44    compiled code at target/compiled/metricmine/tests/datacontract_cli/gold_unified_event_star/gold_unified_event_star__1_0_0__fact_invoice_lines_values__grain_enforcement__zero_duplicate__fact.sql
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2697432Z ^[[0m22:50:44  
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:44.2703059Z ^[[0m22:50:44  Done. PASS=83 WARN=0 ERROR=12 SKIP=0 NO-OP=0 TOTAL=95
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:45.0120622Z ##[error]Process completed with exit code 1.
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:45.0258846Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:45.0260280Z Post job cleanup.
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:45.1169216Z [command]/usr/bin/git version
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:45.1212471Z git version 2.54.0
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:45.1253587Z Temporarily overriding HOME='/home/runner/work/_temp/edf4fc12-41f6-4878-9f0d-ba96334f8fa0' before making global git config changes
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:45.1254942Z Adding repository directory to the temporary git global config as a safe directory
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:45.1260062Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/metricmine/metricmine
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:45.1302023Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:45.1351989Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:45.1608948Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:45.1638556Z http.https://github.com/.extraheader
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:45.1651573Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:45.1685186Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:45.1959348Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:45.1998746Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:45.2466751Z Cleaning up orphan processes
+Contract gates (lint / build / sync+test)	UNKNOWN STEP	2026-08-08T22:50:45.2739289Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, astral-sh/setup-uv@v6. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

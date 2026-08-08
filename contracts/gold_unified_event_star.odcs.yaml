@@ -1,4 +1,4 @@
-# Contract: gold unified event star v1.0.0 (ODCS v3.1.0) — star tables only.
+# Contract: gold unified event star v1.1.0 (ODCS v3.1.0) — star tables only.
 # Pattern-derived: authored from docs/spec/gold-unified-event-star.md (the
 # committed gold spec) and the four-element event-packet pattern it carries
 # forward (docs/spec/current-state/data-capture-baseline.md §3.4), not from
@@ -7,8 +7,13 @@
 # schema objects, versioned as one unit; because the physical shape is
 # source-invariant, payload evolution surfaces as new schema keys (data),
 # never as contract amendments (governance). context_registry deliberately
-# arrives at v1.1.0 with the compiler sitting, avoiding an unverified
+# arrives with the compiler sitting's amendment, avoiding an unverified
 # partially-modeled window (F-13 records the verified one-PR pattern).
+# v1.1.0 (F-19): gold references inside quality-rule SQL use dbt
+# {{ ref('<model>') }} so the sync-generated singular tests carry real
+# dependency edges and schedule after their models on a fresh warehouse;
+# C1's silver reference stays schema-qualified per the F-08 louder-red
+# design (the edge via the fact suffices; fact depends on silver).
 # Every object here is an ENGINE-EMITTED dbt model (D-07, D-09): this
 # contract precedes its models by design; gate 3 skips unmatched objects
 # per-object at exit 0 (F-13) until the first regeneration lands them.
@@ -23,7 +28,7 @@ apiVersion: v3.1.0
 kind: DataContract
 id: gold_unified_event_star
 name: Gold unified event star
-version: 1.0.0
+version: 1.1.0
 status: active
 domain: retail
 dataProduct: metricmine
@@ -44,9 +49,9 @@ description:
     retained-and-flagged per the mapping contract; exclusion is a consumer
     decision.
   limitations: >
-    Star tables only at v1.0.0: context_registry joins at v1.1.0 with the
-    context compiler, and typed projections are uncontracted views by
-    design (D-17). Payloads are canonical JSON text; consumers needing
+    Star tables only: context_registry joins with the context compiler
+    at its own later amendment, and typed projections are uncontracted
+    views by design (D-17). Payloads are canonical JSON text; consumers needing
     typed columns use vw_invoice_lines_typed once emitted.
 
 schema:
@@ -101,7 +106,7 @@ schema:
         severity: error
         query: |
           SELECT COUNT(*) FROM (
-            SELECT source_hash_id FROM gold.dim_source_values
+            SELECT source_hash_id FROM {{ ref('dim_source_values') }}
             GROUP BY source_hash_id HAVING COUNT(*) > 1
           )
         mustBe: 0
@@ -109,7 +114,7 @@ schema:
         description: "C4: every source payload parses as valid JSON."
         severity: error
         query: |
-          SELECT COUNT(*) FROM gold.dim_source_values
+          SELECT COUNT(*) FROM {{ ref('dim_source_values') }}
           WHERE NOT json_valid(source_values)
         mustBe: 0
 
@@ -155,7 +160,7 @@ schema:
         severity: error
         query: |
           SELECT COUNT(*) FROM (
-            SELECT source_col_hash_id FROM gold.dim_source_columns
+            SELECT source_col_hash_id FROM {{ ref('dim_source_columns') }}
             GROUP BY source_col_hash_id HAVING COUNT(*) > 1
           )
         mustBe: 0
@@ -208,7 +213,7 @@ schema:
         severity: error
         query: |
           SELECT COUNT(*) FROM (
-            SELECT run_hash_id FROM gold.dim_run_values
+            SELECT run_hash_id FROM {{ ref('dim_run_values') }}
             GROUP BY run_hash_id HAVING COUNT(*) > 1
           )
         mustBe: 0
@@ -216,7 +221,7 @@ schema:
         description: "C4: every run payload parses as valid JSON."
         severity: error
         query: |
-          SELECT COUNT(*) FROM gold.dim_run_values
+          SELECT COUNT(*) FROM {{ ref('dim_run_values') }}
           WHERE NOT json_valid(run_values)
         mustBe: 0
 
@@ -258,7 +263,7 @@ schema:
         severity: error
         query: |
           SELECT COUNT(*) FROM (
-            SELECT run_col_hash_id FROM gold.dim_run_columns
+            SELECT run_col_hash_id FROM {{ ref('dim_run_columns') }}
             GROUP BY run_col_hash_id HAVING COUNT(*) > 1
           )
         mustBe: 0
@@ -310,7 +315,7 @@ schema:
         severity: error
         query: |
           SELECT COUNT(*) FROM (
-            SELECT timeframe_hash_id FROM gold.dim_timeframe_values
+            SELECT timeframe_hash_id FROM {{ ref('dim_timeframe_values') }}
             GROUP BY timeframe_hash_id HAVING COUNT(*) > 1
           )
         mustBe: 0
@@ -318,7 +323,7 @@ schema:
         description: "C4: every timeframe payload parses as valid JSON."
         severity: error
         query: |
-          SELECT COUNT(*) FROM gold.dim_timeframe_values
+          SELECT COUNT(*) FROM {{ ref('dim_timeframe_values') }}
           WHERE NOT json_valid(timeframe_values)
         mustBe: 0
 
@@ -361,7 +366,7 @@ schema:
         severity: error
         query: |
           SELECT COUNT(*) FROM (
-            SELECT timeframe_col_hash_id FROM gold.dim_timeframe_columns
+            SELECT timeframe_col_hash_id FROM {{ ref('dim_timeframe_columns') }}
             GROUP BY timeframe_col_hash_id HAVING COUNT(*) > 1
           )
         mustBe: 0
@@ -418,7 +423,7 @@ schema:
         severity: error
         query: |
           SELECT COUNT(*) FROM (
-            SELECT dim_hash_id FROM gold.dim_invoice_lines_values
+            SELECT dim_hash_id FROM {{ ref('dim_invoice_lines_values') }}
             GROUP BY dim_hash_id HAVING COUNT(*) > 1
           )
         mustBe: 0
@@ -426,7 +431,7 @@ schema:
         description: "C4: every dimension payload parses as valid JSON."
         severity: error
         query: |
-          SELECT COUNT(*) FROM gold.dim_invoice_lines_values
+          SELECT COUNT(*) FROM {{ ref('dim_invoice_lines_values') }}
           WHERE NOT json_valid(dim_values)
         mustBe: 0
 
@@ -472,7 +477,7 @@ schema:
         severity: error
         query: |
           SELECT COUNT(*) FROM (
-            SELECT dim_col_hash_id FROM gold.dim_invoice_lines_columns
+            SELECT dim_col_hash_id FROM {{ ref('dim_invoice_lines_columns') }}
             GROUP BY dim_col_hash_id HAVING COUNT(*) > 1
           )
         mustBe: 0
@@ -563,15 +568,15 @@ schema:
         severity: error
         query: |
           SELECT (SELECT COUNT(*) FROM silver.silver_invoice_lines)
-               - (SELECT COUNT(*) FROM gold.fact_invoice_lines_values)
+               - (SELECT COUNT(*) FROM {{ ref('fact_invoice_lines_values') }})
         mustBe: 0
       - type: sql
         description: "C2: every source_hash_id resolves in dim_source_values."
         severity: error
         query: |
-          SELECT COUNT(*) FROM gold.fact_invoice_lines_values f
+          SELECT COUNT(*) FROM {{ ref('fact_invoice_lines_values') }} f
           WHERE NOT EXISTS (
-            SELECT 1 FROM gold.dim_source_values d
+            SELECT 1 FROM {{ ref('dim_source_values') }} d
             WHERE d.source_hash_id = f.source_hash_id
           )
         mustBe: 0
@@ -579,9 +584,9 @@ schema:
         description: "C2: every timeframe_hash_id resolves in dim_timeframe_values."
         severity: error
         query: |
-          SELECT COUNT(*) FROM gold.fact_invoice_lines_values f
+          SELECT COUNT(*) FROM {{ ref('fact_invoice_lines_values') }} f
           WHERE NOT EXISTS (
-            SELECT 1 FROM gold.dim_timeframe_values d
+            SELECT 1 FROM {{ ref('dim_timeframe_values') }} d
             WHERE d.timeframe_hash_id = f.timeframe_hash_id
           )
         mustBe: 0
@@ -589,9 +594,9 @@ schema:
         description: "C2: every dim_hash_id resolves in dim_invoice_lines_values."
         severity: error
         query: |
-          SELECT COUNT(*) FROM gold.fact_invoice_lines_values f
+          SELECT COUNT(*) FROM {{ ref('fact_invoice_lines_values') }} f
           WHERE NOT EXISTS (
-            SELECT 1 FROM gold.dim_invoice_lines_values d
+            SELECT 1 FROM {{ ref('dim_invoice_lines_values') }} d
             WHERE d.dim_hash_id = f.dim_hash_id
           )
         mustBe: 0
@@ -600,9 +605,9 @@ schema:
           C2: every run_hash_id (non-key) resolves in dim_run_values.
         severity: error
         query: |
-          SELECT COUNT(*) FROM gold.fact_invoice_lines_values f
+          SELECT COUNT(*) FROM {{ ref('fact_invoice_lines_values') }} f
           WHERE NOT EXISTS (
-            SELECT 1 FROM gold.dim_run_values d
+            SELECT 1 FROM {{ ref('dim_run_values') }} d
             WHERE d.run_hash_id = f.run_hash_id
           )
         mustBe: 0
@@ -612,9 +617,9 @@ schema:
           dim_invoice_lines_columns.
         severity: error
         query: |
-          SELECT COUNT(*) FROM gold.fact_invoice_lines_values f
+          SELECT COUNT(*) FROM {{ ref('fact_invoice_lines_values') }} f
           WHERE NOT EXISTS (
-            SELECT 1 FROM gold.dim_invoice_lines_columns d
+            SELECT 1 FROM {{ ref('dim_invoice_lines_columns') }} d
             WHERE d.dim_col_hash_id = f.fact_col_hash_id
           )
         mustBe: 0
@@ -627,7 +632,7 @@ schema:
         query: |
           SELECT COUNT(*) FROM (
             SELECT fact_hash_id, source_hash_id, timeframe_hash_id, dim_hash_id
-            FROM gold.fact_invoice_lines_values
+            FROM {{ ref('fact_invoice_lines_values') }}
             GROUP BY fact_hash_id, source_hash_id, timeframe_hash_id, dim_hash_id
             HAVING COUNT(*) > 1
           )
@@ -636,7 +641,7 @@ schema:
         description: "C4: every measure payload parses as valid JSON."
         severity: error
         query: |
-          SELECT COUNT(*) FROM gold.fact_invoice_lines_values
+          SELECT COUNT(*) FROM {{ ref('fact_invoice_lines_values') }}
           WHERE NOT json_valid(fact_values)
         mustBe: 0
 
