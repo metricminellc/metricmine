@@ -1,0 +1,657 @@
+# Contract: gold unified event star v1.0.0 (ODCS v3.1.0) — star tables only.
+# Pattern-derived: authored from docs/spec/gold-unified-event-star.md (the
+# committed gold spec) and the four-element event-packet pattern it carries
+# forward (docs/spec/current-state/data-capture-baseline.md §3.4), not from
+# any profile artifact — profileHash is deliberately ABSENT with rationale
+# (rule 16; docs/spec/engine.md §9). One contract covers all star tables as
+# schema objects, versioned as one unit; because the physical shape is
+# source-invariant, payload evolution surfaces as new schema keys (data),
+# never as contract amendments (governance). context_registry deliberately
+# arrives at v1.1.0 with the compiler sitting, avoiding an unverified
+# partially-modeled window (F-13 records the verified one-PR pattern).
+# Every object here is an ENGINE-EMITTED dbt model (D-07, D-09): this
+# contract precedes its models by design; gate 3 skips unmatched objects
+# per-object at exit 0 (F-13) until the first regeneration lands them.
+# Severity discipline (D-28): every gating rule declares severity: error;
+# primaryKey flags generate warn-severity advisory twins at 1.0.12 (F-08),
+# and each carries its error-severity enforcing twin below. Payload and
+# manifest columns are canonical JSON TEXT in VARCHAR (the engine hashes
+# the text form; registry precedent, docs/spec/engine.md §4), with
+# json_valid gating per C4 — verified over VARCHAR at the pinned engine
+# (F-15).
+apiVersion: v3.1.0
+kind: DataContract
+id: gold_unified_event_star
+name: Gold unified event star
+version: 1.0.0
+status: active
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+
+description:
+  purpose: >
+    The source-invariant, self-describing, content-addressed star schema:
+    values/columns dimension pairs for the source, run, timeframe, and
+    invoice_lines groups, plus the invoice_lines fact table. Every source
+    lands in the same physical shape, so new sources add rows, not schema.
+  usage: >
+    Built only by dbt from engine-emitted models (D-07, D-09); consumers
+    read through the shared query module over the read-only protocol, with
+    the MCP server primary (Phase 5). Every *_values row carries the
+    four-element pattern: value payload, manifest reference (schema key),
+    record key, schema key. Cancellation lines flow through
+    retained-and-flagged per the mapping contract; exclusion is a consumer
+    decision.
+  limitations: >
+    Star tables only at v1.0.0: context_registry joins at v1.1.0 with the
+    context compiler, and typed projections are uncontracted views by
+    design (D-17). Payloads are canonical JSON text; consumers needing
+    typed columns use vw_invoice_lines_typed once emitted.
+
+schema:
+  - name: dim_source_values
+    physicalName: dim_source_values
+    logicalType: object
+    physicalType: table
+    description: >
+      Source-system group, values side: one row per distinct source
+      payload, deduplicated by content key. Constant per build per source.
+      Engine-emitted (D-09); hashed payload carries deterministic content
+      only (rule 13).
+    properties:
+      - name: source_hash_id
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        description: >
+          Record key: canonical_key v2 over the source payload (D-18);
+          64-char lowercase SHA-256 hex.
+      - name: source_col_hash_id
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        description: >
+          Schema key of the source manifest; resolves in
+          dim_source_columns.
+      - name: source_values
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        description: >
+          Source value payload: canonical JSON text (compact, sorted,
+          lowercase); json_valid-gated (C4, F-15).
+      - name: loaded_at
+        logicalType: date
+        physicalType: TIMESTAMP
+        required: true
+        description: Audit stamp; outside every hashed payload (rule 13).
+    quality:
+      - type: library
+        metric: rowCount
+        description: The dimension is never empty once the star builds.
+        severity: error
+        mustBeGreaterThan: 0
+      - type: sql
+        description: >
+          Content-key uniqueness: the error-severity twin of the
+          primaryKey flag (its generated test is warn-hardcoded, F-08).
+        severity: error
+        query: |
+          SELECT COUNT(*) FROM (
+            SELECT source_hash_id FROM gold.dim_source_values
+            GROUP BY source_hash_id HAVING COUNT(*) > 1
+          )
+        mustBe: 0
+      - type: sql
+        description: "C4: every source payload parses as valid JSON."
+        severity: error
+        query: |
+          SELECT COUNT(*) FROM gold.dim_source_values
+          WHERE NOT json_valid(source_values)
+        mustBe: 0
+
+  - name: dim_source_columns
+    physicalName: dim_source_columns
+    logicalType: object
+    physicalType: table
+    description: >
+      Source-system group, columns side: one row per distinct source
+      manifest (field set), keyed by schema key. Engine-emitted (D-09).
+    properties:
+      - name: source_col_hash_id
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        description: >
+          Schema key: canonical_key v2 over the manifest in declared order
+          (D-18).
+      - name: source_columns
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        description: >
+          Source manifest: compact JSON array of field names in declared
+          order.
+      - name: loaded_at
+        logicalType: date
+        physicalType: TIMESTAMP
+        required: true
+        description: Audit stamp; outside every hashed payload (rule 13).
+    quality:
+      - type: library
+        metric: rowCount
+        description: The dimension is never empty once the star builds.
+        severity: error
+        mustBeGreaterThan: 0
+      - type: sql
+        description: >
+          Schema-key uniqueness: the error-severity twin of the primaryKey
+          flag.
+        severity: error
+        query: |
+          SELECT COUNT(*) FROM (
+            SELECT source_col_hash_id FROM gold.dim_source_columns
+            GROUP BY source_col_hash_id HAVING COUNT(*) > 1
+          )
+        mustBe: 0
+
+  - name: dim_run_values
+    physicalName: dim_run_values
+    logicalType: object
+    physicalType: table
+    description: >
+      Lineage group, values side: mapping contract name and version plus
+      engine version as deterministic content (D-17) — lineage as data,
+      never a build timestamp. run_hash_id is referenced by the fact as a
+      NON-key attribute, so a contract version bump never mints duplicate
+      facts. Engine-emitted (D-09).
+    properties:
+      - name: run_hash_id
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        description: "Record key over the run payload (D-18)."
+      - name: run_col_hash_id
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        description: Schema key of the run manifest; resolves in dim_run_columns.
+      - name: run_values
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        description: >
+          Run payload: canonical JSON text; deterministic content only
+          (rule 13) — mapping contract name + version, engine version.
+      - name: loaded_at
+        logicalType: date
+        physicalType: TIMESTAMP
+        required: true
+        description: Audit stamp; outside every hashed payload (rule 13).
+    quality:
+      - type: library
+        metric: rowCount
+        description: The dimension is never empty once the star builds.
+        severity: error
+        mustBeGreaterThan: 0
+      - type: sql
+        description: >
+          Content-key uniqueness: the error-severity twin of the
+          primaryKey flag.
+        severity: error
+        query: |
+          SELECT COUNT(*) FROM (
+            SELECT run_hash_id FROM gold.dim_run_values
+            GROUP BY run_hash_id HAVING COUNT(*) > 1
+          )
+        mustBe: 0
+      - type: sql
+        description: "C4: every run payload parses as valid JSON."
+        severity: error
+        query: |
+          SELECT COUNT(*) FROM gold.dim_run_values
+          WHERE NOT json_valid(run_values)
+        mustBe: 0
+
+  - name: dim_run_columns
+    physicalName: dim_run_columns
+    logicalType: object
+    physicalType: table
+    description: >
+      Lineage group, columns side: one row per distinct run manifest,
+      keyed by schema key. Engine-emitted (D-09).
+    properties:
+      - name: run_col_hash_id
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        description: "Schema key over the run manifest in declared order (D-18)."
+      - name: run_columns
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        description: "Run manifest: compact JSON array in declared order."
+      - name: loaded_at
+        logicalType: date
+        physicalType: TIMESTAMP
+        required: true
+        description: Audit stamp; outside every hashed payload (rule 13).
+    quality:
+      - type: library
+        metric: rowCount
+        description: The dimension is never empty once the star builds.
+        severity: error
+        mustBeGreaterThan: 0
+      - type: sql
+        description: >
+          Schema-key uniqueness: the error-severity twin of the primaryKey
+          flag.
+        severity: error
+        query: |
+          SELECT COUNT(*) FROM (
+            SELECT run_col_hash_id FROM gold.dim_run_columns
+            GROUP BY run_col_hash_id HAVING COUNT(*) > 1
+          )
+        mustBe: 0
+
+  - name: dim_timeframe_values
+    physicalType: table
+    physicalName: dim_timeframe_values
+    logicalType: object
+    description: >
+      Time group, values side: one row per distinct timeframe payload —
+      the mapping contract's declared time column truncated to its
+      declared grain (invoiced_at at minute grain for invoice_lines),
+      rendered canonically. Engine-emitted (D-09).
+    properties:
+      - name: timeframe_hash_id
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        description: "Record key over the timeframe payload (D-18)."
+      - name: timeframe_col_hash_id
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        description: >
+          Schema key of the timeframe manifest; resolves in
+          dim_timeframe_columns.
+      - name: timeframe_values
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        description: "Timeframe payload: canonical JSON text (C4-gated)."
+      - name: loaded_at
+        logicalType: date
+        physicalType: TIMESTAMP
+        required: true
+        description: Audit stamp; outside every hashed payload (rule 13).
+    quality:
+      - type: library
+        metric: rowCount
+        description: The dimension is never empty once the star builds.
+        severity: error
+        mustBeGreaterThan: 0
+      - type: sql
+        description: >
+          Content-key uniqueness: the error-severity twin of the
+          primaryKey flag.
+        severity: error
+        query: |
+          SELECT COUNT(*) FROM (
+            SELECT timeframe_hash_id FROM gold.dim_timeframe_values
+            GROUP BY timeframe_hash_id HAVING COUNT(*) > 1
+          )
+        mustBe: 0
+      - type: sql
+        description: "C4: every timeframe payload parses as valid JSON."
+        severity: error
+        query: |
+          SELECT COUNT(*) FROM gold.dim_timeframe_values
+          WHERE NOT json_valid(timeframe_values)
+        mustBe: 0
+
+  - name: dim_timeframe_columns
+    physicalName: dim_timeframe_columns
+    logicalType: object
+    physicalType: table
+    description: >
+      Time group, columns side: one row per distinct timeframe manifest,
+      keyed by schema key. Engine-emitted (D-09).
+    properties:
+      - name: timeframe_col_hash_id
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        description: >
+          Schema key over the timeframe manifest in declared order (D-18).
+      - name: timeframe_columns
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        description: "Timeframe manifest: compact JSON array in declared order."
+      - name: loaded_at
+        logicalType: date
+        physicalType: TIMESTAMP
+        required: true
+        description: Audit stamp; outside every hashed payload (rule 13).
+    quality:
+      - type: library
+        metric: rowCount
+        description: The dimension is never empty once the star builds.
+        severity: error
+        mustBeGreaterThan: 0
+      - type: sql
+        description: >
+          Schema-key uniqueness: the error-severity twin of the primaryKey
+          flag.
+        severity: error
+        query: |
+          SELECT COUNT(*) FROM (
+            SELECT timeframe_col_hash_id FROM gold.dim_timeframe_columns
+            GROUP BY timeframe_col_hash_id HAVING COUNT(*) > 1
+          )
+        mustBe: 0
+
+  - name: dim_invoice_lines_values
+    physicalName: dim_invoice_lines_values
+    logicalType: object
+    physicalType: table
+    description: >
+      invoice_lines category group, values side: the dimension-attribute
+      payload per the mapping contract (dimension-role fields plus the
+      derived line_identity degenerate identifier), deduplicated by
+      content key — line-unique at transaction grain because line_identity
+      carries the declared silver grain tuple as one canonical_key v2
+      digest. Generic column names (dim_*) keep the physical shape
+      source-invariant; the category lives in the table name.
+      Engine-emitted (D-09).
+    properties:
+      - name: dim_hash_id
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        description: "Record key over the dimension payload (D-18)."
+      - name: dim_col_hash_id
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        description: >
+          Schema key of the dimension manifest; resolves in
+          dim_invoice_lines_columns. The signature test announces itself
+          here: a new mapping dimension mints a NEW schema key (D-17).
+      - name: dim_values
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        description: "Dimension payload: canonical JSON text (C4-gated)."
+      - name: loaded_at
+        logicalType: date
+        physicalType: TIMESTAMP
+        required: true
+        description: Audit stamp; outside every hashed payload (rule 13).
+    quality:
+      - type: library
+        metric: rowCount
+        description: The dimension is never empty once the star builds.
+        severity: error
+        mustBeGreaterThan: 0
+      - type: sql
+        description: >
+          Content-key uniqueness: the error-severity twin of the
+          primaryKey flag.
+        severity: error
+        query: |
+          SELECT COUNT(*) FROM (
+            SELECT dim_hash_id FROM gold.dim_invoice_lines_values
+            GROUP BY dim_hash_id HAVING COUNT(*) > 1
+          )
+        mustBe: 0
+      - type: sql
+        description: "C4: every dimension payload parses as valid JSON."
+        severity: error
+        query: |
+          SELECT COUNT(*) FROM gold.dim_invoice_lines_values
+          WHERE NOT json_valid(dim_values)
+        mustBe: 0
+
+  - name: dim_invoice_lines_columns
+    physicalName: dim_invoice_lines_columns
+    logicalType: object
+    physicalType: table
+    description: >
+      invoice_lines category group, columns side: one row per distinct
+      category manifest — the dimension-payload field set and the
+      measure-payload field set both live here, keyed by schema key. The
+      signature test's public announcement is a new row in this table plus
+      a registry row (D-17).
+    properties:
+      - name: dim_col_hash_id
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        description: >
+          Schema key over a category manifest in declared order (D-18).
+      - name: dim_columns
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        description: "Category manifest: compact JSON array in declared order."
+      - name: loaded_at
+        logicalType: date
+        physicalType: TIMESTAMP
+        required: true
+        description: Audit stamp; outside every hashed payload (rule 13).
+    quality:
+      - type: library
+        metric: rowCount
+        description: The dimension is never empty once the star builds.
+        severity: error
+        mustBeGreaterThan: 0
+      - type: sql
+        description: >
+          Schema-key uniqueness: the error-severity twin of the primaryKey
+          flag.
+        severity: error
+        query: |
+          SELECT COUNT(*) FROM (
+            SELECT dim_col_hash_id FROM gold.dim_invoice_lines_columns
+            GROUP BY dim_col_hash_id HAVING COUNT(*) > 1
+          )
+        mustBe: 0
+
+  - name: fact_invoice_lines_values
+    physicalName: fact_invoice_lines_values
+    logicalType: object
+    physicalType: table
+    description: >
+      The invoice_lines fact: measure payload (quantity, unit_price per
+      mapping v1.0.0), manifest reference, and group-key references. One
+      row per declared transaction grain — one row per silver invoice line
+      (44,721 at silver v1.1.0 over the committed sample; the C1
+      conservation arithmetic). Composite primary key (fact, source,
+      timeframe, dim) hashes; run_hash_id is deliberately NON-key so a
+      contract version bump never mints duplicate facts (D-17).
+      Engine-emitted (D-09).
+    dataGranularityDescription: >
+      Transaction grain per the mapping contract: one row per silver
+      invoice line, made line-unique by the derived line_identity carried
+      in the dimension payload.
+    properties:
+      - name: fact_hash_id
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        description: "Record key over the measure payload (D-18)."
+      - name: source_hash_id
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 2
+        description: "Group key: resolves in gold.dim_source_values (C2)."
+      - name: timeframe_hash_id
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 3
+        description: "Group key: resolves in gold.dim_timeframe_values (C2)."
+      - name: dim_hash_id
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 4
+        description: "Group key: resolves in gold.dim_invoice_lines_values (C2)."
+      - name: run_hash_id
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        description: >
+          Non-key lineage reference: resolves in gold.dim_run_values (C2)
+          but never participates in the fact grain (D-17).
+      - name: fact_col_hash_id
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        description: >
+          Schema key of the measure manifest: resolves in
+          gold.dim_invoice_lines_columns (C2).
+      - name: fact_values
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        description: "Measure payload: canonical JSON text (C4-gated)."
+      - name: loaded_at
+        logicalType: date
+        physicalType: TIMESTAMP
+        required: true
+        description: Audit stamp; outside every hashed payload (rule 13).
+    quality:
+      - type: library
+        metric: rowCount
+        description: The fact is never empty once the star builds.
+        severity: error
+        mustBeGreaterThan: 0
+      - type: sql
+        description: >
+          C1 conservation: silver rows in scope equal fact rows at
+          transaction grain (44,721 + 0 excluded = 44,721 at v1.1.0 over
+          the committed sample). Schema-qualified silver reference by
+          design: a missing referenced table catalog-errors loudly rather
+          than skipping (F-08).
+        severity: error
+        query: |
+          SELECT (SELECT COUNT(*) FROM silver.silver_invoice_lines)
+               - (SELECT COUNT(*) FROM gold.fact_invoice_lines_values)
+        mustBe: 0
+      - type: sql
+        description: "C2: every source_hash_id resolves in dim_source_values."
+        severity: error
+        query: |
+          SELECT COUNT(*) FROM gold.fact_invoice_lines_values f
+          WHERE NOT EXISTS (
+            SELECT 1 FROM gold.dim_source_values d
+            WHERE d.source_hash_id = f.source_hash_id
+          )
+        mustBe: 0
+      - type: sql
+        description: "C2: every timeframe_hash_id resolves in dim_timeframe_values."
+        severity: error
+        query: |
+          SELECT COUNT(*) FROM gold.fact_invoice_lines_values f
+          WHERE NOT EXISTS (
+            SELECT 1 FROM gold.dim_timeframe_values d
+            WHERE d.timeframe_hash_id = f.timeframe_hash_id
+          )
+        mustBe: 0
+      - type: sql
+        description: "C2: every dim_hash_id resolves in dim_invoice_lines_values."
+        severity: error
+        query: |
+          SELECT COUNT(*) FROM gold.fact_invoice_lines_values f
+          WHERE NOT EXISTS (
+            SELECT 1 FROM gold.dim_invoice_lines_values d
+            WHERE d.dim_hash_id = f.dim_hash_id
+          )
+        mustBe: 0
+      - type: sql
+        description: >
+          C2: every run_hash_id (non-key) resolves in dim_run_values.
+        severity: error
+        query: |
+          SELECT COUNT(*) FROM gold.fact_invoice_lines_values f
+          WHERE NOT EXISTS (
+            SELECT 1 FROM gold.dim_run_values d
+            WHERE d.run_hash_id = f.run_hash_id
+          )
+        mustBe: 0
+      - type: sql
+        description: >
+          C2: every fact_col_hash_id (measure manifest) resolves in
+          dim_invoice_lines_columns.
+        severity: error
+        query: |
+          SELECT COUNT(*) FROM gold.fact_invoice_lines_values f
+          WHERE NOT EXISTS (
+            SELECT 1 FROM gold.dim_invoice_lines_columns d
+            WHERE d.dim_col_hash_id = f.fact_col_hash_id
+          )
+        mustBe: 0
+      - type: sql
+        description: >
+          Grain enforcement: zero duplicate (fact, source, timeframe, dim)
+          key tuples — the error-severity twin of the composite primaryKey
+          flag, whose generated test is warn-hardcoded (F-08).
+        severity: error
+        query: |
+          SELECT COUNT(*) FROM (
+            SELECT fact_hash_id, source_hash_id, timeframe_hash_id, dim_hash_id
+            FROM gold.fact_invoice_lines_values
+            GROUP BY fact_hash_id, source_hash_id, timeframe_hash_id, dim_hash_id
+            HAVING COUNT(*) > 1
+          )
+        mustBe: 0
+      - type: sql
+        description: "C4: every measure payload parses as valid JSON."
+        severity: error
+        query: |
+          SELECT COUNT(*) FROM gold.fact_invoice_lines_values
+          WHERE NOT json_valid(fact_values)
+        mustBe: 0
+
+servers:
+  - server: local
+    type: duckdb
+    database: warehouse/metricmine.duckdb
+    schema: gold
+
+customProperties:
+  - property: proposedBy
+    value: human
+  - property: proposedAt
+    value: "2026-08-08"
+  - property: provenanceNote
+    value: >-
+      pattern-derived; authored from docs/spec/gold-unified-event-star.md,
+      not from a profile artifact; no profileHash exists
