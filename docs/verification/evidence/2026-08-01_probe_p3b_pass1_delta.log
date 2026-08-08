@@ -1,0 +1,73 @@
+== P3b: measured pass-1 delta (divergent emitter texts) ==
+-- dbt build --
+build exit: 0
+[0m16:58:46  [32mCompleted successfully[0m
+[0m16:58:46  Done. PASS=13 WARN=0 ERROR=0 SKIP=0 NO-OP=0 TOTAL=13
+-- sync pass 1 --
+sync exit: 0
+2026-08-01 16:58:48,233 - root - WARNING - Schema `probe_registry` resolves to model `probe_registry`, which has no matching dbt model (no `.sql` or YAML entry) in this project — nothing to test, skipping. If the model exists under a different name, try `--model-resolution physicalName`.
+gold_probe_star.odcs.yaml: Synced 1 model: updated 1 YAML file, wrote 1 singular
+silver_invoice_lines.odcs.yaml: Synced 1 model: updated 0 YAML files.
+-- MEASURED DELTA: diff pre-sync vs post-sync yml --
+--- /root/mm-prep/evidence/2026-08-01_probe_p3b_presync_fixture.yml	2026-08-01 16:58:40.627948062 +0000
++++ transform/models/gold/dim_probe_values.yml	2026-08-01 16:58:48.243335871 +0000
+@@ -5,7 +5,7 @@
+ 
+ models:
+   - name: dim_probe_values
+-    description: EMITTER TEXT model description, differing from the contract.
++    description: Modeled object (dbt model exists and builds).
+     config:
+       contract:
+         enforced: true
+@@ -17,9 +17,33 @@
+         data_type: VARCHAR
+         constraints:
+           - type: not_null
+-        description: EMITTER TEXT value_hash_id description, differing from the contract.
++        description: Record hash key (probe stand-in).
++        data_tests:
++          - not_null:
++              config:
++                severity: warn
++                meta:
++                  datacontract_cli:
++                    check: dim_probe_values__value_hash_id__field_required
++                    include_in_tests: true
++                    contract_versions:
++                      - 0.0.1
++                    generated: true
++              description: Check that field value_hash_id has no missing values
+       - name: payload
+         data_type: VARCHAR
+         constraints:
+           - type: not_null
+-        description: EMITTER TEXT payload description, differing from the contract.
++        description: Value payload as compact JSON text (probe stand-in).
++        data_tests:
++          - not_null:
++              config:
++                severity: warn
++                meta:
++                  datacontract_cli:
++                    check: dim_probe_values__payload__field_required
++                    include_in_tests: true
++                    contract_versions:
++                      - 0.0.1
++                    generated: true
++              description: Check that field payload has no missing values
+(diff exit: 1 — 1 means differences shown above)
+== P3b continued: fixed point over the measured post-sync state ==
+-- header-comment survival check (first 3 lines post-sync) --
+# PROBE ARTIFACT (P3b) — pass-1 delta measurement with DIVERGENT texts.
+# Model and column descriptions deliberately differ from the contract so
+# the diff shows exactly what sync replaces versus preserves.
+-- capture: sha256sum > manifest, then sync pass 2, then sha256sum -c --
+2bd017a58bdc902f9895e67af3b3bf2c14eb2c07364c4df262bac6f12b664435  transform/models/gold/dim_probe_values.yml
+43a9832e0967bad7e70b8053db5af689a92e00b897a49270c52ac71de679e3d6  transform/tests/datacontract_cli/gold_probe_star/gold_probe_star__0_0_1__dim_probe_values__matched_object_rule__must_generate_and_r.sql
+sync pass-2 exit: 0
+gold_probe_star.odcs.yaml: Synced 1 model: updated 0 YAML files.
+silver_invoice_lines.odcs.yaml: Synced 1 model: updated 0 YAML files.
+transform/models/gold/dim_probe_values.yml: OK
+transform/tests/datacontract_cli/gold_probe_star/gold_probe_star__0_0_1__dim_probe_values__matched_object_rule__must_generate_and_r.sql: OK
+sha256sum -c exit: 0

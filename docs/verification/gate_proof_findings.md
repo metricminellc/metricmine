@@ -24,6 +24,10 @@ order by design.
 | [F-08](#f-08) | Generated tests are warn-only; enforcement lives in contract severities | Model rung |
 | [F-09](#f-09) | `datacontract dbt test` runs dbt from inside the project directory | Model rung |
 | [F-10](#f-10) | Profile duplicate metrics cannot see near-duplicates | Model rung |
+| [F-11](#f-11) | DuckDB key-function semantics at the pinned engine | Engine rung |
+| [F-12](#f-12) | Model-less contracts skip cleanly; collisions fail loudly | Engine rung |
+| [F-13](#f-13) | Partially-modeled multi-object contracts hold the gate green | Engine rung |
+| [F-14](#f-14) | The sync fixed point exists and is reachable by emission | Engine rung |
 
 ## Command surface (datacontract-cli 1.0.12)
 
@@ -153,3 +157,88 @@ the default preserves repo-root runs.
 clock-drift pair (invoice 492807, one minute apart) violated the declared
 grain and falsified the v1.0.0 uniqueness claim. Grain claims need direct
 measurement against bronze, not profile inference alone.
+
+## Engine rung (Phase 4 planning and prep probes, August 1, 2026)
+
+Findings from the planning session's live function-semantics probe
+(duckdb 1.4.3, the pinned engine) and the prep session's three toolchain
+probes, run on a fresh clone at head 7345e4e with the CI job environment
+replicated verbatim (absolute `DBT_PROFILES_DIR` and `MM_WAREHOUSE_PATH`,
+bronze landed offline via `make ingest`, all gates green at baseline).
+Full transcript:
+[`evidence/2026-08-01_prep_probe_transcript.md`](evidence/2026-08-01_prep_probe_transcript.md).
+These findings are load-bearing for
+[`docs/spec/engine.md`](../spec/engine.md).
+
+### F-11
+**DuckDB key-function semantics at the pinned engine (1.4.3), verified
+live.** `sha256()` exists in core, returns VARCHAR, 64-char lowercase hex,
+and matches Python `hashlib` byte-for-byte on shared vectors. `to_json()`
+over structs emits COMPACT JSON and preserves INSERTION order — it does
+not sort, so sorted payload fields are an EMISSION-time property, never
+assumed from the engine. `lower()` is unicode-safe over serialized JSON
+text (ä, ß verified) and parity with Python `str.lower()` is
+vector-checked. `json_valid()` and `json_extract()`/`json_extract_string()`
+behave as C4 and the typed projections need. `to_json(list)` yields
+compact JSON arrays (the manifest mechanism). VARCHAR casts are
+scale-preserving for DECIMAL ("2.50", never "2.5") and render TIMESTAMP
+as "YYYY-MM-DD HH:MM:SS" — so the Python keying reference must render
+decimals via `decimal.Decimal`, never float repr, and the golden vectors
+must include decimal, timestamp, and unicode cases. NULL inside a struct
+payload serializes as JSON null; the keying spec rules include-as-null
+explicitly. Same semantics THROUGH dbt-built models: deliberately
+unverified here; lands at the pre-regeneration rehearsal.
+
+### F-12
+**A model-less contract in `contracts/` is skipped cleanly by gate 3;
+a model-name collision fails loudly and fail-safe.** Sync resolves each
+schema object to a dbt model BY NAME and skips unmatched objects with a
+stderr warning before any quality-rule translation: `Synced 0 models`,
+`no tests` in the per-contract results, exit 0, zero files written, zero
+effect on sibling contracts in the same glob — even when the unmatched
+object carries query-bearing error-severity quality rules (they are never
+half-applied; equally, they are never applied, so rules on a permanently
+model-less contract are dead letters and are banned by the engine spec's
+JSON Schema). When a schema object name COLLIDES with a model another
+contract claims, sync and test both exit 1 (`Cannot sync — overlapping
+dbt models`) and write nothing. Flat placement of mapping contracts is
+therefore permanent-safe at the pin, under the engine spec's naming rule.
+ODCS lint at 1.0.12 tolerates the mapping contract's additive first-class
+keys (object-level entityGroup/sourceTable/timeColumn/timeGrain/grain,
+property-level mappingRole) — verified, and frozen by the pin.
+
+### F-13
+**A partially-modeled multi-object contract holds the gate green.** With
+one schema object modeled and built and a second object unmodeled — the
+second carrying a C3-shaped query rule against its nonexistent table —
+sync syncs the matched object (properties updated, singular test written)
+and skips the unmatched one; test runs the matched object's tests and
+reports the contract PASSED; exit 0 end to end. Consequence for the
+ladder: the registry amendment window (contract-first, model one PR
+later) is safe in the preferred order. Stated honestly: a skipped
+object's rules are declared but NOT enforced until its model lands —
+skip is no coverage, not passing coverage.
+
+### F-14
+**The sync fixed point exists and is reachable by emission.** Over a
+properties file emitted the way a naive emitter would write it, the
+pass-1 delta was MEASURED as a unified diff against a preserved pre-sync
+fixture carrying deliberately divergent texts
+([`evidence/2026-08-01_probe_p3b_pass1_delta.log`](evidence/2026-08-01_probe_p3b_pass1_delta.log)):
+(1) the model description AND every column description replaced with the
+governing contract's text, verbatim; (2) per `required: true` column, a
+`data_tests: - not_null:` block at severity warn carrying
+`datacontract_cli` meta (`check: <model>__<column>__field_required`,
+`include_in_tests: true`, `contract_versions: [<version>]`,
+`generated: true`) and the description `Check that field <column> has no
+missing values`; (3) per query-bearing rule on a MATCHED object, a
+singular test under `transform/tests/datacontract_cli/<contract_id>/`
+with the AUTO-GENERATED header, the contract-declared severity, and the
+`WITH _dc_metric` wrapper. Comment headers survive in-place editing, so
+generated-by headers are sync-safe. Nothing else changed at this fixture
+shape; the pre-regeneration rehearsal re-checks the delta over the real
+emitted star. Over the post-sync state, a second sync reports zero
+updated files and `sha256sum -c` confirms the model yml and the singular
+test byte-identical. An emitter that emits this shape directly produces
+files sync leaves untouched; ownership-manifest checksums are defined
+over that state ([`docs/spec/engine.md`](../spec/engine.md) §6).

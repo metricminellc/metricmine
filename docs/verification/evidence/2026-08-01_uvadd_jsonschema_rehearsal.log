@@ -1,0 +1,19 @@
+== uv add rehearsal: jsonschema dev-dep (kept log) ==
+uv add exit: 0
+-- pyproject diff --
+25a26
+>     "jsonschema>=4.26,<5",
+-- uv.lock diff (full) --
+1034a1035
+>     { url = "https://files.pythonhosted.org/packages/fb/fb/d97dc261209c80744b7c8132693a30d70ec6e7315e632cb0a10b3fec94dd/greenlet-3.5.3-cp312-cp312-manylinux_2_24_s390x.manylinux_2_28_s390x.whl", hash = "sha256:5795cd1101371140551c645f2d408b8d3c01a5a29cf8a9bce6e759c983682d23", size = 622351, upload-time = "2026-06-26T19:24:16.32Z" },
+1035a1037
+>     { url = "https://files.pythonhosted.org/packages/8e/ac/e5fee13cbbd0e8de312d9a146584b8a51891c68847330ef9dc8b5109d23f/greenlet-3.5.3-cp312-cp312-manylinux_2_39_riscv64.whl", hash = "sha256:af4923b3096e26a36d7e9cf24ab88083a20f97d191e3b97f253731ce9b41b28c", size = 425395, upload-time = "2026-06-26T19:25:37.144Z" },
+1485a1488
+>     { name = "jsonschema" },
+1502a1506
+>     { name = "jsonschema", specifier = ">=4.26,<5" },
+-- resolved version --
+jsonschema 4.26.0
+-- NOTE: the two greenlet lines are wheel-list additions at the UNCHANGED pinned 3.5.3 (uv refreshed the wheel inventory); no package version changes --
+1028:version = "3.5.3"
+(reverted; empty status = clean)

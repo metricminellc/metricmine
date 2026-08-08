@@ -1,0 +1,98 @@
+# PROBE ARTIFACT (P1) — candidate shape for the Phase 4 mapping contract.
+# A mapping contract is an ODCS document with NO corresponding dbt model,
+# ever: the engine consumes it and emits the gold star models. This probe
+# measures gate-1 lint and gate-3 sync/test behavior for a permanent
+# model-less resident of contracts/ (ladder Q6).
+apiVersion: v3.1.0
+kind: DataContract
+id: gold_invoice_lines_mapping
+name: Gold mapping, invoice_lines category
+version: 0.0.1
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+
+description:
+  purpose: >
+    Declares how silver.silver_invoice_lines maps into the unified event
+    star as the invoice_lines fact category. Consumed by the auto-modeling
+    engine (D-07); no physical table carries this contract's name.
+  usage: >
+    Engine input only. The engine reads this contract and emits the gold
+    dbt models; dbt builds them; the gold star contract governs the
+    physical tables.
+
+schema:
+  - name: invoice_lines
+    logicalType: object
+    physicalType: mapping
+    description: >
+      The invoice_lines fact category mapping. Properties are the mapped
+      silver columns; the role split (dimension, measure, degenerate
+      identifier, time) is first-class, not decoration.
+    properties:
+      - name: stock_code
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        description: Dimension attribute.
+        customProperties:
+          - property: mappingRole
+            value: dimension
+      - name: quantity
+        logicalType: integer
+        physicalType: INTEGER
+        required: true
+        description: Measure; also part of the declared silver grain tuple.
+        customProperties:
+          - property: mappingRole
+            value: measure
+      - name: unit_price
+        logicalType: number
+        physicalType: DECIMAL(10,2)
+        required: true
+        description: Measure; also part of the declared silver grain tuple.
+        customProperties:
+          - property: mappingRole
+            value: measure
+      - name: invoiced_at
+        logicalType: date
+        physicalType: TIMESTAMP
+        required: true
+        description: Declared time column at declared grain.
+        customProperties:
+          - property: mappingRole
+            value: time
+      - name: invoice_id
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        description: Degenerate identifier carried in the dimension payload.
+        customProperties:
+          - property: mappingRole
+            value: degenerate-identifier
+    quality:
+      - type: sql
+        description: >
+          P1b HAZARD PROBE: a query-bearing error-severity rule on a
+          model-less contract. Does sync emit a singular test file that
+          gate 3 then runs against a nonexistent table?
+        severity: error
+        query: |
+          SELECT COUNT(*) FROM gold.fact_invoice_lines_values WHERE 1=0
+        mustBe: 0
+
+customProperties:
+  - property: proposedBy
+    value: human
+  - property: profileHash
+    value: "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+  - property: proposedAt
+    value: "2026-08-01"
+  - property: probeArtifact
+    value: "true"
+  - property: sourceTable
+    value: silver.silver_invoice_lines
+  - property: grain
+    value: transaction

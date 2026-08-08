@@ -1,0 +1,25 @@
+# PROBE ARTIFACT (P3b) — pass-1 delta measurement with DIVERGENT texts.
+# Model and column descriptions deliberately differ from the contract so
+# the diff shows exactly what sync replaces versus preserves.
+version: 2
+
+models:
+  - name: dim_probe_values
+    description: EMITTER TEXT model description, differing from the contract.
+    config:
+      contract:
+        enforced: true
+      meta:
+        datacontract_cli:
+          contract_id: gold_probe_star
+    columns:
+      - name: value_hash_id
+        data_type: VARCHAR
+        constraints:
+          - type: not_null
+        description: EMITTER TEXT value_hash_id description, differing from the contract.
+      - name: payload
+        data_type: VARCHAR
+        constraints:
+          - type: not_null
+        description: EMITTER TEXT payload description, differing from the contract.

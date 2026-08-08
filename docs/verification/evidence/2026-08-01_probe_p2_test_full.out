@@ -1,0 +1,61 @@
+
+Contract gold_probe_star@0.0.1 — 
+/root/mm-prep/repo/contracts/gold_probe_star.odcs.yaml
+╭────────┬───────────────────────────────────────────┬───────────────┬─────────╮
+│ Result │ Check                                     │ Field         │ Details │
+├────────┼───────────────────────────────────────────┼───────────────┼─────────┤
+│ passed │ Matched-object rule; must generate and    │               │         │
+│        │ run.                                      │               │         │
+│ passed │ Check that field payload has no missing   │ payload       │         │
+│        │ values                                    │               │         │
+│ passed │ Check that field value_hash_id has no     │ value_hash_id │         │
+│        │ missing values                            │               │         │
+╰────────┴───────────────────────────────────────────┴───────────────┴─────────╯
+🟢 dbt tests passed. Ran 3 tests. Took 0.04403 seconds.
+
+Contract silver_invoice_lines@1.1.0 — 
+/root/mm-prep/repo/contracts/silver_invoice_lines.odcs.yaml
+╭────────┬─────────────────────────────────────────┬─────────────────┬─────────╮
+│ Result │ Check                                   │ Field           │ Details │
+├────────┼─────────────────────────────────────────┼─────────────────┼─────────┤
+│ passed │ Grain enforcement: no duplicate         │                 │         │
+│        │ (invoice_id, stock_code, quantity,      │                 │         │
+│        │ unit_price) combinations. Declared at   │                 │         │
+│        │ error severity because the              │                 │         │
+│        │ primaryKey-flag composite test          │                 │         │
+│        │ generates at hardcoded warn severity at │                 │         │
+│        │ datacontract-cli 1.0.12 and cannot      │                 │         │
+│        │ redden a gate; this rule is the         │                 │         │
+│        │ enforcing twin (rule 5: uniqueness as a │                 │         │
+│        │ test, never a trusted constraint).      │                 │         │
+│        │                                         │                 │         │
+│ passed │ The table is never empty; the committed │                 │         │
+│        │ sample yields tens of thousands of      │                 │         │
+│        │ surviving lines.                        │                 │         │
+│        │                                         │                 │         │
+│ passed │ Check that model silver_invoice_lines   │                 │         │
+│        │ has a unique combination of columns     │                 │         │
+│        │ invoice_id, stock_code, quantity,       │                 │         │
+│        │ unit_price                              │                 │         │
+│ passed │ Check that field country has no missing │ country         │         │
+│        │ values                                  │                 │         │
+│ passed │ Check that field invoice_id has no      │ invoice_id      │         │
+│        │ missing values                          │                 │         │
+│ passed │ Check that field invoiced_at has no     │ invoiced_at     │         │
+│        │ missing values                          │                 │         │
+│ passed │ Check that field is_cancellation has no │ is_cancellation │         │
+│        │ missing values                          │                 │         │
+│ passed │ Check that field quantity has no        │ quantity        │         │
+│        │ missing values                          │                 │         │
+│ passed │ Check that field stock_code has no      │ stock_code      │         │
+│        │ missing values                          │                 │         │
+│ passed │ Check that field unit_price has no      │ unit_price      │         │
+│        │ missing values                          │                 │         │
+│ passed │ Unit price is never negative.           │ unit_price      │         │
+╰────────┴─────────────────────────────────────────┴─────────────────┴─────────╯
+🟢 dbt tests passed. Ran 11 tests. Took 0.046804 seconds.
+
+Contract results:
+  🟢 gold_probe_star@0.0.1 — passed
+  🟢 silver_invoice_lines@1.1.0 — passed
+Tested 2 contract(s): 2 passed.

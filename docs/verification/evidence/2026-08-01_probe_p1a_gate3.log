@@ -1,0 +1,17 @@
+-- gate 3 sync (glob: both contracts) --
+2026-08-01 16:17:14,696 - root - WARNING - Schema `invoice_lines` resolves to model `invoice_lines`, which has no matching dbt model (no `.sql` or YAML entry) in this project — nothing to test, skipping. If the model exists under a different name, try `--model-resolution physicalName`.
+gold_invoice_lines_mapping.odcs.yaml: Synced 0 models: updated 0 YAML files.
+silver_invoice_lines.odcs.yaml: Synced 1 model: updated 0 YAML files.
+Run `datacontract dbt test` to execute the generated tests.
+sync exit: 0
+-- files created/modified by sync --
+?? contracts/gold_invoice_lines_mapping.odcs.yaml
+(end status)
+-- gate 3 test (glob) --
+🟢 dbt tests passed. Ran 11 tests. Took 0.010393 seconds.
+
+Contract results:
+  ⚪ gold_invoice_lines_mapping@0.0.1 — no tests
+  🟢 silver_invoice_lines@1.1.0 — passed
+Tested 2 contract(s): 1 no tests · 1 passed.
+test exit: 0

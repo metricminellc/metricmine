@@ -1,0 +1,82 @@
+# PROBE ARTIFACT (P2/P3) — partially-modeled multi-object contract.
+# Object 1 (dim_probe_values) has a built dbt model; object 2
+# (probe_registry) has NO model — the exact Sitting J window: gold contract
+# v1.1.0 adds context_registry plus its C3 error-severity rule at PR 23,
+# one PR before the model lands at PR 24. Both objects carry query-bearing
+# error-severity rules so the probe measures whether the unmodeled object's
+# rule generates a test that runs against a nonexistent table.
+apiVersion: v3.1.0
+kind: DataContract
+id: gold_probe_star
+name: Gold probe star (P2/P3 fixture)
+version: 0.0.1
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+
+description:
+  purpose: >
+    Probe fixture. Two schema objects, one modeled and one not, mirroring
+    the v1.1.0 registry window at Sitting J.
+
+schema:
+  - name: dim_probe_values
+    physicalName: dim_probe_values
+    logicalType: object
+    physicalType: table
+    description: Modeled object (dbt model exists and builds).
+    properties:
+      - name: value_hash_id
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        description: Record hash key (probe stand-in).
+      - name: payload
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        description: Value payload as compact JSON text (probe stand-in).
+    quality:
+      - type: sql
+        description: Matched-object rule; must generate and run.
+        severity: error
+        query: |
+          SELECT COUNT(*) FROM gold.dim_probe_values WHERE value_hash_id IS NULL
+        mustBe: 0
+  - name: probe_registry
+    physicalName: probe_registry
+    logicalType: object
+    physicalType: table
+    description: >
+      UNMODELED object (no dbt model, no table): the context_registry
+      analog in the PR 23 window.
+    properties:
+      - name: schema_key
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        description: Schema hash key (probe stand-in).
+    quality:
+      - type: sql
+        description: >
+          C3-analog rule on the unmodeled object; references a table that
+          does not exist yet.
+        severity: error
+        query: |
+          SELECT COUNT(*) FROM gold.probe_registry WHERE schema_key IS NULL
+        mustBe: 0
+
+servers:
+  - server: local
+    type: duckdb
+    database: warehouse/metricmine.duckdb
+    schema: gold
+
+customProperties:
+  - property: proposedBy
+    value: human
+  - property: probeArtifact
+    value: "true"
+  - property: proposedAt
+    value: "2026-08-01"
