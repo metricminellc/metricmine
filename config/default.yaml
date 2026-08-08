@@ -12,9 +12,15 @@ ingestion:
 
 # Profiling per docs/spec/profiler.md: the deterministic profiler reads the
 # working warehouse read-only (D-11) and writes committed artifacts under
-# profiles/<schema>.<table>/.
+# profiles/<schema>.<table>/. Since the silver-pass scope amendment
+# (spec §8), targets is a list: one artifact directory per table, the same
+# code over each schema. The silver profile is the mapping contract's
+# profileHash source and the Phase 6 mapping proposer's sole context (D-23).
 profiling:
   warehouse_path: warehouse/metricmine.duckdb
-  schema: bronze
-  table: online_retail_ii
   output_dir: profiles
+  targets:
+    - schema: bronze
+      table: online_retail_ii
+    - schema: silver
+      table: silver_invoice_lines
