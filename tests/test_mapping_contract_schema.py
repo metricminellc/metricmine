@@ -5,6 +5,12 @@ mapping contract shape, frozen at the engine-spec PR because Phase 6's
 gold mapping proposer emits structured output against this exact schema
 (D-21); a change here is a spec amendment in its own PR.
 
+Beyond the example, every REAL mapping contract living flat in contracts/
+(physicalType: mapping is the discriminator, CLAUDE.md rule 9) is held to
+the same schema here, from the moment it lands: gate 1 lints its ODCS
+shape, but only this test enforces the machine schema in CI until the
+engine's reader arrives and re-checks at every emission.
+
 Runs keyless in the CI pytest lane. jsonschema is a dev dependency pinned
 in pyproject.toml (already resolved in uv.lock as a transitive of the
 locked toolchain; the explicit pin makes the test's dependency honest).
@@ -138,3 +144,34 @@ def test_one_category_per_contract(
     doc = copy.deepcopy(example)
     doc["schema"].append(copy.deepcopy(doc["schema"][0]))
     assert _refused(validator, doc)
+
+
+def _real_mapping_contracts() -> list[Path]:
+    return sorted(
+        path
+        for path in (REPO_ROOT / "contracts").glob("*.odcs.yaml")
+        if any(
+            obj.get("physicalType") == "mapping"
+            for obj in yaml.safe_load(path.read_text(encoding="utf-8")).get(
+                "schema", []
+            )
+        )
+    )
+
+
+_REAL = _real_mapping_contracts()
+
+
+@pytest.mark.parametrize("path", _REAL, ids=[p.name for p in _REAL])
+def test_real_mapping_contracts_validate(
+    validator: Draft202012Validator, path: Path
+) -> None:
+    validator.validate(yaml.safe_load(path.read_text(encoding="utf-8")))
+
+
+def test_real_mapping_contract_discovery_ran() -> None:
+    # Guard against silent vacuity: before the first real mapping contract
+    # lands this asserts the discovery glob runs clean (empty is fine);
+    # once contracts/gold_invoice_lines_mapping.odcs.yaml exists, the
+    # parametrized test above must be validating it.
+    assert isinstance(_REAL, list)
