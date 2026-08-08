@@ -1,0 +1,59 @@
+
+Contract gold_invoice_lines_mapping@1.0.0 — 
+/home/user/metricmine/contracts/gold_invoice_lines_mapping.odcs.yaml
+No managed tests found. Run `datacontract dbt sync` first to generate tests from
+your contract.
+
+Contract gold_unified_event_star@1.0.0 — 
+/home/user/metricmine/contracts/gold_unified_event_star.odcs.yaml
+No managed tests found. Run `datacontract dbt sync` first to generate tests from
+your contract.
+
+Contract silver_invoice_lines@1.1.0 — 
+/home/user/metricmine/contracts/silver_invoice_lines.odcs.yaml
+╭────────┬─────────────────────────────────────────┬─────────────────┬─────────╮
+│ Result │ Check                                   │ Field           │ Details │
+├────────┼─────────────────────────────────────────┼─────────────────┼─────────┤
+│ passed │ Grain enforcement: no duplicate         │                 │         │
+│        │ (invoice_id, stock_code, quantity,      │                 │         │
+│        │ unit_price) combinations. Declared at   │                 │         │
+│        │ error severity because the              │                 │         │
+│        │ primaryKey-flag composite test          │                 │         │
+│        │ generates at hardcoded warn severity at │                 │         │
+│        │ datacontract-cli 1.0.12 and cannot      │                 │         │
+│        │ redden a gate; this rule is the         │                 │         │
+│        │ enforcing twin (rule 5: uniqueness as a │                 │         │
+│        │ test, never a trusted constraint).      │                 │         │
+│        │                                         │                 │         │
+│ passed │ The table is never empty; the committed │                 │         │
+│        │ sample yields tens of thousands of      │                 │         │
+│        │ surviving lines.                        │                 │         │
+│        │                                         │                 │         │
+│ passed │ Check that model silver_invoice_lines   │                 │         │
+│        │ has a unique combination of columns     │                 │         │
+│        │ invoice_id, stock_code, quantity,       │                 │         │
+│        │ unit_price                              │                 │         │
+│ passed │ Check that field country has no missing │ country         │         │
+│        │ values                                  │                 │         │
+│ passed │ Check that field invoice_id has no      │ invoice_id      │         │
+│        │ missing values                          │                 │         │
+│ passed │ Check that field invoiced_at has no     │ invoiced_at     │         │
+│        │ missing values                          │                 │         │
+│ passed │ Check that field is_cancellation has no │ is_cancellation │         │
+│        │ missing values                          │                 │         │
+│ passed │ Check that field quantity has no        │ quantity        │         │
+│        │ missing values                          │                 │         │
+│ passed │ Check that field stock_code has no      │ stock_code      │         │
+│        │ missing values                          │                 │         │
+│ passed │ Check that field unit_price has no      │ unit_price      │         │
+│        │ missing values                          │                 │         │
+│ passed │ Unit price is never negative.           │ unit_price      │         │
+╰────────┴─────────────────────────────────────────┴─────────────────┴─────────╯
+🟢 dbt tests passed. Ran 11 tests. Took 0.00616 seconds.
+
+Contract results:
+  ⚪ gold_invoice_lines_mapping@1.0.0 — no tests
+  ⚪ gold_unified_event_star@1.0.0 — no tests
+  🟢 silver_invoice_lines@1.1.0 — passed
+Tested 3 contract(s): 2 no tests · 1 passed.
+TEST_EXIT=0
