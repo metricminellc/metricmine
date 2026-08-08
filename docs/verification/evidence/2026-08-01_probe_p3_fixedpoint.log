@@ -1,0 +1,9 @@
+== P3 pass 2: sync over the post-sync state (fixed-point check) ==
+sync pass-2 exit: 0
+2026-08-01 16:21:18,236 - root - WARNING - Schema `probe_registry` resolves to model `probe_registry`, which has no matching dbt model (no `.sql` or YAML entry) in this project — nothing to test, skipping. If the model exists under a different name, try `--model-resolution physicalName`.
+gold_probe_star.odcs.yaml: Synced 1 model: updated 0 YAML files.
+silver_invoice_lines.odcs.yaml: Synced 1 model: updated 0 YAML files.
+transform/models/gold/dim_probe_values.yml: OK
+transform/tests/datacontract_cli/gold_probe_star/gold_probe_star__0_0_1__dim_probe_values__matched_object_rule__must_generate_and_r.sql: OK
+transform/models/silver/silver_invoice_lines.yml: OK
+FIXED POINT: all files byte-identical after pass 2

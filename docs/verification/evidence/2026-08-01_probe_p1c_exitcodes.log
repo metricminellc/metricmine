@@ -1,0 +1,11 @@
+== exit-code re-verification (no pipes) ==
+-- P1c collision state: sync --
+P1c sync exit: 1
+-- P1c collision state: test --
+P1c test exit: 1
+Cannot sync — overlapping dbt models:
+  - `silver_invoice_lines` is claimed by different contracts. If those are 
+versions of the same contract, make sure they have the same ID: 
+gold_invoice_lines_mapping.odcs.yaml (gold_invoice_lines_mapping), 
+silver_invoice_lines.odcs.yaml (silver_invoice_lines)
+?? contracts/gold_invoice_lines_mapping.odcs.yaml

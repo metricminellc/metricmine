@@ -1,0 +1,27 @@
+== Environment and baseline capture (re-run at session end for the record) ==
+-- head --
+7345e4e docs(spec): record the reader dtype pin, the PyAirbyte pin, and bronze-in-CI in the ingestion spec (#51)
+(status above; empty = clean)
+-- pins by import --
+dbt-core 1.11.12
+dbt-duckdb 1.10.1
+duckdb 1.4.3
+airbyte 0.53.2
+1.0.12
+-- bronze row count --
+bronze rows: 45228
+-- gate 1 --
+lint contracts/silver_invoice_lines.odcs.yaml exit: 0
+-- gate 2 --
+build exit: 0
+[0m16:59:23  Done. PASS=12 WARN=0 ERROR=0 SKIP=0 NO-OP=0 TOTAL=12
+-- gate 3 --
+sync exit: 0
+silver_invoice_lines.odcs.yaml: Synced 1 model: updated 0 YAML files.
+Run `datacontract dbt test` to execute the generated tests.
+-- git status after sync (committed fixed point) --
+(empty = sync no-op over committed state)
+test exit: 0
+🟢 dbt tests passed. Ran 11 tests. Took 0.008927 seconds.
+-- sandbox deltas --
+dbt_utils vendored from GitHub tag 1.3.3 (hub.getdbt.com unreachable in this sandbox; CI/Mac run dbt deps)
