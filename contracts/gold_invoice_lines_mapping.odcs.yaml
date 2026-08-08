@@ -1,0 +1,140 @@
+# Mapping contract: invoice_lines category, v1.0.0 (ODCS v3.1.0).
+# Engine input, never a table: physicalType: mapping is the machine
+# discriminator (CLAUDE.md rule 9); gate 1 lints this file, gate 3 skips it
+# by design (F-12), and the auto-modeling engine validates it against
+# docs/spec/engine/mapping-contract.schema.json before emitting the gold
+# star models (docs/spec/engine.md §2, D-29). Hand-authored from the silver
+# profile v0001 evidence sheet plus judgment; profileHash below is that
+# artifact's content_hash (docs/spec/profiler.md §3).
+# Instance decisions, made at Sitting H planning:
+# - Grain form (b): one derived degenerate identifier, canonical-key-v2
+#   over the declared silver grain tuple (invoice_id, stock_code,
+#   quantity, unit_price — two of the four are measures). The identity IS
+#   the whole tuple, exactly as silver v1.1.0 declares it; measure VALUES
+#   stay out of the dimension payload.
+# - country is deliberately absent: the reserved signature-test dimension,
+#   added by a v1.1.0 amendment at the exit sitting to demonstrate the
+#   signature property (D-17) — regeneration with no engine code change,
+#   no physical schema change, no gold contract amendment.
+apiVersion: v3.1.0
+kind: DataContract
+id: gold_invoice_lines_mapping
+name: Gold mapping, invoice_lines category
+version: 1.0.0
+status: active
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+
+description:
+  purpose: >
+    Declares how silver.silver_invoice_lines maps into the unified event
+    star as the invoice_lines fact category. Consumed by the auto-modeling
+    engine (D-07), which emits the gold dbt models; no physical table ever
+    carries this contract's name.
+  usage: >
+    Engine input only. Gate 1 lints it; gate 3 skips it by design (F-12);
+    the engine validates it against mapping-contract.schema.json and
+    cross-checks every field against the silver contract.
+  limitations: >
+    One available silver column (country) is deliberately unmapped in
+    v1.0.0: it is the reserved signature-test dimension, arriving by
+    amendment. Cancellation lines flow through retained-and-flagged;
+    excluding them is a consumer decision, made at query time, never here.
+
+schema:
+  - name: invoice_lines
+    logicalType: object
+    physicalType: mapping
+    description: >
+      One fact category: line-level retail sales. Transaction grain per the
+      silver contract's grain declaration; cancellations flow through
+      retained-and-flagged, so consumers exclude them deliberately.
+    entityGroup: invoice_lines
+    sourceTable: silver.silver_invoice_lines
+    timeColumn: invoiced_at
+    timeGrain: minute
+    grain:
+      type: transaction
+      degenerateIdentifiers:
+        - source: derived
+          name: line_identity
+          derivation: canonical-key-v2
+          of: [invoice_id, stock_code, quantity, unit_price]
+    properties:
+      - name: invoice_id
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        mappingRole: dimension
+        description: Invoice number; C prefix marks a cancellation.
+      - name: is_cancellation
+        logicalType: boolean
+        physicalType: BOOLEAN
+        required: true
+        mappingRole: dimension
+        description: Cancellation flag; exclusion is a consumer decision.
+      - name: stock_code
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        mappingRole: dimension
+        description: Product code as landed.
+      - name: product_description
+        logicalType: string
+        physicalType: VARCHAR
+        required: false
+        mappingRole: dimension
+        description: Product description; nulls retained.
+      - name: quantity
+        logicalType: integer
+        physicalType: INTEGER
+        required: true
+        mappingRole: measure
+        description: Units on the line; negative only on cancellations.
+      - name: invoiced_at
+        logicalType: date
+        physicalType: TIMESTAMP
+        required: true
+        mappingRole: time
+        description: Invoice timestamp; the declared time column.
+      - name: unit_price
+        logicalType: number
+        physicalType: DECIMAL(10,2)
+        required: true
+        mappingRole: measure
+        description: Unit price in sterling; zero-price lines retained.
+      - name: customer_id
+        logicalType: integer
+        physicalType: INTEGER
+        required: false
+        mappingRole: dimension
+        description: Customer identifier; null on guest checkouts.
+      # country is deliberately absent: the reserved signature-test
+      # dimension (see the header note and decisionReservedColumn below).
+
+servers:
+  - server: local
+    type: duckdb
+    database: warehouse/metricmine.duckdb
+    schema: gold
+
+customProperties:
+  - property: proposedBy
+    value: human
+  - property: profileHash
+    value: "sha256:e65bee8117b65958b8c4741b43509ece19a581dd1d6bad9a7e1da9b67b0b5fcd"
+  - property: proposedAt
+    value: "2026-08-08"
+  - property: decisionCancellations
+    value: flow-through-retained-and-flagged
+  - property: decisionGrainForm
+    value: derived-line-identity-over-declared-silver-grain-tuple
+  - property: decisionReservedColumn
+    value: country-reserved-for-signature-test-v1.1.0
+  - property: provenanceNote
+    value: >-
+      Authored from profiles/silver.silver_invoice_lines/v0001.json (the
+      profileHash artifact) against silver contract v1.1.0's grain
+      declaration; grain form and reserved column decided at Sitting H
+      planning.
