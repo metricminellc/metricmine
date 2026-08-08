@@ -1,0 +1,197 @@
+{
+  "caps": {
+    "max_distinct_values": 20,
+    "max_sample_values": 10,
+    "max_string_chars": 120
+  },
+  "content_hash": "sha256:e65bee8117b65958b8c4741b43509ece19a581dd1d6bad9a7e1da9b67b0b5fcd",
+  "dataset": {
+    "columns": [
+      {
+        "distinct_count": 2330,
+        "is_airbyte_metadata": false,
+        "name": "invoice_id",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "VARCHAR",
+        "sample_values": [
+          "489434",
+          "489435",
+          "489436",
+          "489437",
+          "489438",
+          "489439",
+          "489440",
+          "489441",
+          "489442",
+          "489443"
+        ]
+      },
+      {
+        "distinct_count": 2,
+        "distinct_values": [
+          false,
+          true
+        ],
+        "is_airbyte_metadata": false,
+        "name": "is_cancellation",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "BOOLEAN"
+      },
+      {
+        "distinct_count": 3141,
+        "is_airbyte_metadata": false,
+        "name": "stock_code",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "VARCHAR",
+        "sample_values": [
+          "10002",
+          "10002R",
+          "10080",
+          "10109",
+          "10120",
+          "10123C",
+          "10123G",
+          "10125",
+          "10133",
+          "10134"
+        ]
+      },
+      {
+        "distinct_count": 3034,
+        "is_airbyte_metadata": false,
+        "name": "product_description",
+        "null_count": 228,
+        "null_rate": 0.005098,
+        "physical_type": "VARCHAR",
+        "sample_values": [
+          "*USB Office Glitter Lamp",
+          "*USB Office Mirror Ball",
+          "11 PC CERAMIC TEA SET POLKADOT",
+          "12 ASS ZINC CHRISTMAS DECORATIONS",
+          "12 DAISY PEGS IN WOOD BOX",
+          "12 EGG HOUSE PAINTED WOOD",
+          "12 IVORY ROSE PEG PLACE SETTINGS",
+          "12 MINI TOADSTOOL PEGS",
+          "12 PENCIL SMALL TUBE WOODLAND",
+          "12 PENCILS SMALL TUBE POSY"
+        ]
+      },
+      {
+        "distinct_count": 233,
+        "is_airbyte_metadata": false,
+        "max": 5184,
+        "min": -1395,
+        "name": "quantity",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "INTEGER",
+        "sample_values": [
+          -1395,
+          -1043,
+          -1012,
+          -954,
+          -770,
+          -725,
+          -720,
+          -632,
+          -600,
+          -504
+        ]
+      },
+      {
+        "distinct_count": 2004,
+        "is_airbyte_metadata": false,
+        "max": "2009-12-23T16:58:00",
+        "min": "2009-12-01T07:45:00",
+        "name": "invoiced_at",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "TIMESTAMP",
+        "sample_values": [
+          "2009-12-01T07:45:00",
+          "2009-12-01T07:46:00",
+          "2009-12-01T09:06:00",
+          "2009-12-01T09:08:00",
+          "2009-12-01T09:24:00",
+          "2009-12-01T09:28:00",
+          "2009-12-01T09:43:00",
+          "2009-12-01T09:44:00",
+          "2009-12-01T09:46:00",
+          "2009-12-01T09:50:00"
+        ]
+      },
+      {
+        "distinct_count": 295,
+        "is_airbyte_metadata": false,
+        "max": 1998.49,
+        "min": 0.0,
+        "name": "unit_price",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "DECIMAL(10,2)",
+        "sample_values": [
+          0.0,
+          0.04,
+          0.06,
+          0.08,
+          0.09,
+          0.1,
+          0.12,
+          0.14,
+          0.16,
+          0.18
+        ]
+      },
+      {
+        "distinct_count": 1045,
+        "is_airbyte_metadata": false,
+        "max": 18287,
+        "min": 12346,
+        "name": "customer_id",
+        "null_count": 13446,
+        "null_rate": 0.300664,
+        "physical_type": "INTEGER",
+        "sample_values": [
+          12346,
+          12349,
+          12358,
+          12359,
+          12362,
+          12417,
+          12422,
+          12424,
+          12435,
+          12437
+        ]
+      },
+      {
+        "distinct_count": 24,
+        "is_airbyte_metadata": false,
+        "name": "country",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "VARCHAR",
+        "sample_values": [
+          "Australia",
+          "Austria",
+          "Belgium",
+          "Channel Islands",
+          "Cyprus",
+          "Denmark",
+          "EIRE",
+          "Finland",
+          "France",
+          "Germany"
+        ]
+      }
+    ],
+    "duplicate_row_rate": 0.0,
+    "row_count": 44721,
+    "schema": "silver",
+    "table": "silver_invoice_lines"
+  },
+  "schema_version": "1.0.0"
+}
