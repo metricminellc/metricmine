@@ -301,7 +301,12 @@ toolchain (F-14):
    `config.meta.datacontract_cli` with
    `check: <model>__<column>__field_required`, `include_in_tests: true`,
    `contract_versions: [<contract_version>]`, `generated: true`, and the
-   description `Check that field <column> has no missing values`.
+   description `Check that field <column> has no missing values`. A
+   column flagged `primaryKey: true` ALONE additionally carries the
+   sync-shaped `unique:` twin (`check: <model>__<column>__field_unique`,
+   description `Check that field <column> has no duplicate values`);
+   composite keys generate only the sync-owned `unique_combination`
+   singular test (F-17).
 4. Columns carry `name`, `data_type` (all-or-nothing, rule 4), and
    `constraints: - type: not_null` for required columns (only not_null is
    a trusted constraint, rule 5).
