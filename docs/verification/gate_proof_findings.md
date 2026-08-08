@@ -28,6 +28,8 @@ order by design.
 | [F-12](#f-12) | Model-less contracts skip cleanly; collisions fail loudly | Engine rung |
 | [F-13](#f-13) | Partially-modeled multi-object contracts hold the gate green | Engine rung |
 | [F-14](#f-14) | The sync fixed point exists and is reachable by emission | Engine rung |
+| [F-15](#f-15) | json_valid gates VARCHAR canonical payloads | Contracts rung |
+| [F-16](#f-16) | canonical_key v2 SQL and Python agree at function level | Contracts rung |
 
 ## Command surface (datacontract-cli 1.0.12)
 
@@ -242,3 +244,44 @@ updated files and `sha256sum -c` confirms the model yml and the singular
 test byte-identical. An emitter that emits this shape directly produces
 files sync leaves untouched; ownership-manifest checksums are defined
 over that state ([`docs/spec/engine.md`](../spec/engine.md) §6).
+
+### F-15
+**json_valid gates and json_extract projects over VARCHAR canonical
+text.** At duckdb 1.4.3, a VARCHAR column holding canonical JSON text —
+object, object with a null member, unicode content, and compact-array
+manifest forms — returns json_valid true, while garbage and truncated
+JSON return false; `COUNT(*) ... WHERE NOT json_valid(payload)` counts
+exactly the invalid rows, which is the C4 rule shape the gold star
+contract declares at error severity. json_extract and
+json_extract_string project payload fields from the same VARCHAR text,
+and a projected numeric string casts cleanly to DECIMAL(10,2) — the
+typed-projection path. Payload and manifest columns therefore declare
+`physicalType: VARCHAR` (canonical JSON text, the registry precedent in
+[`docs/spec/engine.md`](../spec/engine.md) §4); no JSON physical type is
+needed anywhere in the star.
+([`evidence/2026-08-08_probe_json_valid_varchar.log`](evidence/2026-08-08_probe_json_valid_varchar.log))
+
+### F-16
+**canonical_key v2: the SQL and Python paths agree byte-for-byte at
+function level.** The committed golden vectors
+(`tests/golden/canonical_key_v2.json`: 16 payload, 5 manifest, 4 scalar
+cases, with the canonical serialization stored beside every key) were
+recomputed through DuckDB SQL at the pinned engine —
+`lower(to_json(struct_pack(...)))` over VARCHAR-cast members in
+lowercase-sorted field order, then `sha256()`; manifests via
+`lower(to_json([...]))` — and compared against the Python reference
+(`src/metricmine/keys.py`): 18 payload and 6 manifest serializations
+checked, zero disagreements. Coverage exercised through SQL: unicode
+lowercasing (ü/ä/ß), DECIMAL scale-preserving rendering ("2.50",
+"5.00"), TIMESTAMP "YYYY-MM-DD HH:MM:SS" with its interior space
+preserved, include-as-null, boolean rendering, embedded-quote escaping,
+hyphen preservation, the empty string (digest equal to hashlib's), and
+the form-(b) derived line_identity composition over the real silver
+grain tuple types. The scalar path pins Python only: schema keys embed
+as emission-time literals by design. The dbt-path half — the same
+semantics THROUGH dbt-built models — deliberately remains with the
+pre-regeneration rehearsal ([`docs/spec/engine.md`](../spec/engine.md)
+§3).
+([`evidence/2026-08-08_probe_sql_python_parity.log`](evidence/2026-08-08_probe_sql_python_parity.log);
+the vector generator and parity probe are staged beside it as
+`2026-08-08_gen_vectors.py` and `2026-08-08_probe_sql_parity.py`)
