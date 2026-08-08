@@ -1,0 +1,290 @@
+
+Contract gold_invoice_lines_mapping@1.0.0 — 
+/home/claude/metricmine/contracts/gold_invoice_lines_mapping.odcs.yaml
+No managed tests found. Run `datacontract dbt sync` first to generate tests from
+your contract.
+
+Contract gold_unified_event_star@1.0.0 — 
+/home/claude/metricmine/contracts/gold_unified_event_star.odcs.yaml
+╭────────┬─────────────────────────────┬─────────────────────────────┬─────────╮
+│ Result │ Check                       │ Field                       │ Details │
+├────────┼─────────────────────────────┼─────────────────────────────┼─────────┤
+│ passed │ Schema-key uniqueness: the  │ dim_invoice_lines_columns   │         │
+│        │ error-severity twin of the  │                             │         │
+│        │ primaryKey flag.            │                             │         │
+│        │                             │                             │         │
+│ passed │ The dimension is never      │ dim_invoice_lines_columns   │         │
+│        │ empty once the star builds. │                             │         │
+│ passed │ Check that field            │ dim_invoice_lines_columns.… │         │
+│        │ dim_col_hash_id has no      │                             │         │
+│        │ missing values              │                             │         │
+│ passed │ Check that field            │ dim_invoice_lines_columns.… │         │
+│        │ dim_col_hash_id has no      │                             │         │
+│        │ duplicate values            │                             │         │
+│ passed │ Check that field            │ dim_invoice_lines_columns.… │         │
+│        │ dim_columns has no missing  │                             │         │
+│        │ values                      │                             │         │
+│ passed │ Check that field loaded_at  │ dim_invoice_lines_columns.… │         │
+│        │ has no missing values       │                             │         │
+│ passed │ C4: every dimension payload │ dim_invoice_lines_values    │         │
+│        │ parses as valid JSON.       │                             │         │
+│ passed │ Content-key uniqueness: the │ dim_invoice_lines_values    │         │
+│        │ error-severity twin of the  │                             │         │
+│        │ primaryKey flag.            │                             │         │
+│        │                             │                             │         │
+│ passed │ The dimension is never      │ dim_invoice_lines_values    │         │
+│        │ empty once the star builds. │                             │         │
+│ passed │ Check that field            │ dim_invoice_lines_values.d… │         │
+│        │ dim_col_hash_id has no      │                             │         │
+│        │ missing values              │                             │         │
+│ passed │ Check that field            │ dim_invoice_lines_values.d… │         │
+│        │ dim_hash_id has no missing  │                             │         │
+│        │ values                      │                             │         │
+│ passed │ Check that field            │ dim_invoice_lines_values.d… │         │
+│        │ dim_hash_id has no          │                             │         │
+│        │ duplicate values            │                             │         │
+│ passed │ Check that field dim_values │ dim_invoice_lines_values.d… │         │
+│        │ has no missing values       │                             │         │
+│ passed │ Check that field loaded_at  │ dim_invoice_lines_values.l… │         │
+│        │ has no missing values       │                             │         │
+│ passed │ Schema-key uniqueness: the  │ dim_run_columns             │         │
+│        │ error-severity twin of the  │                             │         │
+│        │ primaryKey flag.            │                             │         │
+│        │                             │                             │         │
+│ passed │ The dimension is never      │ dim_run_columns             │         │
+│        │ empty once the star builds. │                             │         │
+│ passed │ Check that field loaded_at  │ dim_run_columns.loaded_at   │         │
+│        │ has no missing values       │                             │         │
+│ passed │ Check that field            │ dim_run_columns.run_col_ha… │         │
+│        │ run_col_hash_id has no      │                             │         │
+│        │ missing values              │                             │         │
+│ passed │ Check that field            │ dim_run_columns.run_col_ha… │         │
+│        │ run_col_hash_id has no      │                             │         │
+│        │ duplicate values            │                             │         │
+│ passed │ Check that field            │ dim_run_columns.run_columns │         │
+│        │ run_columns has no missing  │                             │         │
+│        │ values                      │                             │         │
+│ passed │ C4: every run payload       │ dim_run_values              │         │
+│        │ parses as valid JSON.       │                             │         │
+│ passed │ Content-key uniqueness: the │ dim_run_values              │         │
+│        │ error-severity twin of the  │                             │         │
+│        │ primaryKey flag.            │                             │         │
+│        │                             │                             │         │
+│ passed │ The dimension is never      │ dim_run_values              │         │
+│        │ empty once the star builds. │                             │         │
+│ passed │ Check that field loaded_at  │ dim_run_values.loaded_at    │         │
+│        │ has no missing values       │                             │         │
+│ passed │ Check that field            │ dim_run_values.run_col_has… │         │
+│        │ run_col_hash_id has no      │                             │         │
+│        │ missing values              │                             │         │
+│ passed │ Check that field            │ dim_run_values.run_hash_id  │         │
+│        │ run_hash_id has no missing  │                             │         │
+│        │ values                      │                             │         │
+│ passed │ Check that field            │ dim_run_values.run_hash_id  │         │
+│        │ run_hash_id has no          │                             │         │
+│        │ duplicate values            │                             │         │
+│ passed │ Check that field run_values │ dim_run_values.run_values   │         │
+│        │ has no missing values       │                             │         │
+│ passed │ Schema-key uniqueness: the  │ dim_source_columns          │         │
+│        │ error-severity twin of the  │                             │         │
+│        │ primaryKey flag.            │                             │         │
+│        │                             │                             │         │
+│ passed │ The dimension is never      │ dim_source_columns          │         │
+│        │ empty once the star builds. │                             │         │
+│ passed │ Check that field loaded_at  │ dim_source_columns.loaded_… │         │
+│        │ has no missing values       │                             │         │
+│ passed │ Check that field            │ dim_source_columns.source_… │         │
+│        │ source_col_hash_id has no   │                             │         │
+│        │ missing values              │                             │         │
+│ passed │ Check that field            │ dim_source_columns.source_… │         │
+│        │ source_col_hash_id has no   │                             │         │
+│        │ duplicate values            │                             │         │
+│ passed │ Check that field            │ dim_source_columns.source_… │         │
+│        │ source_columns has no       │                             │         │
+│        │ missing values              │                             │         │
+│ passed │ C4: every source payload    │ dim_source_values           │         │
+│        │ parses as valid JSON.       │                             │         │
+│ passed │ Content-key uniqueness: the │ dim_source_values           │         │
+│        │ error-severity twin of the  │                             │         │
+│        │ primaryKey flag (its        │                             │         │
+│        │ generated test is           │                             │         │
+│        │ warn-hardcoded, F-08).      │                             │         │
+│        │                             │                             │         │
+│ passed │ The dimension is never      │ dim_source_values           │         │
+│        │ empty once the star builds. │                             │         │
+│ passed │ Check that field loaded_at  │ dim_source_values.loaded_at │         │
+│        │ has no missing values       │                             │         │
+│ passed │ Check that field            │ dim_source_values.source_c… │         │
+│        │ source_col_hash_id has no   │                             │         │
+│        │ missing values              │                             │         │
+│ passed │ Check that field            │ dim_source_values.source_h… │         │
+│        │ source_hash_id has no       │                             │         │
+│        │ missing values              │                             │         │
+│ passed │ Check that field            │ dim_source_values.source_h… │         │
+│        │ source_hash_id has no       │                             │         │
+│        │ duplicate values            │                             │         │
+│ passed │ Check that field            │ dim_source_values.source_v… │         │
+│        │ source_values has no        │                             │         │
+│        │ missing values              │                             │         │
+│ passed │ Schema-key uniqueness: the  │ dim_timeframe_columns       │         │
+│        │ error-severity twin of the  │                             │         │
+│        │ primaryKey flag.            │                             │         │
+│        │                             │                             │         │
+│ passed │ The dimension is never      │ dim_timeframe_columns       │         │
+│        │ empty once the star builds. │                             │         │
+│ passed │ Check that field loaded_at  │ dim_timeframe_columns.load… │         │
+│        │ has no missing values       │                             │         │
+│ passed │ Check that field            │ dim_timeframe_columns.time… │         │
+│        │ timeframe_col_hash_id has   │                             │         │
+│        │ no missing values           │                             │         │
+│ passed │ Check that field            │ dim_timeframe_columns.time… │         │
+│        │ timeframe_col_hash_id has   │                             │         │
+│        │ no duplicate values         │                             │         │
+│ passed │ Check that field            │ dim_timeframe_columns.time… │         │
+│        │ timeframe_columns has no    │                             │         │
+│        │ missing values              │                             │         │
+│ passed │ C4: every timeframe payload │ dim_timeframe_values        │         │
+│        │ parses as valid JSON.       │                             │         │
+│ passed │ Content-key uniqueness: the │ dim_timeframe_values        │         │
+│        │ error-severity twin of the  │                             │         │
+│        │ primaryKey flag.            │                             │         │
+│        │                             │                             │         │
+│ passed │ The dimension is never      │ dim_timeframe_values        │         │
+│        │ empty once the star builds. │                             │         │
+│ passed │ Check that field loaded_at  │ dim_timeframe_values.loade… │         │
+│        │ has no missing values       │                             │         │
+│ passed │ Check that field            │ dim_timeframe_values.timef… │         │
+│        │ timeframe_col_hash_id has   │                             │         │
+│        │ no missing values           │                             │         │
+│ passed │ Check that field            │ dim_timeframe_values.timef… │         │
+│        │ timeframe_hash_id has no    │                             │         │
+│        │ missing values              │                             │         │
+│ passed │ Check that field            │ dim_timeframe_values.timef… │         │
+│        │ timeframe_hash_id has no    │                             │         │
+│        │ duplicate values            │                             │         │
+│ passed │ Check that field            │ dim_timeframe_values.timef… │         │
+│        │ timeframe_values has no     │                             │         │
+│        │ missing values              │                             │         │
+│ passed │ C1 conservation: silver     │ fact_invoice_lines_values   │         │
+│        │ rows in scope equal fact    │                             │         │
+│        │ rows at transaction grain   │                             │         │
+│        │ (44,721 + 0 excluded =      │                             │         │
+│        │ 44,721 at v1.1.0 over the   │                             │         │
+│        │ committed sample).          │                             │         │
+│        │ Schema-qualified silver     │                             │         │
+│        │ reference by design: a      │                             │         │
+│        │ missing referenced table    │                             │         │
+│        │ catalog-errors loudly       │                             │         │
+│        │ rather than skipping        │                             │         │
+│        │ (F-08).                     │                             │         │
+│        │                             │                             │         │
+│ passed │ C2: every dim_hash_id       │ fact_invoice_lines_values   │         │
+│        │ resolves in                 │                             │         │
+│        │ dim_invoice_lines_values.   │                             │         │
+│ passed │ C2: every fact_col_hash_id  │ fact_invoice_lines_values   │         │
+│        │ (measure manifest) resolves │                             │         │
+│        │ in                          │                             │         │
+│        │ dim_invoice_lines_columns.  │                             │         │
+│        │                             │                             │         │
+│ passed │ C2: every run_hash_id       │ fact_invoice_lines_values   │         │
+│        │ (non-key) resolves in       │                             │         │
+│        │ dim_run_values.             │                             │         │
+│        │                             │                             │         │
+│ passed │ C2: every source_hash_id    │ fact_invoice_lines_values   │         │
+│        │ resolves in                 │                             │         │
+│        │ dim_source_values.          │                             │         │
+│ passed │ C2: every timeframe_hash_id │ fact_invoice_lines_values   │         │
+│        │ resolves in                 │                             │         │
+│        │ dim_timeframe_values.       │                             │         │
+│ passed │ C4: every measure payload   │ fact_invoice_lines_values   │         │
+│        │ parses as valid JSON.       │                             │         │
+│ passed │ Grain enforcement: zero     │ fact_invoice_lines_values   │         │
+│        │ duplicate (fact, source,    │                             │         │
+│        │ timeframe, dim) key tuples  │                             │         │
+│        │ — the error-severity twin   │                             │         │
+│        │ of the composite primaryKey │                             │         │
+│        │ flag, whose generated test  │                             │         │
+│        │ is warn-hardcoded (F-08).   │                             │         │
+│        │                             │                             │         │
+│ passed │ The fact is never empty     │ fact_invoice_lines_values   │         │
+│        │ once the star builds.       │                             │         │
+│ passed │ Check that model            │ fact_invoice_lines_values   │         │
+│        │ fact_invoice_lines_values   │                             │         │
+│        │ has a unique combination of │                             │         │
+│        │ columns fact_hash_id,       │                             │         │
+│        │ source_hash_id,             │                             │         │
+│        │ timeframe_hash_id,          │                             │         │
+│        │ dim_hash_id                 │                             │         │
+│ passed │ Check that field            │ fact_invoice_lines_values.… │         │
+│        │ dim_hash_id has no missing  │                             │         │
+│        │ values                      │                             │         │
+│ passed │ Check that field            │ fact_invoice_lines_values.… │         │
+│        │ fact_col_hash_id has no     │                             │         │
+│        │ missing values              │                             │         │
+│ passed │ Check that field            │ fact_invoice_lines_values.… │         │
+│        │ fact_hash_id has no missing │                             │         │
+│        │ values                      │                             │         │
+│ passed │ Check that field            │ fact_invoice_lines_values.… │         │
+│        │ fact_values has no missing  │                             │         │
+│        │ values                      │                             │         │
+│ passed │ Check that field loaded_at  │ fact_invoice_lines_values.… │         │
+│        │ has no missing values       │                             │         │
+│ passed │ Check that field            │ fact_invoice_lines_values.… │         │
+│        │ run_hash_id has no missing  │                             │         │
+│        │ values                      │                             │         │
+│ passed │ Check that field            │ fact_invoice_lines_values.… │         │
+│        │ source_hash_id has no       │                             │         │
+│        │ missing values              │                             │         │
+│ passed │ Check that field            │ fact_invoice_lines_values.… │         │
+│        │ timeframe_hash_id has no    │                             │         │
+│        │ missing values              │                             │         │
+╰────────┴─────────────────────────────┴─────────────────────────────┴─────────╯
+🟢 dbt tests passed. Ran 74 tests. Took 0.010715 seconds.
+
+Contract silver_invoice_lines@1.1.0 — 
+/home/claude/metricmine/contracts/silver_invoice_lines.odcs.yaml
+╭────────┬─────────────────────────────────────────┬─────────────────┬─────────╮
+│ Result │ Check                                   │ Field           │ Details │
+├────────┼─────────────────────────────────────────┼─────────────────┼─────────┤
+│ passed │ Grain enforcement: no duplicate         │                 │         │
+│        │ (invoice_id, stock_code, quantity,      │                 │         │
+│        │ unit_price) combinations. Declared at   │                 │         │
+│        │ error severity because the              │                 │         │
+│        │ primaryKey-flag composite test          │                 │         │
+│        │ generates at hardcoded warn severity at │                 │         │
+│        │ datacontract-cli 1.0.12 and cannot      │                 │         │
+│        │ redden a gate; this rule is the         │                 │         │
+│        │ enforcing twin (rule 5: uniqueness as a │                 │         │
+│        │ test, never a trusted constraint).      │                 │         │
+│        │                                         │                 │         │
+│ passed │ The table is never empty; the committed │                 │         │
+│        │ sample yields tens of thousands of      │                 │         │
+│        │ surviving lines.                        │                 │         │
+│        │                                         │                 │         │
+│ passed │ Check that model silver_invoice_lines   │                 │         │
+│        │ has a unique combination of columns     │                 │         │
+│        │ invoice_id, stock_code, quantity,       │                 │         │
+│        │ unit_price                              │                 │         │
+│ passed │ Check that field country has no missing │ country         │         │
+│        │ values                                  │                 │         │
+│ passed │ Check that field invoice_id has no      │ invoice_id      │         │
+│        │ missing values                          │                 │         │
+│ passed │ Check that field invoiced_at has no     │ invoiced_at     │         │
+│        │ missing values                          │                 │         │
+│ passed │ Check that field is_cancellation has no │ is_cancellation │         │
+│        │ missing values                          │                 │         │
+│ passed │ Check that field quantity has no        │ quantity        │         │
+│        │ missing values                          │                 │         │
+│ passed │ Check that field stock_code has no      │ stock_code      │         │
+│        │ missing values                          │                 │         │
+│ passed │ Check that field unit_price has no      │ unit_price      │         │
+│        │ missing values                          │                 │         │
+│ passed │ Unit price is never negative.           │ unit_price      │         │
+╰────────┴─────────────────────────────────────────┴─────────────────┴─────────╯
+🟢 dbt tests passed. Ran 11 tests. Took 0.009318 seconds.
+
+Contract results:
+  ⚪ gold_invoice_lines_mapping@1.0.0 — no tests
+  🟢 gold_unified_event_star@1.0.0 — passed
+  🟢 silver_invoice_lines@1.1.0 — passed
+Tested 3 contract(s): 1 no tests · 2 passed.

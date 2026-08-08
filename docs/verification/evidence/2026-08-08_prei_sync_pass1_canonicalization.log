@@ -1,0 +1,18 @@
+2026-08-08 20:21:17,500 - root - WARNING - Schema `invoice_lines` resolves to model `invoice_lines`, which has no matching dbt model (no `.sql` or YAML entry) in this project — nothing to test, skipping. If the model exists under a different name, try `--model-resolution physicalName`.
+gold_invoice_lines_mapping.odcs.yaml: Synced 0 models: updated 9 YAML files.
+  ~ models/gold/dim_invoice_lines_columns.yml
+  ~ models/gold/dim_invoice_lines_values.yml
+  ~ models/gold/dim_run_columns.yml
+  ~ models/gold/dim_run_values.yml
+  ~ models/gold/dim_source_columns.yml
+  ... and 4 more (pass --debug to show all)
+gold_unified_event_star.odcs.yaml: Synced 9 models: updated 9 YAML files, wrote 
+30 singular SQL tests.
+  ~ models/gold/dim_invoice_lines_columns.yml
+  ~ models/gold/dim_invoice_lines_values.yml
+  ~ models/gold/dim_run_columns.yml
+  ~ models/gold/dim_run_values.yml
+  ~ models/gold/dim_source_columns.yml
+  ... and 34 more (pass --debug to show all)
+silver_invoice_lines.odcs.yaml: Synced 1 model: updated 0 YAML files.
+Run `datacontract dbt test` to execute the generated tests.
