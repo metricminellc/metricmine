@@ -24,3 +24,14 @@ profiling:
       table: online_retail_ii
     - schema: silver
       table: silver_invoice_lines
+
+# Auto-modeling engine per docs/spec/engine.md (D-29): mapping contract in,
+# gold model files out; dbt builds them (D-07). The engine reads contracts
+# and this config only — never the warehouse — and writes only under
+# output_dir plus its ownership manifest (D-09).
+engine:
+  mapping_contract: contracts/gold_invoice_lines_mapping.odcs.yaml
+  gold_contract: contracts/gold_unified_event_star.odcs.yaml
+  silver_contract: contracts/silver_invoice_lines.odcs.yaml
+  schema_path: docs/spec/engine/mapping-contract.schema.json
+  output_dir: transform/models/gold
