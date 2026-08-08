@@ -393,7 +393,14 @@ are the profiling surface, not the whole of D-11.
 
 Scope, in full:
 
-- Profiles `bronze.online_retail_ii` only for now.
+- Profiles `bronze.online_retail_ii` and, from the gold phase,
+  `silver.silver_invoice_lines` — the silver pass the runtime workflow
+  diagram records, run by the same code over the silver schema. The
+  `profiling` config block becomes a list of targets, one artifact
+  directory per table (`profiles/silver.silver_invoice_lines/v0001.json`
+  at first mint). The silver profile is the evidence sheet for the
+  mapping contract and the artifact its `profileHash` cites, and in
+  Phase 6 it is the exact input the gold mapping proposer consumes.
 - Skips PyAirbyte's internal tables — any `_airbyte_*`-prefixed table
   (`_airbyte_streams` today; state tables appear under other sync
   modes): they are connector bookkeeping, not data streams.
