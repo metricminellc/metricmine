@@ -285,3 +285,35 @@ pre-regeneration rehearsal ([`docs/spec/engine.md`](../spec/engine.md)
 ([`evidence/2026-08-08_probe_sql_python_parity.log`](evidence/2026-08-08_probe_sql_python_parity.log);
 the vector generator and parity probe are staged beside it as
 `2026-08-08_gen_vectors.py` and `2026-08-08_probe_sql_parity.py`)
+
+### F-17
+**Sync generates a per-column `unique:` data_test twin for single-column
+primaryKey flags.** At datacontract-cli 1.0.12, `datacontract dbt sync`
+writes — beyond the §6-listed `not_null` block — a sync-shaped `unique:`
+data_test (severity warn, `check: <model>__<column>__field_unique`,
+description `Check that field <column> has no duplicate values`) on every
+column flagged `primaryKey: true` ALONE; a composite primaryKey generates
+only the sync-owned `unique_combination` singular test. Measured over the
+real emitted star at the pre-I rehearsal: the eight single-column PK
+dimension keys gained the twin, the four-column fact composite did not.
+The engine emits the unique twin as part of the fixed point; the spec §6
+delta list carries the amendment.
+([`evidence/2026-08-08_prei_sync_pass1_canonicalization.log`](evidence/2026-08-08_prei_sync_pass1_canonicalization.log))
+
+### F-18
+**Sync canonicalizes properties-file YAML formatting project-wide, even
+under contracts with zero matched models.** Pass 1 over hand-styled but
+semantically correct properties files rewrote all nine into the tool's
+canonical form (reported as "updated 9 YAML files" under the MAPPING
+contract's pass, which matches no model at all); pass 2 reported
+"updated 0" for every contract with all files byte-identical. The fixed
+point is therefore canonical-FORM-dependent, not just content-dependent,
+and the engine emits sync-canonical bytes directly. The form is
+reproduced byte-exactly by `yaml.safe_dump(doc, sort_keys=False,
+allow_unicode=True, width=2000, default_flow_style=False)` with
+descriptions parsed from folded `>` contract scalars (value ends with a
+newline) emitted single-quoted and stripped, all others plain.
+Generated-by headers survive sync verbatim, re-confirming F-14 over the
+real star.
+([`evidence/2026-08-08_prei_sync_pass1_canonicalization.log`](evidence/2026-08-08_prei_sync_pass1_canonicalization.log);
+[`evidence/2026-08-08_prei_yaml_writer_probe.log`](evidence/2026-08-08_prei_yaml_writer_probe.log))
