@@ -14,7 +14,8 @@ Extended context and analysis live in project records maintained outside the
 repository; nothing in this repo depends on those records. Decision Record 002
 (July 12, 2026) carries D-21 through D-25; Decision Record 001 Rev. 3 carries
 D-01 through D-20 unchanged. Decision Record 003 (July 31, 2026) carries D-26
-through D-28 and Amendments A and B to Record 001.
+through D-28 and Amendments A and B to Record 001. Decision Record 004
+(August 1, 2026) carries D-29 and D-30 and Amendment C to D-16.
 
 **Status meanings.** `adopted` — in force. `proposed` — agreed in working
 session, applied by the plans below, formal adoption pending; treat as binding
@@ -52,6 +53,8 @@ unless amended.
 | [D-26](#d-26) | Repository public before Phase 5 | adopted |
 | [D-27](#d-27) | Bronze lands in CI via make ingest | adopted |
 | [D-28](#d-28) | Contract-declared enforcement severity | adopted |
+| [D-29](#d-29) | The auto-modeling engine specification | adopted |
+| [D-30](#d-30) | Registry population: compiled-context artifact, literal-carrying model | adopted |
 
 ## The decisions
 
@@ -173,6 +176,15 @@ tests are reviewed before merge, never auto-trusted; dbt properties files are
 hand-authored; `export dbt-models` output is scaffold and drift check only.
 Evidence: findings F-01 to F-07 in
 [`docs/verification/gate_proof_findings.md`](../verification/gate_proof_findings.md).
+Amended August 1, 2026 (Record 004, Amendment C): the hand-authored
+properties clause is scoped to the human-owned silver plane. Engine-owned
+gold models carry engine-emitted properties files at the sync fixed point
+per [`docs/spec/engine.md`](../spec/engine.md) §6
+([F-14](../verification/gate_proof_findings.md#f-14)), reviewed as
+generated code in regeneration PRs under the D-09 ownership manifest.
+Every review obligation in the clause — sync output as proposal, export
+as scaffold only, the duplicateValues deletion rule — stands unchanged on
+both planes.
 
 ### D-17
 **Gold is the unified event star.** The terminal gold layer is the
@@ -324,6 +336,49 @@ unchanged: uniqueness lives in tests, never trusted constraints. Exercised
 at contract v1.1.0 (#43); proven green at #44 and red at #45. Ratified in
 Decision Record 003.
 
+### D-29
+**The auto-modeling engine specification is adopted.**
+[`docs/spec/engine.md`](../spec/engine.md) governs the engine end to end:
+the mapping contract shape with every mapping element first-class and its
+frozen machine schema
+([`docs/spec/engine/mapping-contract.schema.json`](../spec/engine/mapping-contract.schema.json)
+— the same JSON Schema the Phase 6 gold mapping proposer emits structured
+output against per D-21, discharging the agent layer's Phase 4 schema
+obligation); flat placement of mapping contracts in `contracts/` under
+the category-naming rule, with quality rules banned in mapping contracts
+as dead letters; the dual-implementation keying rule (record keys in SQL
+at build time, schema keys in Python at emission time, a committed golden
+vector set, and a SQL-versus-Python consistency test; payload values
+render as canonical text; payload nulls are included as JSON null);
+emission mechanics (generated-by headers naming both source contracts,
+a timestamp-free ownership manifest, write-if-changed atomic writes,
+fail-closed validation, drift refusal per D-09 and rule 8); emission at
+the sync fixed point; conservation enforcement as error-severity sql
+rules in the gold star contract per D-28 (C1 arithmetic, C2 anti-joins,
+C3 registry coverage, C4 payload validity, grain enforcement); and
+provenance for pattern-derived contracts (profileHash absent with a
+provenanceNote, extending the agent-layer Appendix B pattern). Evidence:
+[F-11](../verification/gate_proof_findings.md#f-11) through
+[F-14](../verification/gate_proof_findings.md#f-14). Ratified in Decision
+Record 004.
+
+### D-30
+**Registry population: compiled-context artifact plus a literal-carrying
+emitted model.** The context compiler merges the governing contracts and
+their harvested context fields into a committed, versioned, deterministic
+compiled-context artifact (`context/compiled/vNNNN.json` with a meta
+sidecar, the profiles/ artifact discipline: canonical JSON, deterministic
+content only, write-if-changed, immutable monotonic versions). The engine
+emits `context_registry` as a dbt model whose rows are SQL VALUES
+literals carried from that artifact at emission time. Consequences, and
+why this mechanism won: every warehouse write stays inside `dbt build`
+(D-07); there are no build-time file reads, so the
+[F-09](../verification/gate_proof_findings.md#f-09) working-directory
+class cannot reach the registry; the demo path stays keyless and
+byte-reproducible; C3 stays a gate-capable test; and registry changes
+arrive as reviewable regeneration pull requests under the ownership
+manifest (D-09, D-19). Ratified in Decision Record 004.
+
 ## Session-decision and finding IDs
 
 IDs of the form `A<n>` (working-session decisions, e.g. A4) and `F-0x`
@@ -351,20 +406,22 @@ authority. The mapping:
 | 6 (never weaken a contract) | D-08, D-28 |
 | 7 (no materialized views) | D-07 |
 | 8 (ownership-manifest checksums) | D-09 |
-| 9 (engine emits models, never DDL) | D-07 |
+| 9 (engine emits models, never DDL; mapping-contract placement) | D-07, D-29 |
 | 10 (gate three under uv run; top-level `datacontract test` unused) | D-12, D-16; gate-two mechanics per D-20 |
-| 11 (properties hand-authored; sync output reviewed) | D-16, evidence [F-02](../verification/gate_proof_findings.md#f-02)/[F-05](../verification/gate_proof_findings.md#f-05) |
+| 11 (properties hand-authored on the silver plane; engine-emitted on gold; sync output reviewed) | D-16 (Amendment C), D-29, evidence [F-02](../verification/gate_proof_findings.md#f-02)/[F-05](../verification/gate_proof_findings.md#f-05)/[F-14](../verification/gate_proof_findings.md#f-14) |
 | 12 (unified event star; tables; projections as views) | D-17 |
 | 13 (canonical_key v2, deterministic payloads) | D-18 |
 | 14 (registry binding; fact key; declared grain) | D-19 |
 | 15 (proposer runtime: one structured call; no tools/MCP/loops; outbox-only) | D-21, D-23 |
-| 16 (versioned prompts; contract provenance) | D-22 |
+| 16 (versioned prompts; contract provenance; pattern-derived absence rule) | D-22, D-29 |
 | 17 (human-only draft-to-contract flow; keyless make demo) | D-24, D-08 |
 
 All decisions in this register are adopted: D-01 through D-20 as of the
 July 11, 2026 revision (Decision Record 001 Rev. 3), D-21 through D-25 as
-of the July 12, 2026 revision (Decision Record 002), and D-26 through D-28
-as of the July 31, 2026 revision (Decision Record 003). D-20 has no dedicated
+of the July 12, 2026 revision (Decision Record 002), D-26 through D-28
+as of the July 31, 2026 revision (Decision Record 003), and D-29 and D-30
+(with Amendment C to D-16) as of the August 1, 2026 revision (Decision
+Record 004). D-20 has no dedicated
 CLAUDE.md rule; its substance
 is encoded directly in
 [`.github/workflows/contract-gate.yml`](../../.github/workflows/contract-gate.yml),
