@@ -34,6 +34,13 @@ approves every contract.
    from its baseline. Flag the drift instead.
 9. The auto-modeling engine emits dbt model files; it does not execute DDL
    directly. Mapping contract in, gold model files out; dbt builds them.
+   Mapping contracts live flat in contracts/ beside table contracts
+   (physicalType: mapping is the discriminator). A mapping contract's
+   category name must never equal a dbt model name: gate 3 fails loudly on
+   the collision (F-12). Mapping contracts carry no quality rules — gate 3
+   skips unmatched schema objects entirely (F-12), so such rules are dead
+   letters; enforcement belongs to the gold star contract. Input schema
+   and emission rules: docs/spec/engine.md.
 10. Gate three runs as: `uv run datacontract dbt sync ...` then
     `uv run datacontract dbt test ...`. The `uv run` prefix is mandatory:
     the isolated tool cannot find dbt on PATH by itself. The TOP-LEVEL
@@ -46,6 +53,12 @@ approves every contract.
     review, never auto-merged. Known sync bug at 1.0.12: duplicateValues
     quality rules mistranslate into accepted_values tests (severity warn).
     Delete such tests on sight; keep uniqueness as a data_test.
+    Scope (D-16 Amendment C): hand-authored governs the human-owned silver
+    plane. Engine-owned gold models are the designed exception: the engine
+    emits their properties files at the sync fixed point
+    (docs/spec/engine.md §6), and they are reviewed as generated code in
+    regeneration PRs under the ownership manifest. Every review obligation
+    in this rule applies to them unchanged.
 12. Gold is the unified event star per docs/spec/gold-unified-event-star.md:
     content-addressed values/columns dimensions, category-parameterized fact
     tables, context_registry, and typed projection views. Star tables and the
@@ -82,7 +95,11 @@ approves every contract.
     contract carries provenance customProperties (proposedBy,
     proposerVersion, promptVersion, modelId, profileHash, proposedAt);
     hand-written contracts use the same keys with proposedBy: human.
-    Never strip or fabricate provenance.
+    Never strip or fabricate provenance. Hand-written contracts not
+    derived from a profile artifact (the pattern-derived gold star
+    contract) carry profileHash ABSENT plus a provenanceNote stating why:
+    absence-with-rationale is honest provenance, a fabricated hash never
+    is (docs/spec/engine.md §9).
 
 17. Agent drafts become contracts only through the human flow: review, copy
     into contracts/ on a branch, version bump, contract-only PR (rule 6
@@ -94,6 +111,11 @@ approves every contract.
 - Exactly two agents exist in the pipeline: a silver cleanup proposer and a
   gold mapping proposer. Both emit ODCS contracts. Neither writes
   code, touches data, or runs transformations.
+- The auto-modeling engine (src/metricmine/engine/) is deterministic code,
+  not an agent: approved contracts in, emitted gold dbt models out, per
+  docs/spec/engine.md. It never runs at proposer runtime, never executes
+  DDL, and never writes outside transform/models/gold/ plus its ownership
+  manifest.
 - All query, schema, and context-retrieval logic lives in one shared module
   (`src/metricmine/query.py`). The MCP server and the hosted app both import it.
   Neither reimplements it.
@@ -117,7 +139,8 @@ Toolchain behavior was verified empirically before Phase 1 exit. Before
 working on contracts, CI, or dbt models, read
 `docs/verification/gate_proof_findings.md`. Before working on gold models,
 the engine, or the context compiler, read
-`docs/spec/gold-unified-event-star.md`. Before working on the profiler or
+`docs/spec/gold-unified-event-star.md` and `docs/spec/engine.md`. Before
+working on the profiler or
 the read-only warehouse protocol, read `docs/spec/profiler.md`. Before
 working on the agent layer —
 the proposers, their prompts, or the proposal validator — read
