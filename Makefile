@@ -21,3 +21,7 @@ ingest: $(CONNECTOR_VENV)/bin/source-file
 .PHONY: profile
 profile:
 	uv run python -m metricmine.profiling.run
+
+.PHONY: regen
+regen:
+	uv run python -m metricmine.engine.emit
