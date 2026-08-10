@@ -1,0 +1,6 @@
+== vw_invoice_lines_typed reconciliation vs silver (join on canonical line_identity) ==
+materializations: [('context_registry', 'BASE TABLE'), ('vw_invoice_lines_typed', 'VIEW')]
+vw column types: [('invoice_id', 'VARCHAR'), ('is_cancellation', 'BOOLEAN'), ('stock_code', 'VARCHAR'), ('product_description', 'VARCHAR'), ('customer_id', 'INTEGER'), ('line_identity', 'VARCHAR'), ('invoiced_at', 'TIMESTAMP'), ('quantity', 'INTEGER'), ('unit_price', 'DECIMAL(10,2)')]
+joined + 8 field-matches (expect nine 44721s): (44721, 44721, 44721, 44721, 44721, 44721, 44721, 44721, 44721)
+VARCHARs reconcile at lower() by design: star payloads are canonical lowercased text (D-18);
+invoiced_at reconciles at date_trunc minute: the declared timeGrain.

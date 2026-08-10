@@ -1,0 +1,23 @@
+== PR 24 regeneration gate sequence (live captures) ==
+-- regen idempotency at the extended set --
+uv run python -m metricmine.engine.emit
+Emission complete: 0 file(s) landed, 23 unchanged, 23 total.
+-- gate 2 BEFORE sync (registry singular tests not yet generated): --
+[0m00:49:08  Done. PASS=104 WARN=0 ERROR=0 SKIP=0 NO-OP=0 TOTAL=104
+-- sync pass over the extended star (registry props at the fixed point; 4 registry tests; vw yml survives F-18) --
+gold_invoice_lines_mapping.odcs.yaml: Synced 0 models: updated 0 YAML files.
+gold_unified_event_star.odcs.yaml: Synced 10 models: updated 0 YAML files.
+silver_invoice_lines.odcs.yaml: Synced 1 model: updated 0 YAML files.
+-- gate 3 test (C3 LIVE) --
+  ⚪ gold_invoice_lines_mapping@1.0.0 — no tests
+  🟢 gold_unified_event_star@1.2.0 — passed
+  🟢 silver_invoice_lines@1.1.0 — passed
+Tested 3 contract(s): 1 no tests · 2 passed.
+-- build AFTER the 4 reviewed registry tests commit --
+[0m00:49:30  Done. PASS=108 WARN=0 ERROR=0 SKIP=0 NO-OP=0 TOTAL=108
+
+== ADDENDUM (validation pass, full-width recapture) ==
+Sync pass-1 line at COLUMNS=250 with the 4 registry tests absent:
+gold_unified_event_star.odcs.yaml: Synced 10 models: updated 0 YAML files, wrote 4 singular SQL tests.
+Regenerated files byte-identical to reference/sync_tests_pr24 (diff 0).
+Steady-state pass-2 line: "Synced 10 models: updated 0 YAML files."

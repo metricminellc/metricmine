@@ -16,6 +16,8 @@ from pathlib import Path
 import jsonschema
 import yaml
 
+from metricmine.profiling.writer import latest_version
+
 # Every emitted model carries one of these prefixes or the reserved name,
 # so a category name matching them could collide with a model name — the
 # loud gate-3 failure F-12 probed. The JSON Schema rejects them first;
@@ -54,6 +56,44 @@ def load_inputs(repo_root: Path) -> EngineInputs:
             (Path(repo_root) / cfg["schema_path"]).read_text(encoding="utf-8")
         ),
     )
+
+
+def load_compiled_context(repo_root: Path) -> tuple[str, dict]:
+    """The newest committed compiled-context artifact, fail-closed (D-30).
+
+    Resolves the context: block of config/default.yaml, picks the newest
+    vNNNN, and refuses an artifact whose cited contract versions diverge
+    from the loaded contracts — the registry must never embed stale
+    context.
+    """
+    config_path = Path(repo_root) / "config" / "default.yaml"
+    cfg = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+    compiled_dir = Path(repo_root) / cfg["context"]["output_dir"]
+    current = latest_version(compiled_dir)
+    if not current:
+        raise EngineContractError(
+            "no compiled-context artifact under context/compiled/;"
+            " run `make context` first (D-30)"
+        )
+    version = f"v{current:04d}"
+    parsed = json.loads(
+        (compiled_dir / f"{version}.json").read_text(encoding="utf-8")
+    )
+    inputs = load_inputs(repo_root)
+    declared = {
+        "gold_contract": inputs.star["version"],
+        "mapping_contract": inputs.mapping["version"],
+        "silver_contract": inputs.silver["version"],
+    }
+    for key, expected in declared.items():
+        cited = parsed["sources"][key]["version"]
+        if cited != expected:
+            raise EngineContractError(
+                f"compiled-context artifact {version} is stale:"
+                f" sources.{key} is {cited}, contracts say {expected};"
+                " run `make context` (D-30)"
+            )
+    return version, parsed
 
 
 def validate_mapping(mapping: dict, silver: dict, json_schema: dict) -> None:

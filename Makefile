@@ -25,3 +25,7 @@ profile:
 .PHONY: regen
 regen:
 	uv run python -m metricmine.engine.emit
+
+.PHONY: context
+context:
+	uv run python -m metricmine.context.compile

@@ -344,3 +344,34 @@ warmed state hides ordering hazards by construction.
 ([PR #64 CI failure](evidence/2026-08-08_f19_pr64_ci_failure.log);
 [`evidence/2026-08-08_f19_coldbuild_pass95.log`](evidence/2026-08-08_f19_coldbuild_pass95.log);
 [`evidence/2026-08-08_f19_sync_ref_passthrough.log`](evidence/2026-08-08_f19_sync_ref_passthrough.log))
+
+
+### F-20
+**A contract version bump over a live star regenerates singular tests
+under new version-prefixed filenames and re-edits committed properties;
+neither effect cleans up after itself.** Measured at the pinned toolchain
+during the pre-J rehearsal, with the gold contract amended to v1.2.0 over
+the committed v1.1.0 star. (a) Sync writes a full fresh singular-test set
+under `<contract>__1_2_0__...` filenames — byte-identical to the 1_1_0
+set modulo version strings — and never deletes the stale files; both sets
+coexist and `datacontract dbt test` still passes, but a plain `dbt build`
+would run both. The transition is therefore sync-owned work committed
+post-review in the amendment PR: regenerate, review against the rehearsal
+reference, delete the stale set. (b) The same sync run updates every
+committed engine-emitted properties file in place (contract_versions
+1.1.0 to 1.2.0 — the only delta), which on a working tree MUST be
+reverted (`git restore transform/models/gold/`), never committed: the
+files are engine-owned at the old fixed point, and committing sync's edit
+would diverge their ownership-manifest checksums and trip the engine's
+rule-8 drift refusal at the next regeneration. In every CI workspace
+between the amendment merge and the regeneration merge, gate 3 therefore
+reports `updated 9 YAML files` ephemerally and still passes end to end
+(the F-13 skip covers the not-yet-modeled registry object); the fixed
+point returns when the regeneration lands. Re-verified in the same
+rehearsal: the fixed point holds over the EXTENDED emission — the
+engine-emitted registry properties synced `updated 0` on the first pass,
+and the minimal uncontracted projection properties survived the F-18
+project-wide canonicalization byte-identically.
+([`evidence/2026-08-09_prej_pr23_window_shapes.log`](evidence/2026-08-09_prej_pr23_window_shapes.log);
+[`evidence/2026-08-09_prej_pr24_gate_suite.log`](evidence/2026-08-09_prej_pr24_gate_suite.log);
+[`evidence/2026-08-09_prej_cold_build_pass108.log`](evidence/2026-08-09_prej_cold_build_pass108.log))

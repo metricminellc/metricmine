@@ -1,0 +1,7 @@
+== The F-19 rehearsal rule: rm-warehouse -> offline ingest -> COLD dbt build over the extended star ==
+landed {'online_retail_ii': 45228} into bronze of /home/claude/metricmine/warehouse/metricmine.duckdb
+[0m00:50:55  Done. PASS=108 WARN=0 ERROR=0 SKIP=0 NO-OP=0 TOTAL=108
+-- cold conservation --
+44721 | 44721 | 44721 | 2004 | 1 | 1 | 2 | 5 | 44721
+-- regen after cold: byte-idempotent --
+Emission complete: 0 file(s) landed, 23 unchanged, 23 total.
