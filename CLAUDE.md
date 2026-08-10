@@ -116,6 +116,12 @@ approves every contract.
   docs/spec/engine.md. It never runs at proposer runtime, never executes
   DDL, and never writes outside transform/models/gold/ plus its ownership
   manifest.
+- The context compiler (src/metricmine/context/) is deterministic code,
+  not an agent: approved contracts in, the committed compiled-context
+  artifact out (context/compiled/vNNNN.json + meta sidecar, D-30). It
+  writes nowhere else and never reads the warehouse; the engine carries
+  its newest artifact into the emitted context_registry model as SQL
+  VALUES literals, fail-closed if the artifact is missing or stale.
 - All query, schema, and context-retrieval logic lives in one shared module
   (`src/metricmine/query.py`). The MCP server and the hosted app both import it.
   Neither reimplements it.
