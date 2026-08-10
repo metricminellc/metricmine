@@ -1,0 +1,30 @@
+== PR 23 committed-state window: amended contract v1.2.0 + compiled-context v0001 + 1_2_0 singular tests committed; transform/models/gold at the committed v1.1.0 fixed point (19 files) ==
+-- gate 2: dbt build --
+[0m00:47:48  Done. PASS=95 WARN=0 ERROR=0 SKIP=0 NO-OP=0 TOTAL=95
+-- gate 3: datacontract dbt sync (pass 1, the CI line) --
+gold_invoice_lines_mapping.odcs.yaml: Synced 0 models: updated 0 YAML files.
+gold_unified_event_star.odcs.yaml: Synced 9 models: updated 9 YAML files, 
+silver_invoice_lines.odcs.yaml: Synced 1 model: updated 0 YAML files.
+-- workspace effect (F-20b): committed properties updated in place; git restore required before committing --
+9
+-              - 1.1.0
++              - 1.2.0
+-              - 1.1.0
++              - 1.2.0
+-- singular tests: still 30 at 1_2_0, byte-stable --
+30
+-- gate 3: datacontract dbt test --
+  ⚪ gold_invoice_lines_mapping@1.0.0 — no tests
+  🟢 gold_unified_event_star@1.2.0 — passed
+  🟢 silver_invoice_lines@1.1.0 — passed
+Tested 3 contract(s): 1 no tests · 2 passed.
+
+== ADDENDUM (validation pass, full-width recapture) ==
+The sync line above ended "updated 9 YAML files, " only because the rich
+console wrapped at 80 columns and the capture dropped the continuation.
+Recaptured at COLUMNS=250 at the exact PR 23 committed state, twice
+(before and after the yml git restore), the full line is:
+gold_unified_event_star.odcs.yaml: Synced 9 models: updated 9 YAML files.
+Byte-stable committed 1_2_0 tests are not rewritten and no wrote-clause
+appears. (At the transition moment itself — 1_2_0 absent — sync writes
+them: "updated 9 YAML files, wrote 30 singular SQL tests.")

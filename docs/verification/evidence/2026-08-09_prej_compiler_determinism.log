@@ -1,0 +1,6 @@
+== compiled-context determinism (D-30): two pure builds + writer no-op + cross-check ==
+two in-memory builds byte-identical: True | bytes: 4837
+artifact sha256: c8ac09764b268fb371f8176c9af122a1feb8d25453b52cee78535e6ecf45d838
+committed v0001.json matches the pure build: True
+uv run python -m metricmine.context.compile
+compiled context unchanged (v0001 already current)
