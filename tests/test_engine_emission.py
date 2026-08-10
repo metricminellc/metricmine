@@ -104,6 +104,13 @@ def test_ownership_manifest_hashes_the_fixed_point() -> None:
     assert manifest["sources"]["gold_contract"]["version"] == _contract_version(
         "gold_unified_event_star.odcs.yaml"
     )
+    # The registry rides the compiled-context artifact (D-30): the manifest
+    # pins the newest committed vNNNN, read dynamically like the contract
+    # versions above.
+    from metricmine.profiling.writer import latest_version
+
+    newest = latest_version(REPO / "context" / "compiled")
+    assert manifest["sources"]["compiled_context"]["version"] == f"v{newest:04d}"
 
 
 def _inputs():
