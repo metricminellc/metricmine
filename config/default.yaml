@@ -35,3 +35,10 @@ engine:
   silver_contract: contracts/silver_invoice_lines.odcs.yaml
   schema_path: docs/spec/engine/mapping-contract.schema.json
   output_dir: transform/models/gold
+
+# Context compiler per docs/spec/engine.md §4 (D-30): governing contracts in,
+# committed compiled-context artifact out (context/compiled/vNNNN.json plus
+# meta sidecar, the profiles/ artifact discipline); the engine carries the
+# newest artifact into the emitted context_registry model as VALUES literals.
+context:
+  output_dir: context/compiled
