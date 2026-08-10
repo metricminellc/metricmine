@@ -236,7 +236,11 @@ it; the diff arrives as a regeneration PR (D-09).
   (`dim_source_*`, `dim_run_*`, `dim_timeframe_*`), the fact
   `fact_<category>_values.sql`, `context_registry.sql`,
   `vw_<category>_typed.sql`, and **one properties yml per emitted model**
-  at the sync fixed point (section 6). `dim_run` payload carries the
+  at the sync fixed point (section 6). The set follows the gold
+  contract's object catalog: star tables always; `context_registry` and
+  the typed projection join it once the contract declares
+  `context_registry` (the extended-star activation, F-20 era), and the
+  ownership manifest then pins the compiled-context artifact version. `dim_run` payload carries the
   mapping contract name and version and the engine version — lineage as
   deterministic content (D-17); audit stamps (`loaded_at`) stay plain
   columns outside every hashed payload.
