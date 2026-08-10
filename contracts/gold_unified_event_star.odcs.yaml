@@ -1,4 +1,4 @@
-# Contract: gold unified event star v1.1.0 (ODCS v3.1.0) — star tables only.
+# Contract: gold unified event star v1.2.0 (ODCS v3.1.0) — the extended star.
 # Pattern-derived: authored from docs/spec/gold-unified-event-star.md (the
 # committed gold spec) and the four-element event-packet pattern it carries
 # forward (docs/spec/current-state/data-capture-baseline.md §3.4), not from
@@ -6,9 +6,8 @@
 # (rule 16; docs/spec/engine.md §9). One contract covers all star tables as
 # schema objects, versioned as one unit; because the physical shape is
 # source-invariant, payload evolution surfaces as new schema keys (data),
-# never as contract amendments (governance). context_registry deliberately
-# arrives with the compiler sitting's amendment, avoiding an unverified
-# partially-modeled window (F-13 records the verified one-PR pattern).
+# never as contract amendments (governance). context_registry joined at
+# v1.2.0, exactly as the F-13-verified amendment-first pattern planned.
 # v1.1.0 (F-19): gold references inside quality-rule SQL use dbt
 # {{ ref('<model>') }} so the sync-generated singular tests carry real
 # dependency edges and schedule after their models on a fresh warehouse;
@@ -16,7 +15,12 @@
 # design (the edge via the fact suffices; fact depends on silver).
 # Every object here is an ENGINE-EMITTED dbt model (D-07, D-09): this
 # contract precedes its models by design; gate 3 skips unmatched objects
-# per-object at exit 0 (F-13) until the first regeneration lands them.
+# per-object at exit 0 (F-13) until the regeneration that lands them.
+# v1.2.0: context_registry joins the star (the compiler sitting's
+# amendment this file always promised). Rows are SQL VALUES literals
+# carried from the committed compiled-context artifact (D-30); C3 is
+# declared here and starts RUNNING when the registry model lands in the
+# regeneration PR (F-13: skip is no coverage, not passing coverage).
 # Severity discipline (D-28): every gating rule declares severity: error;
 # primaryKey flags generate warn-severity advisory twins at 1.0.12 (F-08),
 # and each carries its error-severity enforcing twin below. Payload and
@@ -28,7 +32,7 @@ apiVersion: v3.1.0
 kind: DataContract
 id: gold_unified_event_star
 name: Gold unified event star
-version: 1.1.0
+version: 1.2.0
 status: active
 domain: retail
 dataProduct: metricmine
@@ -38,8 +42,10 @@ description:
   purpose: >
     The source-invariant, self-describing, content-addressed star schema:
     values/columns dimension pairs for the source, run, timeframe, and
-    invoice_lines groups, plus the invoice_lines fact table. Every source
-    lands in the same physical shape, so new sources add rows, not schema.
+    invoice_lines groups, plus the invoice_lines fact table and the
+    context registry (D-19): the address of meaning, one row per schema
+    key. Every source lands in the same physical shape, so new sources
+    add rows, not schema.
   usage: >
     Built only by dbt from engine-emitted models (D-07, D-09); consumers
     read through the shared query module over the read-only protocol, with
@@ -49,10 +55,11 @@ description:
     retained-and-flagged per the mapping contract; exclusion is a consumer
     decision.
   limitations: >
-    Star tables only: context_registry joins with the context compiler
-    at its own later amendment, and typed projections are uncontracted
-    views by design (D-17). Payloads are canonical JSON text; consumers needing
-    typed columns use vw_invoice_lines_typed once emitted.
+    Typed projections are uncontracted views by design (D-17):
+    vw_invoice_lines_typed is emitted and manifest-listed but never a
+    schema object here. Payloads are canonical JSON text; consumers
+    needing typed columns use the projection. compiled_context is
+    addressed content, never a hashed payload, so it keeps its case.
 
 schema:
   - name: dim_source_values
@@ -645,6 +652,109 @@ schema:
           WHERE NOT json_valid(fact_values)
         mustBe: 0
 
+  - name: context_registry
+    physicalName: context_registry
+    logicalType: object
+    physicalType: table
+    description: >
+      The context registry (D-19): one row per schema key present in the
+      star, binding the address of meaning to its governing contract and
+      the compiled context gathered at approval time. Rows are SQL VALUES
+      literals carried from the committed compiled-context artifact at
+      emission time (D-30): every warehouse write stays inside dbt build,
+      and no build-time file read ever occurs. Engine-emitted (D-09).
+    properties:
+      - name: schema_key
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        description: >
+          Schema key: canonical_key v2 over the governed manifest in
+          declared order (D-18); 64-char lowercase SHA-256 hex.
+      - name: entity_group
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        description: >
+          Entity group the key belongs to: source, run, timeframe, or the
+          category's declared entityGroup.
+      - name: contract_name
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        description: >
+          Governing contract id: the mapping contract whose approval
+          created this schema key.
+      - name: contract_version
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        description: Governing contract version at compile time.
+      - name: compiled_context
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        description: >
+          Compiled context gathered at approval time: canonical compact
+          JSON text harvested from the governing contracts by the context
+          compiler (D-30). Addressed content, never a hashed payload, so
+          it is NOT lowercased; json_valid-gated below.
+      - name: loaded_at
+        logicalType: date
+        physicalType: TIMESTAMP
+        required: true
+        description: Audit stamp; outside every hashed payload (rule 13).
+    quality:
+      - type: library
+        metric: rowCount
+        description: The registry is never empty once the star builds.
+        severity: error
+        mustBeGreaterThan: 0
+      - type: sql
+        description: >
+          Schema-key uniqueness: the error-severity twin of the primaryKey
+          flag (its generated test is warn-hardcoded, F-08).
+        severity: error
+        query: |
+          SELECT COUNT(*) FROM (
+            SELECT schema_key FROM {{ ref('context_registry') }}
+            GROUP BY schema_key HAVING COUNT(*) > 1
+          )
+        mustBe: 0
+      - type: sql
+        description: >
+          C3 registry coverage: every schema key present in gold exists in
+          context_registry. ref()-edged per F-19 so the generated test
+          schedules after every columns dimension and the registry on a
+          fresh warehouse.
+        severity: error
+        query: |
+          SELECT COUNT(*) FROM (
+            SELECT dim_col_hash_id AS schema_key FROM {{ ref('dim_invoice_lines_columns') }}
+            UNION
+            SELECT source_col_hash_id FROM {{ ref('dim_source_columns') }}
+            UNION
+            SELECT run_col_hash_id FROM {{ ref('dim_run_columns') }}
+            UNION
+            SELECT timeframe_col_hash_id FROM {{ ref('dim_timeframe_columns') }}
+          ) gold_keys
+          WHERE NOT EXISTS (
+            SELECT 1 FROM {{ ref('context_registry') }} r
+            WHERE r.schema_key = gold_keys.schema_key
+          )
+        mustBe: 0
+      - type: sql
+        description: >
+          Registry JSON validity (the C4 discipline applied to compiled
+          context): every compiled_context parses as valid JSON.
+        severity: error
+        query: |
+          SELECT COUNT(*) FROM {{ ref('context_registry') }}
+          WHERE NOT json_valid(compiled_context)
+        mustBe: 0
+
 servers:
   - server: local
     type: duckdb
@@ -655,7 +765,7 @@ customProperties:
   - property: proposedBy
     value: human
   - property: proposedAt
-    value: "2026-08-08"
+    value: "2026-08-09"
   - property: provenanceNote
     value: >-
       pattern-derived; authored from docs/spec/gold-unified-event-star.md,
