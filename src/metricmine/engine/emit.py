@@ -16,7 +16,12 @@ from pathlib import Path
 
 import yaml
 
-from metricmine.engine.emitters import Emission, emit_models
+from metricmine.engine.emitters import (
+    Emission,
+    emit_extended_models,
+    emit_models,
+    registry_declared,
+)
 from metricmine.engine.manifest import (
     MANIFEST_NAME,
     build_manifest,
@@ -24,7 +29,11 @@ from metricmine.engine.manifest import (
     read_manifest,
     serialize_manifest,
 )
-from metricmine.engine.reader import load_inputs, validate_mapping
+from metricmine.engine.reader import (
+    load_compiled_context,
+    load_inputs,
+    validate_mapping,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 
@@ -36,9 +45,18 @@ def build_emission_set(repo_root: Path) -> dict[str, str]:
     emission = Emission(inputs.mapping, inputs.star)
     cfg = _config(repo_root)
     files = emit_models(emission)
+    # Extended-star activation (spec §5): the registry and the typed
+    # projection join the set only once the gold contract declares
+    # context_registry; the star set alone emits before the amendment.
+    extended = registry_declared(inputs.star)
+    if extended:
+        context_version, compiled = load_compiled_context(repo_root)
+        files.update(emit_extended_models(emission, compiled))
     manifest = build_manifest(
         files, inputs.mapping, inputs.star, cfg["output_dir"]
     )
+    if extended:
+        manifest["sources"]["compiled_context"] = {"version": context_version}
     files[MANIFEST_NAME] = serialize_manifest(manifest)
     return files
 
