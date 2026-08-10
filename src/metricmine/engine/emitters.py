@@ -15,6 +15,8 @@ twin per single-column primaryKey (F-17; composite keys get none).
 
 from __future__ import annotations
 
+import json
+
 import yaml
 
 from metricmine.engine import ENGINE_VERSION
@@ -373,6 +375,169 @@ from keyed
 """
 
 
+_DERIVATIVE_LABEL = (
+    "Derivative typed projection over the star; uncontracted by design"
+    " (D-17). Do not edit; flag drift instead (rule 8)."
+)
+
+
+def registry_declared(star: dict) -> bool:
+    """The extended-star activation switch (spec §5): the registry and the
+    typed projection join the emission set once the gold contract declares
+    the context_registry object."""
+    return any(obj["name"] == "context_registry" for obj in star["schema"])
+
+
+def context_json(compiled_context: dict) -> str:
+    """Canonical compact JSON for a registry cell.
+
+    Addressed content, never a hashed payload (D-19), so it is NOT
+    lowercased; sorted keys and compact separators keep it deterministic.
+    """
+    return json.dumps(
+        compiled_context,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    )
+
+
+def _sql_string(value: str) -> str:
+    escaped = value.replace("'", "''")
+    return f"'{escaped}'"
+
+
+def registry_sql(emission: Emission, compiled: dict) -> str:
+    """context_registry rows as VALUES literals carried from the
+    compiled-context artifact (D-30): no build-time file reads, every
+    warehouse write stays inside dbt build."""
+    rows = ",\n".join(
+        "        ("
+        + ", ".join(
+            _sql_string(cell)
+            for cell in (
+                entry["schema_key"],
+                entry["entity_group"],
+                entry["contract_name"],
+                entry["contract_version"],
+                context_json(entry["compiled_context"]),
+            )
+        )
+        + ")"
+        for entry in compiled["entries"]
+    )
+    return f"""{emission.sql_header()}
+with rows as (
+
+    select * from (values
+{rows}
+    ) as t (schema_key, entity_group, contract_name, contract_version, compiled_context)
+
+)
+
+select
+    schema_key,
+    entity_group,
+    contract_name,
+    contract_version,
+    compiled_context,
+    current_localtimestamp()    as loaded_at
+from rows
+"""
+
+
+def _projection_sql_header(emission: Emission) -> str:
+    first_line = emission.sql_header().split("\n", 1)[0]
+    return f"{first_line}\n-- {_DERIVATIVE_LABEL}\n"
+
+
+def _projection_yml_header(emission: Emission) -> str:
+    first_line = emission.yml_header().split("\n", 1)[0]
+    return f"{first_line}\n# {_DERIVATIVE_LABEL}\n"
+
+
+def projection_sql(emission: Emission) -> str:
+    """vw_<category>_typed: json_extract plus cast per manifest field.
+
+    Cast types are the mapping contract's physicalType verbatim; derived
+    identifiers are VARCHAR (canonical hex text). The view config is
+    explicit because the gold folder default is table.
+    """
+    physical_types = {
+        prop["name"]: prop["physicalType"]
+        for prop in emission.category["properties"]
+    }
+    fields = (
+        [(name, "d.dim_values") for name in emission.dim_manifest]
+        + [(name, "t.timeframe_values") for name in emission.timeframe_manifest]
+        + [(name, "f.fact_values") for name in emission.measure_manifest]
+    )
+    select_lines = ",\n".join(
+        f"    cast(json_extract_string({payload}, '$.{name}')"
+        f" as {physical_types.get(name, 'VARCHAR')}) as {name}"
+        for name, payload in fields
+    )
+    category = emission.category_name
+    return f"""{_projection_sql_header(emission)}
+{{{{ config(materialized='view') }}}}
+
+with f as (
+
+    select * from {{{{ ref('fact_{category}_values') }}}}
+
+),
+
+d as (
+
+    select * from {{{{ ref('dim_{category}_values') }}}}
+
+),
+
+t as (
+
+    select * from {{{{ ref('dim_timeframe_values') }}}}
+
+)
+
+select
+{select_lines}
+from f
+join d on d.dim_hash_id = f.dim_hash_id
+join t on t.timeframe_hash_id = f.timeframe_hash_id
+"""
+
+
+def projection_yml(emission: Emission) -> str:
+    """Minimal properties for the uncontracted view: name and description
+    only, so the F-14 fixed-point delta list stays exhaustive (rule 5)."""
+    category = emission.category_name
+    doc = {
+        "version": 2,
+        "models": [
+            {
+                "name": f"vw_{category}_typed",
+                "description": (
+                    f"Typed projection over the star for the {category}"
+                    " category: json_extract plus cast per manifest field,"
+                    " one row per fact row. Uncontracted by design (D-17);"
+                    " derivative of the fact, dimension, and timeframe"
+                    " payloads."
+                ),
+            }
+        ],
+    }
+    body = yaml.dump(
+        doc,
+        Dumper=_Dumper,
+        sort_keys=False,
+        allow_unicode=True,
+        width=2000,
+        default_flow_style=False,
+    )
+    return _projection_yml_header(emission) + body
+
+
 def _data_test(model: str, column: str, kind: str, contract_version: str) -> dict:
     if kind == "not_null":
         check, phrase = "field_required", "no missing values"
@@ -475,3 +640,17 @@ def emit_models(emission: Emission) -> dict[str, str]:
         model_name = sql_name.removesuffix(".sql")
         models[f"{model_name}.yml"] = properties_yml(emission, model_name)
     return models
+
+
+def emit_extended_models(emission: Emission, compiled: dict) -> dict[str, str]:
+    """The extended-star additions (spec §5): the registry, carried from
+    the compiled-context artifact, plus the typed projection. Registry
+    properties ride the existing fixed-point emitter — the amended gold
+    contract's context_registry object drives them."""
+    category = emission.category_name
+    return {
+        "context_registry.sql": registry_sql(emission, compiled),
+        "context_registry.yml": properties_yml(emission, "context_registry"),
+        f"vw_{category}_typed.sql": projection_sql(emission),
+        f"vw_{category}_typed.yml": projection_yml(emission),
+    }
