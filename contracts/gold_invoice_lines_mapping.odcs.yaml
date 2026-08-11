@@ -1,4 +1,4 @@
-# Mapping contract: invoice_lines category, v1.0.0 (ODCS v3.1.0).
+# Mapping contract: invoice_lines category, v1.1.0 (ODCS v3.1.0).
 # Engine input, never a table: physicalType: mapping is the machine
 # discriminator (CLAUDE.md rule 9); gate 1 lints this file, gate 3 skips it
 # by design (F-12), and the auto-modeling engine validates it against
@@ -12,15 +12,15 @@
 #   quantity, unit_price — two of the four are measures). The identity IS
 #   the whole tuple, exactly as silver v1.1.0 declares it; measure VALUES
 #   stay out of the dimension payload.
-# - country is deliberately absent: the reserved signature-test dimension,
-#   added by a v1.1.0 amendment at the exit sitting to demonstrate the
-#   signature property (D-17) — regeneration with no engine code change,
-#   no physical schema change, no gold contract amendment.
+# - country joins at v1.1.0, the amendment this reservation existed for:
+#   the signature test made real (D-17) — regeneration with no engine
+#   code change, no physical schema change, no gold contract amendment.
+#   v1.0.0 recorded the reservation; this version discharges it.
 apiVersion: v3.1.0
 kind: DataContract
 id: gold_invoice_lines_mapping
 name: Gold mapping, invoice_lines category
-version: 1.0.0
+version: 1.1.0
 status: active
 domain: retail
 dataProduct: metricmine
@@ -37,10 +37,10 @@ description:
     the engine validates it against mapping-contract.schema.json and
     cross-checks every field against the silver contract.
   limitations: >
-    One available silver column (country) is deliberately unmapped in
-    v1.0.0: it is the reserved signature-test dimension, arriving by
-    amendment. Cancellation lines flow through retained-and-flagged;
-    excluding them is a consumer decision, made at query time, never here.
+    Cancellation lines flow through retained-and-flagged; excluding
+    them is a consumer decision, made at query time, never here.
+    v1.0.0 deliberately reserved country; this version maps it,
+    executing the signature test the reservation existed for.
 
 schema:
   - name: invoice_lines
@@ -110,8 +110,12 @@ schema:
         required: false
         mappingRole: dimension
         description: Customer identifier; null on guest checkouts.
-      # country is deliberately absent: the reserved signature-test
-      # dimension (see the header note and decisionReservedColumn below).
+      - name: country
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        mappingRole: dimension
+        description: Customer country as landed; the signature-test dimension, mapped at v1.1.0.
 
 servers:
   - server: local
@@ -125,16 +129,18 @@ customProperties:
   - property: profileHash
     value: "sha256:e65bee8117b65958b8c4741b43509ece19a581dd1d6bad9a7e1da9b67b0b5fcd"
   - property: proposedAt
-    value: "2026-08-08"
+    value: "2026-08-10"
   - property: decisionCancellations
     value: flow-through-retained-and-flagged
   - property: decisionGrainForm
     value: derived-line-identity-over-declared-silver-grain-tuple
   - property: decisionReservedColumn
-    value: country-reserved-for-signature-test-v1.1.0
+    value: country-mapped-at-v1.1.0-reservation-discharged
   - property: provenanceNote
     value: >-
       Authored from profiles/silver.silver_invoice_lines/v0001.json (the
       profileHash artifact) against silver contract v1.1.0's grain
       declaration; grain form and reserved column decided at Sitting H
-      planning.
+      planning. v1.1.0 maps the reserved country column from the same
+      profile evidence (24 distinct at v0001); amendment authored at the
+      pre-K planning session.
