@@ -13,17 +13,22 @@ questions about it, on one machine with one command.
 
 ## Status
 
-Phases 1 through 3 are complete. Built so far: the repository scaffold, the
+Phases 1 through 4 are complete. Built so far: the repository scaffold, the
 pinned toolchain, the three-gate contract CI workflow (with bronze landed in
-CI), the CLAUDE.md guardrails, the decision register, the gold layer design
-spec and diagram, the ingestion, profiler, and agent-layer specs, a seeded
-roadmap, the committed Online Retail II sample (D-15) with its fetch script,
-the PyAirbyte bronze landing (`make ingest`), the deterministic profiler
-(`make profile`) with its committed v0001 artifact, and the first contracted
-silver model (`silver_invoice_lines`, contract v1.1.0) with all three gates
-live end to end. Bronze through contracted silver runs end to end locally
-and in CI; gold is the next phase. The live roadmap is
-the [Issues tab](https://github.com/metricminellc/metricmine/issues).
+CI), the CLAUDE.md guardrails, the decision register, the layer specs
+(ingestion, profiler, gold star, engine, agent layer), the committed Online
+Retail II sample (D-15), the PyAirbyte bronze landing (`make ingest`), the
+deterministic profiler with committed bronze and silver artifacts, the
+contracted silver model (contract v1.1.0), and the full gold plane: the
+auto-modeling engine (mapping contract in, dbt models out), the context
+compiler with its committed compiled-context artifacts, and the emitted
+unified event star — eleven engine-owned models under an ownership
+manifest, gated by contract-declared conservation tests (C1 through C4),
+building at PASS=108 from a cold start. The signature test is demonstrated
+and documented: [docs/verification/signature-test.md](docs/verification/signature-test.md).
+Phase 5 (MCP serving, the demo export, the recording, v0.1.0) is next. The
+live roadmap is the
+[Issues tab](https://github.com/metricminellc/metricmine/issues).
 
 ## Architecture
 
@@ -82,6 +87,34 @@ rehearsal):
 
 The full captures, logs, and the DuckDB constraint enforcement matrix live
 in [docs/verification/](docs/verification/).
+
+## The unified event star, running
+
+The gold plane is machine-emitted. I hand-author one mapping contract that
+declares how the silver table maps into the star; the auto-modeling engine
+consumes it and emits every gold model file — the content-addressed
+values/columns dimension pairs, the category fact table, the context
+registry, and a typed projection view — at the sync fixed point, under an
+ownership manifest with per-file checksums. dbt builds what the engine
+emits, and the same three gates judge the result. Nothing hand-written
+touches the gold plane; nothing engine-written escapes review.
+
+The design claim, stated in the gold layer design and restated here: this
+star is built for legibility, not speed. Content-addressed keys, payloads
+carried as canonical JSON text, and a registry binding every schema key to
+the contract version that created it make the star auditable end to end;
+none of that is a throughput claim, and performance is a stated non-goal.
+
+The signature property (D-17) is the payoff, and it is demonstrated, not
+asserted: adding the reserved `country` dimension took one mapping-contract
+amendment (v1.1.0) and one regeneration. No engine code changed, no
+physical schema changed, no gold contract amendment. The diff was 23
+emitted files; the change announced itself as one new schema key in the
+columns dimension and a re-cited registry row, with row conservation
+intact to the digit (44,721 silver lines, 44,721 fact rows, ten
+reconciled fields in the typed view). The full narrative, with the
+staleness-guard and ownership-drift refusals captured live, is
+[docs/verification/signature-test.md](docs/verification/signature-test.md).
 
 ## Toolchain
 
