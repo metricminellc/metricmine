@@ -15,3 +15,4 @@ select
     source_values,
     current_localtimestamp()    as loaded_at
 from payload
+-- hand edit: drift demo (rule 8)
