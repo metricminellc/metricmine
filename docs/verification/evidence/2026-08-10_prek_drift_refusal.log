@@ -1,0 +1,16 @@
+# Pre-K rehearsal — the ownership-drift refusal, dry run (rule 8; D-09).
+# One engine-owned file hand-edited (a trailing comment appended to
+# dim_source_values.sql), then regeneration attempted:
+$ printf -- "-- hand edit: drift demo (rule 8)\n" >> transform/models/gold/dim_source_values.sql
+$ make regen
+uv run python -m metricmine.engine.emit
+ERROR: refusing to overwrite human-owned files whose bytes diverged from the ownership-manifest baseline (rule 8):
+  transform/models/gold/dim_source_values.sql
+Nothing written.
+make: *** [Makefile:27: regen] Error 1
+# shell exit: 2. The engine names the drifted file, refuses the ENTIRE
+# emission (no partial writes), exits nonzero. Restore, then idempotency:
+$ git restore transform/models/gold/dim_source_values.sql   # (sitting form)
+$ make regen
+Emission complete: 0 file(s) landed, 23 unchanged, 23 total.
+# First exercise of the D-09/rule-8 refusal path end to end.

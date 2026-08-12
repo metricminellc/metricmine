@@ -375,3 +375,32 @@ project-wide canonicalization byte-identically.
 ([`evidence/2026-08-09_prej_pr23_window_shapes.log`](evidence/2026-08-09_prej_pr23_window_shapes.log);
 [`evidence/2026-08-09_prej_pr24_gate_suite.log`](evidence/2026-08-09_prej_pr24_gate_suite.log);
 [`evidence/2026-08-09_prej_cold_build_pass108.log`](evidence/2026-08-09_prej_cold_build_pass108.log))
+
+### F-21
+**A mapping-contract version bump is gate-quiet; its entire blast radius
+is the emission set.** Measured at the pinned toolchain during the pre-K
+rehearsal (mapping v1.0.0 to v1.1.0, country joining, over the live
+v1.2.0 star). Unlike the F-20 gold-amendment window, sync reads the STAR
+contract only, so gate 3 stays at `updated 0` across all three contracts
+for the whole window: no properties re-edit, no singular-test transition,
+no git-restore rule anywhere in the sitting; the 34 committed singular
+tests never move. The committed star stays internally consistent at the
+old emission (old registry rows agree with old columns-dim keys), so
+`dbt build` PASS=108 and C1 through C4 hold green on BOTH sides of the
+window. The unit lane is the only coupled surface, through two designed
+fail-closed mechanisms: the compiled-context staleness guard (the v0001
+artifact cites mapping 1.0.0, so `make regen` AND the emission tests
+refuse with `run make context` until v0002 mints — first live fire of the
+D-30 guard, exactly as specified) and the golden-fixture equality test.
+Consequence, now the recorded packaging rule: the amendment PR carries
+exactly three things — the contract bump, the freshly minted
+compiled-context artifact, and the refreshed byte oracle (the recorded
+D-08 reading, third application) — and the regeneration PR carries
+exactly the emitted set. The signature diff measured: 23 files
++58/−55, ONE new schema key (dims manifest re-keyed; measures, source,
+run, timeframe keys unchanged), all five registry rows re-cited at
+1.1.0, engine version untouched.
+([`evidence/2026-08-10_prek_staleness_guard_live.log`](evidence/2026-08-10_prek_staleness_guard_live.log);
+[`evidence/2026-08-10_prek_pr25_window_shapes.log`](evidence/2026-08-10_prek_pr25_window_shapes.log);
+[`evidence/2026-08-10_prek_signature_regeneration_diff.log`](evidence/2026-08-10_prek_signature_regeneration_diff.log);
+[`evidence/2026-08-10_prek_registry_and_conservation.log`](evidence/2026-08-10_prek_registry_and_conservation.log))

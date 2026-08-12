@@ -1,0 +1,27 @@
+# Pre-K rehearsal — post-regeneration gates + conservation (C1-C4 live).
+$ uv run dbt build --project-dir transform --target local
+Done. PASS=108 WARN=0 ERROR=0 SKIP=0 NO-OP=0 TOTAL=108
+$ uv run datacontract dbt sync contracts/*.odcs.yaml --project-dir transform --target local
+gold_invoice_lines_mapping.odcs.yaml: Synced 0 models: updated 0 YAML files.
+gold_unified_event_star.odcs.yaml: Synced 10 models: updated 0 YAML files.
+silver_invoice_lines.odcs.yaml: Synced 1 model: updated 0 YAML files.
+# The sync fixed point holds over the re-emitted set, first pass (Q8/F-14).
+$ uv run datacontract dbt test contracts/*.odcs.yaml --project-dir transform --target local
+Tested 3 contract(s): 1 no tests · 2 passed.
+$ duckdb -readonly ... (nine-column conservation)
+44721 | 44721 | 44721 | 2004 | 1 | 1 | 2 | 5 | 44721
+# IDENTICAL to the pre-amendment line: counts conserve; no physical schema
+# change; the values inside dim payloads changed, the shape did not.
+$ duckdb -readonly ... (C3 by hand: gold schema keys not in registry)
+0
+$ duckdb -readonly "SELECT contract_version, entity_group, substr(schema_key,1,12) FROM gold.context_registry ORDER BY 2,3"
+1.1.0 | invoice_lines | 2d27bd360b50      <- the NEW dims schema key
+1.1.0 | invoice_lines | 9dbc23cabca7      <- measures key, unchanged
+1.1.0 | run           | dacafb1855b6
+1.1.0 | source        | 61e74223d961
+1.1.0 | timeframe     | 8f99de0c5aa3
+# The announcement, verbatim (D-17): one new schema key in
+# dim_invoice_lines_columns (0f6d343a -> 2d27bd36), a re-keyed registry
+# row, all five rows citing mapping v1.1.0. Country flows:
+$ duckdb -readonly "SELECT country, COUNT(*) FROM gold.vw_invoice_lines_typed GROUP BY 1 ORDER BY 2 DESC LIMIT 3"
+united kingdom 42354 | eire 596 | germany 417

@@ -1,0 +1,19 @@
+# Pre-K rehearsal — v0002 mint + determinism (D-30; the H/J discipline).
+$ make context
+uv run python -m metricmine.context.compile
+wrote /home/claude/metricmine/context/compiled/v0002.json
+$ make context
+compiled context unchanged (v0002 already current)
+$ shasum -a 256 context/compiled/v0002.json
+5fa60c0c28376130c68b268fa694836bf46fdb5a107a4c8e52291d00512d0337
+$ rm context/compiled/v0002.json context/compiled/v0002.meta.json && make context && shasum -a 256 context/compiled/v0002.json
+5fa60c0c28376130c68b268fa694836bf46fdb5a107a4c8e52291d00512d0337
+# Delete/remint byte-identity PROVEN. v0001 immutable beside it (D-30).
+# v0002 vs v0001, measured: sources.mapping_contract 1.0.0 -> 1.1.0; all
+# five entries' contract_version -> 1.1.0; ONLY the dimensions entry's
+# schema_key and compiled_context change (country joins fields):
+#   dims schema_key 0f6d343a5956... -> 2d27bd360b50...
+#   source 61e74223d961 / run dacafb1855b6 / timeframe 8f99de0c5aa3 /
+#   measures 9dbc23cabca7 keys UNCHANGED.
+# The Mac cross-machine check at Sitting K: shasum -a 256 must equal
+# 5fa60c0c28376130c68b268fa694836bf46fdb5a107a4c8e52291d00512d0337.

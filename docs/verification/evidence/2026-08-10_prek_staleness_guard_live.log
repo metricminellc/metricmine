@@ -1,0 +1,20 @@
+# Pre-K rehearsal — the compiled-context staleness guard, FIRST LIVE FIRE.
+# State: mapping contract bumped to v1.1.0 (8-edit set applied; post-edit
+# lint verified: datacontract lint -> "🟢 data contract is valid."),
+# v0001 the only compiled artifact. The guard (docs/spec/engine.md §5, D-30;
+# src/metricmine/engine/reader.py load_compiled_context) refuses emission,
+# names the divergence, prescribes the remedy, writes NOTHING.
+$ make regen
+uv run python -m metricmine.engine.emit
+ERROR: compiled-context artifact v0001 is stale: sources.mapping_contract is 1.0.0, contracts say 1.1.0; run `make context` (D-30)
+make: *** [Makefile:27: regen] Error 1
+# shell exit: 2 (make wraps the module's exit 1)
+$ git status --porcelain transform/models/gold context/compiled | wc -l
+0
+# Fail-closed proven: zero paths touched. Unit-lane coupling, stated
+# precisely: at THIS state (stale v0001) the four emission tests that
+# call build_emission_set fail through the same staleness raise; after
+# the v0002 mint but before the oracle refresh, exactly one fails
+# (test_emission_matches_golden_fixtures, measured: 1 failed, 94 passed).
+# Both halves are the D-08 packaging proof: the amendment, the artifact,
+# and the oracle refresh travel in ONE PR.
