@@ -1,0 +1,12 @@
+# Pre-K rehearsal — the mandatory cold build (F-19 rule), post-signature.
+$ rm warehouse/metricmine.duckdb
+$ AIRBYTE_OFFLINE_MODE=1 make ingest
+landed {'online_retail_ii': 45228} into bronze of <repo>/warehouse/metricmine.duckdb
+$ uv run dbt build --project-dir transform --target local
+Done. PASS=108 WARN=0 ERROR=0 SKIP=0 NO-OP=0 TOTAL=108
+$ make regen
+Emission complete: 0 file(s) landed, 23 unchanged, 23 total.   # post-cold idempotency
+$ duckdb -readonly ... (nine-column conservation)
+44721 | 44721 | 44721 | 2004 | 1 | 1 | 2 | 5 | 44721
+# Cold conservation identical; the extended star at mapping v1.1.0 builds
+# from nothing (offline ingest -> PASS=108) with zero engine re-emission.

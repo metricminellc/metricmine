@@ -1,0 +1,23 @@
+# Pre-K rehearsal — the PR 25 merge-window state, measured (F-21 basis).
+# State: mapping v1.1.0 + v0002 + refreshed 23-file oracle committed;
+# transform/models/gold still the v1.0.0-emitted bytes (regeneration not
+# yet landed). This is main between PR 25 and PR 26.
+$ uv run dbt build --project-dir transform --target local
+Done. PASS=108 WARN=0 ERROR=0 SKIP=0 NO-OP=0 TOTAL=108
+$ uv run datacontract dbt sync contracts/*.odcs.yaml --project-dir transform --target local
+gold_invoice_lines_mapping.odcs.yaml: Synced 0 models: updated 0 YAML files.
+gold_unified_event_star.odcs.yaml: Synced 10 models: updated 0 YAML files.
+silver_invoice_lines.odcs.yaml: Synced 1 model: updated 0 YAML files.
+$ uv run datacontract dbt test contracts/*.odcs.yaml --project-dir transform --target local
+Tested 3 contract(s): 1 no tests · 2 passed.
+$ uv run pytest -m "not local" -q
+95 passed, 13 deselected
+# ALL GREEN, ZERO ephemera. Unlike the F-20 gold-amendment window, the
+# mapping bump leaves gate 3 entirely quiet: sync reads the STAR contract
+# (unchanged), so no properties re-edit, no singular-test transition, no
+# F-20b git-restore rule anywhere in Sitting K. The committed star stays
+# internally consistent at the old emission (old registry rows + old
+# columns keys agree, so C3 passes on both sides of the window).
+$ ls transform/tests/datacontract_cli/gold_unified_event_star/ | wc -l
+34
+# (30 singular at 1_2_0 + 4 registry tests — untouched all sitting.)

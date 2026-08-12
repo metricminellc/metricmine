@@ -1,0 +1,30 @@
+# Pre-K rehearsal — the signature regeneration, measured (D-17).
+# From the PR 25 window state:
+$ make regen
+Emission complete: 23 file(s) landed, 0 unchanged, 23 total.
+$ make regen
+Emission complete: 0 file(s) landed, 23 unchanged, 23 total.   # idempotent
+$ git diff --stat transform/models/gold
+23 files changed, 58 insertions(+), 55 deletions(-)
+$ diff -qr transform/models/gold tests/golden/emitted
+Only in transform/models/gold: .gitkeep     # byte parity with the oracle
+# Expected-diff catalog (generated-code review list for PR 26):
+# - EVERY file: header line moves to "from gold_invoice_lines_mapping
+#   v1.1.0 + gold_unified_event_star v1.2.0" (engine stays v0.2.0 — NO
+#   engine code change, the signature claim).
+# - dim_invoice_lines_values.sql: payload struct_pack gains
+#   country := cast(country as varchar) (sorted field order); the
+#   dim_col_hash_id literal moves 0f6d343a... -> 2d27bd360b5092ff...
+# - dim_invoice_lines_columns.sql: manifest VALUES gains "country"; new
+#   schema-key literal (the ANNOUNCEMENT).
+# - fact_invoice_lines_values.sql: the dim-payload recompute gains country
+#   (same struct, fact-side); measures manifest key 9dbc23ca UNCHANGED.
+# - dim_run_values.sql: mapping_contract_version literal '1.0.0'->'1.1.0'
+#   (lineage as data, D-17; run stays ONE row, non-key on the fact).
+# - context_registry.sql: five VALUES rows re-rendered (contract_version
+#   1.1.0 on all five; dims row re-keyed with country in compiled_context).
+# - vw_invoice_lines_typed.sql: one added cast line for country.
+# - ownership-manifest.json: sources.mapping_contract.version 1.1.0,
+#   sources.compiled_context v0002, all 22 checksums refreshed.
+# - ALL .yml properties files: header line only (no column changes — NO
+#   physical schema change).

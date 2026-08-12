@@ -1,0 +1,32 @@
+# Pre-K rehearsal — baseline replication at e09e24a (#69), sandbox, 2026-08-10.
+# Fresh clone; uv sync (py3.12, dbt-core 1.11.12, dbt-duckdb 1.10.1,
+# duckdb 1.4.3); datacontract-cli[duckdb]==1.0.12 isolated uv tool;
+# dbt_utils 1.3.3; connector venv py3.10 + airbyte-source-file 0.3.15;
+# AIRBYTE_OFFLINE_MODE=1 make ingest; absolute DBT_PROFILES_DIR and
+# MM_WAREHOUSE_PATH (the CI environment, replicated verbatim).
+$ git log --oneline -1
+e09e24a feat: first regeneration of the extended star — the registry and the typed projection land (#69)
+$ make ingest        # offline
+landed {'online_retail_ii': 45228} into bronze of <repo>/warehouse/metricmine.duckdb
+$ uv run pytest -m "not local" -q
+95 passed, 13 deselected
+$ uv run pytest -m "local" -q
+13 passed, 95 deselected
+$ datacontract lint contracts/*.odcs.yaml   # each of the three
+🟢 data contract is valid. (x3)
+$ uv run dbt build --project-dir transform --target local
+Done. PASS=108 WARN=0 ERROR=0 SKIP=0 NO-OP=0 TOTAL=108
+$ uv run datacontract dbt sync contracts/*.odcs.yaml --project-dir transform --target local
+gold_invoice_lines_mapping.odcs.yaml: Synced 0 models: updated 0 YAML files.
+gold_unified_event_star.odcs.yaml: Synced 10 models: updated 0 YAML files.
+silver_invoice_lines.odcs.yaml: Synced 1 model: updated 0 YAML files.
+$ uv run datacontract dbt test contracts/*.odcs.yaml --project-dir transform --target local
+Tested 3 contract(s): 1 no tests · 2 passed.
+$ duckdb -readonly ... (nine-column conservation)
+44721 | 44721 | 44721 | 2004 | 1 | 1 | 2 | 5 | 44721
+$ make regen
+Emission complete: 0 file(s) landed, 23 unchanged, 23 total.
+$ shasum -a 256 context/compiled/v0001.json
+c8ac09764b268fb371f8176c9af122a1feb8d25453b52cee78535e6ecf45d838
+# Third-machine compiler determinism: Mac (Sitting J live), pre-J sandbox,
+# and this pre-K sandbox all agree on v0001.json byte-for-byte.

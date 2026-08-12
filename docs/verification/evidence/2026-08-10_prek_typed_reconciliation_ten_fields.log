@@ -1,0 +1,9 @@
+# Pre-K rehearsal — typed projection reconciliation, now TEN fields.
+# The J nine-field query extended with country (VARCHARs reconcile at
+# lower() BY DESIGN — canonical payloads are lowercased text, D-18;
+# invoiced_at at minute grain, the declared timeGrain; country is
+# required:true in silver, so no null branch).
+$ duckdb -readonly warehouse/metricmine.duckdb "WITH s AS (SELECT *, sha256(lower(to_json(struct_pack(invoice_id := cast(invoice_id as varchar), quantity := cast(quantity as varchar), stock_code := cast(stock_code as varchar), unit_price := cast(unit_price as varchar))))) AS line_identity FROM silver.silver_invoice_lines), j AS (SELECT s.*, v.invoice_id v_invoice_id, v.is_cancellation v_is_cancellation, v.stock_code v_stock_code, v.product_description v_product_description, v.customer_id v_customer_id, v.country v_country, v.invoiced_at v_invoiced_at, v.quantity v_quantity, v.unit_price v_unit_price FROM s JOIN gold.vw_invoice_lines_typed v USING (line_identity)) SELECT COUNT(*), SUM(CASE WHEN v_invoice_id = lower(invoice_id) THEN 1 ELSE 0 END), SUM(CASE WHEN v_is_cancellation = is_cancellation THEN 1 ELSE 0 END), SUM(CASE WHEN v_stock_code = lower(stock_code) THEN 1 ELSE 0 END), SUM(CASE WHEN v_product_description = lower(product_description) OR (v_product_description IS NULL AND product_description IS NULL) THEN 1 ELSE 0 END), SUM(CASE WHEN v_customer_id = customer_id OR (v_customer_id IS NULL AND customer_id IS NULL) THEN 1 ELSE 0 END), SUM(CASE WHEN v_country = lower(country) THEN 1 ELSE 0 END), SUM(CASE WHEN v_invoiced_at = date_trunc('minute', invoiced_at) THEN 1 ELSE 0 END), SUM(CASE WHEN v_quantity = quantity THEN 1 ELSE 0 END), SUM(CASE WHEN v_unit_price = unit_price THEN 1 ELSE 0 END) FROM j"
+44721 | 44721 | 44721 | 44721 | 44721 | 44721 | 44721 | 44721 | 44721 | 44721
+# TEN 44721s: every silver line joins the typed view on line_identity and
+# every field, country included, reconciles.
