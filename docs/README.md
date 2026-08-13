@@ -6,7 +6,7 @@
 
 | Path | What it is |
 |---|---|
-| [`decisions/decision-register.md`](decisions/decision-register.md) | The authoritative index of project decisions (D-01 to D-25), their status, and the CLAUDE.md rule crosswalk. Every `D-0x` citation in the repo resolves here. |
+| [`decisions/decision-register.md`](decisions/decision-register.md) | The authoritative index of project decisions, their status, and the CLAUDE.md rule crosswalk. Every `D-0x` citation in the repo resolves here. |
 | [`spec/`](spec/) | Component specifications, the living source of truth for each component. Spec PRs merge before their implementation PRs open. |
 | [`spec/ingestion.md`](spec/ingestion.md) | Phase 2 ingestion: PyAirbyte lands the committed Online Retail II sample through the `source-file` connector into bronze; `source-faker` stays the keyless synthetic path. Verified connector config, bronze conventions, PyAirbyte runtime, and Phase 2 exit criteria (D-15, D-04, D-03). |
 | [`spec/profiler.md`](spec/profiler.md) | Phase 3 profiler: deterministic bronze profiling into a committed, versioned JSON artifact — authority boundary (observable facts vs human judgment), canonical serialization and determinism rules, token-budget caps, artifact versioning, and the read-only warehouse protocol (D-11, D-23, D-04, D-03, D-25). |

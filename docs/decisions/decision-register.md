@@ -15,7 +15,8 @@ repository; nothing in this repo depends on those records. Decision Record 002
 (July 12, 2026) carries D-21 through D-25; Decision Record 001 Rev. 3 carries
 D-01 through D-20 unchanged. Decision Record 003 (July 31, 2026) carries D-26
 through D-28 and Amendments A and B to Record 001. Decision Record 004
-(August 1, 2026) carries D-29 and D-30 and Amendment C to D-16.
+(August 1, 2026) carries D-29 and D-30 and Amendment C to D-16. Decision
+Record 005 (August 13, 2026) carries D-31 through D-33, the serving layer.
 
 **Status meanings.** `adopted` — in force. `proposed` — agreed in working
 session, applied by the plans below, formal adoption pending; treat as binding
@@ -55,6 +56,9 @@ unless amended.
 | [D-28](#d-28) | Contract-declared enforcement severity | adopted |
 | [D-29](#d-29) | The auto-modeling engine specification | adopted |
 | [D-30](#d-30) | Registry population: compiled-context artifact, literal-carrying model | adopted |
+| [D-31](#d-31) | Serving layer: one shared query module; thin MCP server | adopted |
+| [D-32](#d-32) | MCP SDK: official mcp 2.0.x as a project dependency | adopted |
+| [D-33](#d-33) | Demo export: content equality by query, never bytes | adopted |
 
 ## The decisions
 
@@ -379,6 +383,47 @@ byte-reproducible; C3 stays a gate-capable test; and registry changes
 arrive as reviewable regeneration pull requests under the ownership
 manifest (D-09, D-19). Ratified in Decision Record 004.
 
+### D-31
+**Serving layer: one shared query module; thin MCP server.** All gold
+access flows through `src/metricmine/query.py`, implementing the D-17
+serving clause in the D-11 read-only posture. The MCP server at
+`src/metricmine/server/` is a thin stdio adapter over the module: the
+five spec tools and nothing else. Read-only is enforced three layers
+deep — `read_only=True` connections, `enable_external_access=false` with
+`lock_configuration=true`, and a single-statement SELECT gate — and every
+query result is row-capped with an explicit truncation flag. The database
+resolves `MM_SERVE_DB` first, then `demo/gold.duckdb` (D-03), keeping the
+keyless posture. The D-31 number was reserved and left unminted at
+Record 004 for the rule-11 scope; it mints here, keeping the numbering
+dense and the history honest. Full design:
+[`docs/spec/serving.md`](../spec/serving.md).
+
+### D-32
+**MCP SDK selection and pin.** The official `mcp` package at 2.0.x,
+added as a project dependency (`mcp>=2.0,<2.1`, resolved 2.0.0 in
+uv.lock) — the server imports it, so an isolated tool cannot serve
+(contrast D-06). 2.0 is the current stable line and tracks the current
+MCP specification. Probe P1 verified the stdio server, type-hint
+schemas, structured output (a concrete TypedDict return is required; a
+bare dict yields none), and a live Claude Desktop discovery-plus-round-
+trip on the Mac at 2.0.0 before this pin bound (August 13, 2026). The
+recorded fallback, exercised only on a live failure and documented as a
+finding: `mcp>=1.28,<2` on the maintenance line. Never `latest` (rule 1).
+
+### D-33
+**Demo export: content equality by query, never byte equality.**
+`make export-demo` builds `demo/gold.duckdb` — the only committed
+database artifact, exactly as D-03 has always said — from the keyless
+replay path: attach the working warehouse read-only, copy the gold
+tables, recreate the typed view from the catalog SQL re-anchored to the
+export's own catalog, checkpoint, verify. Verification is per-table
+equal counts plus symmetric EXCEPT zero, and an ordered content digest
+over the typed view compared across direct per-file connections. A
+DuckDB file embeds storage details, so byte-level determinism is a claim
+this project does not need and will not make. Refresh only at
+gold-content changes: regeneration merges and tags. Mechanism and probed
+measurements: [`docs/spec/serving.md`](../spec/serving.md) §8.
+
 ## Session-decision and finding IDs
 
 IDs of the form `A<n>` (working-session decisions, e.g. A4) and `F-0x`
@@ -415,13 +460,15 @@ authority. The mapping:
 | 15 (proposer runtime: one structured call; no tools/MCP/loops; outbox-only) | D-21, D-23 |
 | 16 (versioned prompts; contract provenance; pattern-derived absence rule) | D-22, D-29 |
 | 17 (human-only draft-to-contract flow; keyless make demo) | D-24, D-08 |
+| 18 (serving boundary: shared module, three-layer read-only, capped results) | D-31, D-32, D-33 |
 
 All decisions in this register are adopted: D-01 through D-20 as of the
 July 11, 2026 revision (Decision Record 001 Rev. 3), D-21 through D-25 as
 of the July 12, 2026 revision (Decision Record 002), D-26 through D-28
-as of the July 31, 2026 revision (Decision Record 003), and D-29 and D-30
+as of the July 31, 2026 revision (Decision Record 003), D-29 and D-30
 (with Amendment C to D-16) as of the August 1, 2026 revision (Decision
-Record 004). D-20 has no dedicated
+Record 004), and D-31 through D-33 as of the August 13, 2026 revision
+(Decision Record 005). D-20 has no dedicated
 CLAUDE.md rule; its substance
 is encoded directly in
 [`.github/workflows/contract-gate.yml`](../../.github/workflows/contract-gate.yml),
