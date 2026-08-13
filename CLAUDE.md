@@ -14,8 +14,10 @@ approves every contract.
    the profiler PR, matching PyAirbyte's pin), and the connector
    airbyte-source-file==0.3.15 with numpy<2 on uv-provisioned CPython 3.10
    (Makefile), the dbt package dbt_utils ==1.3.3 (transform/packages.yml
-   with the committed transform/package-lock.yml), and mcp >=2.0,<2.1
-   (resolved 2.0.0 in uv.lock; the serving dependency, D-32).
+   with the committed transform/package-lock.yml), and mcp >=1.28,<2
+   (resolved 1.29.0 in uv.lock; the serving dependency, D-32 as amended.
+   mcp 2.x cannot resolve here: PyAirbyte requires fastmcp >=3.0, which
+   caps mcp <2.0, finding F-22).
    Never upgrade to `latest`,
    and never upgrade any of these
    without an amendment to docs/decisions/decision-register.md in its own
@@ -167,8 +169,10 @@ datacontract-cli 1.0.12, installed as an isolated tool with
 `uv tool install --python 3.12 "datacontract-cli[duckdb]==1.0.12"` — never added to
 pyproject.toml as a project dependency. GitHub Actions for CI.
 
-The MCP server runs on the official mcp SDK 2.0.x over stdio (D-32);
-the served database resolves MM_SERVE_DB, then demo/gold.duckdb.
+The MCP server runs on the official mcp SDK over stdio, pinned to the 1.x
+maintenance line (D-32 as amended; mcp 2.x cannot co-resolve with
+PyAirbyte, F-22). The served database resolves MM_SERVE_DB, then
+demo/gold.duckdb.
 
 Toolchain behavior was verified empirically before Phase 1 exit. Before
 working on contracts, CI, or dbt models, read

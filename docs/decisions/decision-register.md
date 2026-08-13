@@ -16,7 +16,8 @@ repository; nothing in this repo depends on those records. Decision Record 002
 D-01 through D-20 unchanged. Decision Record 003 (July 31, 2026) carries D-26
 through D-28 and Amendments A and B to Record 001. Decision Record 004
 (August 1, 2026) carries D-29 and D-30 and Amendment C to D-16. Decision
-Record 005 (August 13, 2026) carries D-31 through D-33, the serving layer.
+Record 005 Rev. 2 (August 13, 2026) carries D-31 through D-33, the serving
+layer, and Amendment D to D-32.
 
 **Status meanings.** `adopted` — in force. `proposed` — agreed in working
 session, applied by the plans below, formal adoption pending; treat as binding
@@ -57,7 +58,7 @@ unless amended.
 | [D-29](#d-29) | The auto-modeling engine specification | adopted |
 | [D-30](#d-30) | Registry population: compiled-context artifact, literal-carrying model | adopted |
 | [D-31](#d-31) | Serving layer: one shared query module; thin MCP server | adopted |
-| [D-32](#d-32) | MCP SDK: official mcp 2.0.x as a project dependency | adopted |
+| [D-32](#d-32) | MCP SDK: official mcp as a project dependency | adopted |
 | [D-33](#d-33) | Demo export: content equality by query, never bytes | adopted |
 
 ## The decisions
@@ -409,6 +410,18 @@ bare dict yields none), and a live Claude Desktop discovery-plus-round-
 trip on the Mac at 2.0.0 before this pin bound (August 13, 2026). The
 recorded fallback, exercised only on a live failure and documented as a
 finding: `mcp>=1.28,<2` on the maintenance line. Never `latest` (rule 1).
+Amended August 13, 2026 (Record 005 Rev. 2, Amendment D): the 2.0.x pin is
+superseded by the recorded fallback, `mcp>=1.28,<2`, resolved 1.29.0 in
+uv.lock. The 2.0 pin is unsatisfiable in this project: PyAirbyte (D-15)
+requires `fastmcp>=3.0`, and every fastmcp 3.x caps `mcp<2.0`, so
+`mcp>=2.0` and `airbyte>=0.53` cannot co-resolve
+([F-22](../verification/gate_proof_findings.md#f-22)). Every probed fact
+in the decision above holds at 1.29.0, re-measured before this amendment
+bound: protocol `2025-11-25`, unchanged from 2.0.0; a concrete TypedDict
+return yields an output schema and structured content, a bare dict yields
+neither. The server class is `FastMCP` from `mcp.server.fastmcp`, not the
+2.0 `MCPServer`. Everything else in the decision stands, the
+project-dependency posture above all.
 
 ### D-33
 **Demo export: content equality by query, never byte equality.**

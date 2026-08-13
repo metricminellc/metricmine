@@ -1,0 +1,90 @@
+Session L, August 13, 2026 - mcp pin conflict and fallback re-measurement
+Repo head: 0289315
+
+== 1. The D-32 pin as ratified does not resolve ==
+$ uv add "mcp>=2.0,<2.1"
+  × No solution found when resolving dependencies:
+  ╰─▶ Because all versions of fastmcp-slim[client] depend on mcp>=1.24.0,<2.0 and fastmcp==3.4.7 depends on fastmcp-slim[client]==3.4.7, we can conclude that fastmcp==3.4.7
+      depends on mcp>=1.24.0,<2.0. (1)
+
+      Because fastmcp-slim[client]==3.4.4 depends on mcp>=1.24.0,<2.0 and fastmcp==3.4.4 depends on fastmcp-slim[client]==3.4.4, we can conclude that fastmcp==3.4.4 depends
+      on mcp>=1.24.0,<2.0.
+      And because we know from (1) that fastmcp==3.4.7 depends on mcp>=1.24.0,<2.0, we can conclude that all of:
+          fastmcp==3.4.4
+          fastmcp>=3.4.7
+      depend on mcp>=1.24.0,<2.0. (2)
+
+      Because fastmcp>=3.0.0,<=3.2.4 depends on mcp>=1.24.0,<2.0 and only the following versions of fastmcp are available:
+          fastmcp<=3.0.0
+          fastmcp==3.0.1
+          fastmcp==3.0.2
+          fastmcp==3.1.0
+          fastmcp==3.1.1
+          fastmcp==3.2.0
+          fastmcp==3.2.1
+          fastmcp==3.2.2
+          fastmcp==3.2.3
+          fastmcp==3.2.4
+          fastmcp==3.3.0
+          fastmcp==3.3.1
+          fastmcp==3.4.0
+          fastmcp==3.4.1
+          fastmcp==3.4.2
+          fastmcp==3.4.3
+          fastmcp==3.4.4
+          fastmcp==3.4.5
+          fastmcp==3.4.6
+          fastmcp==3.4.7
+          fastmcp>4.0
+      we can conclude that fastmcp>=3.0.0,<3.3.0 depends on mcp>=1.24.0,<2.0.
+      And because fastmcp==3.3.0 depends on fastmcp-slim[client]==3.3.0 and all versions of fastmcp-slim[client] depend on mcp>=1.24.0,<2.0, we can conclude that
+      fastmcp>=3.0.0,<3.3.1 depends on mcp>=1.24.0,<2.0.
+      And because fastmcp==3.3.1 depends on fastmcp-slim[client]==3.3.1 and fastmcp-slim[client]>=3.3.1 depends on mcp>=1.24.0,<2.0, we can conclude that
+      fastmcp>=3.0.0,<3.4.0 depends on mcp>=1.24.0,<2.0.
+      And because fastmcp==3.4.0 depends on fastmcp-slim[client]==3.4.0 and fastmcp-slim[client]>=3.4.0 depends on mcp>=1.24.0,<2.0, we can conclude that
+      fastmcp>=3.0.0,<3.4.1 depends on mcp>=1.24.0,<2.0.
+      And because fastmcp==3.4.1 depends on fastmcp-slim[client]==3.4.1 and fastmcp-slim[client]>=3.4.1 depends on mcp>=1.24.0,<2.0, we can conclude that
+      fastmcp>=3.0.0,<3.4.2 depends on mcp>=1.24.0,<2.0.
+      And because fastmcp==3.4.2 depends on fastmcp-slim[client]==3.4.2 and fastmcp-slim[client]>=3.4.2 depends on mcp>=1.24.0,<2.0, we can conclude that
+      fastmcp>=3.0.0,<3.4.3 depends on mcp>=1.24.0,<2.0.
+      And because fastmcp==3.4.3 depends on fastmcp-slim[client]==3.4.3 and fastmcp-slim[client]>=3.4.3 depends on mcp>=1.24.0,<2.0, we can conclude that
+      fastmcp>=3.0.0,<3.4.4 depends on mcp>=1.24.0,<2.0.
+      And because fastmcp==3.4.5 depends on fastmcp-slim[client]==3.4.5 and fastmcp-slim[client]>=3.4.4 depends on mcp>=1.24.0,<2.0, we can conclude that all of:
+          fastmcp>=3.0.0,<3.4.4
+          fastmcp>3.4.4,<3.4.6
+      depend on mcp>=1.24.0,<2.0.
+      And because fastmcp==3.4.6 depends on fastmcp-slim[client]==3.4.6 and all of:
+          fastmcp-slim[client]==3.4.4
+          fastmcp-slim[client]>=3.4.6
+      depend on mcp>=1.24.0,<2.0, we can conclude that all of:
+          fastmcp>=3.0.0,<3.4.4
+          fastmcp>3.4.4,<3.4.7
+      depend on mcp>=1.24.0,<2.0.
+      And because we know from (2) that all of:
+          fastmcp==3.4.4
+          fastmcp>=3.4.7
+      depend on mcp>=1.24.0,<2.0, we can conclude that fastmcp>=3.0.0 depends on mcp>=1.24.0,<2.0.
+      And because airbyte>=0.53.0 depends on fastmcp>=3.0 and only the following versions of airbyte are available:
+          airbyte<=0.53.0
+          airbyte==0.53.1
+          airbyte==0.53.2
+          airbyte==0.53.3
+      we can conclude that airbyte>=0.53.0 depends on mcp>=1.24.0,<2.0.
+      And because your project depends on airbyte>=0.53 and mcp>=2.0, we can conclude that your project's requirements are unsatisfiable.
+
+hint: Pre-releases are available for `fastmcp` in the requested range (e.g., 3.4.0b1), but pre-releases weren't enabled (try: `--prerelease=allow`)
+hint: If you want to add the package regardless of the failed resolution, provide the `--frozen` flag to skip locking and syncing
+== 2. uv prefers the already-locked transitive version ==
+$ uv add "mcp>=1.28,<2"
+resolved: 1.28.1
+$ uv lock --upgrade-package mcp && uv sync
+Updated mcp v1.28.1 -> v1.29.0
+resolved: 1.29.0
+
+== 3. Every probed serving mechanism re-measured at the fallback ==
+mcp: 1.29.0
+protocol: 2025-11-25
+client stdio ok: True
+typed    outputSchema: PRESENT
+untyped  outputSchema: NONE
+structured: {'line_total': 15.299999999999999, 'currency': 'GBP'}
