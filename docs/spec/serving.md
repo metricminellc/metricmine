@@ -7,8 +7,10 @@
 > [`docs/spec/gold-unified-event-star.md`](gold-unified-event-star.md)
 > (Serving surface) in July 2026; this spec implements it and does not
 > redesign it. Mechanics marked "probed" were measured on the pinned
-> toolchain (duckdb 1.4.3, mcp 2.0.0) on August 13, 2026, in the pre-L
-> prep session; none are inferred from documentation.
+> toolchain (duckdb 1.4.3, mcp) on August 13, 2026, in the pre-L prep
+> session. The mcp mechanics were first probed at 2.0.0 and re-measured
+> unchanged at the pinned 1.29.0 when Amendment D moved the pin to the
+> maintenance line (F-22). None are inferred from documentation.
 
 ## 1. Purpose and boundary
 
@@ -22,7 +24,7 @@ shared module, and never opens DuckDB itself. The optional hosted demo
 
 ## 2. The tool surface (frozen)
 
-Five tools, exactly. Names are snake_case (the mcp 2.0 convention) and
+Five tools, exactly. Names are snake_case (the mcp SDK convention) and
 map one-to-one onto module methods.
 
 | Tool | Arguments | Returns | Truth source |
@@ -159,13 +161,15 @@ labeled with table and column; the probe round-tripped a real
 
 ## 7. The MCP server (`src/metricmine/server/`)
 
-A thin adapter and nothing else: `app.py` builds the `MCPServer`
-(official `mcp` SDK 2.0.x, D-32) named `metricmine-gold`, registers the
+A thin adapter and nothing else: `app.py` builds the `FastMCP` server
+(`mcp.server.fastmcp`, the official SDK on the 1.x maintenance line per
+D-32 as amended) named `metricmine-gold`, registers the
 five tools as plain functions that call one shared `GoldWarehouse`
 instance, and `__main__.py` runs `server.run(transport="stdio")`, so
 `python -m metricmine.server` serves a desktop client.
 
-Probed mcp 2.0.0 facts the implementation relies on:
+Probed mcp facts the implementation relies on, measured at 2.0.0 and
+re-measured unchanged at the pinned 1.29.0 (F-22):
 
 - Tool input schemas derive from type hints; defaulted parameters render
   as optional with their defaults.
