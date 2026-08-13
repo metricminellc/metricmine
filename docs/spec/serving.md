@@ -182,6 +182,25 @@ re-measured unchanged at the pinned 1.29.0 (F-22):
   schemas and round-tripped both calls (protocol `2025-11-25`), and the
   same server wired into Claude Desktop on the Mac passed live tool
   discovery and calls (probe P1 platform pass).
+- **A union return is wrapped; a single shape is not.** Structured output
+  is validated against the declared schema and undeclared keys are
+  dropped, so a refusal cannot ride inside `QueryResult` — `query`
+  declares `QueryResult | QueryRefusal`, and the SDK renders that as a
+  `result` property whose schema is an `anyOf` over both. Its structured
+  content is therefore `{"result": {…}}`, while the other four tools
+  return their shape at the top level. Measured at 1.29.0 against this
+  server; the asymmetry is real and the round-trip tests assert both
+  forms.
+- **A gated SELECT that fails to execute is deliberately not caught.**
+  `query` catches `QueryRefused` and nothing else. A statement that
+  passes the gate and then fails to run — `SELECT * FROM gold.typo` —
+  surfaces as `isError` with DuckDB's own diagnostic, `structuredContent`
+  null, and the session continues serving (measured). A refusal is a
+  policy decision and stays a normal answer; a broken statement is a
+  mistake in the SQL and stays an error, so the two remain
+  distinguishable by `isError`. Catching it here would mean catching
+  broadly enough to disguise real defects as user error, since the
+  adapter imports no duckdb by design.
 
 stdio discipline: the server process never prints to stdout — stdout
 carries JSON-RPC. Diagnostics go to stderr or nowhere.
