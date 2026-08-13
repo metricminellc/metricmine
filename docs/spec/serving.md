@@ -54,6 +54,7 @@ client statement:
 
 ```sql
 SET enable_external_access = false;
+SET timezone = 'UTC';
 SET lock_configuration = true;
 ```
 
@@ -63,6 +64,13 @@ config-changing pragmas refuse; and `SET enable_external_access=true`
 refuses once the configuration is locked. Normal SELECTs over gold are
 unaffected. (Session settings are not DML; the profiler set a timezone
 the same way under D-11.)
+
+The lock goes last. Probed at 1.4.3 while implementing this module:
+`lock_configuration = true` seals `timezone` along with everything else,
+so the D-11 determinism setting must be applied before the seal. Applied
+after it, DuckDB raises `Cannot change configuration option "timezone" -
+the configuration has been locked` and the session keeps the machine's
+local zone.
 
 **Layer 3 — the statement gate.** The `query` tool accepts exactly one
 statement that is literally a SELECT. Three checks, in order, all
