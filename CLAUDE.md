@@ -13,8 +13,10 @@ approves every contract.
    (resolved in uv.lock), duckdb==1.4.3 (explicit runtime dependency as of
    the profiler PR, matching PyAirbyte's pin), and the connector
    airbyte-source-file==0.3.15 with numpy<2 on uv-provisioned CPython 3.10
-   (Makefile), and the dbt package dbt_utils ==1.3.3 (transform/packages.yml
-   with the committed transform/package-lock.yml). Never upgrade to `latest`,
+   (Makefile), the dbt package dbt_utils ==1.3.3 (transform/packages.yml
+   with the committed transform/package-lock.yml), and mcp >=2.0,<2.1
+   (resolved 2.0.0 in uv.lock; the serving dependency, D-32).
+   Never upgrade to `latest`,
    and never upgrade any of these
    without an amendment to docs/decisions/decision-register.md in its own
    documentation PR.
@@ -107,6 +109,23 @@ approves every contract.
     directly into contracts/, and never let an agent weaken a contract to
     pass a gate. make demo must always run with no API key.
 
+18. Serving is read-only, three layers deep, through one module. All gold
+    access goes through src/metricmine/query.py; the MCP server is a thin
+    adapter over it and never opens DuckDB itself. Serving connections
+    open read_only=True, then set enable_external_access=false and
+    lock_configuration=true before any client statement. The query tool
+    accepts exactly one statement that parses as SELECT and leads with
+    select/with/from: ATTACH, COPY, PRAGMA, SHOW, DESCRIBE, SUMMARIZE,
+    EXPLAIN, SET, CALL, INSTALL, LOAD, EXPORT, all DDL, all DML, and
+    multi-statement input all refuse, naming the failed check. Every
+    query result is row-capped (default 100, hard cap 500) and carries an
+    explicit truncated flag: a truncated result must announce itself. The
+    served database resolves MM_SERVE_DB, then demo/gold.duckdb; a
+    missing file fails closed at startup. Exactly five tools; never add a
+    sixth without amending the register. Server code never prints to
+    stdout (stdio carries JSON-RPC); diagnostics go to stderr. Spec:
+    docs/spec/serving.md.
+
 ## Architecture boundaries
 - Exactly two agents exist in the pipeline: a silver cleanup proposer and a
   gold mapping proposer. Both emit ODCS contracts. Neither writes
@@ -125,6 +144,13 @@ approves every contract.
 - All query, schema, and context-retrieval logic lives in one shared module
   (`src/metricmine/query.py`). The MCP server and the hosted app both import it.
   Neither reimplements it.
+- The MCP server (`src/metricmine/server/`) is a thin stdio adapter over
+  the shared module: exactly the five spec tools, each a delegation. It
+  holds no SQL, no connection logic, and no fallback paths of its own.
+- The demo exporter (`src/metricmine/export_demo.py`) writes exactly one
+  artifact, `demo/gold.duckdb`, and nothing else. The working warehouse
+  stays gitignored (D-03); export claims are content equality by query,
+  never byte equality (D-33).
 - Portability is delegated to dbt profiles. Do not build a parallel warehouse
   abstraction for the transform layer.
 
@@ -141,6 +167,9 @@ datacontract-cli 1.0.12, installed as an isolated tool with
 `uv tool install --python 3.12 "datacontract-cli[duckdb]==1.0.12"` — never added to
 pyproject.toml as a project dependency. GitHub Actions for CI.
 
+The MCP server runs on the official mcp SDK 2.0.x over stdio (D-32);
+the served database resolves MM_SERVE_DB, then demo/gold.duckdb.
+
 Toolchain behavior was verified empirically before Phase 1 exit. Before
 working on contracts, CI, or dbt models, read
 `docs/verification/gate_proof_findings.md`. Before working on gold models,
@@ -148,6 +177,8 @@ the engine, or the context compiler, read
 `docs/spec/gold-unified-event-star.md` and `docs/spec/engine.md`. Before
 working on the profiler or
 the read-only warehouse protocol, read `docs/spec/profiler.md`. Before
+working on the serving layer — the query module, the MCP server, or the
+demo export — read `docs/spec/serving.md`. Before
 working on the agent layer —
 the proposers, their prompts, or the proposal validator — read
 `docs/spec/agent-layer.md`. Decisions cited anywhere as D-0x resolve in
