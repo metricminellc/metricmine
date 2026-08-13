@@ -7,7 +7,7 @@ datacontract-cli 1.0.12 (isolated uv tool). All findings below were observed
 directly, not inferred from documentation. They supersede any conflicting
 guidance in older references. Governing rules: CLAUDE.md rules 10–11.
 
-Findings carry canonical IDs **F-01 to F-07**, cited from the
+Findings carry canonical IDs of the form **F-nn**, cited from the
 [decision register](../decisions/decision-register.md) and from commit bodies.
 IDs are stable; the layout below is topical, so IDs appear out of numeric
 order by design.
@@ -404,3 +404,39 @@ run, timeframe keys unchanged), all five registry rows re-cited at
 [`evidence/2026-08-10_prek_pr25_window_shapes.log`](evidence/2026-08-10_prek_pr25_window_shapes.log);
 [`evidence/2026-08-10_prek_signature_regeneration_diff.log`](evidence/2026-08-10_prek_signature_regeneration_diff.log);
 [`evidence/2026-08-10_prek_registry_and_conservation.log`](evidence/2026-08-10_prek_registry_and_conservation.log))
+
+## Serving rung (Phase 5, Session L, August 13, 2026)
+
+### F-22
+**A probe in an isolated venv proves the SDK, never the pin.** The mcp
+2.0.x pin (D-32) was ratified on probe P1, which ran a toy stdio server in
+its own folder and its own virtual environment. It passed: discovery,
+type-hint schemas, structured output, and a live Claude Desktop round trip
+at 2.0.0. The pin was then unsatisfiable the first time it met this
+project's dependency graph. PyAirbyte (D-15) requires `fastmcp>=3.0`;
+every published fastmcp 3.x resolves `fastmcp-slim[client]`, which caps
+`mcp>=1.24.0,<2.0`. `uv add "mcp>=2.0,<2.1"` therefore fails to resolve
+against `airbyte>=0.53`, and no version of either package escapes it.
+Root cause, and the rule it earns: a probe run outside the project
+environment answers "does this library work," which is a different
+question from "does this pin resolve here." Any future dependency probe
+resolves inside the project, never beside it.
+
+The recorded fallback holds and costs almost nothing. `mcp>=1.28,<2`
+resolves 1.29.0, and every mechanism the serving spec relies on was
+re-measured there before Amendment D bound: protocol `2025-11-25`,
+identical to 2.0.0; a concrete TypedDict return produces an `outputSchema`
+and structured content while a bare `dict` return produces neither,
+reproducing the P1 finding exactly; `FastMCP.run`,
+`StdioServerParameters`, `stdio_client`, and `ClientSession` all present.
+One name changes: the server class is `FastMCP` from
+`mcp.server.fastmcp`, where 2.0 exposed `MCPServer` from `mcp.server`.
+
+One uv behavior is recorded with it. `uv add "mcp>=1.28,<2"` alone
+resolved 1.28.1, the version already captured in `uv.lock` transitively
+through airbyte: uv prefers a locked version that still satisfies a new
+constraint rather than upgrading it. A resolution from an empty
+environment lands on 1.29.0, so the deliberate pin requires
+`uv lock --upgrade-package mcp`. A pin recorded from the first number uv
+printed would have been an artifact of the lock, not a decision.
+([`evidence/2026-08-13_sessionL_mcp_pin_conflict.log`](evidence/2026-08-13_sessionL_mcp_pin_conflict.log))
