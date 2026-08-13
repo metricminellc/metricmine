@@ -16,7 +16,7 @@ repository; nothing in this repo depends on those records. Decision Record 002
 D-01 through D-20 unchanged. Decision Record 003 (July 31, 2026) carries D-26
 through D-28 and Amendments A and B to Record 001. Decision Record 004
 (August 1, 2026) carries D-29 and D-30 and Amendment C to D-16. Decision
-Record 005 (August 2026) carries D-31 through D-33, the serving layer.
+Record 005 (August 13, 2026) carries D-31 through D-33, the serving layer.
 
 **Status meanings.** `adopted` — in force. `proposed` — agreed in working
 session, applied by the plans below, formal adoption pending; treat as binding
@@ -467,7 +467,7 @@ July 11, 2026 revision (Decision Record 001 Rev. 3), D-21 through D-25 as
 of the July 12, 2026 revision (Decision Record 002), D-26 through D-28
 as of the July 31, 2026 revision (Decision Record 003), D-29 and D-30
 (with Amendment C to D-16) as of the August 1, 2026 revision (Decision
-Record 004), and D-31 through D-33 as of the August 2026 revision
+Record 004), and D-31 through D-33 as of the August 13, 2026 revision
 (Decision Record 005). D-20 has no dedicated
 CLAUDE.md rule; its substance
 is encoded directly in
