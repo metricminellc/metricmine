@@ -15,8 +15,8 @@ approves every contract.
    airbyte-source-file==0.3.15 with numpy<2 on uv-provisioned CPython 3.10
    (Makefile), the dbt package dbt_utils ==1.3.3 (transform/packages.yml
    with the committed transform/package-lock.yml), and mcp >=2.0,<2.1
-   (resolved 2.0.0 in uv.lock; the serving dependency, D-32, landing with
-   the server PR this sitting). Never upgrade to `latest`,
+   (resolved 2.0.0 in uv.lock; the serving dependency, D-32).
+   Never upgrade to `latest`,
    and never upgrade any of these
    without an amendment to docs/decisions/decision-register.md in its own
    documentation PR.
