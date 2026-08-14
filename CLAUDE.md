@@ -122,7 +122,7 @@ approves every contract.
     multi-statement input all refuse, naming the failed check. Every
     query result is row-capped (default 100, hard cap 500) and carries an
     explicit truncated flag: a truncated result must announce itself. The
-    served database resolves MM_SERVE_DB, then demo/gold.duckdb; a
+    served database resolves MM_SERVE_DB, then demo/demo.duckdb; a
     missing file fails closed at startup. Exactly five tools; never add a
     sixth without amending the register. Server code never prints to
     stdout (stdio carries JSON-RPC); diagnostics go to stderr. Spec:
@@ -150,7 +150,7 @@ approves every contract.
   the shared module: exactly the five spec tools, each a delegation. It
   holds no SQL, no connection logic, and no fallback paths of its own.
 - The demo exporter (`src/metricmine/export_demo.py`) writes exactly one
-  artifact, `demo/gold.duckdb`, and nothing else. The working warehouse
+  artifact, `demo/demo.duckdb`, and nothing else. The working warehouse
   stays gitignored (D-03); export claims are content equality by query,
   never byte equality (D-33).
 - Portability is delegated to dbt profiles. Do not build a parallel warehouse
@@ -172,7 +172,7 @@ pyproject.toml as a project dependency. GitHub Actions for CI.
 The MCP server runs on the official mcp SDK over stdio, pinned to the 1.x
 maintenance line (D-32 as amended; mcp 2.x cannot co-resolve with
 PyAirbyte, F-22). The served database resolves MM_SERVE_DB, then
-demo/gold.duckdb.
+demo/demo.duckdb (F-25).
 
 Toolchain behavior was verified empirically before Phase 1 exit. Before
 working on contracts, CI, or dbt models, read
