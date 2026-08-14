@@ -30,6 +30,7 @@ order by design.
 | [F-14](#f-14) | The sync fixed point exists and is reachable by emission | Engine rung |
 | [F-15](#f-15) | json_valid gates VARCHAR canonical payloads | Contracts rung |
 | [F-16](#f-16) | canonical_key v2 SQL and Python agree at function level | Contracts rung |
+| [F-25](#f-25) | A demo artifact named for its schema collides with its own catalog | Serving rung |
 
 ## Command surface (datacontract-cli 1.0.12)
 
@@ -440,3 +441,30 @@ environment lands on 1.29.0, so the deliberate pin requires
 `uv lock --upgrade-package mcp`. A pin recorded from the first number uv
 printed would have been an artifact of the lock, not a decision.
 ([`evidence/2026-08-13_sessionL_mcp_pin_conflict.log`](evidence/2026-08-13_sessionL_mcp_pin_conflict.log))
+
+### F-25
+**A demo artifact named for the schema it carries collides with its own
+catalog, and two-part `gold.<x>` SQL fails as ambiguous at DuckDB
+1.4.3.** A directly opened database takes its catalog name from the file
+stem, so `demo/gold.duckdb` opens as catalog `gold` holding schema
+`gold`, and every two-part reference — SELECT and CREATE alike — raises
+`Ambiguous reference to catalog or schema "gold"`. Found live at Session
+M's export implementation, before anything merged: the exporter could
+not build the artifact as specified (the plain `gold.` view re-anchor
+fails to bind inside the colliding catalog), and four of the five
+serving tools fail through the unmodified query module, which renders
+relations two-part by design. Three-part `gold.gold.<x>` works, and the
+same file served through an ATTACH alias works — which is exactly why
+nothing caught this earlier: the export replay was probed through an
+ATTACH alias in a sandbox, and the live serving checkpoint ran against
+the working warehouse, whose catalog is `metricmine`. Two individually
+probed halves, never probed through each other — the F-22 class at the
+artifact boundary. The remedy is Amendment E (Record 006): the committed
+artifact is `demo/demo.duckdb`, whose catalog collides with nothing. The
+plain `gold.` re-anchor then binds on a direct open and under any attach
+alias, and natural two-part SQL works on every serving path — measured
+on the Mac and reproduced clean-room by the Architect before the
+amendment bound. The probe rule this mints: an artifact is proved by
+opening it exactly the way its consumer opens it, never only through a
+different access path.
+([`evidence/2026-08-14_sessionM_demo_catalog_collision.log`](evidence/2026-08-14_sessionM_demo_catalog_collision.log))
