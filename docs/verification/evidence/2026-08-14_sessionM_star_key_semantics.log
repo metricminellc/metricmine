@@ -1,0 +1,10 @@
+Session M, August 14, 2026 - star key semantics at transaction grain (F-23, F-24)
+Measured against the committed demo artifact demo/demo.duckdb at head eb900d3
+fact rows / distinct fact_hash_id / distinct fact_col_hash_id:
+(44721, 2041, 1)
+dim rows / distinct dim_hash_id:
+(44721, 44721)
+distinct line_identity via the typed view:
+(44721,)
+dedup where payloads repeat (timeframe / source / run rows):
+(2004, 1, 1)
