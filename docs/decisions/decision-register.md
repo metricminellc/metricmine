@@ -17,7 +17,8 @@ D-01 through D-20 unchanged. Decision Record 003 (July 31, 2026) carries D-26
 through D-28 and Amendments A and B to Record 001. Decision Record 004
 (August 1, 2026) carries D-29 and D-30 and Amendment C to D-16. Decision
 Record 005 Rev. 2 (August 13, 2026) carries D-31 through D-33, the serving
-layer, and Amendment D to D-32.
+layer, and Amendment D to D-32. Decision Record 006 (August 14, 2026)
+carries Amendment E to D-03 and D-33.
 
 **Status meanings.** `adopted` — in force. `proposed` — agreed in working
 session, applied by the plans below, formal adoption pending; treat as binding
@@ -85,6 +86,16 @@ is gitignored along with dbt's `target/`, `dbt_packages/`, and `logs/`. The
 committed artifact is `demo/gold.duckdb`, a purpose-built export of gold plus
 context produced by `make export-demo` from the committed sample data. Raw
 data never enters git.
+Amended August 14, 2026 (Record 006, Amendment E): the committed artifact
+is `demo/demo.duckdb`. A directly opened DuckDB database takes its
+catalog name from the file stem, so the originally named
+`demo/gold.duckdb` opens as catalog `gold` holding schema `gold`, and at
+the pinned 1.4.3 every two-part `gold.<x>` reference — SELECT and CREATE
+alike — fails as ambiguous
+([F-25](../verification/gate_proof_findings.md#f-25)). Path only: the
+export mechanism, the D-33 content-equality claim, the gitignore
+exception, and the D-31 keyless default all follow the new path;
+everything else in this decision stands.
 
 ### D-04
 **Transform execution plane.** dbt Core v1 with the dbt-duckdb adapter
@@ -393,8 +404,8 @@ five spec tools and nothing else. Read-only is enforced three layers
 deep — `read_only=True` connections, `enable_external_access=false` with
 `lock_configuration=true`, and a single-statement SELECT gate — and every
 query result is row-capped with an explicit truncation flag. The database
-resolves `MM_SERVE_DB` first, then `demo/gold.duckdb` (D-03), keeping the
-keyless posture. The D-31 number was reserved and left unminted at
+resolves `MM_SERVE_DB` first, then `demo/demo.duckdb` (D-03 as amended,
+Amendment E), keeping the keyless posture. The D-31 number was reserved and left unminted at
 Record 004 for the rule-11 scope; it mints here, keeping the numbering
 dense and the history honest. Full design:
 [`docs/spec/serving.md`](../spec/serving.md).
@@ -436,6 +447,12 @@ DuckDB file embeds storage details, so byte-level determinism is a claim
 this project does not need and will not make. Refresh only at
 gold-content changes: regeneration merges and tags. Mechanism and probed
 measurements: [`docs/spec/serving.md`](../spec/serving.md) §8.
+Amended August 14, 2026 (Record 006, Amendment E): the export target is
+`demo/demo.duckdb`, following D-03 as amended
+([F-25](../verification/gate_proof_findings.md#f-25)). Mechanism and
+claim stand unchanged; the re-anchored view and the module's two-part
+`gold.<x>` SQL both bind cleanly in the non-colliding catalog `demo`,
+verified on every serving path before this amendment bound.
 
 ## Session-decision and finding IDs
 
