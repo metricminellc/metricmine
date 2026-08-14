@@ -1,137 +1,180 @@
-# MetricMine
+<div align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/mm_logo_on_dark.png">
+    <img src="docs/assets/mm_logo_on_light.png" alt="MetricMine — data mined and refined" width="420">
+  </picture>
 
-A reference implementation of a contract-driven medallion pipeline, designed to
-run locally end to end on one command (D-01).
+  <p><strong>A contract-driven data pipeline that ends in an answer, not a table.</strong><br>
+  Apache-2.0 &nbsp;·&nbsp; Python 3.12 &nbsp;·&nbsp; dbt + DuckDB &nbsp;·&nbsp; ODCS v3.1.0 &nbsp;·&nbsp; MCP</p>
+</div>
 
-## What it is
+![The MetricMine workflow: sources land in bronze and are profiled; an
+approved cleanup contract shapes silver; a second profile and an approved
+mapping contract feed the auto-modeling engine; the engine emits the gold
+unified event star; an MCP server serves it read-only and Claude answers
+with data plus meaning](docs/assets/mm_workflow.png)
 
-MetricMine is legibility-first and governance-forward. I built it as a portfolio
-reference implementation: every transform is governed by a data contract, every
-contract is approved by a human, and every decision is recorded. It lands data,
-profiles it, proposes contracts I approve, models the result, and answers
-questions about it, on one machine with one command.
+<div align="center"><sub>Detailed component diagrams, each with a
+machine-readable Mermaid twin: <a href="docs/diagrams/">docs/diagrams/</a></sub></div>
 
-## Status
+## What this is
 
-Phases 1 through 4 are complete. Built so far: the repository scaffold, the
-pinned toolchain, the three-gate contract CI workflow (with bronze landed in
-CI), the CLAUDE.md guardrails, the decision register, the layer specs
-(ingestion, profiler, gold star, engine, agent layer), the committed Online
-Retail II sample (D-15), the PyAirbyte bronze landing (`make ingest`), the
-deterministic profiler with committed bronze and silver artifacts, the
-contracted silver model (contract v1.1.0), and the full gold plane: the
-auto-modeling engine (mapping contract in, dbt models out), the context
-compiler with its committed compiled-context artifacts, and the emitted
-unified event star — eleven engine-owned models under an ownership
-manifest, gated by contract-declared conservation tests (C1 through C4),
-building at PASS=108 from a cold start. The signature test is demonstrated
-and documented: [docs/verification/signature-test.md](docs/verification/signature-test.md).
-Phase 5 (MCP serving, the demo export, the recording, v0.1.0) is next. The
-live roadmap is the
-[Issues tab](https://github.com/metricminellc/metricmine/issues).
+MetricMine is a contract-driven medallion pipeline that runs end to end on
+one machine. Raw data lands in bronze; a deterministic profiler describes
+it; machine-readable ODCS contracts — hand-written today, proposed by two
+narrow AI agents in Phase 6 — shape silver and gold behind a human approval
+gate; and an auto-modeling engine emits the entire gold layer from the
+approved contract. The result is a governed dimensional gold layer with a
+context registry one join from any payload, served read-only over MCP, so
+an AI assistant answers business questions grounded in both the data and
+the meaning behind it.
 
-## Architecture
+The repository is a deliberate work in progress: it advances in phases that
+each exit in a working, demonstrable state. What exists runs, what is ahead
+is stated plainly, and the docs folder carries every decision and
+specification that got it here. The unified event star at the gold layer is
+the experimental centerpiece; the practices around it are industry-standard
+end to end.
 
-Three planes organize the repository.
+## What this repository demonstrates
 
-- `contracts/` is the specification: ODCS data contracts.
-- `transform/` is the dbt execution project: contracted SQL models.
-- `src/` is hand-written Python: the profiler, the auto-modeling engine, and the
-  shared query module.
+**Strategy you can audit.** Thirty-three binding decisions in a versioned
+[decision register](docs/decisions/decision-register.md); specifications
+written before code; explicit non-goals; and no claim without a
+reproducible command behind it. The plan is not a slide deck. It is a
+governed artifact that survives contact with the build, and the repository
+carries the whole decision trail.
 
-Data moves through the medallion layers. Bronze holds raw landed data. Silver
-holds cleaned, contracted models. Gold is the terminal layer. Gold is the unified
-event star: a source-invariant, content-addressed star schema, so a new source
-adds rows, not schema. See the
-[gold layer spec](docs/spec/gold-unified-event-star.md) and the
-[diagrams](docs/diagrams/).
+**An AI-augmented SDLC with real governance.** I architect and plan with an
+AI copilot; Claude Code implements through small, reviewed pull requests;
+and a three-gate contract CI (lint, compile-time build, generated tests)
+judges human and agent changes symmetrically.
+[CLAUDE.md](CLAUDE.md) maps every decision, spec, and diagram into the
+coding agent's context, so any engineer, human or AI, starts grounded in
+project state, methodology, and the end-in-mind vision.
 
-### The two agents
+**Industry-standard architecture, end to end.** PyAirbyte ingestion, a dbt
+medallion (bronze, silver, gold), ODCS v3.1.0 data contracts enforced from
+ingestion through serving, a unified event star with a content-addressed
+context registry, and MCP at the serving edge. The agent layer is designed
+against GenAIOps practice across PromptOps, RAGOps, and AgentOps,
+right-sized for the project and documented like everything else.
 
-Exactly two runtime agents, both contract proposers: the silver cleanup
-proposer (bronze profile in, ODCS cleanup contract out) and the gold mapping
-proposer (silver profile in, ODCS mapping contract out). Each is one
-structured API call against a pinned model; a deterministic validator
-enforces that every proposal is grounded in the profile it consumed, and
-approval is a contract-only pull request through the same three gates as
-any human change. Agents propose, code executes, a human approves.
-`make demo` replays committed contracts with no API key; a regenerate path
-invokes the agents live. Design: [docs/spec/agent-layer.md](docs/spec/agent-layer.md).
-The agents land in Phase 6; the spine runs on hand-written contracts first.
+> **Agents propose. Code executes. A human approves.**
+> Judgment and execution stay separate. Every approval becomes a versioned,
+> machine-readable contract that CI enforces from then on. In the age of
+> context windows, contracts are how agents get compact, reliable truth —
+> and this pipeline makes that governance automatic rather than
+> aspirational.
 
-## Governance and discipline
+## See it run
 
-Governance is the point, not an afterthought. I record every architectural
-decision in the [decision register](docs/decisions/decision-register.md). The
-[CLAUDE.md](CLAUDE.md) guardrails fix the hard rules before any agent-assisted
-work touches the repository. The contract gates judge output, not authorship, and
-apply symmetrically to humans and agents: both pass or fail the same way. History
-is squash-only, and every change lands as a reviewed pull request.
+The repository ships `demo/demo.duckdb`, a verified ~11 MB gold-only
+export, so serving works from a fresh clone with no build step and no
+credentials:
 
-## The gate, demonstrated
+```bash
+git clone https://github.com/metricminellc/metricmine.git && cd metricmine
+uv sync
+uv run python -c "from metricmine.query import GoldWarehouse; print(GoldWarehouse().list_fact_categories())"
+```
+
+The full walkthrough — wiring the MCP server into Claude Desktop, the
+questions to ask, the complete keyless replay from raw data to a fresh
+export, and troubleshooting — is **[docs/demo.md](docs/demo.md)**, about
+ten minutes end to end. A recording of the demo is attached to the
+[latest release](https://github.com/metricminellc/metricmine/releases/latest).
+
+## Architecture at a glance
+
+Three planes organize the repository: `contracts/` is the specification
+(ODCS data contracts a human approves), `transform/` is the dbt execution
+project, and `src/` is hand-written Python — the profiler, the
+auto-modeling engine, the context compiler, the shared query module, and
+the MCP server. Data moves bronze → silver → gold in one local DuckDB
+file. Gold is terminal and machine-emitted: a source-invariant,
+content-addressed star, so a new source adds rows, not schema. Serving is
+read-only three layers deep, through five MCP tools over one shared query
+module. Designs: the
+[gold layer spec](docs/spec/gold-unified-event-star.md), the
+[serving spec](docs/spec/serving.md), and the
+[agent layer spec](docs/spec/agent-layer.md).
+
+## Built small, designed to scale
+
+The demo runs end to end on one machine, on DuckDB by design. Portability
+is delegated to dbt profiles, with Snowflake named as the swap target, and
+the patterns that matter — contracts, symmetric gates, ownership
+manifests, human-gated agents — are the same ones that run at enterprise
+scale on any cloud. Nothing here depends on the demo staying small.
+
+## Proof, committed
 
 The contract gates were broken deliberately, in both directions, and the
-evidence is committed. A shape defect — a renamed column — fails at compile
-time, before any DDL runs: proven in the pre-Phase-1 gate proof and again
-live in [break-demo PR #45](https://github.com/metricminellc/metricmine/pull/45),
+evidence is committed. A shape defect — a renamed column — fails at
+compile time, before any DDL runs: proven live in
+[break-demo PR #45](https://github.com/metricminellc/metricmine/pull/45),
 opened against the real pipeline and closed unmerged by design, its red
-check permanent:
+check permanent. A content defect — data violating a declared rule —
+builds, then fails as an error-severity contract test:
 
 ![PR #45: the shape gate fails red in CI](docs/verification/evidence/2026-07-31_pr45_break_demo_red_check.png)
 
-A content defect — data violating a declared rule — builds, then fails as
-an error-severity contract test (the grain-enforcement rule, exercised in
-rehearsal):
-
 ![A content defect fails as a contract test](docs/verification/evidence/2026-07-11_gate3_content_failure.png)
 
-The full captures, logs, and the DuckDB constraint enforcement matrix live
-in [docs/verification/](docs/verification/).
-
-## The unified event star, running
-
-The gold plane is machine-emitted. I hand-author one mapping contract that
-declares how the silver table maps into the star; the auto-modeling engine
-consumes it and emits every gold model file — the content-addressed
-values/columns dimension pairs, the category fact table, the context
-registry, and a typed projection view — at the sync fixed point, under an
-ownership manifest with per-file checksums. dbt builds what the engine
-emits, and the same three gates judge the result. Nothing hand-written
-touches the gold plane; nothing engine-written escapes review.
-
-The design claim, stated in the gold layer design and restated here: this
-star is built for legibility, not speed. Content-addressed keys, payloads
-carried as canonical JSON text, and a registry binding every schema key to
-the contract version that created it make the star auditable end to end;
-none of that is a throughput claim, and performance is a stated non-goal.
-
-The signature property (D-17) is the payoff, and it is demonstrated, not
-asserted: adding the reserved `country` dimension took one mapping-contract
-amendment (v1.1.0) and one regeneration. No engine code changed, no
-physical schema changed, no gold contract amendment. The diff was 23
-emitted files; the change announced itself as one new schema key in the
-columns dimension and a re-cited registry row, with row conservation
-intact to the digit (44,721 silver lines, 44,721 fact rows, ten
-reconciled fields in the typed view). The full narrative, with the
-staleness-guard and ownership-drift refusals captured live, is
+The signature property (D-17) is the payoff, demonstrated rather than
+asserted: adding the reserved `country` dimension took one
+mapping-contract amendment and one regeneration. No engine code changed,
+no physical schema changed, no gold contract amendment — 23 emitted files
+moved, one schema key appeared, and row conservation held to the digit
+(44,721 in, 44,721 out). The full narrative, with the staleness-guard and
+ownership-drift refusals captured live, is
 [docs/verification/signature-test.md](docs/verification/signature-test.md).
+
+One more property is documented rather than discovered: the star's hash
+keys are content addresses, not row identifiers. The counting rules, and
+the trade they record, live in the gold spec's *Reading the star* section
+and in findings
+[F-23](docs/verification/gate_proof_findings.md#f-23) and
+[F-24](docs/verification/gate_proof_findings.md#f-24).
+
+## Go deeper
+
+| If you want | Read |
+|---|---|
+| The demo, step by step | [docs/demo.md](docs/demo.md) |
+| Every architectural decision, versioned | [docs/decisions/decision-register.md](docs/decisions/decision-register.md) |
+| The layer specs, ingestion through serving | [docs/spec/](docs/spec/) |
+| The evidence: findings, the signature test, gate breaks | [docs/verification/](docs/verification/) |
+| The diagrams, SVG with Mermaid twins | [docs/diagrams/](docs/diagrams/) |
+| The guardrails the coding agent works under | [CLAUDE.md](CLAUDE.md) |
+
+## Status and roadmap
+
+v0.1.0 is the first tagged release: Phases 0 through 5 complete — the
+scaffold and pinned toolchain, bronze ingestion, the profiler and
+contracted silver, the engine-emitted unified event star, and the serving
+layer with the committed demo artifact. Phase 6, the two proposer agents,
+is next. The live roadmap is the
+[Issues tab](https://github.com/metricminellc/metricmine/issues).
 
 ## Toolchain
 
 dbt-core 1.11.x with the dbt-duckdb 1.10.x adapter runs the transforms.
 datacontract-cli 1.0.12, installed as an isolated uv tool, executes the
-contracts. DuckDB is the local warehouse. PyAirbyte handles ingestion. The code
-is Python 3.12, managed with uv.
+contracts. DuckDB 1.4.3 is the local warehouse. PyAirbyte handles
+ingestion. The MCP server runs on the official `mcp` SDK, pinned to the
+1.x maintenance line (D-32 as amended; the register records why). The code
+is Python 3.12, managed with uv. Every pin is a register entry; none of
+them is `latest`.
 
 ## Non-goals
 
 Multi-tenancy, auth, billing, any UI beyond the optional read-only demo,
-streaming, Redshift, orchestration platforms, autonomous multi-step agents, more
-than one or two source types, petabyte or throughput claims, and production SLAs.
+streaming, Redshift, orchestration platforms, autonomous multi-step
+agents, more than one or two source types, petabyte or throughput claims,
+and production SLAs.
 
-## Provenance
+## License
 
-This repository was built fresh from an independent written specification. No
-source code from the 2023 MetricMine prototype was read, imported, or adapted. No
-employer data, architecture diagrams, or platform documentation appear in this
-repository or its history.
+Apache-2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
