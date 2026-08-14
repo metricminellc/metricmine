@@ -67,6 +67,38 @@ Grain is declared per category in the mapping contract, never assumed:
 Without a declared grain the composite hash key silently collapses duplicate rows.
 With it, content addressing guarantees idempotent rebuilds.
 
+## Reading the star: content keys, not row identifiers
+
+The hash keys are content addresses. Four reading rules, stated here
+because the first live serving sessions proved a consumer needs them
+([F-23](../verification/gate_proof_findings.md#f-23),
+[F-24](../verification/gate_proof_findings.md#f-24)):
+
+- **Row counts at transaction grain:** `COUNT(*)` on the fact table, or
+  `COUNT(DISTINCT line_identity)` through the typed view. Never
+  `COUNT(DISTINCT fact_hash_id)`: that column addresses the measure
+  payload alone, and identical measure payloads collide by design (F-24).
+- **The category dimension is 1:1 with its fact at transaction grain, by
+  construction:** the declared degenerate identifier rides inside the
+  dimension payload precisely so content keys stay unique (F-23). Dedup
+  shows up where payloads repeat — the timeframe, source, and run
+  groups — not in the category group, which spends it to keep the grain
+  lossless.
+- **`line_identity` is a row fingerprint, not a business key:** a
+  restated measure mints a new identity, with nothing linking old to
+  new. Cross-version record linkage is out of scope for this star and
+  stated as such.
+- **The signature-test citation:** the registry's `country` context calls
+  it "the signature-test dimension"; what that test asserts — a new
+  dimension by contract amendment and regeneration alone — is narrated
+  with evidence in
+  [`docs/verification/signature-test.md`](../verification/signature-test.md).
+
+The trade these rules record, and the alternatives deliberately not taken
+before v0.1.0 (relocating the degenerate identifier onto the fact;
+renaming `fact_hash_id`), are banked in F-23/F-24 as one post-tag
+decision candidate.
+
 ## Context registry (D-19)
 
 Schema keys are the address of meaning. The context compiler writes one row per
