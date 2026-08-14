@@ -47,7 +47,7 @@ flowchart TB
     QM["Shared query module<br/>payload accessors, context lookup,<br/>row-limited queries, ~5-method protocol"]
     MCP["MCP server — primary consumer<br/>list categories / get schema / get context /<br/>row-limited query / lookup by content key"]
     AGT["Claude + agents<br/>answers grounded in data + meaning,<br/>cites exact records by content key"]
-    HD["Hosted demo (optional)<br/>Streamlit over demo/gold.duckdb,<br/>same module"]
+    HD["Hosted demo (optional)<br/>Streamlit over demo/demo.duckdb,<br/>same module"]
     QM --> MCP --> AGT
     QM -.-> HD
   end

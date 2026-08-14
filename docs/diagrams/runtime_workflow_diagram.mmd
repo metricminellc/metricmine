@@ -15,7 +15,7 @@ flowchart TB
   SRC2["Faker connector<br/>synthetic, keyless"]
   ING["PyAirbyte ingest<br/>pure-Python connectors, no server<br/>one-to-one raw landing, no transforms"]
   BRZ[("bronze schema · DuckDB<br/>raw tables, exactly as landed")]
-  NOTE1["One working DuckDB file, three schemas,<br/>at warehouse/, gitignored (D-03).<br/>Committed artifact: demo/gold.duckdb<br/>via make export-demo (gold + context only)."]
+  NOTE1["One working DuckDB file, three schemas,<br/>at warehouse/, gitignored (D-03).<br/>Committed artifact: demo/demo.duckdb<br/>via make export-demo (gold + context only)."]
 
   SRC1 --> ING
   SRC2 --> ING
@@ -58,7 +58,7 @@ flowchart TB
   QM["Shared query module<br/>query · schema · context · payload accessors ·<br/>read-only protocol (D-11)"]
   MCP["Local MCP server<br/>list_categories · get_schema · get_context (schema key) ·<br/>run_query (row-limited) · lookup_record (content key)"]
   AGT["Claude Desktop / Claude Code<br/>remote model, local hands ·<br/>answers carry data + meaning, cite exact records"]
-  HD["Phase 7 · optional hosted demo<br/>Streamlit Community Cloud over demo/gold.duckdb ·<br/>public link · read-only, no uploads"]
+  HD["Phase 7 · optional hosted demo<br/>Streamlit Community Cloud over demo/demo.duckdb ·<br/>public link · read-only, no uploads"]
 
   GOLD -- "read-only" --> QM
   QM --> MCP --> AGT
