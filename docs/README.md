@@ -6,6 +6,7 @@
 
 | Path | What it is |
 |---|---|
+| [`demo.md`](demo.md) | The ten-minute demo walkthrough: serve the committed `demo/demo.duckdb` keyless, wire Claude Desktop, then the full replay from raw data to a fresh export, with troubleshooting. |
 | [`decisions/decision-register.md`](decisions/decision-register.md) | The authoritative index of project decisions, their status, and the CLAUDE.md rule crosswalk. Every `D-0x` citation in the repo resolves here. |
 | [`spec/`](spec/) | Component specifications, the living source of truth for each component. Spec PRs merge before their implementation PRs open. |
 | [`spec/ingestion.md`](spec/ingestion.md) | Phase 2 ingestion: PyAirbyte lands the committed Online Retail II sample through the `source-file` connector into bronze; `source-faker` stays the keyless synthetic path. Verified connector config, bronze conventions, PyAirbyte runtime, and Phase 2 exit criteria (D-15, D-04, D-03). |
@@ -21,6 +22,7 @@
 | [`diagrams/runtime_workflow_diagram.svg`](diagrams/runtime_workflow_diagram.svg) (+ [`.mmd`](diagrams/runtime_workflow_diagram.mmd)) | End-to-end runtime workflow: the `make demo` path from sources through bronze, silver, the engine, and the unified event star to MCP serving. |
 | [`diagrams/agent_proposal_flow.svg`](diagrams/agent_proposal_flow.svg) (+ [`.mmd`](diagrams/agent_proposal_flow.mmd)) | The proposer runtime: propose, validate, approve. Zoom-in companion to the runtime workflow diagram, which is unchanged. |
 | [`diagrams/gold_unified_event_star_flow.svg`](diagrams/gold_unified_event_star_flow.svg) (+ [`.mmd`](diagrams/gold_unified_event_star_flow.mmd)) | Gold layer target-state flow: modeling plane, star objects, serving posture. Companion to the gold spec. |
+| [`assets/`](assets/) | Brand and README assets: the MetricMine logo pair (served per color scheme by the README's picture element) and the dark-canvas workflow overview graphic (rendered PNG plus hand-authored SVG source). |
 
 Every SVG under `diagrams/` has a machine-readable Mermaid (`.mmd`) twin.
 
