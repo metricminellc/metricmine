@@ -30,6 +30,12 @@ order by design.
 | [F-14](#f-14) | The sync fixed point exists and is reachable by emission | Engine rung |
 | [F-15](#f-15) | json_valid gates VARCHAR canonical payloads | Contracts rung |
 | [F-16](#f-16) | canonical_key v2 SQL and Python agree at function level | Contracts rung |
+| [F-17](#f-17) | Sync twins single-column primaryKey flags with unique tests | Contracts rung |
+| [F-18](#f-18) | Sync canonicalizes properties YAML project-wide | Contracts rung |
+| [F-19](#f-19) | Singular tests without ref() break fresh builds | Contracts rung |
+| [F-20](#f-20) | A star-contract bump re-keys singular tests and re-edits properties | Contracts rung |
+| [F-21](#f-21) | A mapping bump is gate-quiet; blast radius is the emission set | Contracts rung |
+| [F-22](#f-22) | A probe in an isolated venv proves the SDK, never the pin | Serving rung |
 | [F-25](#f-25) | A demo artifact named for its schema collides with its own catalog | Serving rung |
 
 ## Command surface (datacontract-cli 1.0.12)
