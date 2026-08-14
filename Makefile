@@ -29,3 +29,7 @@ regen:
 .PHONY: context
 context:
 	uv run python -m metricmine.context.compile
+
+.PHONY: export-demo
+export-demo:
+	uv run python -m metricmine.export_demo
