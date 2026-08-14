@@ -149,7 +149,7 @@ def test_env_var_wins_over_the_demo_default(monkeypatch):
 def test_unset_env_falls_back_to_the_committed_demo_artifact(monkeypatch):
     monkeypatch.delenv(ENV_VAR, raising=False)
     assert resolve_db_path() == DEMO_DB
-    assert DEMO_DB.name == "gold.duckdb"
+    assert DEMO_DB.name == "demo.duckdb"
     assert DEMO_DB.parent.name == "demo"
 
 

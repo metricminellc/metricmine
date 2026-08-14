@@ -31,7 +31,7 @@ ENV_VAR = "MM_SERVE_DB"
 # The committed demo artifact (D-03) resolves from this module's own
 # location, never the process CWD: the server is launched by a desktop
 # client whose working directory is not the repo root (spec §5).
-DEMO_DB = Path(__file__).resolve().parents[2] / "demo" / "gold.duckdb"
+DEMO_DB = Path(__file__).resolve().parents[2] / "demo" / "demo.duckdb"
 
 GOLD_SCHEMA = "gold"
 REGISTRY_TABLE = "context_registry"
@@ -168,7 +168,7 @@ def clamp_row_cap(row_cap: int) -> int:
 
 
 def resolve_db_path(path: str | Path | None = None) -> Path:
-    """Explicit argument, then MM_SERVE_DB, then demo/gold.duckdb (spec §5)."""
+    """Explicit argument, then MM_SERVE_DB, then demo/demo.duckdb (spec §5)."""
     if path is not None:
         return Path(path)
     env = os.environ.get(ENV_VAR)

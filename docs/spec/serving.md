@@ -237,12 +237,17 @@ warehouse built (ingest, build, gates green), a Python exporter
 2. `CREATE SCHEMA gold`; copy each gold table with
    `CREATE TABLE gold.<t> AS SELECT * FROM wh.gold.<t>`, in sorted-name
    order;
-3. recreate `vw_invoice_lines_typed` from the working catalog's stored
-   SQL (`duckdb_views()`), re-anchoring the database qualifier
-   (`metricmine.gold.` → `gold.`) so the view resolves inside its own
-   file — probed: the stored SQL is db-qualified and fails verbatim in
-   another catalog;
-4. `DETACH`; `CHECKPOINT`; verify; report size.
+3. `DETACH`, then recreate `vw_invoice_lines_typed` from the working
+   catalog's stored SQL (`duckdb_views()`), re-anchoring the database
+   qualifier (`metricmine.gold.` → `gold.`) so the view resolves inside
+   its own file — probed: the stored SQL is db-qualified and fails
+   verbatim in another catalog. The view lands after the detach, with
+   only the export's own catalog attached: its stem is deliberately not
+   `gold` (F-25), so the plain `gold.` target and body references bind
+   cleanly. Until the detach, schema `gold` exists in two catalogs,
+   which is why the step-2 copy statements carry the destination
+   catalog qualifier explicitly;
+4. `CHECKPOINT`; verify; report size.
 
 **The claim is content equality, proven by query, never byte equality**:
 a DuckDB file embeds storage details that make byte determinism a claim
