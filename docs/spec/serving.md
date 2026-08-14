@@ -118,9 +118,13 @@ The module resolves its database in this order:
 1. `MM_SERVE_DB` (environment variable), if set — absolute path
    recommended; the MCP server is launched by a desktop client whose
    working directory is not the repo root.
-2. `demo/gold.duckdb` — the committed demo artifact (D-03), the default
-   surface. The keyless posture holds: no credentials, no network, one
-   file.
+2. `demo/demo.duckdb` — the committed demo artifact (D-03 as amended,
+   Amendment E), the default surface. The keyless posture holds: no
+   credentials, no network, one file. The stem is deliberately not
+   `gold`: a directly opened DuckDB file takes its catalog name from its
+   stem, and a catalog named for the schema inside it makes every
+   two-part `gold.<x>` reference ambiguous at 1.4.3
+   ([F-25](../verification/gate_proof_findings.md#f-25)).
 
 Until the demo artifact exists (it is built at Session M), local serving
 runs with `MM_SERVE_DB` pointed at the working warehouse. A missing
@@ -219,7 +223,7 @@ Claude Desktop wiring (documented shape, verified live at P1):
 }
 ```
 
-(The `env` entry disappears once `demo/gold.duckdb` exists and becomes
+(The `env` entry disappears once `demo/demo.duckdb` exists and becomes
 the default.)
 
 ## 8. The demo export (`make export-demo`)
@@ -227,7 +231,7 @@ the default.)
 D-03 named the target and the artifact; D-33 fixes the mechanism and the
 claim. `make export-demo` runs the keyless replay tail: with the working
 warehouse built (ingest, build, gates green), a Python exporter
-(`src/metricmine/export_demo.py`) creates `demo/gold.duckdb` fresh:
+(`src/metricmine/export_demo.py`) creates `demo/demo.duckdb` fresh:
 
 1. connect to the new file; `ATTACH` the working warehouse `READ_ONLY`;
 2. `CREATE SCHEMA gold`; copy each gold table with

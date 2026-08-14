@@ -1,0 +1,12 @@
+Session M, August 14, 2026 - the demo artifact stem collides with the gold schema (F-25)
+duckdb 1.4.3 via the project venv; scratch files under /tmp/mm_f25; the repo is not touched
+Measured at head f9b33e8 before Amendment E landed
+duckdb 1.4.3
+-- mechanism: the catalog name follows the file stem --
+OK    current_catalog() on gold.duckdb -> gold
+FAIL  two-part   SELECT * FROM gold.fact_x_values -> BinderException: Binder Error: Ambiguous reference to catalog or schema "gold" - use a fully qualified path like "gold.gold"
+OK    three-part SELECT * FROM gold.gold.fact_x_values -> (1,)
+FAIL  CREATE VIEW gold.v2 AS SELECT i FROM gold.fact_x_values (writable open, two-part) -> BinderException: Binder Error: Ambiguous reference to catalog or schema "gold" - use a fully qualified path like "gold.gold"
+-- consequence and fix: the unmodified serving module, by stem --
+FAIL  GoldWarehouse(gold.duckdb).list_fact_categories() -> BinderException: Binder Error: Ambiguous reference to catalog or schema "gold" - use a fully qualified path like "gold.gold"
+OK    GoldWarehouse(demo.duckdb).list_fact_categories() -> {'categories': [{'category': 'x', 'fact_table': 'fact_x_values', 'row_count': 1}]}
