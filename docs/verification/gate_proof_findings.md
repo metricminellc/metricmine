@@ -36,6 +36,8 @@ order by design.
 | [F-20](#f-20) | A star-contract bump re-keys singular tests and re-edits properties | Contracts rung |
 | [F-21](#f-21) | A mapping bump is gate-quiet; blast radius is the emission set | Contracts rung |
 | [F-22](#f-22) | A probe in an isolated venv proves the SDK, never the pin | Serving rung |
+| [F-23](#f-23) | At transaction grain the category dimension is 1:1 by construction | Serving rung |
+| [F-24](#f-24) | fact_hash_id addresses the measure payload, never the row | Serving rung |
 | [F-25](#f-25) | A demo artifact named for its schema collides with its own catalog | Serving rung |
 
 ## Command surface (datacontract-cli 1.0.12)
@@ -447,6 +449,65 @@ environment lands on 1.29.0, so the deliberate pin requires
 `uv lock --upgrade-package mcp`. A pin recorded from the first number uv
 printed would have been an artifact of the lock, not a decision.
 ([`evidence/2026-08-13_sessionL_mcp_pin_conflict.log`](evidence/2026-08-13_sessionL_mcp_pin_conflict.log))
+
+### F-23
+**At transaction grain the category dimension is 1:1 with the fact by
+construction; content addressing there buys identity and change
+detection, not compression.** Observed at the Session L live checkpoint
+and measured against the committed demo artifact:
+`fact_rows 44721 · dim_rows 44721 · distinct dim_hash_id 44721`. The
+mechanism is the gold spec's own transaction-grain clause: the mapping
+contract declares a degenerate identifier (`line_identity`,
+canonical-key v2 of `invoice_id, stock_code, quantity, unit_price`)
+carried inside the dimension payload so content keys stay unique.
+Rule-13 payload hashing (D-18) then makes `dim_hash_id` inherit that
+uniqueness transitively: every fact row mints exactly one dimension row.
+The dedup content addressing buys elsewhere in the same star is real and
+measured — `dim_timeframe_values` carries 2,004 rows for 44,721 facts,
+`dim_source_values` and `dim_run_values` one row each — and the category
+group deliberately spends it, because the alternative the spec names is
+worse: without the identifier, the composite hash key silently collapses
+duplicate rows. Two consequences for consumers, stated in the spec's
+*Reading the star* section: `line_identity` is a row fingerprint, not a
+business key (a restated measure mints a new identity with nothing
+linking old to new, and `lookup_record`'s derived-identity path rides
+exactly that key), and the fact-to-dimension hash join buys
+addressability rather than compression at this grain.
+
+**Position (documented, not changed).** This is the designed trade at
+transaction grain, now stated where a reader will look. The
+alternative — relocating `line_identity` out of the dimension manifest
+onto the fact as a true degenerate dimension, restoring dedup to the
+category group — is a mapping-contract amendment plus a regeneration
+that moves the signature-test evidence base. Banked as a post-tag
+decision candidate, not rushed to beat a release.
+([`evidence/2026-08-14_sessionM_star_key_semantics.log`](evidence/2026-08-14_sessionM_star_key_semantics.log))
+
+### F-24
+**`fact_hash_id` is a measure-payload content address, never a row
+identifier.** Measured against the committed demo artifact:
+`fact_rows 44721 · distinct fact_hash_id 2041 · distinct
+fact_col_hash_id 1`. Rule-13 hashing covers the measure payload alone,
+so every line with the same quantity and price collides by design:
+2,041 distinct measure payloads across 44,721 rows.
+`COUNT(DISTINCT fact_hash_id)` is therefore wrong as a row count by
+95%, and the column name invites exactly that query — the
+highest-probability misread in the model. Row identity at transaction
+grain is the full composite key (`fact_hash_id`, `source_hash_id`,
+`timeframe_hash_id`, `dim_hash_id`), or `line_identity` inside the
+dimension payload; honest row counts are `COUNT(*)` on the fact or
+`COUNT(DISTINCT line_identity)` through the typed view. The counting
+rules now live in the gold spec's *Reading the star* section, beside the
+keys they govern.
+
+**Position (documented, not changed).** The composite-key design stands
+(D-18, D-19); the exposure is the name. A rename (`measures_hash_id` or
+similar) is an engine-and-contract change with a full regeneration,
+banked with the F-23 candidate as one post-tag decision item — alongside
+a registry-context enrichment so the `country` meaning string says what
+the signature test asserts, which a consumer reaching gold only through
+MCP currently cannot learn.
+([`evidence/2026-08-14_sessionM_star_key_semantics.log`](evidence/2026-08-14_sessionM_star_key_semantics.log))
 
 ### F-25
 **A demo artifact named for the schema it carries collides with its own
