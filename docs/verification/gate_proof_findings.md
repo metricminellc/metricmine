@@ -39,6 +39,9 @@ order by design.
 | [F-23](#f-23) | At transaction grain the category dimension is 1:1 by construction | Serving rung |
 | [F-24](#f-24) | fact_hash_id addresses the measure payload, never the row | Serving rung |
 | [F-25](#f-25) | A demo artifact named for its schema collides with its own catalog | Serving rung |
+| [F-26](#f-26) | The frozen mapping-contract schema is not a structured-outputs schema | Agent rung |
+| [F-27](#f-27) | `datacontract dbt sync` creates the properties file for a contracted model that has none | Agent rung |
+| [F-28](#f-28) | The contract-before-model window admits optional additions and rejects required ones | Agent rung |
 
 ## Command surface (datacontract-cli 1.0.12)
 
@@ -535,3 +538,83 @@ amendment bound. The probe rule this mints: an artifact is proved by
 opening it exactly the way its consumer opens it, never only through a
 different access path.
 ([`evidence/2026-08-14_sessionM_demo_catalog_collision.log`](evidence/2026-08-14_sessionM_demo_catalog_collision.log))
+
+## Agent rung (Phase 6, pre-N prep, August 21, 2026)
+
+### F-26
+**The frozen mapping-contract schema is not a structured-outputs
+schema.** The engine spec and the schema's own description said the
+gold mapping proposer would emit against
+`docs/spec/engine/mapping-contract.schema.json` verbatim via
+`output_config.format`. Measured at anthropic 1.0.0 against the GA
+structured-outputs documentation: the API's JSON Schema subset excludes
+`oneOf`, `allOf`, `if/then/else`, `contains` and its counts, `pattern`,
+`propertyNames`, and `anyOf` beyond nullable type arrays, and the SDK's
+`transform_schema` rejects the frozen schema outright (`ValueError:
+Schema must have a 'type', 'anyOf', 'oneOf', or 'allOf' field.`) because
+it carries typeless and boolean subschemas. Every composition keyword the
+frozen schema is built from (the grain and identifier `oneOf` variants,
+the provenance-key `contains` rules, the per-key `if/then`, the
+identifier `pattern`s, the aggregation `propertyNames`, the reserved-name
+`not`) is unexpressible to the grammar compiler. The remedy is a
+projection, not a schema change: each proposer emits against a flat
+proposal schema under `docs/spec/agent-layer/` (every property required,
+every enum typed, variants flattened into a discriminator plus sibling
+arrays the validator holds consistent), and the frozen schema validates
+the rendered ODCS document with all of its constraints. Measured the same
+day: the mapping proposal schema passes `transform_schema` unchanged at 0
+optional and 0 union parameters against limits of 24 and 16; a proposal
+mirroring mapping v1.1.0 renders to a document the frozen schema accepts
+with first-class elements equal; a planted hallucinated column is caught
+by groundedness, not by any schema. The class is F-22 and F-25 again: a
+capability verified in isolation (July: "GA structured outputs") against
+an artifact never fed to its actual consumer. Probe rule, restated: prove
+the artifact through the path its consumer takes.
+([`evidence/2026-08-21_preN_probe_transcript.md`](evidence/2026-08-21_preN_probe_transcript.md),
+[`evidence/2026-08-21_preN_probe_schemas.py`](evidence/2026-08-21_preN_probe_schemas.py),
+[`evidence/2026-08-22_sessionN_probe_p3_live.log`](evidence/2026-08-22_sessionN_probe_p3_live.log))
+
+### F-27
+**`datacontract dbt sync` 1.0.12 creates the properties file for a
+contracted model that has none, with exact DuckDB data types.** The
+repository's evidence had only ever shown sync updating files in place,
+and the planning review concluded the human still authors the whole
+file. Measured twice in the adoption lab, once from a clean slate: for a
+hand-written silver model with a contract and no properties file, sync
+created `<model>.yml` carrying the model name, the contract's table
+description, `config.meta.datacontract_cli.contract_id`, and every column
+with the contract's physicalType as `data_type` (VARCHAR, DATE, BIGINT,
+HUGEINT, DECIMAL(38,2)), plus warn-severity `not_null` data_tests per
+required column. It wrote neither `config.contract.enforced` nor
+`constraints` (grep count 0); those two keys remain the human's (rules 5
+and 11, Amendment J). This is the opposite of F-02's `export` scaffold,
+which emits generic types: sync writes the contract's exact types, and
+gate 2 then enforced the model at HUGEINT and DECIMAL(38,2) data types
+(PASS=9), caught a dropped column (`missing in definition`), and caught
+a drifted type (`INTEGER | BIGINT | data type mismatch`). Sync reached
+its fixed point with the two hand edits preserved (`updated 0 YAML
+files`). A naming nit the same run exposed: a rule's `description`
+becomes the generated test's file name, so rule descriptions must be
+stable prose and evidence sentences stay in the proposal record.
+([`evidence/2026-08-21_adoption_lab_transcript.md`](evidence/2026-08-21_adoption_lab_transcript.md),
+[`evidence/2026-08-21_adoption_lab_sync_creates_properties.log`](evidence/2026-08-21_adoption_lab_sync_creates_properties.log))
+
+### F-28
+**The contract-before-model window admits optional additions and rejects
+required ones at gate 3.** D-08 orders a shape change as contract PR
+first, implementation PR after. CI had proven gate 3 tolerates a contract
+whose model does not exist yet, never an amended contract adding a column
+to an existing model. Measured on `silver_invoice_lines` amended to
+v1.2.0 with the model and its committed properties file unchanged: adding
+an OPTIONAL column is green across all three gates in CI's order (build
+on the committed properties file passes; sync adds the column to the
+workspace copy; 11 tests pass), and a build against that synced file then
+fails with `invoice_day | DATE | missing in definition`, which is exactly
+the model PR's job. Adding a REQUIRED column is red at gate 3: the
+generated `not_null` test references a column the model does not produce
+(`Runtime Error: "invoice_day" not found`). The executable form of
+D-08's order is therefore a two-step amendment for required additions:
+add as optional, land the model, then tighten to required in a second
+contract version. The amend stance (D-35) proposes additions as optional
+with a declared follow-up change.
+([`evidence/2026-08-21_adoption_lab_transcript.md`](evidence/2026-08-21_adoption_lab_transcript.md))

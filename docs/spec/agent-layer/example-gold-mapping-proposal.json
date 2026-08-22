@@ -1,0 +1,32 @@
+{
+  "category_name": "invoice_lines",
+  "entity_group": "invoice_lines",
+  "source_table": "silver.silver_invoice_lines",
+  "time_column": "invoiced_at",
+  "time_grain": "minute",
+  "grain_type": "transaction",
+  "degenerate_identifiers": [
+    {
+      "source": "derived",
+      "name": "line_identity",
+      "of": ["invoice_id", "stock_code", "quantity", "unit_price"]
+    }
+  ],
+  "aggregations": [],
+  "grain_rationale": "The profile shows duplicate_row_rate 0.0 over 44721 rows and the silver contract declares (invoice_id, stock_code, quantity, unit_price) unique, so one line is one event: transaction grain with one derived identity over the declared tuple.",
+  "fields": [
+    {"name": "invoice_id", "logical_type": "string", "physical_type": "VARCHAR", "required": true, "mapping_role": "dimension", "description": "Invoice number; a C prefix marks a cancellation (2330 distinct, null_rate 0.0)."},
+    {"name": "is_cancellation", "logical_type": "boolean", "physical_type": "BOOLEAN", "required": true, "mapping_role": "dimension", "description": "Cancellation flag; exclusion is a consumer decision (2 distinct)."},
+    {"name": "stock_code", "logical_type": "string", "physical_type": "VARCHAR", "required": true, "mapping_role": "dimension", "description": "Product code as landed."},
+    {"name": "product_description", "logical_type": "string", "physical_type": "VARCHAR", "required": false, "mapping_role": "dimension", "description": "Product description; nulls retained."},
+    {"name": "quantity", "logical_type": "integer", "physical_type": "INTEGER", "required": true, "mapping_role": "measure", "description": "Units on the line; negative only on cancellations."},
+    {"name": "invoiced_at", "logical_type": "date", "physical_type": "TIMESTAMP", "required": true, "mapping_role": "time", "description": "Invoice timestamp; the declared time column."},
+    {"name": "unit_price", "logical_type": "number", "physical_type": "DECIMAL(10,2)", "required": true, "mapping_role": "measure", "description": "Unit price in sterling; zero-price lines retained."},
+    {"name": "customer_id", "logical_type": "integer", "physical_type": "INTEGER", "required": false, "mapping_role": "dimension", "description": "Customer identifier; null on guest checkouts."},
+    {"name": "country", "logical_type": "string", "physical_type": "VARCHAR", "required": true, "mapping_role": "dimension", "description": "Customer country as landed (24 distinct)."}
+  ],
+  "category_description": "One fact category: line-level retail sales at transaction grain; cancellations flow through retained-and-flagged.",
+  "purpose": "Declares how silver.silver_invoice_lines maps into the unified event star as the invoice_lines fact category.",
+  "usage": "Engine input only. Gate 1 lints it; gate 3 skips it by design (F-12); the engine validates it against mapping-contract.schema.json.",
+  "limitations": "Cancellation lines flow through retained-and-flagged; excluding them is a consumer decision made at query time, never here."
+}

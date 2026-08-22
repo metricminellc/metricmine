@@ -1,0 +1,186 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/metricminellc/metricmine/main/docs/spec/agent-layer/gold-mapping-proposal.schema.json",
+  "title": "MetricMine gold mapping proposal",
+  "description": "Structured-outputs schema for the gold mapping proposer (D-21 as amended, D-34, F-26): a flat projection of docs/spec/engine/mapping-contract.schema.json that the API grammar compiler accepts. Every property is required, every enum is typed, and the grain variants are flattened into grain_type plus sibling arrays the validator holds consistent. The harness renders a proposal to the ODCS mapping contract, which the FROZEN schema then validates.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "category_name",
+    "entity_group",
+    "source_table",
+    "time_column",
+    "time_grain",
+    "grain_type",
+    "degenerate_identifiers",
+    "aggregations",
+    "grain_rationale",
+    "fields",
+    "category_description",
+    "purpose",
+    "usage",
+    "limitations"
+  ],
+  "properties": {
+    "category_name": {
+      "type": "string",
+      "description": "lowercase snake_case; never starts with dim_, fact_, vw_, silver_, bronze_, stg_; never context_registry."
+    },
+    "entity_group": {
+      "type": "string"
+    },
+    "source_table": {
+      "type": "string",
+      "description": "silver.<table> exactly as the profile names it."
+    },
+    "time_column": {
+      "type": "string"
+    },
+    "time_grain": {
+      "type": "string",
+      "enum": [
+        "minute",
+        "hour",
+        "day",
+        "week",
+        "month",
+        "quarter",
+        "year"
+      ]
+    },
+    "grain_type": {
+      "type": "string",
+      "enum": [
+        "transaction",
+        "aggregated"
+      ]
+    },
+    "degenerate_identifiers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source",
+          "name",
+          "of"
+        ],
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": [
+              "column",
+              "derived"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "of": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "For source=derived: the silver columns hashed by canonical-key-v2, in order. For source=column: empty."
+          }
+        }
+      },
+      "description": "Required non-empty when grain_type=transaction; empty when aggregated."
+    },
+    "aggregations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "field",
+          "function"
+        ],
+        "properties": {
+          "field": {
+            "type": "string"
+          },
+          "function": {
+            "type": "string",
+            "enum": [
+              "sum",
+              "min",
+              "max",
+              "avg",
+              "count"
+            ]
+          }
+        }
+      },
+      "description": "Required non-empty when grain_type=aggregated; empty when transaction."
+    },
+    "grain_rationale": {
+      "type": "string",
+      "description": "Why this grain, citing row_count and duplicate_row_rate from the profile."
+    },
+    "fields": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "logical_type",
+          "physical_type",
+          "required",
+          "mapping_role",
+          "description"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Exact silver column name from the profile."
+          },
+          "logical_type": {
+            "type": "string",
+            "enum": [
+              "string",
+              "integer",
+              "number",
+              "boolean",
+              "date"
+            ]
+          },
+          "physical_type": {
+            "type": "string",
+            "description": "DuckDB physical type as profiled, e.g. VARCHAR, INTEGER, DECIMAL(10,2), TIMESTAMP."
+          },
+          "required": {
+            "type": "boolean",
+            "description": "true when the profile shows null_rate == 0 and the column is identity-bearing."
+          },
+          "mapping_role": {
+            "type": "string",
+            "enum": [
+              "dimension",
+              "measure",
+              "time"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "description": "One sentence of business meaning citing profile evidence."
+          }
+        }
+      },
+      "minItems": 1
+    },
+    "category_description": {
+      "type": "string"
+    },
+    "purpose": {
+      "type": "string"
+    },
+    "usage": {
+      "type": "string"
+    },
+    "limitations": {
+      "type": "string"
+    }
+  }
+}

@@ -10,7 +10,7 @@ flowchart TD
     end
 
     subgraph CALL["The proposal call: one structured API call (D-21)"]
-        HARNESS["Proposer harness (agent)<br/>claude-sonnet-5, pinned<br/>structured outputs: output_config.format json_schema<br/>effort set explicitly, max_tokens capped<br/>no tools, no MCP"]
+        HARNESS["Proposer harness (agent)<br/>claude-sonnet-5 default; allow-listed override (D-34)<br/>structured outputs: output_config.format json_schema<br/>effort set explicitly, max_tokens capped<br/>no tools, no MCP"]
         JSON["Structured proposal JSON<br/>schema-guaranteed by constrained decoding"]
         VAL["Deterministic validator<br/>groundedness: every column exists in profile<br/>staleness: bound to profile hash<br/>completeness: grain declared per category<br/>datacontract lint"]
         RENDER["Canonical render<br/>proposal JSON to ODCS YAML<br/>stable key order, clean diffs"]

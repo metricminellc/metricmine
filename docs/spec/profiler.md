@@ -59,7 +59,9 @@ Evidence is not a decision: a zero null count is grounds for a human (or,
 in Phase 6, a proposer subject to human approval) to declare `required`,
 never a declaration by itself. In Phase 6 this table becomes the cleanup
 proposer's job description: the left column is what it may fill from the
-profile, the right column is what review holds.
+profile, the right column is what review holds. The `describe` stance
+(D-35) reads the same table over a table's own profile: it may fill the
+left column from evidence and may propose, never decide, the right.
 
 ## 3. The profile artifact
 

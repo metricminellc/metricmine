@@ -124,12 +124,19 @@ Verified end to end at the pinned toolchain (F-12, F-13):
 ### The Phase 6 hook (the agent-layer obligation, discharged)
 
 The gold mapping proposer (Phase 6) emits its structured proposal against
-**this same JSON Schema** via `output_config.format: json_schema` (D-21).
-Freezing the schema here discharges the agent layer's Phase 4 obligation:
-degenerate identifiers, grain, roles, and provenance are first-class,
-machine-consumed elements, so the proposal-to-ODCS render in the harness
-is lossless and deterministic. A schema change after this point is a spec
-amendment with a version bump, in its own documentation PR.
+a **proposal schema projected from this schema**
+([`docs/spec/agent-layer/gold-mapping-proposal.schema.json`](agent-layer/gold-mapping-proposal.schema.json))
+via `output_config.format: json_schema`, and **this schema validates the
+rendered output** (D-21 as amended by Amendment F;
+[F-26](../verification/gate_proof_findings.md#f-26): the API's JSON
+Schema subset cannot compile the composition keywords this schema is
+built from). Freezing the schema here discharges the agent layer's
+Phase 4 obligation: degenerate identifiers, grain, roles, and provenance
+are first-class, machine-consumed elements, so the proposal-to-ODCS
+render in the harness is deterministic and every valid proposal renders
+to exactly one document this schema accepts. A schema change after this
+point is a spec amendment with a version bump, in its own documentation
+PR, and it re-derives the projection in the same PR.
 
 ## 3. Keys: the dual-implementation rule (D-18)
 
