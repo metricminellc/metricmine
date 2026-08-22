@@ -9,10 +9,10 @@ The pipeline has exactly two agents (D-10): the **silver cleanup proposer** (bro
 
 ## 1. Invocation architecture (D-21)
 
-Each proposer is **one structured call** to the Anthropic Messages API through the official Python SDK (`anthropic`, a normal locked dependency from Phase 6 onward; upgrades are deliberate, by pull request).
+Each proposer is **one structured call** to the Anthropic Messages API through the official Python SDK (`anthropic>=1.0,<1.1`, resolved 1.0.0, a normal locked dependency from the Phase 6 harness PR onward; upgrades are deliberate, by pull request; D-21 Amendment F).
 
-- **Model:** `claude-sonnet-5`, pinned. Model IDs of this generation are fixed snapshots, so the string is the pin. Never `latest`.
-- **Structured outputs:** the request sets `output_config.format` to a JSON Schema per proposer. Constrained decoding guarantees the response parses against the proposal schema. The model cannot emit prose or a malformed contract.
+- **Model:** `claude-sonnet-5` by default. Model IDs of this generation are fixed snapshots, so the string is the pin. Never `latest`. An operator may swap the model for a run to an allow-listed ID (`claude-sonnet-5`, `claude-opus-5`, `claude-fable-5`) via `--model` or `MM_PROPOSER_MODEL`, in that precedence; an unlisted ID fails closed before any call; the model used is recorded and stamped in provenance (D-34).
+- **Structured outputs:** the request sets `output_config.format` to the proposer's **proposal schema**, a structured-outputs-compatible projection of the contract shape kept at `docs/spec/agent-layer/gold-mapping-proposal.schema.json` and `docs/spec/agent-layer/silver-cleanup-proposal.schema.json` (flat; every property required; every enum typed; variants flattened into a discriminator plus sibling arrays the validator holds consistent). Constrained decoding guarantees the response parses against it. The model cannot emit prose or a malformed proposal. The frozen mapping-contract schema is never sent to the API; it validates the rendered contract instead ([F-26](../verification/gate_proof_findings.md#f-26)). Each schema file is paired with an example proposal beside it.
 - **Parameters:** effort set explicitly, `max_tokens` capped, all request parameters recorded per run.
 - **Serialization boundary:** the model emits a structured proposal; deterministic glue renders canonical ODCS YAML with stable key order. Judgment proposes; code serializes.
 - **Failure containment:** post-parse validation failures retry at most twice with errors fed back, then **fail closed**: exit nonzero, nothing written, raw response preserved for inspection. Writes are atomic (temp file, rename). Loops are impossible by construction.
@@ -67,7 +67,7 @@ make propose-mapping    # silver profile -> draft mapping contract
 
 - **Fixtures:** two or three committed profile artifacts under `tests/agents/` (Online Retail II per D-15, the faker path, optionally one pathological case).
 - **Offline, every CI run, keyless:** the render path is tested against recorded proposals and the validator against constructed inputs, in the existing pytest lane.
-- **Live, manual:** `make eval-agents` runs both proposers against the fixtures when a key is present and reports **first-attempt lint pass rate** and **first-attempt groundedness pass rate**, with token and cost actuals.
+- **Live, manual:** `make eval-agents` runs both proposers against the fixtures when a key is present and reports **first-attempt lint pass rate** and **first-attempt groundedness pass rate**, with token and cost actuals. It honors the D-34 model override, so a model comparison is one command; comparing is enabled, not performed.
 - **Deferred by intent:** LLM-as-judge scoring, automated A/B optimization, drift dashboards.
 
 Phase 6 exits with fixtures committed, offline assertions green, and one recorded live run.
@@ -82,7 +82,7 @@ No third runtime agent; the generate-and-verify authoring loop stays in the SDLC
 
 ## Appendix A: Proposal record fields
 
-`agent` (name, version) · `prompt_version` · `model_id` · `request_params` (effort, max_tokens) · `profile_path` · `profile_hash` · `profile_schema_version` · `created_at` · `response_id` · `usage` (input_tokens, output_tokens) · `cost_usd_estimate` · `validation` (schema_pass, groundedness_pass, staleness_pass, lint_pass, attempts) · `disposition` (`draft_written` | `failed_closed`) · `draft_path`
+`agent` (name, version) · `prompt_version` · `prompt_path` · `model_id` · `model_source` (`default` | `env` | `flag`) · `rates` (input_per_mtok, output_per_mtok) · `sdk_version` · `request_params` (effort, max_tokens) · `profile_path` · `profile_hash` · `profile_schema_version` · `created_at` · `response_id` · `stop_reason` · `usage` (input_tokens, output_tokens, summed over attempts) · `cost_usd_estimate` · `validation` (schema_pass, groundedness_pass, completeness_pass, staleness_pass, lint_pass, attempts, errors) · `disposition` (`draft_written` | `failed_closed`) · `draft_path`
 
 ## Appendix B: Contract provenance keys (ODCS customProperties)
 
@@ -95,15 +95,18 @@ fabricated) · `proposedAt`
 
 ```
 src/metricmine/agents/
+├── __main__.py         # CLI: propose silver | propose mapping; --profile, --model
 ├── harness.py          # shared call: structured outputs, retry budget, record writing
-├── validate.py         # groundedness, staleness, completeness
+├── models.py           # D-34: default model, allow-list with rate rows, resolver
+├── validate.py         # groundedness, completeness, staleness, lint
 ├── render.py           # proposal JSON -> canonical ODCS YAML
 ├── silver_proposer.py  # thin: schema + prompt binding
 ├── mapping_proposer.py # thin: schema + prompt binding
-└── prompts/            # versioned prompt artifacts (semver headers)
+└── prompts/            # versioned prompt artifacts (semver front matter)
     ├── README.md       # template anatomy, versioning rules
     ├── silver_cleanup.md
     └── gold_mapping.md
+docs/spec/agent-layer/  # proposal schemas (the API-facing projection) + examples
 proposals/              # gitignored outbox: drafts + records
 tests/agents/           # golden fixtures + offline assertions
 ```
