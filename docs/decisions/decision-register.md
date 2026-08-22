@@ -18,7 +18,9 @@ through D-28 and Amendments A and B to Record 001. Decision Record 004
 (August 1, 2026) carries D-29 and D-30 and Amendment C to D-16. Decision
 Record 005 Rev. 2 (August 13, 2026) carries D-31 through D-33, the serving
 layer, and Amendment D to D-32. Decision Record 006 (August 14, 2026)
-carries Amendment E to D-03 and D-33.
+carries Amendment E to D-03 and D-33. Decision Record 007 (August 22,
+2026) carries D-34, D-35, Amendments F through J, and findings F-26
+through F-28.
 
 **Status meanings.** `adopted` — in force. `proposed` — agreed in working
 session, applied by the plans below, formal adoption pending; treat as binding
@@ -61,6 +63,8 @@ unless amended.
 | [D-31](#d-31) | Serving layer: one shared query module; thin MCP server | adopted |
 | [D-32](#d-32) | MCP SDK: official mcp as a project dependency | adopted |
 | [D-33](#d-33) | Demo export: content equality by query, never bytes | adopted |
+| [D-34](#d-34) | Proposer model selection: pinned default, allow-listed override | adopted |
+| [D-35](#d-35) | Proposer stances and the adoption scan | adopted |
 
 ## The decisions
 
@@ -143,6 +147,14 @@ cleanup proposer and the gold mapping proposer. Both emit ODCS
 contracts; neither writes code, touches data, or runs transformations. The
 generate-and-verify authoring loop lives in the AI-assisted SDLC layer as
 reviewed pull requests, never as a third runtime agent.
+Amended August 22, 2026 (Record 007, Amendment G): the count is of named
+proposers, each one process with one prompt lineage and one provenance
+identity. Stances (D-35) are modes and add no agent; the adoption scan
+and the batch driver are deterministic sequencing and add no agent; a
+third named proposer, a runtime tool, or a runtime loop still does. The
+SDLC clause permits Claude Code to invoke a proposer on a human's
+instruction and report the result; it does not permit unattended
+re-invocation around a fail-closed exit.
 
 ### D-11
 **Portability delegation.** Warehouse portability belongs to dbt profiles;
@@ -201,6 +213,15 @@ generated code in regeneration PRs under the D-09 ownership manifest.
 Every review obligation in the clause — sync output as proposal, export
 as scaffold only, the duplicateValues deletion rule — stands unchanged on
 both planes.
+Amended August 22, 2026 (Record 007, Amendment J): at adoption, the
+human-owned silver properties file may be CREATED by `datacontract dbt
+sync` from an approved contract, which writes exact DuckDB data types
+([F-27](../verification/gate_proof_findings.md#f-27)), and completed by
+the deterministic `enforce-properties` helper, which writes only the two
+keys the contract already implies (`contract.enforced: true`; `not_null`
+constraints on required columns). The file stays human-owned and is
+reviewed in the model PR; every review obligation above applies
+unchanged.
 
 ### D-17
 **Gold is the unified event star.** The terminal gold layer is the
@@ -266,6 +287,26 @@ retry at most twice with errors fed back, then fail closed with nothing
 written; writes are atomic. No tools, no MCP, no loops: a proposer reads
 one profile artifact and writes only to the gitignored proposals/ outbox.
 Full text: Decision Record 002; design: docs/spec/agent-layer.md.
+Amended August 22, 2026 (Record 007, Amendment F): two clauses. First,
+the SDK pin binds at `anthropic>=1.0,<1.1` (resolved 1.0.0 in uv.lock),
+a normal project dependency from the harness PR onward; the July
+citation of 0.116.0 is superseded, the 0.x line being legacy as of
+August 20, 2026, and the 1.0 surface (`output_config.format`,
+`output_config.effort`; `temperature` removed) is the surface this
+decision describes. Co-resolution with the committed lock was probed
+before the pin bound, and the live call was proved on the Mac before
+this amendment merged
+([evidence](../verification/evidence/2026-08-21_preN_probe_transcript.md),
+[live](../verification/evidence/2026-08-22_sessionN_probe_p3_live.log)).
+Recorded fallback, exercised only on a documented live failure:
+`anthropic>=0.125,<1`. Second, the structured-output schema each
+proposer emits against is its PROPOSAL schema under
+`docs/spec/agent-layer/`, a structured-outputs-compatible projection of
+the contract shape; deterministic render produces the ODCS document, and
+the frozen mapping-contract schema validates the rendered output rather
+than travelling to the API, which cannot compile it
+([F-26](../verification/gate_proof_findings.md#f-26)). Everything else
+in the decision stands; the default model is now governed by D-34.
 
 ### D-22
 **Prompt governance and lineage.** Prompts are versioned repository
@@ -280,6 +321,12 @@ values are untrusted data; defense is layered (delimiting,
 schema-constrained output, validator, lint, human gate); contracts are
 never executed as code. Prompt text is authored in Phase 6, after the
 spine.
+Amended August 22, 2026 (Record 007, Amendment I): `proposedBy` gains no
+values. Every proposed contract additionally carries `proposerStance`
+(D-35); amendment proposals carry `amendsContract` as
+`<id>@<version>#sha256:<hash>` over the committed contract's canonical
+bytes. The proposal record carries the stance, the ordered governed
+inputs with their hashes, and the operator's intent verbatim.
 
 ### D-23
 **Context discipline: grounding without retrieval.** The proposers use no
@@ -291,6 +338,14 @@ docs/spec/profiler.md). A deterministic validator gates every proposal:
 groundedness (every referenced column exists in the profile; hallucinated
 columns enforced to zero), staleness (bound to the profile hash),
 completeness (grain declared per category), and datacontract lint.
+Amended August 22, 2026 (Record 007, Amendment H): "sole context" reads,
+from here, as the sole evidence context. A stance (D-35) receives a
+fixed, configured list of governed inputs and no others: the versioned
+profile artifact; for `amend`, the single committed contract named by
+configuration and the operator's intent string. Every input is injected
+complete, selected by path and never by search, hashed, and bound into
+the proposal; any hash moving between read and write fails staleness. No
+retrieval is introduced.
 
 ### D-24
 **Agent UX: propose, review, approve on existing surfaces.** make
@@ -454,6 +509,62 @@ claim stand unchanged; the re-anchored view and the module's two-part
 `gold.<x>` SQL both bind cleanly in the non-colliding catalog `demo`,
 verified on every serving path before this amendment bound.
 
+### D-34
+**Proposer model selection: pinned default, allow-listed override.** The
+proposers call `claude-sonnet-5` by default, a pinned snapshot ID that
+moves only by amendment here. An operator may swap the model for a run,
+in this precedence: `--model ID` on the command line, then
+`MM_PROPOSER_MODEL` in the environment, then the default. The allow-list
+is `claude-sonnet-5`, `claude-opus-5`, and `claude-fable-5`; membership
+is measured, not preferred: an ID must support both structured outputs
+and the effort parameter, carry a pinned rate row in
+`src/metricmine/agents/models.py`, and have answered a live structured
+call on this project's account (verified August 22, 2026; Haiku 4.5 is
+excluded because it lacks effort support). An unlisted ID, an alias, or
+`latest` fails closed before any API call, naming the allow-list. The
+model actually used is stamped as `modelId` in the contract's provenance
+(D-22) and recorded with its source (`default`, `env`, or `flag`) and its
+rate row in the proposal record, so cost and authorship audit from the
+record alone. Prompts are model-agnostic: a model swap never bumps a
+prompt version. The live eval lane (D-25) honors the same override,
+which enables comparison without performing it. Adding or removing a
+model is a register amendment in its own documentation PR (rule 1
+discipline). Full text: Decision Record 007.
+
+### D-35
+**Proposer stances and the adoption scan.** Each proposer (D-10) may run
+in a fixed set of governed stances: `cleanup`, `describe`, `amend` for
+the silver cleanup proposer; `propose`, `amend` for the gold mapping
+proposer. A stance is a mode, not an agent: same process, harness,
+single call, retry budget, and outbox, adding only a versioned prompt, a
+proposal schema, a validator branch, and a provenance stamp. Every
+stance is human-invoked and writes only to the outbox. `describe`
+consumes the target table's own profile artifact and refuses when a
+contract with that id already exists. `amend` consumes the profile, the
+committed contract it amends, and a human-typed intent, recorded
+verbatim; it emits a declared change set that deterministic code applies
+as a patch over the committed document, so the diff is the declared set
+by construction; additions enter optional with a declared follow-up
+tightening ([F-28](../verification/gate_proof_findings.md#f-28)). No
+stance emits quality-rule severities, classifications, SLAs, or
+ownership; templated rules render by code at the severities the
+committed contracts established. An amendment never weakens a contract
+(D-08): the validator classifies every change as widening, neutral, or
+narrowing; narrowing is refused unless `--allow-relaxation` is passed,
+and then renders at a major bump with a printed rule-6 warning. Grain
+proposed by any stance is unverified until `make verify-grain` measures
+it ([F-10](../verification/gate_proof_findings.md#f-10)). The adoption
+scan is deterministic code, never an agent: it derives a review queue
+from the model tree, the contracts, the profiles, the configuration, and
+the read-only catalog on every run, writes it to the outbox, and stores
+nothing; the batch driver walks that queue with a cap, one call per
+item, never re-invoking a failed item. The vanilla scope at adoption:
+the silver plane and the committed sample; foreign gold marts (rule 12)
+are reported, never adopted. Evidence: the August 21 to 22 adoption lab
+([F-27](../verification/gate_proof_findings.md#f-27),
+[F-28](../verification/gate_proof_findings.md#f-28)). Full text:
+Decision Record 007.
+
 ## Session-decision and finding IDs
 
 IDs of the form `A<n>` (working-session decisions, e.g. A4) and `F-0x`
@@ -483,13 +594,13 @@ authority. The mapping:
 | 8 (ownership-manifest checksums) | D-09 |
 | 9 (engine emits models, never DDL; mapping-contract placement) | D-07, D-29 |
 | 10 (gate three under uv run; top-level `datacontract test` unused) | D-12, D-16; gate-two mechanics per D-20 |
-| 11 (properties hand-authored on the silver plane; engine-emitted on gold; sync output reviewed) | D-16 (Amendment C), D-29, evidence [F-02](../verification/gate_proof_findings.md#f-02)/[F-05](../verification/gate_proof_findings.md#f-05)/[F-14](../verification/gate_proof_findings.md#f-14) |
+| 11 (properties hand-authored on the silver plane; sync-created at adoption; engine-emitted on gold; sync output reviewed) | D-16 (Amendments C, J), D-29, evidence [F-02](../verification/gate_proof_findings.md#f-02)/[F-05](../verification/gate_proof_findings.md#f-05)/[F-14](../verification/gate_proof_findings.md#f-14)/[F-27](../verification/gate_proof_findings.md#f-27) |
 | 12 (unified event star; tables; projections as views) | D-17 |
 | 13 (canonical_key v2, deterministic payloads) | D-18 |
 | 14 (registry binding; fact key; declared grain) | D-19 |
-| 15 (proposer runtime: one structured call; no tools/MCP/loops; outbox-only) | D-21, D-23 |
-| 16 (versioned prompts; contract provenance; pattern-derived absence rule) | D-22, D-29 |
-| 17 (human-only draft-to-contract flow; keyless make demo) | D-24, D-08 |
+| 15 (proposer runtime: one structured call; proposal schema projection; allow-listed model override; governed inputs per stance; no tools/MCP/loops; outbox-only) | D-21 (Amendment F), D-23 (Amendment H), D-34, D-35, evidence [F-26](../verification/gate_proof_findings.md#f-26) |
+| 16 (versioned prompts; contract provenance incl. proposerStance and amendsContract; pattern-derived absence rule) | D-22 (Amendment I), D-29 |
+| 17 (human-only draft-to-contract flow; no relaxation without the flag; report-and-stop on fail-closed; keyless make demo) | D-24, D-08, D-10 (Amendment G), D-35 |
 | 18 (serving boundary: shared module, three-layer read-only, capped results) | D-31, D-32, D-33 |
 
 All decisions in this register are adopted: D-01 through D-20 as of the
@@ -497,8 +608,10 @@ July 11, 2026 revision (Decision Record 001 Rev. 3), D-21 through D-25 as
 of the July 12, 2026 revision (Decision Record 002), D-26 through D-28
 as of the July 31, 2026 revision (Decision Record 003), D-29 and D-30
 (with Amendment C to D-16) as of the August 1, 2026 revision (Decision
-Record 004), and D-31 through D-33 as of the August 13, 2026 revision
-(Decision Record 005). D-20 has no dedicated
+Record 004), D-31 through D-33 as of the August 13, 2026 revision
+(Decision Record 005), and D-34 and D-35 (with Amendments F through J)
+as of the August 22, 2026 revision (Decision Record 007). D-20 has no
+dedicated
 CLAUDE.md rule; its substance
 is encoded directly in
 [`.github/workflows/contract-gate.yml`](../../.github/workflows/contract-gate.yml),
