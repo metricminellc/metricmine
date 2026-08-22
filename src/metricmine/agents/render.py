@@ -1,0 +1,254 @@
+"""Proposal JSON to canonical ODCS YAML, deterministically (D-21, D-24).
+
+Spec: docs/spec/agent-layer.md §1 (the serialization boundary: judgment
+proposes, code serializes) and F-26 (the proposer emits a flat proposal;
+this module renders the ODCS document the frozen schema validates). Key
+order mirrors the committed render targets
+(contracts/gold_invoice_lines_mapping.odcs.yaml and
+contracts/silver_invoice_lines.odcs.yaml); rendering the same inputs
+twice produces identical bytes. Quality-rule descriptions are STABLE
+PROSE fixed here, never proposal rationale text, because datacontract
+dbt sync names generated test files from them (F-27, measured
+August 22, 2026). Provenance customProperties follow Appendix B order
+(D-22 as amended by Amendment I: the extras hook carries later stance
+and amendment keys without a renderer rewrite).
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Mapping
+
+import yaml
+
+# Mirrors both committed contracts; the vanilla scope is one product.
+API_VERSION = "v3.1.0"
+DOMAIN = "retail"
+DATA_PRODUCT = "metricmine"
+TENANT = "metricmine"
+WAREHOUSE_DB = "warehouse/metricmine.duckdb"
+
+# Stable rule prose (F-27): sync names generated test files from these.
+ROW_COUNT_RULE_DESCRIPTION = "The table is never empty"
+
+
+def grain_rule_description(grain_keys: list[str]) -> str:
+    return (
+        f"Grain enforcement: no duplicate ({', '.join(grain_keys)}) "
+        f"combinations"
+    )
+
+
+@dataclass(frozen=True)
+class Provenance:
+    """Appendix B stamp; extras is HOOK 3 (empty today, ordered, verbatim)."""
+
+    proposed_by: str
+    proposer_version: str
+    prompt_version: str
+    model_id: str
+    profile_hash: str
+    proposed_at: str  # date, YYYY-MM-DD
+    extras: Mapping[str, str] = field(default_factory=dict)
+
+
+def next_version(current: str | None, bump: str) -> str:
+    """Semver bump; a missing committed target starts the line at 1.0.0."""
+    if current is None:
+        return "1.0.0"
+    major, minor, patch = (int(part) for part in current.split("."))
+    if bump == "major":
+        return f"{major + 1}.0.0"
+    if bump == "minor":
+        return f"{major}.{minor + 1}.0"
+    if bump == "patch":
+        return f"{major}.{minor}.{patch + 1}"
+    raise ValueError(f"unknown bump {bump!r}")
+
+
+def _custom_properties(provenance: Provenance, decisions: list[dict]) -> list[dict]:
+    entries = [
+        {"property": "proposedBy", "value": provenance.proposed_by},
+        {"property": "proposerVersion", "value": provenance.proposer_version},
+        {"property": "promptVersion", "value": provenance.prompt_version},
+        {"property": "modelId", "value": provenance.model_id},
+        {"property": "profileHash", "value": provenance.profile_hash},
+        {"property": "proposedAt", "value": provenance.proposed_at},
+    ]
+    for key, value in provenance.extras.items():
+        entries.append({"property": key, "value": value})
+    for decision in decisions:
+        entries.append(
+            {"property": decision["key"], "value": decision["value"]}
+        )
+    return entries
+
+
+def _grain_block(proposal: dict) -> dict:
+    if proposal["grain_type"] == "transaction":
+        identifiers = []
+        for entry in proposal["degenerate_identifiers"]:
+            identifier: dict = {"source": entry["source"], "name": entry["name"]}
+            if entry["source"] == "derived":
+                identifier["derivation"] = "canonical-key-v2"
+                identifier["of"] = list(entry["of"])
+            identifiers.append(identifier)
+        return {"type": "transaction", "degenerateIdentifiers": identifiers}
+    return {
+        "type": "aggregated",
+        "aggregations": {
+            a["field"]: a["function"] for a in proposal["aggregations"]
+        },
+    }
+
+
+def render_mapping(proposal: dict, provenance: Provenance, version: str) -> dict:
+    """Insertion-ordered ODCS mapping document (mirrors the committed v1.1.0)."""
+    category = proposal["category_name"]
+    return {
+        "apiVersion": API_VERSION,
+        "kind": "DataContract",
+        "id": f"gold_{category}_mapping",
+        "name": f"Gold mapping, {category} category",
+        "version": version,
+        "status": "draft",
+        "domain": DOMAIN,
+        "dataProduct": DATA_PRODUCT,
+        "tenant": TENANT,
+        "description": {
+            "purpose": proposal["purpose"],
+            "usage": proposal["usage"],
+            "limitations": proposal["limitations"],
+        },
+        "schema": [
+            {
+                "name": category,
+                "logicalType": "object",
+                "physicalType": "mapping",
+                "description": proposal["category_description"],
+                "entityGroup": proposal["entity_group"],
+                "sourceTable": proposal["source_table"],
+                "timeColumn": proposal["time_column"],
+                "timeGrain": proposal["time_grain"],
+                "grain": _grain_block(proposal),
+                "properties": [
+                    {
+                        "name": f["name"],
+                        "logicalType": f["logical_type"],
+                        "physicalType": f["physical_type"],
+                        "required": f["required"],
+                        "mappingRole": f["mapping_role"],
+                        "description": f["description"],
+                    }
+                    for f in proposal["fields"]
+                ],
+            }
+        ],
+        "servers": [
+            {
+                "server": "local",
+                "type": "duckdb",
+                "database": WAREHOUSE_DB,
+                "schema": "gold",
+            }
+        ],
+        "customProperties": _custom_properties(
+            provenance, proposal.get("decisions", [])
+        ),
+    }
+
+
+def render_cleanup(proposal: dict, provenance: Provenance, version: str) -> dict:
+    """Insertion-ordered ODCS silver document (mirrors the committed v1.1.0)."""
+    target = proposal["target_table"]
+    kept = [c for c in proposal["columns"] if c["action"] != "drop"]
+    grain_keys = proposal["grain_keys"]
+    key_positions = {key: i + 1 for i, key in enumerate(grain_keys)}
+    properties = []
+    for column in kept:
+        prop: dict = {
+            "name": column["target_name"],
+            "logicalType": column["logical_type"],
+            "physicalType": column["physical_type"],
+            "required": column["required"],
+        }
+        if column["target_name"] in key_positions:
+            prop["primaryKey"] = True
+            prop["primaryKeyPosition"] = key_positions[column["target_name"]]
+        prop["description"] = column["rationale"]
+        properties.append(prop)
+    key_csv = ", ".join(grain_keys)
+    grain_query = (
+        "SELECT COUNT(*) FROM (\n"
+        f"  SELECT {key_csv}\n"
+        f"  FROM silver.{target}\n"
+        f"  GROUP BY {key_csv}\n"
+        "  HAVING COUNT(*) > 1\n"
+        ")\n"
+    )
+    return {
+        "apiVersion": API_VERSION,
+        "kind": "DataContract",
+        "id": target,
+        "name": "Silver " + target.removeprefix("silver_").replace("_", " "),
+        "version": version,
+        "status": "draft",
+        "domain": DOMAIN,
+        "dataProduct": DATA_PRODUCT,
+        "tenant": TENANT,
+        "description": {
+            "purpose": proposal["purpose"],
+            "usage": proposal["usage"],
+            "limitations": proposal["limitations"],
+        },
+        "schema": [
+            {
+                "name": target,
+                "physicalName": target,
+                "logicalType": "object",
+                "physicalType": "table",
+                "description": proposal["purpose"],
+                "properties": properties,
+                "quality": [
+                    {
+                        "type": "library",
+                        "metric": "rowCount",
+                        "description": ROW_COUNT_RULE_DESCRIPTION,
+                        "severity": "error",
+                        "mustBeGreaterThan": 0,
+                    },
+                    {
+                        "type": "sql",
+                        "description": grain_rule_description(grain_keys),
+                        "severity": "error",
+                        "query": grain_query,
+                        "mustBe": 0,
+                    },
+                ],
+            }
+        ],
+        "servers": [
+            {
+                "server": "local",
+                "type": "duckdb",
+                "database": WAREHOUSE_DB,
+                "schema": "silver",
+            }
+        ],
+        "customProperties": _custom_properties(
+            provenance, proposal.get("decisions", [])
+        ),
+    }
+
+
+def to_yaml(doc: dict, header_lines: list[str]) -> str:
+    """Block-style YAML behind a comment header; same inputs, same bytes."""
+    header = "".join(f"# {line}\n" for line in header_lines)
+    body = yaml.dump(
+        doc,
+        sort_keys=False,
+        width=88,
+        allow_unicode=True,
+        default_flow_style=False,
+    )
+    return header + body
