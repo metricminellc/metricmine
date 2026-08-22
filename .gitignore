@@ -31,6 +31,11 @@ data/raw/
 # ---- PyAirbyte record staging, created in the repo root during reads ----
 .cache/
 
+# ---- proposer outbox: drafts and records, never committed (Decision D-24) ----
+# Approval is the human flow: review, copy into contracts/ on a branch,
+# contract-only PR. Rejected drafts never leave the outbox.
+proposals/
+
 # ---- local env / secrets ----
 .env
 *.local
