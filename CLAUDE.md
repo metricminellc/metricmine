@@ -17,7 +17,10 @@ approves every contract.
    with the committed transform/package-lock.yml), and mcp >=1.28,<2
    (resolved 1.29.0 in uv.lock; the serving dependency, D-32 as amended.
    mcp 2.x cannot resolve here: PyAirbyte requires fastmcp >=3.0, which
-   caps mcp <2.0, finding F-22).
+   caps mcp <2.0, finding F-22), and anthropic >=1.0,<1.1 (resolved
+   1.0.0 in uv.lock; the proposer SDK, D-21 as amended by Amendment F;
+   recorded fallback >=0.125,<1, exercised only on a documented live
+   failure).
    Never upgrade to `latest`,
    and never upgrade any of these
    without an amendment to docs/decisions/decision-register.md in its own
@@ -62,7 +65,11 @@ approves every contract.
     emits their properties files at the sync fixed point
     (docs/spec/engine.md §6), and they are reviewed as generated code in
     regeneration PRs under the ownership manifest. Every review obligation
-    in this rule applies to them unchanged.
+    in this rule applies to them unchanged. At adoption (D-35), sync may
+    CREATE the silver properties file from an approved contract (F-27) and
+    `make enforce-properties` adds only contract.enforced and the not_null
+    constraints the contract implies (D-16 Amendment J); the file stays
+    human-owned and is reviewed in the model PR.
 12. Gold is the unified event star per docs/spec/gold-unified-event-star.md:
     content-addressed values/columns dimensions, category-parameterized fact
     tables, context_registry, and typed projection views. Star tables and the
@@ -86,19 +93,37 @@ approves every contract.
     _row_count, or transaction with a degenerate id); never emit a fact model
     without a declared grain.
 
-15. The two proposer agents are each ONE structured API call: model
-    claude-sonnet-5 (pinned; never latest), GA structured outputs
-    (output_config.format json_schema), effort explicit, max_tokens capped.
-    No tools, no MCP, no loops at proposer runtime. A proposer reads one
+15. The two proposer agents are each ONE structured API call through the
+    anthropic SDK at its pinned line (rule 1): model claude-sonnet-5 by
+    default (a pinned snapshot ID; never latest), GA structured outputs
+    (output_config.format json_schema) against the proposer's PROPOSAL
+    schema under docs/spec/agent-layer/, never the frozen
+    mapping-contract schema, which validates the rendered output instead
+    (F-26), effort explicit (output_config.effort), max_tokens capped. The
+    model may be swapped per run only to an allow-listed ID (D-34:
+    claude-sonnet-5, claude-opus-5, claude-fable-5) via --model or
+    MM_PROPOSER_MODEL; the model actually used is recorded in the proposal
+    record and stamped as modelId in provenance; an unlisted ID fails
+    closed before any call; adding a model is a register amendment. No
+    tools, no MCP, no loops at proposer runtime. A proposer reads one
     profile artifact and writes ONLY to the gitignored proposals/ outbox,
-    never to contracts/, transform/, or the warehouse. Validation failures
-    retry at most twice, then fail closed with nothing written.
+    never to contracts/, transform/, or the warehouse. Validation
+    failures retry at most twice, then fail closed with nothing written.
+    A proposer runs in a governed stance (D-35: cleanup, describe, amend
+    for silver; propose, amend for mapping); a stance is a mode, never a
+    third agent. Its inputs are a fixed, configured list of governed,
+    hashed artifacts (the profile; for amend, the committed contract and
+    the operator's intent), never anything retrieved (D-23 Amendment H).
+    The adoption scan (make scan) and the batch driver (make
+    propose-queue) are deterministic code, never agents.
 
 16. Agent prompts are versioned artifacts in src/metricmine/agents/prompts/
     with semver headers; change them only via pull request. Every proposed
     contract carries provenance customProperties (proposedBy,
-    proposerVersion, promptVersion, modelId, profileHash, proposedAt);
-    hand-written contracts use the same keys with proposedBy: human.
+    proposerVersion, promptVersion, modelId, profileHash, proposedAt,
+    proposerStance; amendments also amendsContract as
+    <id>@<version>#sha256:<hash>, D-22 Amendment I); hand-written
+    contracts use the same keys with proposedBy: human and no stance.
     Never strip or fabricate provenance. Hand-written contracts not
     derived from a profile artifact (the pattern-derived gold star
     contract) carry profileHash ABSENT plus a provenanceNote stating why:
@@ -109,7 +134,12 @@ approves every contract.
     into contracts/ on a branch, version bump, contract-only PR (rule 6
     holds). Never auto-merge a proposal, never write an agent draft
     directly into contracts/, and never let an agent weaken a contract to
-    pass a gate. make demo must always run with no API key.
+    pass a gate. make demo must always run with no API key. An amendment
+    never relaxes a contract without --allow-relaxation, a major bump,
+    and the printed rule-6 warning (D-35); required additions enter
+    optional and tighten after the model lands (F-28). On a fail-closed
+    exit, report and stop; never re-invoke a proposer unattended (D-10
+    Amendment G).
 
 18. Serving is read-only, three layers deep, through one module. All gold
     access goes through src/metricmine/query.py; the MCP server is a thin
@@ -131,7 +161,10 @@ approves every contract.
 ## Architecture boundaries
 - Exactly two agents exist in the pipeline: a silver cleanup proposer and a
   gold mapping proposer. Both emit ODCS contracts. Neither writes
-  code, touches data, or runs transformations.
+  code, touches data, or runs transformations. The count is of named
+  proposers; stances are modes of those two (D-35), and the adoption
+  scan, verify-grain, enforce-properties, and the batch driver are
+  deterministic code, never agents (D-10 Amendment G).
 - The auto-modeling engine (src/metricmine/engine/) is deterministic code,
   not an agent: approved contracts in, emitted gold dbt models out, per
   docs/spec/engine.md. It never runs at proposer runtime, never executes
@@ -173,6 +206,11 @@ The MCP server runs on the official mcp SDK over stdio, pinned to the 1.x
 maintenance line (D-32 as amended; mcp 2.x cannot co-resolve with
 PyAirbyte, F-22). The served database resolves MM_SERVE_DB, then
 demo/demo.duckdb (F-25).
+
+The proposer agents call the Anthropic Messages API through the official
+anthropic SDK on the 1.0.x line (D-21 Amendment F) with ANTHROPIC_API_KEY
+from the environment. make demo, the pytest lane, and CI never need a
+key; the live lane is opt-in (make eval-agents).
 
 Toolchain behavior was verified empirically before Phase 1 exit. Before
 working on contracts, CI, or dbt models, read
