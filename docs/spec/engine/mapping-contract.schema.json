@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/metricminellc/metricmine/main/docs/spec/engine/mapping-contract.schema.json",
   "title": "MetricMine mapping contract",
-  "description": "Machine-readable half of docs/spec/engine.md section 2. Validates a parsed mapping-contract YAML document: the auto-modeling engine's input, and the gold mapping proposer's structured-output schema in Phase 6 (D-21). Every mapping element is first-class; customProperties carry provenance and rationale only.",
+  "description": "Machine-readable half of docs/spec/engine.md section 2. Validates a parsed mapping-contract YAML document: the auto-modeling engine's input, and the validator for the gold mapping proposer's rendered output in Phase 6 (D-21 as amended, F-26; the proposer emits against the projected schema in docs/spec/agent-layer/). Every mapping element is first-class; customProperties carry provenance and rationale only.",
   "type": "object",
   "required": ["apiVersion", "kind", "id", "name", "version", "status", "schema", "customProperties"],
   "properties": {
