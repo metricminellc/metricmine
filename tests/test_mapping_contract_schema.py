@@ -2,7 +2,7 @@
 
 Spec: docs/spec/engine.md. The schema is the machine-readable half of the
 mapping contract shape, frozen at the engine-spec PR because Phase 6's
-gold mapping proposer emits structured output against this exact schema
+gold mapping proposer's rendered output is validated against this exact schema
 (D-21); a change here is a spec amendment in its own PR.
 
 Beyond the example, every REAL mapping contract living flat in contracts/
