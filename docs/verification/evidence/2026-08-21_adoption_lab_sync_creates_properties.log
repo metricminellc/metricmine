@@ -1,0 +1,21 @@
+0_0__silver_country_daily_sales__row_count_85_at_v0001.sql
+  + 
+tests/datacontract_cli/silver_country_daily_sales/silver_country_daily_sales__1_
+0_0__silver_country_daily_sales__line_count__line_count_is_never_negative.sql
+  + 
+tests/datacontract_cli/silver_country_daily_sales/silver_country_daily_sales__1_
+0_0__silver_country_daily_sales__grain_enforcement__no_duplicate__country.sql
+Run `datacontract dbt test` to execute the generated tests.
+version: 2
+models:
+  - name: silver_country_daily_sales
+    description: 'One row per distinct (country, sales_date). The 2 grain columns are flagged primaryKey so sync generates the composite uniqueness test; that generated test is warn-severity by tool design at datacontract-cli 1.0.12, and the error-severity grain rule below is the enforcing twin (rule 5: uniqueness as a test, never a trusted constraint).'
+    config:
+      meta:
+        datacontract_cli:
+          contract_id: silver_country_daily_sales
+    columns:
+      - name: country
+        data_type: VARCHAR
+        description: country as produced by the existing model (VARCHAR, 22 distinct at v0001).
+0
