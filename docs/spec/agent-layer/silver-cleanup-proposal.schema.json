@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/metricminellc/metricmine/main/docs/spec/agent-layer/silver-cleanup-proposal.schema.json",
+  "title": "MetricMine silver cleanup proposal",
+  "description": "Structured-outputs schema for the silver cleanup proposer (D-21 as amended, D-34): one action per bronze column plus table-level dedupe, grain, and decisions. The harness renders a proposal to an ODCS silver contract mirroring silver v1.1.0; datacontract lint and the deterministic validator gate it.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "target_table",
+    "columns",
+    "dedupe_strategy",
+    "dedupe_keys",
+    "grain_keys",
+    "decisions",
+    "purpose",
+    "usage",
+    "limitations"
+  ],
+  "properties": {
+    "target_table": {
+      "type": "string",
+      "description": "silver table name, snake_case, starting with silver_."
+    },
+    "columns": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source_column",
+          "action",
+          "target_name",
+          "logical_type",
+          "physical_type",
+          "required",
+          "null_handling",
+          "rationale"
+        ],
+        "properties": {
+          "source_column": {
+            "type": "string",
+            "description": "Exact bronze column name from the profile."
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "keep",
+              "rename",
+              "cast",
+              "rename_and_cast",
+              "drop",
+              "derive_flag"
+            ]
+          },
+          "target_name": {
+            "type": "string",
+            "description": "Silver column name (snake_case). Equal to source_column for keep/cast; empty string for drop."
+          },
+          "logical_type": {
+            "type": "string",
+            "enum": [
+              "string",
+              "integer",
+              "number",
+              "boolean",
+              "date"
+            ]
+          },
+          "physical_type": {
+            "type": "string",
+            "description": "Target DuckDB type, e.g. VARCHAR, INTEGER, DECIMAL(10,2), TIMESTAMP, BOOLEAN."
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "null_handling": {
+            "type": "string",
+            "enum": [
+              "retain_null",
+              "fail_on_null",
+              "not_applicable"
+            ]
+          },
+          "rationale": {
+            "type": "string",
+            "description": "One sentence citing profile evidence (null_rate, distinct_count, samples)."
+          }
+        }
+      },
+      "minItems": 1
+    },
+    "dedupe_strategy": {
+      "type": "string",
+      "enum": [
+        "none",
+        "exact_duplicates",
+        "exact_duplicates_and_clock_drift"
+      ]
+    },
+    "dedupe_keys": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "grain_keys": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "description": "Target column names forming the declared grain; rendered as primaryKey positions and the error-severity grain rule."
+    },
+    "decisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "value",
+          "rationale"
+        ],
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          },
+          "rationale": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Rendered as customProperties decision* keys, the convention silver v1.1.0 established."
+    },
+    "purpose": {
+      "type": "string"
+    },
+    "usage": {
+      "type": "string"
+    },
+    "limitations": {
+      "type": "string"
+    }
+  }
+}

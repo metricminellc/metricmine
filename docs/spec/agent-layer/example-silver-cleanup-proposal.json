@@ -1,0 +1,31 @@
+{
+  "target_table": "silver_invoice_lines",
+  "columns": [
+    {"source_column": "invoice", "action": "rename", "target_name": "invoice_id", "logical_type": "string", "physical_type": "VARCHAR", "required": true, "null_handling": "not_applicable", "rationale": "Identifier kept as text; 2330 distinct, null_rate 0.0; C-prefixed values are cancellation invoices."},
+    {"source_column": "invoice", "action": "derive_flag", "target_name": "is_cancellation", "logical_type": "boolean", "physical_type": "BOOLEAN", "required": true, "null_handling": "not_applicable", "rationale": "True when invoice starts with C; cancellations are retained and flagged so conservation against bronze stays auditable."},
+    {"source_column": "stockcode", "action": "rename", "target_name": "stock_code", "logical_type": "string", "physical_type": "VARCHAR", "required": true, "null_handling": "not_applicable", "rationale": "Alphanumeric product codes and adjustment codes (POST, M) occur; text, null_rate 0.0."},
+    {"source_column": "description", "action": "rename", "target_name": "product_description", "logical_type": "string", "physical_type": "VARCHAR", "required": false, "null_handling": "retain_null", "rationale": "null_rate 0.005 at v0001; nulls retained rather than imputed; whitespace-trimmed."},
+    {"source_column": "quantity", "action": "cast", "target_name": "quantity", "logical_type": "integer", "physical_type": "INTEGER", "required": true, "null_handling": "not_applicable", "rationale": "Landed DECIMAL(38,9) with integral samples; cast to INTEGER; negative only on cancellation lines."},
+    {"source_column": "invoicedate", "action": "rename_and_cast", "target_name": "invoiced_at", "logical_type": "date", "physical_type": "TIMESTAMP", "required": true, "null_handling": "fail_on_null", "rationale": "Landed VARCHAR in YYYY-MM-DD HH:MM:SS form; strict cast so an unparseable value fails the build rather than becoming a silent null."},
+    {"source_column": "price", "action": "rename_and_cast", "target_name": "unit_price", "logical_type": "number", "physical_type": "DECIMAL(10,2)", "required": true, "null_handling": "not_applicable", "rationale": "Sterling unit price landed DECIMAL(38,9), observed range 0.00 to 1998.49; zero-price lines retained; negative prices contract-invalid."},
+    {"source_column": "customer_id", "action": "cast", "target_name": "customer_id", "logical_type": "integer", "physical_type": "INTEGER", "required": false, "null_handling": "retain_null", "rationale": "null_rate 0.29778 (guest checkouts) retained as null; integral samples 12346 to 18287 cast to INTEGER."},
+    {"source_column": "country", "action": "keep", "target_name": "country", "logical_type": "string", "physical_type": "VARCHAR", "required": true, "null_handling": "not_applicable", "rationale": "Customer country as landed; 24 distinct values."},
+    {"source_column": "_airbyte_raw_id", "action": "drop", "target_name": "", "logical_type": "string", "physical_type": "VARCHAR", "required": false, "null_handling": "not_applicable", "rationale": "PyAirbyte metadata (is_airbyte_metadata true); never a business column."},
+    {"source_column": "_airbyte_extracted_at", "action": "drop", "target_name": "", "logical_type": "date", "physical_type": "TIMESTAMP WITH TIME ZONE", "required": false, "null_handling": "not_applicable", "rationale": "PyAirbyte metadata (is_airbyte_metadata true); never a business column."},
+    {"source_column": "_airbyte_meta", "action": "drop", "target_name": "", "logical_type": "string", "physical_type": "JSON", "required": false, "null_handling": "not_applicable", "rationale": "PyAirbyte metadata (is_airbyte_metadata true); never a business column."}
+  ],
+  "dedupe_strategy": "exact_duplicates_and_clock_drift",
+  "dedupe_keys": ["invoice_id", "stock_code", "quantity", "unit_price"],
+  "grain_keys": ["invoice_id", "stock_code", "quantity", "unit_price"],
+  "decisions": [
+    {"key": "decisionCancellations", "value": "retained-and-flagged", "rationale": "Exclusion is a consumer decision made at the mapping contract, not silently here."},
+    {"key": "decisionExactDuplicates", "value": "excluded-as-capture-artifacts", "rationale": "duplicate_row_rate 0.011188 at v0001 reads as capture artifacts; identical legitimate re-scans are indistinguishable and also excluded."},
+    {"key": "decisionClockDriftDuplicates", "value": "collapsed-earliest-timestamp-retained", "rationale": "Rows identical in every business column except invoicedate are one capture seen across a register clock tick."},
+    {"key": "decisionNullCustomerId", "value": "retained-nullable", "rationale": "Guest or unregistered checkouts; not dropped, not imputed."},
+    {"key": "decisionZeroPriceLines", "value": "retained", "rationale": "Freebies and adjustments are real lines."},
+    {"key": "decisionInvoicedateCast", "value": "strict-timestamp-cast", "rationale": "An unparseable timestamp fails loudly."}
+  ],
+  "purpose": "The cleaned, typed, one-row-per-invoice-line view of the Online Retail II sample: the contracted silver table and the sole silver input to the gold unified event star.",
+  "usage": "Read silver.silver_invoice_lines for line-level retail sales analysis. Cancellation lines are retained and flagged; consumers aggregating revenue filter or net them deliberately.",
+  "limitations": "Exact duplicate bronze rows are excluded as capture artifacts; clock-drift re-scans collapse to the earliest timestamp; customer_id stays null on guest checkouts."
+}
