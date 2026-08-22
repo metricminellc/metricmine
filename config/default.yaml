@@ -42,3 +42,32 @@ engine:
 # newest artifact into the emitted context_registry model as VALUES literals.
 context:
   output_dir: context/compiled
+
+# Proposer agents per docs/spec/agent-layer.md (D-21 as amended by
+# Amendment F, D-24, D-34, D-35): one structured call per run; drafts and
+# records land only in the gitignored proposals/ outbox, and merge is
+# approval. Each proposer runs in a governed stance (D-35): a stance is a
+# config block here plus a prompt plus a validator branch, never a new
+# agent. The default model and the allow-list live in
+# src/metricmine/agents/models.py by decision (D-34): moving either is a
+# register amendment, never a config edit.
+agents:
+  effort: high
+  max_tokens: 8192
+  max_retries: 2
+  outbox_dir: proposals
+  silver:
+    stances:
+      cleanup:
+        profile_dir: profiles/bronze.online_retail_ii
+        prompt: src/metricmine/agents/prompts/silver_cleanup.md
+        proposal_schema: docs/spec/agent-layer/silver-cleanup-proposal.schema.json
+        target_contract: contracts/silver_invoice_lines.odcs.yaml
+  mapping:
+    stances:
+      propose:
+        profile_dir: profiles/silver.silver_invoice_lines
+        prompt: src/metricmine/agents/prompts/gold_mapping.md
+        proposal_schema: docs/spec/agent-layer/gold-mapping-proposal.schema.json
+        target_contract: contracts/gold_invoice_lines_mapping.odcs.yaml
+        contract_schema: docs/spec/engine/mapping-contract.schema.json
