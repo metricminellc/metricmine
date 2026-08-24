@@ -64,3 +64,10 @@ demo: ingest
 # (D-24). Drafts land in the outbox; nothing under contracts/ moves.
 .PHONY: regenerate
 regenerate: propose-silver propose-mapping
+
+# The live eval lane over the golden-profile set (D-25): first-attempt lint
+# and groundedness pass rates with token and cost actuals; honors the D-34
+# override the same way. Needs the key; never runs in CI.
+.PHONY: eval-agents
+eval-agents:
+	uv run python -m metricmine.agents eval $(MODEL_FLAG)
