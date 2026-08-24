@@ -94,6 +94,11 @@ make export-demo
 uv run pytest -q
 ```
 
+Steps 1 to 3 also run as one command, `make demo`: it lands bronze,
+installs the dbt packages, builds the contracted models, and exports the
+artifact, keyless by construction (a CI test proves the chain never
+invokes a proposer). Run `uv run pytest -q` after it to verify.
+
 What to expect, step by step:
 
 1. `make ingest` provisions a small connector environment on first run,

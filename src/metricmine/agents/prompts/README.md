@@ -1,10 +1,14 @@
 # Proposer prompts: template anatomy and versioning (D-22)
 
 Prompts are versioned artifacts. One file per proposer stance lives in
-this directory (`silver_cleanup.md`, `gold_mapping.md`; both land in the
-prompt PR that follows the harness). The harness refuses to run without
-the prompt file for the invoked stance, and it refuses a prompt whose
-front matter carries no `version`.
+this directory (`silver_cleanup.md` for the silver `cleanup` stance,
+`gold_mapping.md` for the mapping `propose` stance; later stances add
+their own file). The harness refuses to run without the prompt file for
+the invoked stance, and it refuses a prompt whose front matter carries no
+`version`. `tests/agents/test_prompts.py` holds every prompt to this
+anatomy: the schema summary must name every property and enum value of
+its proposal schema, the payload sentence must be present verbatim, and
+no model may be named.
 
 ## Front-matter header contract
 
@@ -15,7 +19,7 @@ Every prompt begins with a YAML front-matter block, read at runtime:
 version: 1.0.0        # semver; stamped as promptVersion in provenance
 date: 2026-08-22      # the date this version landed
 changelog: >          # one entry per version, newest first
-  1.0.0 — initial prompt.
+  1.0.0: initial prompt.
 ---
 ```
 

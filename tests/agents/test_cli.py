@@ -49,3 +49,28 @@ def test_bogus_model_exits_one_without_a_network_call() -> None:
     )
     assert proc.returncode == 1
     assert "allow-list" in proc.stderr
+
+
+def test_keyless_propose_refuses_and_writes_nothing() -> None:
+    # The subprocess resolves the real repo root, where a gitignored
+    # proposals/ outbox may already exist: snapshot it and assert the
+    # refusal changes nothing, which also covers the fresh-clone case
+    # where the folder must not appear at all.
+    outbox = REPO_ROOT / "proposals"
+
+    def snapshot() -> tuple[bool, list[str]]:
+        if not outbox.exists():
+            return False, []
+        return True, sorted(str(p) for p in outbox.rglob("*"))
+
+    before = snapshot()
+    proc = subprocess.run(
+        [sys.executable, "-m", "metricmine.agents", "propose", "mapping"],
+        capture_output=True,
+        text=True,
+        env=_keyless_env(),
+        cwd=REPO_ROOT,
+    )
+    assert proc.returncode == 1
+    assert "ANTHROPIC_API_KEY is not set" in proc.stderr
+    assert snapshot() == before

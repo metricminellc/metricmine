@@ -1,0 +1,135 @@
+# Draft proposed by gold-mapping-proposer v0.1.0 at 2026-08-24T13:39:25.460838+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: gold_invoice_lines_mapping
+name: Gold mapping, invoice_lines category
+version: 1.2.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: This mapping declares how the contracted silver.silver_invoice_lines table enters
+    the gold unified event star as the invoice_lines fact category, stating its time column,
+    grain, identifiers, and field roles for the deterministic modeling engine that renders
+    the gold models from it.
+  usage: The rendered mapping contract is validated against the frozen mapping-contract schema,
+    linted, and reviewed by a human before approval; once approved, the deterministic modeling
+    engine consumes it to emit the gold invoice_lines models at minute grain keyed by the
+    derived line_identity.
+  limitations: The mapping does not filter or reinterpret is_cancellation rows, aggregate
+    returns against sales, or resolve the roughly 30% of lines with a null customer_id; it
+    leaves any exclusion, netting, or customer-attribution decision to downstream consumers,
+    and it does not correct nulls in product_description (0.005098 null_rate).
+schema:
+- name: invoice_lines
+  logicalType: object
+  physicalType: mapping
+  description: Each row is one product line on a retail invoice, capturing the stock code,
+    quantity, and unit price transacted at a point in time, along with the invoice, customer,
+    cancellation flag, and country context for that line.
+  entityGroup: invoice_lines
+  sourceTable: silver.silver_invoice_lines
+  timeColumn: invoiced_at
+  timeGrain: minute
+  grain:
+    type: transaction
+    degenerateIdentifiers:
+    - source: derived
+      name: line_identity
+      derivation: canonical-key-v2
+      of:
+      - invoice_id
+      - stock_code
+      - invoiced_at
+  properties:
+  - name: invoice_id
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    mappingRole: dimension
+    description: Groups invoice lines under one invoice number such as 489434-489443 in the
+      samples; null_rate is 0.0 so every line carries an invoice_id, but distinct_count 2330
+      versus row_count 44721 shows the value repeats across the lines of a multi-item invoice.
+  - name: is_cancellation
+    logicalType: boolean
+    physicalType: BOOLEAN
+    required: true
+    mappingRole: dimension
+    description: Flags whether the line represents a cancellation, taking the two distinct_values
+      false and true with null_rate 0.0, so it labels the line rather than measuring it.
+  - name: stock_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    mappingRole: dimension
+    description: Identifies the product or stock keeping unit sold on the line, with sample
+      codes like 10002 and 10123C and distinct_count 3141 well under row_count, confirming
+      products repeat across many lines; null_rate is 0.0.
+  - name: product_description
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    mappingRole: dimension
+    description: Free-text description of the product such as '12 PENCIL SMALL TUBE WOODLAND';
+      null_rate 0.005098 with 228 nulls shows the field is nullable, plausibly for stock codes
+      lacking a catalog description.
+  - name: quantity
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    mappingRole: measure
+    description: Net units transacted on the line, ranging from -1395 to 5184 per the profile
+      min/max with null_rate 0.0; negative sample values such as -1395 and -1043 indicate
+      this measure captures returns as well as sales and is summed across lines.
+  - name: invoiced_at
+    logicalType: date
+    physicalType: TIMESTAMP
+    required: true
+    mappingRole: time
+    description: Timestamps the invoice line to the minute, with samples like 2009-12-01T07:45:00
+      and min/max spanning 2009-12-01 to 2009-12-23; null_rate is 0.0 so every line is timestamped.
+  - name: unit_price
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: true
+    mappingRole: measure
+    description: Price per unit for the line, ranging from 0.0 to 1998.49 per the profiled
+      min/max with null_rate 0.0, used to compute and compare monetary amounts across lines.
+  - name: customer_id
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    mappingRole: dimension
+    description: Numeric customer identifier ranging 12346 to 18287 in the samples; null_rate
+      0.300664 with 13446 nulls shows roughly 30% of lines lack a customer_id, consistent
+      with unregistered or guest transactions, and as an identifier it labels rather than
+      measures.
+  - name: country
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    mappingRole: dimension
+    description: Country associated with the invoice line, drawn from 24 distinct values such
+      as Australia, Austria, and Belgium in the samples, with null_rate 0.0.
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: gold
+customProperties:
+- property: proposedBy
+  value: gold-mapping-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.0.0
+- property: modelId
+  value: claude-sonnet-5
+- property: profileHash
+  value: sha256:e65bee8117b65958b8c4741b43509ece19a581dd1d6bad9a7e1da9b67b0b5fcd
+- property: proposedAt
+  value: '2026-08-24'
+- property: proposerStance
+  value: propose

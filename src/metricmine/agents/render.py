@@ -241,14 +241,42 @@ def render_cleanup(proposal: dict, provenance: Provenance, version: str) -> dict
     }
 
 
-def to_yaml(doc: dict, header_lines: list[str]) -> str:
-    """Block-style YAML behind a comment header; same inputs, same bytes."""
-    header = "".join(f"# {line}\n" for line in header_lines)
-    body = yaml.dump(
+class _LiteralDumper(yaml.SafeDumper):
+    """SafeDumper that writes multi-line strings as literal blocks (`|`).
+
+    The committed contracts write SQL rule queries as literal blocks; the
+    default dumper renders the same string as an escaped double-quoted
+    scalar, which lint accepts but a reviewer cannot read (Session N
+    item 13). Single-line strings keep the default representation. The
+    representer is registered on this subclass only, never on
+    yaml.SafeDumper globally.
+    """
+
+
+def _represent_str(dumper: yaml.SafeDumper, value: str) -> yaml.ScalarNode:
+    style = "|" if "\n" in value else None
+    return dumper.represent_scalar("tag:yaml.org,2002:str", value, style=style)
+
+
+_LiteralDumper.add_representer(str, _represent_str)
+
+
+def dump_yaml(doc: dict, width: int = 88) -> str:
+    """The one YAML serialization: block style, insertion order, literal
+    blocks for multi-line strings. Shared by to_yaml and the terminal
+    diff's normalization so both sides of a diff take the same path; the
+    diff passes a width no scalar reaches, so one element is one line."""
+    return yaml.dump(
         doc,
+        Dumper=_LiteralDumper,
         sort_keys=False,
-        width=88,
+        width=width,
         allow_unicode=True,
         default_flow_style=False,
     )
-    return header + body
+
+
+def to_yaml(doc: dict, header_lines: list[str]) -> str:
+    """Block-style YAML behind a comment header; same inputs, same bytes."""
+    header = "".join(f"# {line}\n" for line in header_lines)
+    return header + dump_yaml(doc)
