@@ -33,3 +33,34 @@ context:
 .PHONY: export-demo
 export-demo:
 	uv run python -m metricmine.export_demo
+
+# Proposer agents per docs/spec/agent-layer.md §4 (D-24, D-34, D-35): one
+# structured call per target, writing a draft contract plus its record to
+# the gitignored proposals/ outbox; merge is approval. ANTHROPIC_API_KEY
+# must be present in the shell that runs these targets; nothing here reads
+# or prints it. The model swaps within the D-34 allow-list either through
+# MM_PROPOSER_MODEL or per run: `make propose-silver MODEL=claude-opus-5`.
+MODEL ?=
+MODEL_FLAG := $(if $(MODEL),--model $(MODEL),)
+
+.PHONY: propose-silver
+propose-silver:
+	uv run python -m metricmine.agents propose silver $(MODEL_FLAG)
+
+.PHONY: propose-mapping
+propose-mapping:
+	uv run python -m metricmine.agents propose mapping $(MODEL_FLAG)
+
+# The keyless replay (D-24; docs/demo.md path B in one command): land the
+# committed sample into bronze, build the contracted models, export the
+# demo artifact. No API key, no account, no network beyond the package hub.
+.PHONY: demo
+demo: ingest
+	uv run dbt deps --project-dir transform --profiles-dir transform
+	uv run dbt build --project-dir transform --profiles-dir transform --target local
+	$(MAKE) export-demo
+
+# The live regenerate path chains the two proposers in pipeline order
+# (D-24). Drafts land in the outbox; nothing under contracts/ moves.
+.PHONY: regenerate
+regenerate: propose-silver propose-mapping
