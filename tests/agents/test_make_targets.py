@@ -88,6 +88,15 @@ def test_demo_is_the_keyless_replay_and_never_invokes_a_proposer() -> None:
             assert marker not in line, f"demo chain invokes a proposer: {line!r}"
 
 
+def test_eval_agents_is_the_live_lane() -> None:
+    targets = _parse()
+    prerequisites, recipe = targets["eval-agents"]
+    assert prerequisites == []
+    assert len(recipe) == 1
+    assert recipe[0].startswith("uv run python -m metricmine.agents eval")
+    assert "$(MODEL_FLAG)" in recipe[0]  # the D-34 per-run override
+
+
 def test_dbt_lines_follow_the_repo_root_invocation_convention() -> None:
     targets = _parse()
     for line in _chain(targets, "demo"):

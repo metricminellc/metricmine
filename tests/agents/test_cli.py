@@ -74,3 +74,17 @@ def test_keyless_propose_refuses_and_writes_nothing() -> None:
     assert proc.returncode == 1
     assert "ANTHROPIC_API_KEY is not set" in proc.stderr
     assert snapshot() == before
+
+
+def test_keyless_eval_refuses_before_any_call() -> None:
+    # The refusal precedes client construction, so no network call is
+    # possible; the message names the live lane (D-25).
+    proc = subprocess.run(
+        [sys.executable, "-m", "metricmine.agents", "eval"],
+        capture_output=True,
+        text=True,
+        env=_keyless_env(),
+        cwd=REPO_ROOT,
+    )
+    assert proc.returncode == 1
+    assert "ANTHROPIC_API_KEY is not set" in proc.stderr
