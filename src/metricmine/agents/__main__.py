@@ -14,6 +14,7 @@ import argparse
 import sys
 from pathlib import Path
 
+from metricmine.agents import eval as eval_lane
 from metricmine.agents import harness, mapping_proposer, silver_proposer
 
 
@@ -47,9 +48,31 @@ def main(argv: list[str] | None = None) -> int:
         help="allow-listed model ID override (D-34); precedence "
         "--model, then MM_PROPOSER_MODEL, then the pinned default",
     )
+    evaluate = subparsers.add_parser(
+        "eval",
+        help="the live eval lane over the golden-profile set (D-25); "
+        "needs a key",
+    )
+    evaluate.add_argument(
+        "--model",
+        default=None,
+        help="allow-listed model ID override (D-34), the same precedence "
+        "as propose",
+    )
+    evaluate.add_argument(
+        "--fixture",
+        action="append",
+        default=None,
+        metavar="LABEL",
+        help="run only the named fixture label(s) from agents.eval.fixtures",
+    )
     args = parser.parse_args(argv)
 
     repo_root = Path(__file__).resolve().parents[3]
+    if args.command == "eval":
+        return eval_lane.run_eval(
+            repo_root, model_flag=args.model, labels=args.fixture
+        )
     build = (
         silver_proposer.build_spec
         if args.proposer == "silver"

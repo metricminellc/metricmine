@@ -1,0 +1,35 @@
+{
+  "target_table": "silver_messy_orders",
+  "columns": [
+    {"source_column": "Order ID", "action": "rename", "target_name": "order_id", "logical_type": "string", "physical_type": "VARCHAR", "required": true, "null_handling": "not_applicable", "rationale": "Identifier kept as text and renamed to snake_case; null_rate 0.0; 4000 distinct over 5000 rows, so an order spans several lines."},
+    {"source_column": "LineNo", "action": "rename", "target_name": "line_no", "logical_type": "integer", "physical_type": "INTEGER", "required": true, "null_handling": "not_applicable", "rationale": "Line position within an order, renamed to snake_case; null_rate 0.0; distinct_values 1 through 7."},
+    {"source_column": "sku", "action": "keep", "target_name": "sku", "logical_type": "string", "physical_type": "VARCHAR", "required": true, "null_handling": "not_applicable", "rationale": "Product code kept as text; null_rate 0.0; 320 distinct; samples mix numeric codes, suffixed codes (84029E), and adjustment codes (POST, DOT, BANK CHARGES)."},
+    {"source_column": "qty", "action": "keep", "target_name": "qty", "logical_type": "string", "physical_type": "VARCHAR", "required": false, "null_handling": "retain_null", "rationale": "Kept as text: samples disagree (integers, -3, 2.0, and the words three and twelve), so no cast is safe from this evidence; null_rate 0.002 retained as null."},
+    {"source_column": "unit_price", "action": "cast", "target_name": "unit_price", "logical_type": "number", "physical_type": "DECIMAL(10,2)", "required": true, "null_handling": "not_applicable", "rationale": "Landed DECIMAL(38,9) with two-decimal samples, min -5.0 and max 1250.0; null_rate 0.0; negative prices retained for review."},
+    {"source_column": "order_ts", "action": "cast", "target_name": "order_ts", "logical_type": "date", "physical_type": "TIMESTAMP", "required": true, "null_handling": "fail_on_null", "rationale": "Every sample is ISO-shaped YYYY-MM-DD HH:MM:SS text with null_rate 0.0; strict cast so an unparseable value fails the build."},
+    {"source_column": "ship_date", "action": "keep", "target_name": "ship_date", "logical_type": "string", "physical_type": "VARCHAR", "required": false, "null_handling": "retain_null", "rationale": "Kept as text: samples mix ISO dates, day-first and month-first slashes, dotted dates, a month name, and placeholders (TBD, n/a, pending); null_rate 0.264 retained as null."},
+    {"source_column": "customer_email", "action": "keep", "target_name": "customer_email", "logical_type": "string", "physical_type": "VARCHAR", "required": false, "null_handling": "retain_null", "rationale": "Sparsely populated: null_rate 0.97 with 140 distinct values; retained as nullable, never imputed."},
+    {"source_column": "notes", "action": "keep", "target_name": "notes", "logical_type": "string", "physical_type": "VARCHAR", "required": false, "null_handling": "retain_null", "rationale": "Free text with null_rate 0.61 and 2100 distinct values; one sample is truncated at the profiler cap and the samples carry arbitrary operator text, so the column is retained as data without interpretation."},
+    {"source_column": "status", "action": "keep", "target_name": "status", "logical_type": "string", "physical_type": "VARCHAR", "required": true, "null_handling": "not_applicable", "rationale": "Kept as text; null_rate 0.0; distinct_values show the same states in mixed case (CANCELLED, cancelled, Shipped, shipped, pending), a normalization for review."},
+    {"source_column": "is_gift", "action": "keep", "target_name": "is_gift", "logical_type": "string", "physical_type": "VARCHAR", "required": false, "null_handling": "retain_null", "rationale": "Kept as text: distinct_values mix N, Y, no, and yes, so a boolean cast needs a mapping review first; null_rate 0.012 retained as null."},
+    {"source_column": "source_system", "action": "keep", "target_name": "source_system", "logical_type": "string", "physical_type": "VARCHAR", "required": true, "null_handling": "not_applicable", "rationale": "Constant column: one distinct value (legacy_pos) with null_rate 0.0; retained as landed."},
+    {"source_column": "_airbyte_raw_id", "action": "drop", "target_name": "", "logical_type": "string", "physical_type": "VARCHAR", "required": false, "null_handling": "not_applicable", "rationale": "PyAirbyte metadata (is_airbyte_metadata true); never a business column."},
+    {"source_column": "_airbyte_extracted_at", "action": "drop", "target_name": "", "logical_type": "date", "physical_type": "TIMESTAMP", "required": false, "null_handling": "not_applicable", "rationale": "PyAirbyte metadata (is_airbyte_metadata true); never a business column."},
+    {"source_column": "_airbyte_meta", "action": "drop", "target_name": "", "logical_type": "string", "physical_type": "JSON", "required": false, "null_handling": "not_applicable", "rationale": "PyAirbyte metadata (is_airbyte_metadata true); never a business column."}
+  ],
+  "dedupe_strategy": "exact_duplicates",
+  "dedupe_keys": ["order_id", "line_no", "sku", "order_ts"],
+  "grain_keys": ["order_id", "line_no"],
+  "decisions": [
+    {"key": "decisionExactDuplicates", "value": "excluded-as-capture-artifacts", "rationale": "duplicate_row_rate 0.08 over 5000 rows reads as capture artifacts; exact duplicates over (order_id, line_no, sku, order_ts) are excluded."},
+    {"key": "decisionGrain", "value": "order-id-and-line-no", "rationale": "4000 distinct Order ID values over 5000 rows with LineNo 1 through 7 make (order_id, line_no) the smallest plausible line identity; measured before approval."},
+    {"key": "decisionQtyKeptAsText", "value": "retained-text-pending-review", "rationale": "qty samples mix integers, decimals, and words; a cast needs a mapping review first."},
+    {"key": "decisionShipDateKeptAsText", "value": "retained-text-pending-review", "rationale": "ship_date samples carry several date shapes and placeholders; no single cast is safe."},
+    {"key": "decisionSparseColumns", "value": "retained-nullable", "rationale": "customer_email (null_rate 0.97) and notes (null_rate 0.61) are retained as nullable, never imputed."},
+    {"key": "decisionNegativeUnitPrice", "value": "retained-for-review", "rationale": "unit_price min is -5.0; negative prices are retained and flagged for review rather than silently dropped."},
+    {"key": "decisionMetadataColumns", "value": "dropped", "rationale": "The three _airbyte_ columns are capture-tool metadata, never business columns."}
+  ],
+  "purpose": "The cleaned, typed, one-row-per-order-line view of the messy_orders landing table: the contracted silver table for a source whose identifiers, quantities, and dates arrived inconsistent.",
+  "usage": "Read silver.silver_messy_orders for order-line analysis. qty, ship_date, and is_gift stay text until their mappings are reviewed; status values are not case-normalized here.",
+  "limitations": "Exact duplicate rows (rate 0.08 at v0001) are excluded as capture artifacts; customer_email is 97 percent null and notes 61 percent null; negative unit prices are retained for review."
+}

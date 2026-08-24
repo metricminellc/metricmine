@@ -158,6 +158,7 @@ def test_success_writes_draft_and_record_only(
     run_dir = _only_run_dir(root)
     assert sorted(p.name for p in run_dir.iterdir()) == [
         "draft.odcs.yaml",
+        "proposal.json",
         "record.json",
     ]
     record = json.loads((run_dir / "record.json").read_text(encoding="utf-8"))
@@ -262,6 +263,26 @@ def test_lint_failure_feeds_output_into_the_retry(
     assert len(lint_calls) == 2
     retry_turn = client.calls[1]["messages"][-1]["content"]
     assert "LINT BOOM" in retry_turn
+
+
+def test_attempt_log_records_each_attempt(
+    spec: ProposerSpec, root: Path, good_proposal: str
+) -> None:
+    lint_runner, _ = _lint_recorder(
+        [(False, "LINT BOOM: bad shape"), (True, "ok")]
+    )
+    client = FakeClient([_response(good_proposal)] * 2)
+    assert _run(spec, root, client, lint_runner=lint_runner) == 0
+    record = json.loads(
+        (_only_run_dir(root) / "record.json").read_text(encoding="utf-8")
+    )
+    log = record["validation"]["attempt_log"]
+    assert len(log) == 2
+    assert log[0]["schema_pass"] is True
+    assert log[0]["lint_pass"] is False
+    assert any("LINT BOOM" in e for e in log[0]["errors"])
+    assert log[1]["lint_pass"] is True
+    assert log[1]["errors"] == []
 
 
 def test_tampered_profile_refused_before_any_call(

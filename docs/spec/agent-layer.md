@@ -57,7 +57,7 @@ make propose-silver     # bronze profile -> draft cleanup contract
 make propose-mapping    # silver profile -> draft mapping contract
 ```
 
-1. **Propose.** The target selects the latest profile (or `--profile PATH`), runs the call, validates, and writes the draft contract plus its proposal record to `proposals/`, a **gitignored outbox**. Nothing under `contracts/` is touched. The terminal prints a rationale summary citing profile evidence, and, on regeneration (the draft carries the committed contract's id), a unified diff with both documents normalized through the same parse-and-dump path so comments and scalar styles never appear as changes; a first proposal for a new id starts its version line at 1.0.0 and prints no diff.
+1. **Propose.** The target selects the latest profile (or `--profile PATH`), runs the call, validates, and writes the draft contract, the validated proposal object (`proposal.json`), and its proposal record to `proposals/`, a **gitignored outbox**. Nothing under `contracts/` is touched. The terminal prints a rationale summary citing profile evidence, and, on regeneration (the draft carries the committed contract's id), a unified diff with both documents normalized through the same parse-and-dump path so comments and scalar styles never appear as changes; a first proposal for a new id starts its version line at 1.0.0 and prints no diff.
 2. **Review.** Open the draft in the editor and edit freely; the draft is the reviewer's to change. Business context added during review lands in the contract fields the context compiler already harvests (D-19).
 3. **Approve.** Copy the reviewed contract into `contracts/` on a branch with the version bump D-08 requires, and open the contract-only pull request. The three gates run. **Merge is approval.** Rejected drafts never leave the outbox.
 
@@ -65,7 +65,7 @@ make propose-mapping    # silver profile -> draft mapping contract
 
 ## 5. Evaluation: the golden-profile set (D-25)
 
-- **Fixtures:** two or three committed profile artifacts under `tests/agents/` (Online Retail II per D-15, the faker path, optionally one pathological case).
+- **Fixtures:** the golden-profile set named in `config/default.yaml` under `agents.eval.fixtures`: the two committed Online Retail II profiles by reference (D-15), one constructed pathological profile under `tests/agents/fixtures/profiles/` built by the script beside it, and the faker path when issue #15 lands. The recorded live proposals live under `tests/agents/fixtures/recorded/` for the render tests.
 - **Offline, every CI run, keyless:** the render path is tested against recorded proposals and the validator against constructed inputs, in the existing pytest lane.
 - **Live, manual:** `make eval-agents` runs both proposers against the fixtures when a key is present and reports **first-attempt lint pass rate** and **first-attempt groundedness pass rate**, with token and cost actuals. It honors the D-34 model override, so a model comparison is one command; comparing is enabled, not performed.
 - **Deferred by intent:** LLM-as-judge scoring, automated A/B optimization, drift dashboards.
@@ -82,7 +82,7 @@ No third runtime agent; the generate-and-verify authoring loop stays in the SDLC
 
 ## Appendix A: Proposal record fields
 
-`agent` (name, version) · `prompt_version` · `prompt_path` · `model_id` · `model_source` (`default` | `env` | `flag`) · `rates` (input_per_mtok, output_per_mtok) · `sdk_version` · `request_params` (effort, max_tokens) · `profile_path` · `profile_hash` · `profile_schema_version` · `created_at` · `response_id` · `stop_reason` · `usage` (input_tokens, output_tokens, summed over attempts) · `cost_usd_estimate` · `validation` (schema_pass, groundedness_pass, completeness_pass, staleness_pass, lint_pass, attempts, errors) · `api_error` (class, message; null unless the call itself failed) · `disposition` (`draft_written` | `failed_closed`) · `draft_path`
+`agent` (name, version) · `prompt_version` · `prompt_path` · `model_id` · `model_source` (`default` | `env` | `flag`) · `rates` (input_per_mtok, output_per_mtok) · `sdk_version` · `request_params` (effort, max_tokens) · `profile_path` · `profile_hash` · `profile_schema_version` · `created_at` · `response_id` · `stop_reason` · `usage` (input_tokens, output_tokens, summed over attempts) · `cost_usd_estimate` · `validation` (schema_pass, groundedness_pass, completeness_pass, staleness_pass, lint_pass, attempts, errors, attempt_log: one entry per attempt with the same pass flags and that attempt's errors) · `api_error` (class, message; null unless the call itself failed) · `disposition` (`draft_written` | `failed_closed`) · `draft_path`
 
 ## Appendix B: Contract provenance keys (ODCS customProperties)
 

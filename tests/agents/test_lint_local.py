@@ -13,6 +13,8 @@ from pathlib import Path
 
 import pytest
 
+from metricmine.agents import mapping_proposer, silver_proposer
+from metricmine.agents.harness import load_agents_config
 from metricmine.agents.render import (
     Provenance,
     render_cleanup,
@@ -23,6 +25,17 @@ from metricmine.agents.render import (
 pytestmark = pytest.mark.local
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+
+EVAL_FIXTURES = load_agents_config(REPO_ROOT)["eval"]["fixtures"]
+
+_RECORDED_BINDINGS = {
+    "silver": (render_cleanup, silver_proposer.NAME, silver_proposer.STANCE),
+    "mapping": (
+        render_mapping,
+        mapping_proposer.NAME,
+        mapping_proposer.STANCE,
+    ),
+}
 
 
 def test_rendered_mapping_example_lints_clean(tmp_path: Path) -> None:
@@ -75,6 +88,44 @@ def test_rendered_silver_tmp_draft_lints_clean(tmp_path: Path) -> None:
     draft = tmp_path / "draft.odcs.yaml.tmp"
     draft.write_text(
         to_yaml(document, ["Lint fixture.", "Review before approval (D-24)."]),
+        encoding="utf-8",
+    )
+    proc = subprocess.run(
+        ["datacontract", "lint", str(draft)], capture_output=True, text=True
+    )
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+
+
+@pytest.mark.parametrize("label", [f["label"] for f in EVAL_FIXTURES])
+def test_rendered_recorded_proposal_lints_clean(
+    label: str, tmp_path: Path
+) -> None:
+    # The recorded live proposals (D-25) re-render through the same path
+    # the harness takes; the real tool must accept every one of them, so
+    # a fourth fixture joins the parametrize with no test edit.
+    fixture = next(f for f in EVAL_FIXTURES if f["label"] == label)
+    render, name, stance = _RECORDED_BINDINGS[fixture["proposer"]]
+    proposal = json.loads(
+        (
+            REPO_ROOT / "tests" / "agents" / "fixtures" / "recorded"
+            / f"{label}.proposal.json"
+        ).read_text(encoding="utf-8")
+    )
+    provenance = Provenance(
+        proposed_by=name,
+        proposer_version="0.1.0",
+        prompt_version="1.0.0",
+        model_id="claude-sonnet-5",
+        profile_hash="sha256:" + "0" * 64,
+        proposed_at="2026-08-24",
+        extras={"proposerStance": stance},
+    )
+    draft = tmp_path / "draft.odcs.yaml"
+    draft.write_text(
+        to_yaml(
+            render(proposal, provenance, "1.2.0"),
+            ["Recorded fixture.", "Review before approval (D-24)."],
+        ),
         encoding="utf-8",
     )
     proc = subprocess.run(

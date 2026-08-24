@@ -1,0 +1,71 @@
+{
+  "cost_usd_estimate": 0.332052,
+  "created_at": "2026-08-24T14:49:39.030979+00:00",
+  "drafts_written": 3,
+  "exit": 0,
+  "first_attempt_groundedness_pass_rate": "1/3",
+  "first_attempt_lint_pass_rate": "1/3",
+  "fixtures": 3,
+  "input_tokens": 40416,
+  "model_id": "claude-sonnet-5",
+  "model_source": "default",
+  "output_tokens": 25122,
+  "rates": {
+    "input_per_mtok": 2.0,
+    "output_per_mtok": 10.0
+  },
+  "rows": [
+    {
+      "attempts": 2,
+      "cost_usd_estimate": 0.14247,
+      "disposition": "draft_written",
+      "exit": 0,
+      "first_attempt_groundedness_pass": false,
+      "first_attempt_lint_pass": false,
+      "input_tokens": 16565,
+      "label": "silver-cleanup-online-retail",
+      "output_tokens": 10934,
+      "profile": "profiles/bronze.online_retail_ii/v0001.json",
+      "profile_hash": "sha256:79f801e1d8182ee55a32a0e3323134a27fec839c5a5478edfb8f5683cf5221f0",
+      "prompt_version": "1.0.0",
+      "proposer": "silver-cleanup-proposer",
+      "run_dir": "proposals/silver-cleanup-proposer/20260824T144939Z_79f801e1",
+      "stance": "cleanup"
+    },
+    {
+      "attempts": 1,
+      "cost_usd_estimate": 0.041502,
+      "disposition": "draft_written",
+      "exit": 0,
+      "first_attempt_groundedness_pass": true,
+      "first_attempt_lint_pass": true,
+      "input_tokens": 6866,
+      "label": "mapping-propose-invoice-lines",
+      "output_tokens": 2777,
+      "profile": "profiles/silver.silver_invoice_lines/v0001.json",
+      "profile_hash": "sha256:e65bee8117b65958b8c4741b43509ece19a581dd1d6bad9a7e1da9b67b0b5fcd",
+      "prompt_version": "1.0.0",
+      "proposer": "gold-mapping-proposer",
+      "run_dir": "proposals/gold-mapping-proposer/20260824T144939Z_e65bee81",
+      "stance": "propose"
+    },
+    {
+      "attempts": 2,
+      "cost_usd_estimate": 0.14808,
+      "disposition": "draft_written",
+      "exit": 0,
+      "first_attempt_groundedness_pass": false,
+      "first_attempt_lint_pass": false,
+      "input_tokens": 16985,
+      "label": "silver-cleanup-messy-orders",
+      "output_tokens": 11411,
+      "profile": "tests/agents/fixtures/profiles/bronze.messy_orders/v0001.json",
+      "profile_hash": "sha256:d1da76a822e52f615a30282b009dcd11643e0c6a9a98c3ff0dcaaa057b946286",
+      "prompt_version": "1.0.0",
+      "proposer": "silver-cleanup-proposer",
+      "run_dir": "proposals/silver-cleanup-proposer/20260824T144939Z_d1da76a8",
+      "stance": "cleanup"
+    }
+  ],
+  "sdk_version": "1.0.0"
+}
