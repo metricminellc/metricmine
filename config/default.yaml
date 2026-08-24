@@ -71,3 +71,18 @@ agents:
         proposal_schema: docs/spec/agent-layer/gold-mapping-proposal.schema.json
         target_contract: contracts/gold_invoice_lines_mapping.odcs.yaml
         contract_schema: docs/spec/engine/mapping-contract.schema.json
+  # The golden-profile set for the live eval lane (D-25): the two committed
+  # profiles by reference plus one constructed pathological case (the faker
+  # path waits on issue #15). Labels name the recorded proposals under
+  # tests/agents/fixtures/recorded/.
+  eval:
+    fixtures:
+      - label: silver-cleanup-online-retail
+        proposer: silver
+        profile: profiles/bronze.online_retail_ii/v0001.json
+      - label: mapping-propose-invoice-lines
+        proposer: mapping
+        profile: profiles/silver.silver_invoice_lines/v0001.json
+      - label: silver-cleanup-messy-orders
+        proposer: silver
+        profile: tests/agents/fixtures/profiles/bronze.messy_orders/v0001.json
