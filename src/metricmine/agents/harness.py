@@ -3,9 +3,11 @@
 Spec: docs/spec/agent-layer.md §1–§4 (D-21 as amended by Amendment F,
 D-22, D-23 as amended by Amendment H, D-24, D-34) and CLAUDE.md rules
 15–17. One structured call per run; no tools, no MCP, no loops. Retries
-are bounded (errors fed back verbatim, then fail closed with nothing but
-the raw response preserved). Drafts and records land only in the
-gitignored outbox, temp-then-rename (the profiler writer's discipline).
+are bounded and apply only to errors the model can repair (errors fed
+back verbatim, then fail closed with nothing but the raw response
+preserved); staleness, integrity, and API errors fail closed at once
+(S-N-1). Drafts and records land only in the gitignored outbox,
+temp-then-rename (the profiler writer's discipline).
 
 Three D-35 readiness hooks, deliberately ahead of need:
 - HOOK 1: `stance` is a plain string resolved from the config block
@@ -43,7 +45,12 @@ import yaml
 from jsonschema import Draft202012Validator
 
 from metricmine.agents import models
-from metricmine.agents.render import Provenance, next_version, to_yaml
+from metricmine.agents.render import (
+    Provenance,
+    dump_yaml,
+    next_version,
+    to_yaml,
+)
 from metricmine.agents.validate import check_staleness
 from metricmine.profiling import canonical, writer
 
@@ -244,6 +251,14 @@ def run_proposer(
         resolved = models.resolve_model(model_flag)
     except models.ModelNotAllowedError as exc:
         return _fail(str(exc))
+    if client is None and not os.environ.get("ANTHROPIC_API_KEY"):
+        # Presence only: the value is never read beyond truthiness, never
+        # compared, never printed, never logged. Tests inject a client, so
+        # the check applies only when the harness constructs one itself.
+        return _fail(
+            "ANTHROPIC_API_KEY is not set; load it into this shell before "
+            "running a proposer (make demo and the test lane never need it)"
+        )
     if lint_runner is None:
         if shutil.which("datacontract") is None:
             return _fail(_INSTALL_REMEDY)
@@ -277,12 +292,17 @@ def run_proposer(
         )
 
     committed_version = None
+    committed_id = None
     if spec.target_contract.exists():
         committed = yaml.safe_load(
             spec.target_contract.read_text(encoding="utf-8")
         )
         committed_version = committed.get("version")
-    version = next_version(committed_version, "minor")
+        committed_id = committed.get("id")
+    # The version bumps the committed target only when the draft carries
+    # the SAME contract id (a regeneration); a first proposal for another
+    # id starts its own line at 1.0.0, whatever the configured target.
+    regen_version = next_version(committed_version, "minor")
 
     now = now or datetime.now(timezone.utc)
     created_at = now.isoformat()
@@ -293,6 +313,7 @@ def run_proposer(
         model_id=resolved.model_id,
         profile_hash=profile_hash,
         proposed_at=now.date().isoformat(),
+        extras={"proposerStance": spec.stance},
     )
 
     canonical_text = (
@@ -335,18 +356,37 @@ def run_proposer(
     draft_text: str | None = None
     stale = False
 
+    api_error: dict | None = None
     while attempts < cfg.max_retries + 1:
         attempts += 1
-        response = client.messages.create(
-            model=resolved.model_id,
-            max_tokens=cfg.max_tokens,
-            system=prompt_body,
-            messages=messages,
-            output_config={
-                "effort": cfg.effort,
-                "format": {"type": "json_schema", "schema": wire_schema},
-            },
-        )
+        try:
+            response = client.messages.create(
+                model=resolved.model_id,
+                max_tokens=cfg.max_tokens,
+                system=prompt_body,
+                messages=messages,
+                output_config={
+                    "effort": cfg.effort,
+                    "format": {"type": "json_schema", "schema": wire_schema},
+                },
+            )
+        except (anthropic.APIConnectionError, anthropic.APIError) as exc:
+            # The first is a subclass of the second; both named for the
+            # reader. Transport and API failures are not errors the model
+            # can repair (S-N-1): fail closed at once, record the class
+            # and message, write no draft. The SDK's own bounded retry for
+            # transient status codes has already run inside the call.
+            api_error = {"class": type(exc).__name__, "message": str(exc)}
+            validation = {
+                "schema_pass": False,
+                "groundedness_pass": False,
+                "completeness_pass": False,
+                "staleness_pass": False,
+                "lint_pass": False,
+                "attempts": attempts,
+                "errors": [f"api error: {type(exc).__name__}: {exc}"],
+            }
+            break
         response_id = getattr(response, "id", None)
         stop_reason = response.stop_reason
         usage["input_tokens"] += response.usage.input_tokens
@@ -392,7 +432,9 @@ def run_proposer(
                 e.startswith("completeness") for e in found
             )
         if not errors and proposal is not None:
-            document = spec.render(proposal, provenance, version)
+            document = spec.render(proposal, provenance, regen_version)
+            if document.get("id") != committed_id:
+                document["version"] = next_version(None, "minor")
             if contract_validator is not None:
                 errors.extend(
                     f"contract schema: {e.message}"
@@ -464,6 +506,7 @@ def run_proposer(
             resolved.model_id, usage["input_tokens"], usage["output_tokens"]
         ),
         "validation": validation,
+        "api_error": api_error,
         "disposition": "draft_written" if succeeded else "failed_closed",
         "draft_path": str(draft_path) if succeeded else None,
     }
@@ -472,9 +515,10 @@ def run_proposer(
         os.replace(draft_tmp, draft_path)
     else:
         draft_tmp.unlink(missing_ok=True)
-        _replace_bytes(
-            run_dir / "raw_response.txt", raw_text.encode("utf-8")
-        )
+        if api_error is None:
+            _replace_bytes(
+                run_dir / "raw_response.txt", raw_text.encode("utf-8")
+            )
     record_bytes = (
         json.dumps(record, indent=2, sort_keys=True, ensure_ascii=False)
         + "\n"
@@ -484,14 +528,16 @@ def run_proposer(
     if not succeeded:
         for line in validation["errors"]:
             print(f"error: {line}", file=sys.stderr)
+        preserved = "record" if api_error else "raw response and record"
         print(
-            f"failed closed after {attempts} attempt(s); raw response and "
-            f"record preserved in {run_dir}",
+            f"failed closed after {attempts} attempt(s); {preserved} "
+            f"preserved in {run_dir}",
             file=sys.stderr,
         )
         return 2
 
     assert proposal is not None and draft_text is not None
+    document_id = yaml.safe_load(draft_text).get("id")
     for line in _rationale_lines(proposal):
         print(line)
     print(
@@ -505,15 +551,42 @@ def run_proposer(
     )
     print(f"draft:  {draft_path}")
     print(f"record: {run_dir / 'record.json'}")
-    if spec.target_contract.exists():
-        target_lines = spec.target_contract.read_text(
-            encoding="utf-8"
-        ).splitlines(keepends=True)
+    if spec.target_contract.exists() and committed_id == document_id:
+        # Regeneration: both sides normalized through the same
+        # parse-and-dump path, so comments drop, scalar styles and line
+        # folds converge, and the diff shows element changes rather than
+        # serialization style (Session N item 13).
         diff = difflib.unified_diff(
-            target_lines,
-            draft_text.splitlines(keepends=True),
+            _normalized_lines(
+                spec.target_contract.read_text(encoding="utf-8")
+            ),
+            _normalized_lines(draft_text),
             fromfile=str(spec.target_contract),
             tofile=str(draft_path),
         )
         sys.stdout.writelines(diff)
+    else:
+        print(
+            f"diff: no committed contract with id {document_id!r} at "
+            f"{spec.target_contract}; first proposal for this id"
+        )
     return 0
+
+
+def _strip_scalars(node: Any) -> Any:
+    # Folded (>) and literal (|) scalars keep a trailing newline that a
+    # plain scalar lacks; for the diff that is style, not content.
+    if isinstance(node, dict):
+        return {k: _strip_scalars(v) for k, v in node.items()}
+    if isinstance(node, list):
+        return [_strip_scalars(v) for v in node]
+    if isinstance(node, str):
+        return node.rstrip()
+    return node
+
+
+def _normalized_lines(text: str) -> list[str]:
+    normalized = dump_yaml(
+        _strip_scalars(yaml.safe_load(text)), width=1_000_000
+    )
+    return normalized.splitlines(keepends=True)
