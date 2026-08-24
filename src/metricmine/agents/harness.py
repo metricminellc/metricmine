@@ -205,7 +205,14 @@ def _select_profile(
     newest = writer.latest_version(spec.profile_dir)
     if profile is not None:
         path = Path(profile)
-        if newest and path != spec.profile_dir / f"v{newest:04d}.json":
+        # The newest-artifact warning only makes sense for a path inside
+        # the stance's own profile directory; an explicit path elsewhere
+        # (an eval fixture, D-25) is announced, not warned about.
+        if path.resolve().parent != spec.profile_dir.resolve():
+            print(f"profile: {path} (explicit)", file=sys.stderr)
+        elif newest and path.resolve() != (
+            spec.profile_dir / f"v{newest:04d}.json"
+        ).resolve():
             print(
                 f"warning: --profile {path} is not the newest artifact "
                 f"in {spec.profile_dir} (v{newest:04d})",
@@ -235,9 +242,16 @@ def run_proposer(
     client: Any = None,
     lint_runner: LintRunner | None = None,
     now: datetime | None = None,
+    report: dict | None = None,
+    quiet: bool = False,
 ) -> int:
     """One governed proposer run. 0 = draft written; 1 = refused before
-    any call; 2 = failed closed after the retry budget or on staleness."""
+    any call; 2 = failed closed after the retry budget or on staleness.
+    When `report` is passed, it is filled with run_dir and record once
+    the record is written, so a caller (the eval lane, D-25) reads the
+    outcome without guessing the outbox folder. When `quiet` is true the
+    success summary and the diff are not printed; the record carries
+    everything."""
     raw_cfg = load_agents_config(repo_root)
     cfg = AgentsConfig(
         effort=raw_cfg["effort"],
@@ -351,6 +365,7 @@ def run_proposer(
     stop_reason = None
     raw_text = ""
     attempts = 0
+    attempt_log: list[dict] = []
     validation: dict = {}
     proposal: dict | None = None
     draft_text: str | None = None
@@ -386,6 +401,18 @@ def run_proposer(
                 "attempts": attempts,
                 "errors": [f"api error: {type(exc).__name__}: {exc}"],
             }
+            # The attempt that never got a response still logs itself.
+            attempt_log.append(
+                {
+                    "stop_reason": None,
+                    "schema_pass": False,
+                    "groundedness_pass": False,
+                    "completeness_pass": False,
+                    "lint_pass": False,
+                    "staleness_pass": False,
+                    "errors": list(validation["errors"]),
+                }
+            )
             break
         response_id = getattr(response, "id", None)
         stop_reason = response.stop_reason
@@ -465,6 +492,17 @@ def run_proposer(
                 # the same (now stale) payload: fail closed immediately.
                 stale = True
         validation["errors"] = errors
+        attempt_log.append(
+            {
+                "stop_reason": stop_reason,
+                "schema_pass": validation["schema_pass"],
+                "groundedness_pass": validation["groundedness_pass"],
+                "completeness_pass": validation["completeness_pass"],
+                "lint_pass": validation["lint_pass"],
+                "staleness_pass": validation["staleness_pass"],
+                "errors": list(errors),
+            }
+        )
         if not errors or stale:
             break
         if attempts < cfg.max_retries + 1:
@@ -481,6 +519,8 @@ def run_proposer(
             )
 
     succeeded = not validation["errors"]
+    # One entry per attempt; the top-level flags keep describing the last.
+    validation["attempt_log"] = attempt_log
     record = {
         "agent": {"name": spec.name, "version": spec.version},
         "stance": spec.stance,
@@ -513,6 +553,14 @@ def run_proposer(
     run_dir.mkdir(parents=True, exist_ok=True)
     if succeeded:
         os.replace(draft_tmp, draft_path)
+        # The validated proposal object, so a live run can be recorded as
+        # a render fixture (D-25) without re-parsing the raw response.
+        _replace_bytes(
+            run_dir / "proposal.json",
+            (
+                json.dumps(proposal, indent=2, ensure_ascii=False) + "\n"
+            ).encode("utf-8"),
+        )
     else:
         draft_tmp.unlink(missing_ok=True)
         if api_error is None:
@@ -524,6 +572,9 @@ def run_proposer(
         + "\n"
     ).encode("utf-8")
     _replace_bytes(run_dir / "record.json", record_bytes)
+    if report is not None:
+        report["run_dir"] = run_dir
+        report["record"] = record
 
     if not succeeded:
         for line in validation["errors"]:
@@ -537,6 +588,10 @@ def run_proposer(
         return 2
 
     assert proposal is not None and draft_text is not None
+    if quiet:
+        # The eval lane (D-25) reads the record through `report`; the
+        # per-run summary and diff would only flood its own report.
+        return 0
     document_id = yaml.safe_load(draft_text).get("id")
     for line in _rationale_lines(proposal):
         print(line)
