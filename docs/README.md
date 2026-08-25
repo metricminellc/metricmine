@@ -7,6 +7,7 @@
 | Path | What it is |
 |---|---|
 | [`demo.md`](demo.md) | The ten-minute demo walkthrough: serve the committed `demo/demo.duckdb` keyless, wire Claude Desktop, then the full replay from raw data to a fresh export, with troubleshooting. |
+| [`adoption.md`](adoption.md) | The bottom-up path (D-35): adopt an existing hand-written model into the contract gates with the scan, the describe stance, verify-grain, and enforce-properties; states, checklist, and scope. |
 | [`decisions/decision-register.md`](decisions/decision-register.md) | The authoritative index of project decisions, their status, and the CLAUDE.md rule crosswalk. Every `D-0x` citation in the repo resolves here. |
 | [`spec/`](spec/) | Component specifications, the living source of truth for each component. Spec PRs merge before their implementation PRs open. |
 | [`spec/ingestion.md`](spec/ingestion.md) | Phase 2 ingestion: PyAirbyte lands the committed Online Retail II sample through the `source-file` connector into bronze; `source-faker` stays the keyless synthetic path. Verified connector config, bronze conventions, PyAirbyte runtime, and Phase 2 exit criteria (D-15, D-04, D-03). |

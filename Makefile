@@ -77,6 +77,12 @@ propose-describe:
 	uv run python -m metricmine.agents propose describe --table "$(TABLE)" $(MODEL_FLAG) $(ORACLE_FLAG)
 
 # Deterministic adoption tools (D-35): never agents, keyless by construction.
+# The scan derives the review queue from the tree and the read-only warehouse
+# on every run and writes it to the gitignored outbox; nothing is stored.
+.PHONY: scan
+scan:
+	uv run python -m metricmine.adoption scan
+
 .PHONY: verify-grain
 verify-grain:
 	uv run python -m metricmine.adoption verify-grain --table "$(TABLE)" --keys "$(KEYS)"

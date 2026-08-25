@@ -1,0 +1,180 @@
+# Draft proposed by silver-cleanup-proposer v0.1.0 at 2026-08-25T21:13:39.851589+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_country_daily_sales
+name: Silver country daily sales
+version: 1.0.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: This table holds daily aggregated sales activity per country, summarizing order
+    line counts, unit volumes, invoice counts, and gross monetary value for each country-day.
+  usage: 'Read the table at the country and sales_date grain: each row represents one country''s
+    aggregated activity for one calendar day. Consumers filtering or joining by country and
+    date will get exactly one matching row per combination, and can sum or compare the count
+    and value metrics across dates or countries without further deduplication.'
+  limitations: The profile shows zero duplicate rows and null rates of 0.0 for all six columns,
+    but the country-plus-sales_date grain is inferred from distinct-count arithmetic, not
+    yet confirmed by a deterministic uniqueness measurement against the warehouse. Country's
+    distinct_values were not captured because its distinct_count of 22 exceeds the profiler's
+    cap of 20, so no accepted-values rule could be proposed. No pipeline metadata columns
+    are present in this table.
+schema:
+- name: silver_country_daily_sales
+  physicalName: silver_country_daily_sales
+  logicalType: object
+  physicalType: table
+  description: 'One row per distinct (country, sales_date). The 2 grain columns are flagged
+    primaryKey so sync generates the composite uniqueness test; that generated test is warn-severity
+    by tool design at datacontract-cli 1.0.12, and the error-severity grain rule below is
+    the enforcing twin (rule 5: uniqueness as a test, never a trusted constraint).'
+  dataGranularityDescription: One row per distinct (country, sales_date).
+  properties:
+  - name: country
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: The country in which the aggregated sales activity occurred.
+    quality:
+    - type: sql
+      description: country is never null
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_country_daily_sales WHERE country IS NULL
+      mustBe: 0
+  - name: sales_date
+    logicalType: date
+    physicalType: DATE
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 2
+    description: The calendar date the aggregated sales activity covers.
+    quality:
+    - type: sql
+      description: sales_date is never null
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_country_daily_sales WHERE sales_date IS NULL
+      mustBe: 0
+  - name: line_count
+    logicalType: integer
+    physicalType: BIGINT
+    required: true
+    description: Count of order lines recorded for the country on the date.
+    quality:
+    - type: sql
+      description: line_count is never null
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_country_daily_sales WHERE line_count IS NULL
+      mustBe: 0
+    - type: sql
+      description: line_count is never negative
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_country_daily_sales WHERE line_count < 0
+      mustBe: 0
+  - name: units
+    logicalType: integer
+    physicalType: HUGEINT
+    required: true
+    description: Total number of units sold for the country on the date.
+    quality:
+    - type: sql
+      description: units is never null
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_country_daily_sales WHERE units IS NULL
+      mustBe: 0
+    - type: sql
+      description: units is never negative
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_country_daily_sales WHERE units < 0
+      mustBe: 0
+  - name: gross_value
+    logicalType: number
+    physicalType: DECIMAL(38,2)
+    required: true
+    description: Total gross monetary value of sales for the country on the date.
+    quality:
+    - type: sql
+      description: gross_value is never null
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_country_daily_sales WHERE gross_value IS NULL
+      mustBe: 0
+    - type: sql
+      description: gross_value is never negative
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_country_daily_sales WHERE gross_value < 0
+      mustBe: 0
+  - name: invoice_count
+    logicalType: integer
+    physicalType: BIGINT
+    required: true
+    description: Count of distinct invoices recorded for the country on the date.
+    quality:
+    - type: sql
+      description: invoice_count is never null
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_country_daily_sales WHERE invoice_count IS NULL
+      mustBe: 0
+    - type: sql
+      description: invoice_count is never negative
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_country_daily_sales WHERE invoice_count < 0
+      mustBe: 0
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (country, sales_date) combinations'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT country, sales_date
+        FROM silver.silver_country_daily_sales
+        GROUP BY country, sales_date
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: silver-cleanup-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.0.0
+- property: modelId
+  value: claude-sonnet-5
+- property: profileHash
+  value: sha256:0c1b052ccbd9ca0fb776b2c9de6c3c4f7251b0d64c5ab7c8bcd2b865e576bcbf
+- property: proposedAt
+  value: '2026-08-25'
+- property: proposerStance
+  value: describe
+- property: decisionGrainKeys
+  value: country-sales-date
+- property: decisionColumnSemantics
+  value: count-fields-inferred
+- property: decisionNoMetadataColumns
+  value: none-present
+- property: grain
+  value: country, sales_date

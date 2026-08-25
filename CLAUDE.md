@@ -230,7 +230,9 @@ working on the serving layer — the query module, the MCP server, or the
 demo export — read `docs/spec/serving.md`. Before
 working on the agent layer —
 the proposers, their prompts, or the proposal validator — read
-`docs/spec/agent-layer.md`. Decisions cited anywhere as D-0x resolve in
+`docs/spec/agent-layer.md`. Before adopting an existing model into the
+contract gates, or working on the adoption scan and its helpers, read
+`docs/adoption.md`. Decisions cited anywhere as D-0x resolve in
 `docs/decisions/decision-register.md`.
 
 ## Conventions
