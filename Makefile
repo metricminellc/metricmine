@@ -65,6 +65,26 @@ demo: ingest
 .PHONY: regenerate
 regenerate: propose-silver propose-mapping
 
+# The describe stance (D-35): adopt an EXISTING silver table by drafting the
+# contract that would enforce it from its own profile artifact. Refuses when
+# contracts/<TABLE>.odcs.yaml already exists; ORACLE=path bypasses the
+# refusal for the recorded n=1 agreement study (D-25). Needs the key.
+ORACLE ?=
+ORACLE_FLAG := $(if $(ORACLE),--oracle $(ORACLE),)
+
+.PHONY: propose-describe
+propose-describe:
+	uv run python -m metricmine.agents propose describe --table "$(TABLE)" $(MODEL_FLAG) $(ORACLE_FLAG)
+
+# Deterministic adoption tools (D-35): never agents, keyless by construction.
+.PHONY: verify-grain
+verify-grain:
+	uv run python -m metricmine.adoption verify-grain --table "$(TABLE)" --keys "$(KEYS)"
+
+.PHONY: enforce-properties
+enforce-properties:
+	uv run python -m metricmine.adoption enforce-properties --table "$(TABLE)"
+
 # The live eval lane over the golden-profile set (D-25): first-attempt lint
 # and groundedness pass rates with token and cost actuals; honors the D-34
 # override the same way. Needs the key; never runs in CI.
