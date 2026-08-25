@@ -158,3 +158,58 @@ def test_reader_rejects_invalid_mapping_contracts(mutate, reason) -> None:
     mutate(broken)
     with pytest.raises(EngineContractError):
         validate_mapping(broken, inputs.silver, inputs.json_schema)
+
+
+def test_marts_modes_shape_the_typed_surface() -> None:
+    """engine.marts (D-36): `both` carries the mart and the view, `table`
+    only the mart, `view` only the view; the registry pair rides every
+    mode unchanged."""
+    from metricmine.engine.emitters import Emission, emit_extended_models
+
+    inputs = _inputs()
+    emission = Emission(inputs.mapping, inputs.star)
+    compiled = {"entries": []}
+    both = set(emit_extended_models(emission, compiled, "both"))
+    table = set(emit_extended_models(emission, compiled, "table"))
+    view = set(emit_extended_models(emission, compiled, "view"))
+    registry = {"context_registry.sql", "context_registry.yml"}
+    mart = {"mart_invoice_lines_typed.sql", "mart_invoice_lines_typed.yml"}
+    vw = {"vw_invoice_lines_typed.sql", "vw_invoice_lines_typed.yml"}
+    assert both == registry | mart | vw
+    assert table == registry | mart
+    assert view == registry | vw
+
+
+def test_unknown_marts_mode_fails_closed(monkeypatch) -> None:
+    """An unrecognized engine.marts value refuses before anything emits
+    (D-36), naming the key."""
+    from metricmine.engine import emit as emit_module
+
+    monkeypatch.setattr(
+        emit_module,
+        "_config",
+        lambda repo_root: {
+            "output_dir": "transform/models/gold",
+            "marts": "sideways",
+        },
+    )
+    with pytest.raises(EngineContractError, match="engine.marts"):
+        emit_module.build_emission_set(REPO)
+
+
+def test_mart_sql_is_lean_ordered_and_a_table() -> None:
+    """The emitted mart (D-36): a materialized table, ordered by the time
+    column, the business columns plus fact_hash_id, no derived identifier
+    and no group hash key carried."""
+    from metricmine.engine.emitters import Emission, mart_sql
+
+    inputs = _inputs()
+    sql = mart_sql(Emission(inputs.mapping, inputs.star))
+    assert "materialized='table'" in sql
+    assert sql.rstrip().endswith("order by invoiced_at")
+    assert "    f.fact_hash_id\nfrom f" in sql
+    assert "line_identity" not in sql
+    # The group hash keys appear exactly twice each: the two sides of
+    # their join condition, never as carried columns.
+    assert sql.count("dim_hash_id") == 2
+    assert sql.count("timeframe_hash_id") == 2

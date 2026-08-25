@@ -189,3 +189,18 @@ def test_registry_declared_is_the_activation_switch() -> None:
     without = {"schema": [{"name": "dim_source_values"}]}
     assert registry_declared(with_registry) is True
     assert registry_declared(without) is False
+
+
+def test_category_entries_carry_the_typed_surface_pointer() -> None:
+    """The registry pointer (D-31/D-32 as amended): the category-group
+    entries name the typed surface the serving layer prefers; the
+    star-global groups carry none."""
+    artifact = build_compiled_context(REPO)
+    by_role = {
+        entry["compiled_context"]["role"]: entry["compiled_context"]
+        for entry in artifact["entries"]
+    }
+    assert by_role["dimensions"]["typed_surface"] == "mart_invoice_lines_typed"
+    assert by_role["measures"]["typed_surface"] == "mart_invoice_lines_typed"
+    for role in ("source", "run", "timeframe"):
+        assert "typed_surface" not in by_role[role]

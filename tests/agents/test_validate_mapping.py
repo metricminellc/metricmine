@@ -91,6 +91,15 @@ def test_reserved_category_name_fails(example: dict, profile: dict) -> None:
     assert any("reserved" in e for e in errors)
 
 
+def test_reserved_mart_prefix_fails(example: dict, profile: dict) -> None:
+    """mart_ joined the reserved model-name space with D-36's emitted
+    mart; the proposal validator mirrors the frozen schema's rejection."""
+    doc = copy.deepcopy(example)
+    doc["category_name"] = "mart_invoice_lines"
+    errors = validate_mapping(doc, profile)
+    assert any("reserved" in e for e in errors)
+
+
 def test_wrong_source_table_fails(example: dict, profile: dict) -> None:
     doc = copy.deepcopy(example)
     doc["source_table"] = "silver.some_other_table"

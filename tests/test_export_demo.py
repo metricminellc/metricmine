@@ -18,7 +18,7 @@ from metricmine.export_demo import export, verify
 _WAREHOUSE = Path(__file__).resolve().parents[1] / "warehouse" / "metricmine.duckdb"
 
 FACT_ROWS = 44721
-BASE_TABLES = 10
+BASE_TABLES = 11
 TYPED_VIEW = "vw_invoice_lines_typed"
 
 pytestmark = pytest.mark.local
