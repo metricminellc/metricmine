@@ -380,6 +380,11 @@ _DERIVATIVE_LABEL = (
     " (D-17). Do not edit; flag drift instead (rule 8)."
 )
 
+_MART_LABEL = (
+    "Derivative typed mart over the star; uncontracted by design"
+    " (D-17 as amended by D-36). Do not edit; flag drift instead (rule 8)."
+)
+
 
 def registry_declared(star: dict) -> bool:
     """The extended-star activation switch (spec §5): the registry and the
@@ -506,6 +511,106 @@ from f
 join d on d.dim_hash_id = f.dim_hash_id
 join t on t.timeframe_hash_id = f.timeframe_hash_id
 """
+
+
+def _mart_sql_header(emission: Emission) -> str:
+    first_line = emission.sql_header().split("\n", 1)[0]
+    return f"{first_line}\n-- {_MART_LABEL}\n"
+
+
+def _mart_yml_header(emission: Emission) -> str:
+    first_line = emission.yml_header().split("\n", 1)[0]
+    return f"{first_line}\n# {_MART_LABEL}\n"
+
+
+def mart_sql(emission: Emission) -> str:
+    """mart_<category>_typed: the typed projection materialized as a table
+    (D-36).
+
+    Lean shape: the typed business columns (dimension payload columns,
+    then the timeframe and measure manifests, cast per the mapping
+    contract's physicalType exactly as the projection does) plus
+    fact_hash_id as the provenance pointer back to the star. Derived
+    identifiers stay inside the dimension payload and are not carried.
+    Rows are ordered by the declared time column so zone maps prune
+    time-window scans.
+    """
+    physical_types = {
+        prop["name"]: prop["physicalType"]
+        for prop in emission.category["properties"]
+    }
+    fields = (
+        [(name, "d.dim_values") for name in emission.dim_payload_columns]
+        + [(name, "t.timeframe_values") for name in emission.timeframe_manifest]
+        + [(name, "f.fact_values") for name in emission.measure_manifest]
+    )
+    select_lines = ",\n".join(
+        f"    cast(json_extract_string({payload}, '$.{name}')"
+        f" as {physical_types.get(name, 'VARCHAR')}) as {name}"
+        for name, payload in fields
+    )
+    category = emission.category_name
+    return f"""{_mart_sql_header(emission)}
+{{{{ config(materialized='table') }}}}
+
+with f as (
+
+    select * from {{{{ ref('fact_{category}_values') }}}}
+
+),
+
+d as (
+
+    select * from {{{{ ref('dim_{category}_values') }}}}
+
+),
+
+t as (
+
+    select * from {{{{ ref('dim_timeframe_values') }}}}
+
+)
+
+select
+{select_lines},
+    f.fact_hash_id
+from f
+join d on d.dim_hash_id = f.dim_hash_id
+join t on t.timeframe_hash_id = f.timeframe_hash_id
+order by {emission.time_column}
+"""
+
+
+def mart_yml(emission: Emission) -> str:
+    """Minimal properties for the uncontracted mart: name and description
+    only, so the F-14 fixed-point delta list stays exhaustive (rule 5)."""
+    category = emission.category_name
+    doc = {
+        "version": 2,
+        "models": [
+            {
+                "name": f"mart_{category}_typed",
+                "description": (
+                    f"Materialized typed mart over the star for the"
+                    f" {category} category: the typed projection's SELECT"
+                    " as a table, lean shape, ordered by the time column;"
+                    " one row per fact row, fact_hash_id kept as the"
+                    " provenance pointer. Uncontracted by design (D-17 as"
+                    " amended by D-36); derivative of the fact, dimension,"
+                    " and timeframe payloads."
+                ),
+            }
+        ],
+    }
+    body = yaml.dump(
+        doc,
+        Dumper=_Dumper,
+        sort_keys=False,
+        allow_unicode=True,
+        width=2000,
+        default_flow_style=False,
+    )
+    return _mart_yml_header(emission) + body
 
 
 def projection_yml(emission: Emission) -> str:
@@ -642,15 +747,24 @@ def emit_models(emission: Emission) -> dict[str, str]:
     return models
 
 
-def emit_extended_models(emission: Emission, compiled: dict) -> dict[str, str]:
+def emit_extended_models(
+    emission: Emission, compiled: dict, marts: str = "both"
+) -> dict[str, str]:
     """The extended-star additions (spec §5): the registry, carried from
-    the compiled-context artifact, plus the typed projection. Registry
-    properties ride the existing fixed-point emitter — the amended gold
-    contract's context_registry object drives them."""
+    the compiled-context artifact, plus the typed surface per the
+    engine.marts configuration (D-36) — the materialized mart under
+    ``table`` or ``both``, the projection view under ``view`` or ``both``.
+    Registry properties ride the existing fixed-point emitter — the
+    amended gold contract's context_registry object drives them."""
     category = emission.category_name
-    return {
+    files = {
         "context_registry.sql": registry_sql(emission, compiled),
         "context_registry.yml": properties_yml(emission, "context_registry"),
-        f"vw_{category}_typed.sql": projection_sql(emission),
-        f"vw_{category}_typed.yml": projection_yml(emission),
     }
+    if marts in ("view", "both"):
+        files[f"vw_{category}_typed.sql"] = projection_sql(emission)
+        files[f"vw_{category}_typed.yml"] = projection_yml(emission)
+    if marts in ("table", "both"):
+        files[f"mart_{category}_typed.sql"] = mart_sql(emission)
+        files[f"mart_{category}_typed.yml"] = mart_yml(emission)
+    return files
