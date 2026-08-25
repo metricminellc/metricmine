@@ -25,6 +25,7 @@ SPEC_DIR = REPO_ROOT / "docs" / "spec" / "agent-layer"
 SCHEMAS = [
     "gold-mapping-proposal.schema.json",
     "silver-cleanup-proposal.schema.json",
+    "table-contract-proposal.schema.json",
 ]
 
 

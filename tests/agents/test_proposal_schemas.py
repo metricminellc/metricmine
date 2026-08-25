@@ -35,6 +35,10 @@ PAIRS = {
         "silver-cleanup-proposal.schema.json",
         "example-silver-cleanup-proposal.json",
     ),
+    "table-contract": (
+        "table-contract-proposal.schema.json",
+        "example-describe-proposal.json",
+    ),
 }
 
 # The composition and constraint keywords the API's grammar compiler
@@ -137,3 +141,15 @@ def test_silver_example_grounded_in_bronze_profile() -> None:
     claimed = {column["source_column"] for column in example["columns"]}
     ungrounded = sorted(claimed - columns)
     assert not ungrounded, f"columns absent from the bronze profile: {ungrounded}"
+
+
+def test_describe_example_grounded_in_the_silver_profile() -> None:
+    example = _load("example-describe-proposal.json")
+    columns = _profile_columns("profiles/silver.silver_invoice_lines/v0001.json")
+    claimed = {column["name"] for column in example["columns"]}
+    claimed.update(example["grain_keys"])
+    claimed.update(
+        rule["column"] for rule in example["quality_rules"] if rule["column"]
+    )
+    ungrounded = sorted(claimed - columns)
+    assert not ungrounded, f"columns absent from the silver profile: {ungrounded}"
