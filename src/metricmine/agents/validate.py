@@ -19,7 +19,7 @@ from pathlib import Path
 from metricmine.profiling import canonical
 
 _SNAKE_CASE = re.compile(r"^[a-z][a-z0-9_]*$")
-_RESERVED_PREFIXES = ("dim_", "fact_", "vw_", "silver_", "bronze_", "stg_")
+_RESERVED_PREFIXES = ("dim_", "fact_", "vw_", "mart_", "silver_", "bronze_", "stg_")
 
 
 def _profile_columns(profile: dict) -> set[str]:
