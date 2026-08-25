@@ -1,0 +1,232 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/metricminellc/metricmine/main/docs/spec/agent-layer/table-contract-proposal.schema.json",
+  "title": "MetricMine table contract proposal",
+  "description": "Structured-outputs schema for the bottom-up proposer stances (D-21 as amended, D-34): stance describe turns an existing table's own profile into an ODCS table contract that would enforce it; stance amend turns that profile plus the committed contract into a version-bumped proposal with an explicit changes list. The harness renders a proposal to an ODCS contract mirroring silver v1.1.0; datacontract lint and the deterministic validator gate it. Flat by construction: no oneOf, no conditionals, every property required, arrays may be empty.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "stance",
+    "target_schema",
+    "target_table",
+    "proposed_version",
+    "columns",
+    "grain_keys",
+    "quality_rules",
+    "changes",
+    "decisions",
+    "purpose",
+    "usage",
+    "limitations"
+  ],
+  "properties": {
+    "stance": {
+      "type": "string",
+      "enum": [
+        "describe",
+        "amend"
+      ],
+      "description": "describe: the profile is the sole input and changes is empty. amend: the profile plus the committed contract are the input and changes lists every difference."
+    },
+    "target_schema": {
+      "type": "string",
+      "enum": [
+        "bronze",
+        "silver",
+        "gold"
+      ],
+      "description": "Warehouse schema holding the described table; rendered as the server schema and used to qualify quality-rule SQL."
+    },
+    "target_table": {
+      "type": "string",
+      "description": "Exact table name from the profile's dataset.table, snake_case."
+    },
+    "proposed_version": {
+      "type": "string",
+      "description": "Semver for the proposed contract. describe: 1.0.0 when no contract exists. amend: the committed version with the bump the changes justify (patch for description only, minor for additive, major for breaking)."
+    },
+    "columns": {
+      "type": "array",
+      "description": "One entry per column the contract declares, in profile ordinal order.",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "logical_type",
+          "physical_type",
+          "required",
+          "description",
+          "rationale"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Exact column name from the profile."
+          },
+          "logical_type": {
+            "type": "string",
+            "enum": [
+              "string",
+              "integer",
+              "number",
+              "boolean",
+              "date"
+            ]
+          },
+          "physical_type": {
+            "type": "string",
+            "description": "Physical type exactly as the profile reports it, e.g. VARCHAR, INTEGER, DECIMAL(10,2), TIMESTAMP, BOOLEAN, DATE."
+          },
+          "required": {
+            "type": "boolean",
+            "description": "true only when the profile shows null_rate 0.0 for this column; a nonzero null rate forces false."
+          },
+          "description": {
+            "type": "string",
+            "description": "Business meaning of the column, one or two sentences, for the rendered contract."
+          },
+          "rationale": {
+            "type": "string",
+            "description": "One sentence citing profile evidence (null_rate, distinct_count, min, max, samples) for the type and the required flag."
+          }
+        }
+      }
+    },
+    "grain_keys": {
+      "type": "array",
+      "description": "Column names forming the declared grain, in key order; rendered as primaryKey flags with primaryKeyPosition and as the error-severity grain_unique rule. Empty only when the table has no declarable grain.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "quality_rules": {
+      "type": "array",
+      "description": "Quality rules the contract enforces. Keep the set small and mechanically renderable; anything richer is a human edit after approval.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "column",
+          "values",
+          "rationale"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "row_count_positive",
+              "grain_unique",
+              "not_null",
+              "non_negative",
+              "accepted_values_subset"
+            ],
+            "description": "row_count_positive and grain_unique are table-level; not_null, non_negative, and accepted_values_subset are column-level."
+          },
+          "column": {
+            "type": "string",
+            "description": "Column the rule applies to; the empty string for a table-level rule (row_count_positive, grain_unique)."
+          },
+          "values": {
+            "type": "array",
+            "description": "Allowed values for accepted_values_subset, taken verbatim from the profile's distinct_values; the empty array for every other kind.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "rationale": {
+            "type": "string",
+            "description": "One sentence citing profile evidence for the rule."
+          }
+        }
+      }
+    },
+    "changes": {
+      "type": "array",
+      "description": "Stance amend only: one entry per difference from the committed contract, including every column the committed contract declares that this proposal drops. Empty array for stance describe.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "column",
+          "before",
+          "after",
+          "rationale"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "add_column",
+              "drop_column",
+              "retype_column",
+              "required_change",
+              "grain_change",
+              "rule_change",
+              "description_change",
+              "no_change"
+            ]
+          },
+          "column": {
+            "type": "string",
+            "description": "Column the change touches; the empty string for a table-level change (grain_change, rule_change, no_change)."
+          },
+          "before": {
+            "type": "string",
+            "description": "Committed value as a short string; the empty string for add_column."
+          },
+          "after": {
+            "type": "string",
+            "description": "Proposed value as a short string; the empty string for drop_column."
+          },
+          "rationale": {
+            "type": "string",
+            "description": "One sentence citing profile evidence for the change."
+          }
+        }
+      }
+    },
+    "decisions": {
+      "type": "array",
+      "description": "Rendered as customProperties decision* keys, the convention silver v1.1.0 established.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "value",
+          "rationale"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "customProperties key, camelCase, starting with decision."
+          },
+          "value": {
+            "type": "string",
+            "description": "Short kebab-case value recorded in the contract."
+          },
+          "rationale": {
+            "type": "string",
+            "description": "One sentence justifying the decision from profile evidence."
+          }
+        }
+      }
+    },
+    "purpose": {
+      "type": "string",
+      "description": "description.purpose in the rendered contract: what the table is."
+    },
+    "usage": {
+      "type": "string",
+      "description": "description.usage in the rendered contract: how a consumer reads it and what they must handle."
+    },
+    "limitations": {
+      "type": "string",
+      "description": "description.limitations in the rendered contract: what the table does not guarantee, stated from profile evidence."
+    }
+  }
+}
