@@ -22,7 +22,7 @@ from metricmine.profiling.writer import latest_version
 # so a category name matching them could collide with a model name — the
 # loud gate-3 failure F-12 probed. The JSON Schema rejects them first;
 # this re-check is defense in depth.
-_RESERVED_PREFIXES = ("dim_", "fact_", "vw_", "silver_", "bronze_", "stg_")
+_RESERVED_PREFIXES = ("dim_", "fact_", "vw_", "mart_", "silver_", "bronze_", "stg_")
 _RESERVED_NAMES = ("context_registry",)
 
 
