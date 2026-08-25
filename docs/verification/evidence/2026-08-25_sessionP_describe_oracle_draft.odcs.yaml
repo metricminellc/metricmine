@@ -1,0 +1,191 @@
+# Draft proposed by silver-cleanup-proposer v0.1.0 at 2026-08-25T19:55:24.875424+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_invoice_lines
+name: Silver invoice lines
+version: 1.2.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: This table holds invoice line items from retail sales transactions, with each row
+    representing one product line (a stock code) within a customer invoice, including quantity,
+    unit price, and cancellation status.
+  usage: Read the table at the grain of invoice_id combined with stock_code, treating quantity
+    and unit_price as the line's economic values; expect quantity to be negative for cancelled
+    or returned lines flagged by is_cancellation, and handle nulls in customer_id (guest orders)
+    and product_description when joining to customer or product reference data.
+  limitations: The profile could not establish a single-column primary key; the invoice_id
+    plus stock_code grain is inferred from column cardinalities (2330 and 3141 distinct values
+    against 44721 rows) and a table-wide duplicate_row_rate of 0.0, not from a direct per-combination
+    uniqueness check, and remains subject to deterministic confirmation. customer_id is missing
+    for about 30% of rows and product_description for about 0.5% of rows. No airbyte metadata
+    columns appear in this profile.
+schema:
+- name: silver_invoice_lines
+  physicalName: silver_invoice_lines
+  logicalType: object
+  physicalType: table
+  description: 'One row per distinct (invoice_id, stock_code). The 2 grain columns are flagged
+    primaryKey so sync generates the composite uniqueness test; that generated test is warn-severity
+    by tool design at datacontract-cli 1.0.12, and the error-severity grain rule below is
+    the enforcing twin (rule 5: uniqueness as a test, never a trusted constraint).'
+  dataGranularityDescription: One row per distinct (invoice_id, stock_code).
+  properties:
+  - name: invoice_id
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: Identifier for the invoice a line item belongs to; multiple lines share one
+      invoice_id.
+    quality:
+    - type: sql
+      description: invoice_id is never null
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_invoice_lines WHERE invoice_id IS NULL
+      mustBe: 0
+  - name: is_cancellation
+    logicalType: boolean
+    physicalType: BOOLEAN
+    required: true
+    description: Flags whether the line represents a cancelled or returned transaction rather
+      than a normal sale.
+    quality:
+    - type: sql
+      description: is_cancellation is never null
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_invoice_lines WHERE is_cancellation IS NULL
+      mustBe: 0
+  - name: stock_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 2
+    description: Product/stock keeping unit code identifying the item sold on the line.
+    quality:
+    - type: sql
+      description: stock_code is never null
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_invoice_lines WHERE stock_code IS NULL
+      mustBe: 0
+  - name: product_description
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: Free-text description of the product on the line, used for human-readable
+      identification.
+  - name: quantity
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: Number of units transacted on the line; negative values represent returns
+      or cancellations.
+    quality:
+    - type: sql
+      description: quantity is never null
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_invoice_lines WHERE quantity IS NULL
+      mustBe: 0
+  - name: invoiced_at
+    logicalType: date
+    physicalType: TIMESTAMP
+    required: true
+    description: Timestamp when the invoice line was recorded.
+    quality:
+    - type: sql
+      description: invoiced_at is never null
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_invoice_lines WHERE invoiced_at IS NULL
+      mustBe: 0
+  - name: unit_price
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: true
+    description: Price per unit for the item on the line, in the invoice's currency.
+    quality:
+    - type: sql
+      description: unit_price is never null
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_invoice_lines WHERE unit_price IS NULL
+      mustBe: 0
+    - type: sql
+      description: unit_price is never negative
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_invoice_lines WHERE unit_price < 0
+      mustBe: 0
+  - name: customer_id
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: Identifier of the customer who placed the order, when known.
+  - name: country
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: Country associated with the invoice, typically the shipping or billing country.
+    quality:
+    - type: sql
+      description: country is never null
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_invoice_lines WHERE country IS NULL
+      mustBe: 0
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (invoice_id, stock_code) combinations'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT invoice_id, stock_code
+        FROM silver.silver_invoice_lines
+        GROUP BY invoice_id, stock_code
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: silver-cleanup-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.0.0
+- property: modelId
+  value: claude-sonnet-5
+- property: profileHash
+  value: sha256:e65bee8117b65958b8c4741b43509ece19a581dd1d6bad9a7e1da9b67b0b5fcd
+- property: proposedAt
+  value: '2026-08-25'
+- property: proposerStance
+  value: describe
+- property: decisionGrainKeys
+  value: invoice-id-stock-code-composite
+- property: decisionSparseColumns
+  value: customer-id-product-description-nullable
+- property: decisionNegativeQuantity
+  value: quantity-allows-negative
+- property: decisionNoAcceptedValuesRules
+  value: country-and-flag-excluded
+- property: grain
+  value: invoice_id, stock_code

@@ -380,13 +380,18 @@ that defense.
 D-11 places a thin read-only protocol in `src/metricmine/warehouse/`; the
 profiler is its first consumer, so the protocol is specified here. Its
 second consumer, the shared query module serving gold, arrives later and
-will extend the protocol with serving methods of its own — the six below
-are the profiling surface, not the whole of D-11.
+will extend the protocol with serving methods of its own; the six
+profiling methods below are that surface, not the whole of D-11.
+`relation_kinds` joins at Phase 6 for the adoption scan (D-35).
 
 - `src/metricmine/warehouse/base.py` (created by the implementation PR)
-  defines a thin engine-agnostic protocol — D-11's "~5 methods", six as
-  specified here: `list_tables`, `columns`, `row_count`, `column_profile`,
-  `sample_values`, `duplicate_row_count`.
+  defines a thin engine-agnostic protocol (D-11's "~5 methods"), now seven:
+  `list_tables`, `columns`, `row_count`, `column_profile`, `sample_values`,
+  `duplicate_row_count`, and `relation_kinds` (name to `table` or `view`
+  per schema). `relation_kinds` exists because information_schema.tables
+  lists views beside base tables, so `list_tables` alone cannot tell them
+  apart; the adoption scan needs the distinction to classify models
+  without reaching past the protocol (adoption lab, August 21, 2026).
 - The DuckDB implementation opens the warehouse with `read_only=True`.
   No DDL, no DML. The profiler cannot write to the warehouse even by
   accident; its only outputs are files under `profiles/`.

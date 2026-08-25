@@ -1,9 +1,11 @@
 """Engine-agnostic read-only warehouse protocol (D-11).
 
 Spec: docs/spec/profiler.md §7. The profiler is the first consumer; the
-shared query module serving gold extends the protocol later. These six
-methods are the profiling surface, not the whole of D-11. Implementations
-never execute DDL or DML.
+shared query module serving gold extends the protocol later. The first
+six methods are the profiling surface, not the whole of D-11;
+`relation_kinds` joins for the adoption scan (D-35), which must tell
+views from tables where `list_tables` cannot. Implementations never
+execute DDL or DML.
 """
 
 from __future__ import annotations
@@ -47,4 +49,14 @@ class Warehouse(Protocol):
 
     def duplicate_row_count(self, schema: str, table: str, columns: list[str]) -> int:
         """Row count minus distinct rows over the given columns."""
+        ...
+
+    def relation_kinds(self, schema: str) -> dict[str, str]:
+        """Relation name to kind ('table' | 'view') for one schema.
+
+        information_schema.tables lists views beside base tables, so
+        `list_tables` alone cannot tell them apart; the adoption scan
+        (D-35) needs the distinction to classify models without
+        reaching past the protocol (adoption lab, August 21, 2026).
+        """
         ...

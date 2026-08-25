@@ -1,0 +1,137 @@
+{
+  "stance": "describe",
+  "target_schema": "silver",
+  "target_table": "silver_invoice_lines",
+  "proposed_version": "1.0.0",
+  "columns": [
+    {
+      "name": "invoice_id",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "description": "Invoice number, held as text. A leading C marks a cancellation invoice; see is_cancellation.",
+      "rationale": "physical_type VARCHAR, null_rate 0.0 over 44721 rows, 2330 distinct; samples 489434 to 489443 are numeric strings and the C prefix appears alongside is_cancellation true."
+    },
+    {
+      "name": "is_cancellation",
+      "logical_type": "boolean",
+      "physical_type": "BOOLEAN",
+      "required": true,
+      "description": "True when the invoice carries the cancellation prefix.",
+      "rationale": "physical_type BOOLEAN, null_rate 0.0, distinct_values exactly [false, true]."
+    },
+    {
+      "name": "stock_code",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "description": "Product code as landed, held as text; alphanumeric suffixes occur.",
+      "rationale": "physical_type VARCHAR, null_rate 0.0, 3141 distinct; samples include 10002R and 10123C, so the column is not numeric."
+    },
+    {
+      "name": "product_description",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "description": "Product description text. Nulls are present and are retained rather than imputed.",
+      "rationale": "null_rate 0.005098 (228 of 44721 rows) forces required false; 3034 distinct VARCHAR values."
+    },
+    {
+      "name": "quantity",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "description": "Units on the line. Negative values occur on cancellation lines.",
+      "rationale": "physical_type INTEGER, null_rate 0.0, 233 distinct, observed range -1395 to 5184; the negative floor is why no non_negative rule is proposed here."
+    },
+    {
+      "name": "invoiced_at",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": true,
+      "description": "Invoice timestamp.",
+      "rationale": "physical_type TIMESTAMP, null_rate 0.0, 2004 distinct, observed range 2009-12-01T07:45:00 to 2009-12-23T16:58:00."
+    },
+    {
+      "name": "unit_price",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(10,2)",
+      "required": true,
+      "description": "Unit price per unit of the line. Zero-price lines occur and are retained.",
+      "rationale": "physical_type DECIMAL(10,2), null_rate 0.0, 295 distinct, observed range 0.0 to 1998.49; the floor of 0.0 with no observed negative supports the non_negative rule."
+    },
+    {
+      "name": "customer_id",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "description": "Customer identifier. Null on a large minority of lines; those lines are retained.",
+      "rationale": "null_rate 0.300664 (13446 of 44721 rows) forces required false; 1045 distinct INTEGER values from 12346 to 18287."
+    },
+    {
+      "name": "country",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "description": "Country recorded on the line.",
+      "rationale": "physical_type VARCHAR, null_rate 0.0, 24 distinct; samples are country names such as Australia, Austria, and EIRE."
+    }
+  ],
+  "grain_keys": [
+    "invoice_id",
+    "stock_code",
+    "quantity",
+    "unit_price"
+  ],
+  "quality_rules": [
+    {
+      "kind": "row_count_positive",
+      "column": "",
+      "values": [],
+      "rationale": "row_count 44721 at profile v0001; the table is never empty."
+    },
+    {
+      "kind": "grain_unique",
+      "column": "",
+      "values": [],
+      "rationale": "duplicate_row_rate 0.0 at v0001 shows whole rows are already distinct; the four proposed grain keys are the identifying subset and the rule is what makes that measured property enforceable."
+    },
+    {
+      "kind": "non_negative",
+      "column": "unit_price",
+      "values": [],
+      "rationale": "unit_price min 0.0 at v0001 with no observed negative value; a negative unit price would be a new and invalid condition."
+    }
+  ],
+  "changes": [],
+  "decisions": [
+    {
+      "key": "decisionGrainKeys",
+      "value": "invoice-id-stock-code-quantity-unit-price",
+      "rationale": "duplicate_row_rate 0.0 establishes whole-row distinctness; these four columns are the identifier and line-defining measures, and product_description, customer_id, country, invoiced_at, and is_cancellation are attributes of that line rather than parts of its identity."
+    },
+    {
+      "key": "decisionNullCustomerId",
+      "value": "retained-nullable",
+      "rationale": "null_rate 0.300664 is too large to be an error; the column is declared optional rather than the rows filtered."
+    },
+    {
+      "key": "decisionNullProductDescription",
+      "value": "retained-nullable",
+      "rationale": "null_rate 0.005098; nulls are declared, not imputed."
+    },
+    {
+      "key": "decisionNegativeQuantity",
+      "value": "retained-paired-with-is-cancellation",
+      "rationale": "quantity min -1395 coexists with a boolean is_cancellation column, so negative quantities are modelled rather than rejected."
+    },
+    {
+      "key": "decisionZeroPriceLines",
+      "value": "retained",
+      "rationale": "unit_price min 0.0 is observed at v0001, so the non_negative rule uses zero as the floor rather than excluding those lines."
+    }
+  ],
+  "purpose": "The contracted description of silver.silver_invoice_lines as it exists today: 44721 rows of invoice line detail, one row per distinct invoice line, covering 2330 invoices, 3141 stock codes, and 24 countries between 2009-12-01 and 2009-12-23.",
+  "usage": "Read silver.silver_invoice_lines for line-level sales analysis. Cancellation lines are present and flagged with is_cancellation rather than removed; consumers aggregating quantity or revenue must filter or net them deliberately. Zero-price lines are present.",
+  "limitations": "Declared from profile v0001 of the table's own output, so the contract states what the table currently produces and not what an upstream source guarantees. customer_id is null on 30.0664% of rows. product_description is null on 0.5098% of rows. The observed window is a single December; nothing here bounds behavior outside it."
+}

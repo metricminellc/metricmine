@@ -17,6 +17,12 @@ dependencies = [
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.ruff]
+# Staged prep folders (prep-<letter>/) are session-scoped, untracked, and
+# removed at Close; the exclude keeps a manual `uv run ruff check .` clean
+# while one is staged (Session O deviation 22).
+extend-exclude = ["prep-*"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 markers = [

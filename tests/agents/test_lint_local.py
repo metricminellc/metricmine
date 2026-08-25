@@ -18,6 +18,7 @@ from metricmine.agents.harness import load_agents_config
 from metricmine.agents.render import (
     Provenance,
     render_cleanup,
+    render_describe,
     render_mapping,
     to_yaml,
 )
@@ -126,6 +127,36 @@ def test_rendered_recorded_proposal_lints_clean(
             render(proposal, provenance, "1.2.0"),
             ["Recorded fixture.", "Review before approval (D-24)."],
         ),
+        encoding="utf-8",
+    )
+    proc = subprocess.run(
+        ["datacontract", "lint", str(draft)], capture_output=True, text=True
+    )
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+
+
+def test_rendered_describe_example_lints_clean(tmp_path: Path) -> None:
+    # The staged describe example through render_describe with the
+    # proposerStance extra (D-22 Amendment I), judged by the real tool.
+    example = json.loads(
+        (
+            REPO_ROOT / "docs" / "spec" / "agent-layer"
+            / "example-describe-proposal.json"
+        ).read_text(encoding="utf-8")
+    )
+    provenance = Provenance(
+        proposed_by=silver_proposer.NAME,
+        proposer_version=silver_proposer.VERSION,
+        prompt_version="1.0.0",
+        model_id="claude-sonnet-5",
+        profile_hash="sha256:" + "0" * 64,
+        proposed_at="2026-08-25",
+        extras={"proposerStance": "describe"},
+    )
+    document = render_describe(example, provenance, "1.0.0")
+    draft = tmp_path / "draft.odcs.yaml"
+    draft.write_text(
+        to_yaml(document, ["Lint fixture.", "Review before approval (D-24)."]),
         encoding="utf-8",
     )
     proc = subprocess.run(
