@@ -56,6 +56,16 @@ class DuckDBWarehouse:
         ).fetchall()
         return [(row[0], row[1]) for row in rows]
 
+    def relation_kinds(self, schema: str) -> dict[str, str]:
+        rows = self._con.execute(
+            "select table_name, table_type from information_schema.tables"
+            " where table_schema = ? order by table_name",
+            [schema],
+        ).fetchall()
+        return {
+            row[0]: ("view" if row[1] == "VIEW" else "table") for row in rows
+        }
+
     def row_count(self, schema: str, table: str) -> int:
         (count,) = self._con.execute(
             f"select count(*) from {self._rel(schema, table)}"
