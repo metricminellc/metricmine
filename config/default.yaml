@@ -35,6 +35,12 @@ engine:
   silver_contract: contracts/silver_invoice_lines.odcs.yaml
   schema_path: docs/spec/engine/mapping-contract.schema.json
   output_dir: transform/models/gold
+  # The typed surface per category (D-36): `table` emits the materialized
+  # mart (mart_<category>_typed, lean shape, ordered by the time column),
+  # `view` emits the projection view (vw_<category>_typed, the pre-D-36
+  # set), `both` emits both. The default is both: the mart answers
+  # analytical questions; the view stays for the keyless demo surface.
+  marts: both
 
 # Context compiler per docs/spec/engine.md §4 (D-30): governing contracts in,
 # committed compiled-context artifact out (context/compiled/vNNNN.json plus

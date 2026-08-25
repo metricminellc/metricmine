@@ -58,6 +58,9 @@ class FactCategory(TypedDict):
     category: str
     fact_table: str
     row_count: int
+    typed_table: str | None
+    typed_columns: list[str]
+    query_hint: str
 
 
 class CategoryList(TypedDict):
@@ -243,17 +246,53 @@ class GoldWarehouse:
     # -------------------------------------------------------------- tools
 
     def list_fact_categories(self) -> CategoryList:
-        """Categories from the physical fact tables (spec §2)."""
+        """Categories from the physical fact tables (spec §2), each naming
+        its typed surface (D-31/D-32 as amended): the materialized mart
+        when it exists, else the projection view, else none. The star
+        tables stay the provenance layer; the hint says so in words an
+        agent acts on.
+        """
         categories: list[FactCategory] = []
         for table in self._tables(FACT_TABLE_PATTERN):
             (count,) = self._con.execute(
                 f"select count(*) from {self._rel(table)}"
             ).fetchone()
+            category = table[len("fact_") : -len("_values")]
+            # The LIKE pattern is an exact name here: no wildcard.
+            typed_table = next(
+                (
+                    candidate
+                    for candidate in (
+                        f"mart_{category}_typed",
+                        f"vw_{category}_typed",
+                    )
+                    if self._tables(candidate)
+                ),
+                None,
+            )
+            typed_columns = self._columns(typed_table) if typed_table else []
+            if typed_table:
+                query_hint = (
+                    f"Ask questions against gold.{typed_table} (typed"
+                    f" columns, one row per {category} event)."
+                    f" gold.{table} and the dim_* tables are the"
+                    " content-addressed provenance layer: hash keys and"
+                    " canonical JSON payloads, joined by hash, meant for"
+                    " lookup_record and audit, not for analytics."
+                )
+            else:
+                query_hint = (
+                    f"Query gold.{table}; no typed surface is emitted for"
+                    " this category."
+                )
             categories.append(
                 {
-                    "category": table[len("fact_") : -len("_values")],
+                    "category": category,
                     "fact_table": table,
                     "row_count": int(count),
+                    "typed_table": typed_table,
+                    "typed_columns": typed_columns,
+                    "query_hint": query_hint,
                 }
             )
         return {"categories": categories}

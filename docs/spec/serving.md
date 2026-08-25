@@ -29,7 +29,7 @@ map one-to-one onto module methods.
 
 | Tool | Arguments | Returns | Truth source |
 |---|---|---|---|
-| `list_fact_categories` | none | categories with fact table name and row count | `information_schema` (physical tables `fact_<category>_values` in schema `gold`), cross-checkable against the registry |
+| `list_fact_categories` | none | categories with fact table name, row count, and the typed surface: `typed_table`, `typed_columns`, `query_hint` (D-31/D-32 as amended) | `information_schema` (physical tables `fact_<category>_values` in schema `gold`), cross-checkable against the registry |
 | `get_schema` | `schema_key` | entity group, contract name and version, role, manifest (the declared field list) | `gold.context_registry` |
 | `get_context` | `schema_key` | the full compiled context (fields, descriptions, derivations) plus its contract citation | `gold.context_registry` |
 | `query` | `sql`, optional `row_cap` | columns, rows, `row_count`, `truncated`, `row_cap` | the statement-gated, row-capped read path (§3, §4) |
@@ -37,6 +37,12 @@ map one-to-one onto module methods.
 
 Not-found is a clean empty result with `found: false`, never an error:
 an unknown key is a legitimate answer about content-addressed storage.
+
+The typed surface named per category is the materialized mart when
+emitted, else the projection view (D-36). Values read through the
+typed surface and the payloads are the canonical lowercased text
+(D-18 as amended by Amendment M): case-insensitive by design, and
+stated here so no consumer mistakes it for a defect.
 
 ## 3. Read-only, three layers deep
 

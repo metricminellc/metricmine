@@ -30,10 +30,13 @@ from metricmine.engine.manifest import (
     serialize_manifest,
 )
 from metricmine.engine.reader import (
+    EngineContractError,
     load_compiled_context,
     load_inputs,
     validate_mapping,
 )
+
+MARTS_MODES = ("table", "view", "both")
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 
@@ -50,8 +53,17 @@ def build_emission_set(repo_root: Path) -> dict[str, str]:
     # context_registry; the star set alone emits before the amendment.
     extended = registry_declared(inputs.star)
     if extended:
+        # The typed surface follows engine.marts (D-36): the materialized
+        # mart by default, the view kept beside it; a missing key reads as
+        # the default and an unknown value fails closed before anything
+        # emits.
+        marts = cfg.get("marts", "both")
+        if marts not in MARTS_MODES:
+            raise EngineContractError(
+                f"engine.marts must be one of {MARTS_MODES}, not {marts!r}"
+            )
         context_version, compiled = load_compiled_context(repo_root)
-        files.update(emit_extended_models(emission, compiled))
+        files.update(emit_extended_models(emission, compiled, marts))
     manifest = build_manifest(
         files, inputs.mapping, inputs.star, cfg["output_dir"]
     )

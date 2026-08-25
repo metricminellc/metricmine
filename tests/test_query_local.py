@@ -58,6 +58,20 @@ def gold():
 # --- list_fact_categories ---
 
 
+MART_COLUMNS = [
+    "invoice_id",
+    "is_cancellation",
+    "stock_code",
+    "product_description",
+    "customer_id",
+    "country",
+    "invoiced_at",
+    "quantity",
+    "unit_price",
+    "fact_hash_id",
+]
+
+
 def test_lists_the_one_category_with_its_row_count(gold):
     assert gold.list_fact_categories() == {
         "categories": [
@@ -65,9 +79,32 @@ def test_lists_the_one_category_with_its_row_count(gold):
                 "category": "invoice_lines",
                 "fact_table": "fact_invoice_lines_values",
                 "row_count": FACT_ROWS,
+                "typed_table": "mart_invoice_lines_typed",
+                "typed_columns": MART_COLUMNS,
+                "query_hint": (
+                    "Ask questions against gold.mart_invoice_lines_typed"
+                    " (typed columns, one row per invoice_lines event)."
+                    " gold.fact_invoice_lines_values and the dim_* tables"
+                    " are the content-addressed provenance layer: hash keys"
+                    " and canonical JSON payloads, joined by hash, meant"
+                    " for lookup_record and audit, not for analytics."
+                ),
             }
         ]
     }
+
+
+def test_mart_answers_the_typed_question_with_the_view_rows(gold):
+    """The steer's promise measured: the mart and the view agree on a
+    representative aggregate (D-36; the mart is the view's SELECT
+    materialized lean)."""
+    question = (
+        "SELECT country, sum(quantity * unit_price) AS revenue FROM gold.{} "
+        "GROUP BY country ORDER BY revenue DESC, country LIMIT 5"
+    )
+    mart = gold.query(question.format("mart_invoice_lines_typed"))
+    view = gold.query(question.format("vw_invoice_lines_typed"))
+    assert mart["rows"] == view["rows"]
 
 
 # --- get_schema / get_context ---
