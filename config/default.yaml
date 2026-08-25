@@ -59,7 +59,11 @@ context:
 # register amendment, never a config edit.
 agents:
   effort: high
-  max_tokens: 8192
+  # 16384 since Session P (was 8192): both Session O silver first attempts
+  # stopped on max_tokens at 8192 under effort high, each truncation burning
+  # the full cap before the bounded retry spent again. D-21 requires a cap,
+  # not this cap; the worst case stays bounded per call.
+  max_tokens: 16384
   max_retries: 2
   outbox_dir: proposals
   silver:
@@ -69,6 +73,14 @@ agents:
         prompt: src/metricmine/agents/prompts/silver_cleanup.md
         proposal_schema: docs/spec/agent-layer/silver-cleanup-proposal.schema.json
         target_contract: contracts/silver_invoice_lines.odcs.yaml
+      # The describe stance (D-35) adopts an EXISTING silver table: the
+      # profile directory and the target contract derive from the TABLE
+      # argument at the CLI (profiles/silver.<table>/,
+      # contracts/<table>.odcs.yaml), because describe consumes the target
+      # table's own profile artifact.
+      describe:
+        prompt: src/metricmine/agents/prompts/silver_describe.md
+        proposal_schema: docs/spec/agent-layer/table-contract-proposal.schema.json
   mapping:
     stances:
       propose:
