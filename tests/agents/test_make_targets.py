@@ -103,3 +103,34 @@ def test_dbt_lines_follow_the_repo_root_invocation_convention() -> None:
         if "uv run dbt" in line:
             assert "--project-dir transform" in line
             assert "--profiles-dir transform" in line
+
+
+def test_propose_describe_carries_table_model_and_oracle_flags() -> None:
+    targets = _parse()
+    prerequisites, recipe = targets["propose-describe"]
+    assert prerequisites == []
+    assert len(recipe) == 1
+    assert recipe[0].startswith(
+        "uv run python -m metricmine.agents propose describe"
+    )
+    assert '--table "$(TABLE)"' in recipe[0]
+    assert "$(MODEL_FLAG)" in recipe[0]  # the D-34 per-run override
+    assert "$(ORACLE_FLAG)" in recipe[0]  # the D-25 agreement study
+
+
+def test_adoption_tools_are_deterministic_module_calls() -> None:
+    # The adoption tools are code, never agents (D-10 Amendment G): their
+    # recipes call the adoption package and never a proposer or the key.
+    targets = _parse()
+    for name, subcommand in (
+        ("verify-grain", "verify-grain"),
+        ("enforce-properties", "enforce-properties"),
+    ):
+        prerequisites, recipe = targets[name]
+        assert prerequisites == []
+        assert len(recipe) == 1
+        assert recipe[0].startswith(
+            f"uv run python -m metricmine.adoption {subcommand}"
+        )
+        for marker in ("metricmine.agents", "ANTHROPIC"):
+            assert marker not in recipe[0], f"{name} reaches a proposer: {recipe[0]!r}"
