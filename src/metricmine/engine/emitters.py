@@ -752,9 +752,9 @@ def emit_extended_models(
 ) -> dict[str, str]:
     """The extended-star additions (spec §5): the registry, carried from
     the compiled-context artifact, plus the typed surface per the
-    engine.marts configuration (D-36) — the materialized mart under
+    engine.marts configuration (D-36): the materialized mart under
     ``table`` or ``both``, the projection view under ``view`` or ``both``.
-    Registry properties ride the existing fixed-point emitter — the
+    Registry properties ride the existing fixed-point emitter; the
     amended gold contract's context_registry object drives them."""
     category = emission.category_name
     files = {
