@@ -1,0 +1,52 @@
+{
+  "columns": {
+    "draft": 9,
+    "oracle": 9,
+    "ordinal_order_equal": true,
+    "shared": 9
+  },
+  "first_class_checks": {
+    "agree": 41,
+    "checked": 45,
+    "per_field": {
+      "logicalType": "9/9",
+      "physicalType": "9/9",
+      "primaryKey": "7/9",
+      "primaryKeyPosition": "7/9",
+      "required": "9/9"
+    }
+  },
+  "grain": {
+    "draft": [
+      "invoice_id",
+      "stock_code"
+    ],
+    "oracle": [
+      "invoice_id",
+      "stock_code",
+      "quantity",
+      "unit_price"
+    ],
+    "order_equal": false,
+    "set_equal": false
+  },
+  "mismatches": [
+    "quantity.primaryKey: oracle=True draft=False",
+    "quantity.primaryKeyPosition: oracle=3 draft=None",
+    "unit_price.primaryKey: oracle=True draft=False",
+    "unit_price.primaryKeyPosition: oracle=4 draft=None"
+  ],
+  "oracle_id": "silver_invoice_lines",
+  "rule_types": {
+    "column_equal": false,
+    "table_draft": [
+      "library:rowCount",
+      "sql"
+    ],
+    "table_equal": true,
+    "table_oracle": [
+      "library:rowCount",
+      "sql"
+    ]
+  }
+}
