@@ -72,11 +72,15 @@ approves every contract.
     human-owned and is reviewed in the model PR.
 12. Gold is the unified event star per docs/spec/gold-unified-event-star.md:
     content-addressed values/columns dimensions, category-parameterized fact
-    tables, context_registry, and typed projection views. Star tables and the
-    registry materialize as `table` (contract enforcement requires it).
-    Projections (vw_<category>_typed) are views, uncontracted, and carry a
-    derivative header. Never propose a mart layer, a fourth schema, or a view
-    materialization for any contracted gold object.
+    tables, context_registry, and a typed surface per category. Star tables
+    and the registry materialize as `table` (contract enforcement requires
+    it). The typed surface follows engine.marts (D-36): the materialized
+    mart mart_<category>_typed (a table, lean, typed columns plus
+    fact_hash_id, ordered by the time column) by default, with the
+    projection view vw_<category>_typed kept beside it. Both are
+    engine-emitted, uncontracted, and carry a derivative header. Never
+    propose a typed surface the engine does not emit, a fourth schema, or a
+    view materialization for any contracted gold object.
 
 13. Hash keys use canonical_key v2 and nothing else. Payloads: parse, compact
     serialization with sorted keys, lowercase everything, SHA-256, hex.
@@ -153,8 +157,11 @@ approves every contract.
     query result is row-capped (default 100, hard cap 500) and carries an
     explicit truncated flag: a truncated result must announce itself. The
     served database resolves MM_SERVE_DB, then demo/demo.duckdb; a
-    missing file fails closed at startup. Exactly five tools; never add a
-    sixth without amending the register. Server code never prints to
+    missing file fails closed at startup. list_fact_categories names the
+    typed surface per category (typed_table, typed_columns, query_hint;
+    D-31/D-32 as amended): analytical questions belong to that surface,
+    and the star tables stay the provenance layer. Exactly five tools;
+    never add a sixth without amending the register. Server code never prints to
     stdout (stdio carries JSON-RPC); diagnostics go to stderr. Spec:
     docs/spec/serving.md.
 

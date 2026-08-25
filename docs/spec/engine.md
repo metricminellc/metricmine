@@ -36,7 +36,9 @@ two approved contracts — a **mapping contract** (declared by this spec) and
 the **gold star contract** (`contracts/gold_unified_event_star.odcs.yaml`)
 — and emits the dbt model files that build the unified event star: the
 values/columns dimension pairs, the category fact table, the context
-registry, and one uncontracted typed projection view per category. It never
+registry, and the uncontracted typed surface per category: the
+materialized typed mart and the projection view, per the `engine.marts`
+configuration (D-36). It never
 executes DDL, never writes to the warehouse, never runs at proposer
 runtime, and never writes outside `transform/models/gold/` plus its
 ownership manifest (D-07, D-09). dbt builds what the engine emits; the
@@ -117,9 +119,9 @@ Verified end to end at the pinned toolchain (F-12, F-13):
   exit 1 with `Cannot sync — overlapping dbt models` and write nothing
   (F-12, probe P1c) — but it reddens the gate, so the rule is structural:
   category names are bare nouns; every emitted model carries a `dim_`,
-  `fact_`, or `vw_` prefix or the reserved name `context_registry`; the
-  JSON Schema rejects category names matching any of those patterns, and
-  the reader re-checks (defense in depth).
+  `fact_`, `vw_`, or `mart_` prefix or the reserved name
+  `context_registry`; the JSON Schema rejects category names matching any
+  of those patterns, and the reader re-checks (defense in depth).
 
 ### The Phase 6 hook (the agent-layer obligation, discharged)
 
@@ -241,11 +243,14 @@ it; the diff arrives as a regeneration PR (D-09).
   star-global objects):** `dim_<category>_values.sql`,
   `dim_<category>_columns.sql`, the shared group dims
   (`dim_source_*`, `dim_run_*`, `dim_timeframe_*`), the fact
-  `fact_<category>_values.sql`, `context_registry.sql`,
-  `vw_<category>_typed.sql`, and **one properties yml per emitted model**
+  `fact_<category>_values.sql`, `context_registry.sql`, the typed
+  surface per `engine.marts` (D-36: `mart_<category>_typed.sql` under
+  `table` or `both`, `vw_<category>_typed.sql` under `view` or `both`;
+  the committed default is `both`; an unrecognized value fails closed),
+  and **one properties yml per emitted model**
   at the sync fixed point (section 6). The set follows the gold
   contract's object catalog: star tables always; `context_registry` and
-  the typed projection join it once the contract declares
+  the typed surface join it once the contract declares
   `context_registry` (the extended-star activation, F-20 era), and the
   ownership manifest then pins the compiled-context artifact version. `dim_run` payload carries the
   mapping contract name and version and the engine version — lineage as
@@ -261,6 +266,8 @@ it; the diff arrives as a regeneration PR (D-09).
 
   Projections replace the second line with the derivative label:
   `-- Derivative typed projection over the star; uncontracted by design (D-17). Do not edit; flag drift instead (rule 8).`
+  The mart replaces it with its own:
+  `-- Derivative typed mart over the star; uncontracted by design (D-17 as amended by D-36). Do not edit; flag drift instead (rule 8).`
   Headers survive sync verbatim (F-14).
 - **Ownership manifest:** `transform/models/gold/ownership-manifest.json`,
   canonical JSON, deterministic content only (no timestamps — regeneration
@@ -430,7 +437,7 @@ placeholder is a standalone chore, not part of any ladder PR.
 
 ## 11. Explicitly out of scope
 
-Everything the gold spec excludes (marts, incremental materialization,
+Everything the gold spec excludes (incremental materialization,
 partitioning, multiple dimension groups per category, performance claims),
 plus: the engine never reads the warehouse (it reads contracts and the
 compiled-context artifact; conservation numbers come from dbt tests, not

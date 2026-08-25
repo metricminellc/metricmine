@@ -20,7 +20,8 @@ Record 005 Rev. 2 (August 13, 2026) carries D-31 through D-33, the serving
 layer, and Amendment D to D-32. Decision Record 006 (August 14, 2026)
 carries Amendment E to D-03 and D-33. Decision Record 007 (August 22,
 2026) carries D-34, D-35, Amendments F through J, and findings F-26
-through F-28.
+through F-28. Decision Record 008 part one (August 24, 2026) carries
+D-36 and Amendments K, L, and M; part two follows with Arc 5b.
 
 **Status meanings.** `adopted` — in force. `proposed` — agreed in working
 session, applied by the plans below, formal adoption pending; treat as binding
@@ -65,6 +66,7 @@ unless amended.
 | [D-33](#d-33) | Demo export: content equality by query, never bytes | adopted |
 | [D-34](#d-34) | Proposer model selection: pinned default, allow-listed override | adopted |
 | [D-35](#d-35) | Proposer stances and the adoption scan | adopted |
+| [D-36](#d-36) | The typed surface: a materialized mart by default | adopted |
 
 ## The decisions
 
@@ -234,6 +236,13 @@ Materialized columnar marts are out of scope, documented as a future
 increment. Gold serves consumers only through the shared query module, with
 the MCP server primary. Full design:
 [`docs/spec/gold-unified-event-star.md`](../spec/gold-unified-event-star.md).
+Amended August 24, 2026 (Record 008, Amendment K): the
+materialized-marts clause is superseded by [D-36](#d-36). The engine
+emits the typed surface per category as a materialized mart by default
+behind `engine.marts`, with the projection view kept beside it in the
+committed default. Every other clause stands: table materialization for
+contracted objects, the uncontracted derivative posture of the typed
+surface, and the serving clause.
 
 ### D-18
 **Keying scheme v2.** All record and schema keys use
@@ -244,6 +253,15 @@ and order-insensitive. A deliberate, documented delta from the 2023 baseline
 scheme (which was insertion-order sensitive and hyphen-stripping); the
 rebuild carries zero legacy data, so no key migration exists. Baseline
 record: [`docs/spec/current-state/data-capture-baseline.md`](../spec/current-state/data-capture-baseline.md).
+Amended August 24, 2026 (Record 008, Amendment M): the canonical text is
+also the served text. Stored value payloads are the canonical lowercased
+serialization, so every value read through the star, its projections,
+and its marts is lowercased text. This is deliberate and stated at the
+serving surface ([`docs/spec/serving.md`](../spec/serving.md) §2 and the
+server instructions), not a defect. The key scheme is unchanged. A
+case-preserving served payload was weighed against the August 23
+pressure measurements and declined for the v1.0.0 line; reopening it is
+a register decision and a post-tag experiment candidate.
 
 ### D-19
 **Context binds by content address.** Business context and
@@ -464,6 +482,21 @@ Amendment E), keeping the keyless posture. The D-31 number was reserved and left
 Record 004 for the rule-11 scope; it mints here, keeping the numbering
 dense and the history honest. Full design:
 [`docs/spec/serving.md`](../spec/serving.md).
+Amended August 24, 2026 (Record 008, Amendment L, jointly with D-32):
+the five-tool surface gains no tool. `list_fact_categories`
+additionally returns, per category, `typed_table` (the materialized
+mart when emitted, else the projection view, else null),
+`typed_columns` (its columns in ordinal order), and `query_hint` (one
+paragraph steering analytical questions to the typed surface and naming
+the star tables as the provenance layer for `lookup_record` and audit).
+The server instructions open with the same steer and state the D-18
+served-case posture (Amendment M). The compiled context carries a
+`typed_surface` pointer on the category-group entries (the D-30
+artifact gains the key; compiled schema_version 1.1.0), so
+`get_context` and `list_fact_categories` agree by construction.
+Evidence: the August 23 pressure findings measured an agent exploring
+the star unaided through this server; the steer is the direct remedy.
+Full text: Decision Record 008.
 
 ### D-32
 **MCP SDK selection and pin.** The official `mcp` package at 2.0.x,
@@ -488,6 +521,12 @@ return yields an output schema and structured content, a bare dict yields
 neither. The server class is `FastMCP` from `mcp.server.fastmcp`, not the
 2.0 `MCPServer`. Everything else in the decision stands, the
 project-dependency posture above all.
+Amended August 24, 2026 (Record 008, Amendment L, jointly with D-31):
+the serving steer rides the pinned SDK surface unchanged. The added
+`FactCategory` fields serialize through the same TypedDict mechanism
+this decision verified, and the steer paragraph travels through the
+`FastMCP` instructions parameter already in use. No SDK change, no pin
+change, no new tool.
 
 ### D-33
 **Demo export: content equality by query, never byte equality.**
@@ -565,6 +604,31 @@ are reported, never adopted. Evidence: the August 21 to 22 adoption lab
 [F-28](../verification/gate_proof_findings.md#f-28)). Full text:
 Decision Record 007.
 
+### D-36
+**The typed surface: a materialized mart by default.** For every fact
+category the engine emits a materialized typed mart,
+`mart_<category>_typed`, governed by the `engine.marts` configuration:
+`table` emits the mart, `view` emits the projection view (the pre-D-36
+set), `both` emits both, and `both` is the committed default. An
+unrecognized value fails closed before anything emits. The mart is the
+typed projection's SELECT materialized as a dbt `table`, lean: the
+typed business columns plus `fact_hash_id` as the provenance pointer
+back to the star, resolvable by `lookup_record`. Derived identifiers
+stay inside the dimension payload and are not carried. Rows are ordered
+by the declared time column so zone maps prune time-window scans. The
+mart is uncontracted and derivative exactly as the view is (D-17 as
+amended, Amendment K), carries the derivative generated-by header,
+lands under the ownership manifest (D-09), and joins the byte oracle
+and the demo artifact. `mart_` joins the reserved model-name prefixes
+in the frozen mapping-contract schema, the proposal validator, and the
+engine reader. At transaction grain the mart is one row per fact row,
+so `COUNT(*)` is the row count there. Evidence, environment stated: in
+a 2-CPU sandbox at 1 to 21 million synthetic rows (August 23, 2026),
+analytical questions answered 100 to 2,000 times faster against the
+mart than through the view, for a one-time mart build of 61 to 151
+seconds; at the committed sample the demo content digest is unchanged
+and `dbt build` gains one node. Full text: Decision Record 008.
+
 ## Session-decision and finding IDs
 
 IDs of the form `A<n>` (working-session decisions, e.g. A4) and `F-0x`
@@ -595,13 +659,13 @@ authority. The mapping:
 | 9 (engine emits models, never DDL; mapping-contract placement) | D-07, D-29 |
 | 10 (gate three under uv run; top-level `datacontract test` unused) | D-12, D-16; gate-two mechanics per D-20 |
 | 11 (properties hand-authored on the silver plane; sync-created at adoption; engine-emitted on gold; sync output reviewed) | D-16 (Amendments C, J), D-29, evidence [F-02](../verification/gate_proof_findings.md#f-02)/[F-05](../verification/gate_proof_findings.md#f-05)/[F-14](../verification/gate_proof_findings.md#f-14)/[F-27](../verification/gate_proof_findings.md#f-27) |
-| 12 (unified event star; tables; projections as views) | D-17 |
+| 12 (unified event star; tables; the typed mart default; projections) | D-17, D-36 |
 | 13 (canonical_key v2, deterministic payloads) | D-18 |
 | 14 (registry binding; fact key; declared grain) | D-19 |
 | 15 (proposer runtime: one structured call; proposal schema projection; allow-listed model override; governed inputs per stance; no tools/MCP/loops; outbox-only) | D-21 (Amendment F), D-23 (Amendment H), D-34, D-35, evidence [F-26](../verification/gate_proof_findings.md#f-26) |
 | 16 (versioned prompts; contract provenance incl. proposerStance and amendsContract; pattern-derived absence rule) | D-22 (Amendment I), D-29 |
 | 17 (human-only draft-to-contract flow; no relaxation without the flag; report-and-stop on fail-closed; keyless make demo) | D-24, D-08, D-10 (Amendment G), D-35 |
-| 18 (serving boundary: shared module, three-layer read-only, capped results) | D-31, D-32, D-33 |
+| 18 (serving boundary: shared module, three-layer read-only, capped results, the typed-surface steer) | D-31, D-32, D-33 |
 
 All decisions in this register are adopted: D-01 through D-20 as of the
 July 11, 2026 revision (Decision Record 001 Rev. 3), D-21 through D-25 as
@@ -609,8 +673,10 @@ of the July 12, 2026 revision (Decision Record 002), D-26 through D-28
 as of the July 31, 2026 revision (Decision Record 003), D-29 and D-30
 (with Amendment C to D-16) as of the August 1, 2026 revision (Decision
 Record 004), D-31 through D-33 as of the August 13, 2026 revision
-(Decision Record 005), and D-34 and D-35 (with Amendments F through J)
-as of the August 22, 2026 revision (Decision Record 007). D-20 has no
+(Decision Record 005), D-34 and D-35 (with Amendments F through J)
+as of the August 22, 2026 revision (Decision Record 007), and D-36
+(with Amendments K, L, and M) as of the August 24, 2026 revision
+(Decision Record 008 part one). D-20 has no
 dedicated
 CLAUDE.md rule; its substance
 is encoded directly in

@@ -72,7 +72,7 @@ def test_category_name_may_not_shadow_an_emitted_model(
     # The load-bearing naming rule (F-12 collision evidence): category
     # names must never look like dbt model names.
     for bad in ("dim_invoice_lines_values", "fact_x", "vw_x_typed",
-                "silver_invoice_lines", "context_registry"):
+                "mart_x_typed", "silver_invoice_lines", "context_registry"):
         doc = copy.deepcopy(example)
         doc["schema"][0]["name"] = bad
         assert _refused(validator, doc), f"schema accepted forbidden name {bad!r}"

@@ -30,6 +30,7 @@ models, landing as pull requests under the ownership manifest (D-09).
 | `fact_<category>_values` | table | composite PK, below | Measure payload, manifest FK, group-key FKs. One row per declared grain. |
 | `context_registry` | table | schema key PK | `schema_key`, entity group, contract name, contract version, compiled context. Written by the context compiler. |
 | `vw_<category>_typed` | view | none | Typed projection: `json_extract` + cast per manifest field. Uncontracted; header-labeled derivative. |
+| `mart_<category>_typed` | table | none | Materialized typed mart (D-36): the projection's SELECT as a table, lean, typed columns plus `fact_hash_id`, ordered by the time column. Uncontracted; header-labeled derivative. |
 
 Every `*_values` row carries the four-element pattern: value payload (JSON object),
 schema manifest (held in the columns dim, referenced by schema key), record key,
@@ -75,7 +76,9 @@ because the first live serving sessions proved a consumer needs them
 [F-24](../verification/gate_proof_findings.md#f-24)):
 
 - **Row counts at transaction grain:** `COUNT(*)` on the fact table, or
-  `COUNT(DISTINCT line_identity)` through the typed view. Never
+  `COUNT(DISTINCT line_identity)` through the typed view. The typed mart
+  is one row per fact row and does not carry `line_identity`, so
+  `COUNT(*)` is the row count there. Never
   `COUNT(DISTINCT fact_hash_id)`: that column addresses the measure
   payload alone, and identical measure payloads collide by design (F-24).
 - **The category dimension is 1:1 with its fact at transaction grain, by
@@ -126,7 +129,9 @@ enforcement lives in the tests.
 
 Star tables materialize as `table` (D-07); dbt contract enforcement requires
 table or incremental, so views are not an option for contracted objects.
-Projections are views and carry no contract. One ODCS contract,
+Projections are views and carry no contract. The typed mart (D-36) is a
+table and also carries no contract: enforcement is a property of the star
+tables and the registry, and the typed surface stays derivative. One ODCS contract,
 `contracts/gold_unified_event_star.odcs.yaml`, covers all star tables plus the
 registry as schema objects, versioned as one unit. Because the physical shape is
 source-invariant, this contract is stable: payload evolution surfaces as new
@@ -148,8 +153,7 @@ get context by schema key; row-limited query; lookup record by content key
 
 ## Explicitly out of scope
 
-Materialized columnar marts (documented future increment; the projections
-demonstrate the path), incremental materialization (documented path, built when
+Incremental materialization (documented path, built when
 warranted), partitioning, multiple dimension groups per category, and any
 performance claims without measurement. Non-goals in the README remain standing.
 
