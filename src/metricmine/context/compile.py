@@ -27,7 +27,7 @@ from metricmine.profiling.writer import latest_version, write_if_changed
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 
-COMPILED_SCHEMA_VERSION = "1.0.0"
+COMPILED_SCHEMA_VERSION = "1.1.0"
 
 
 def _harvest(prop: dict) -> dict:
@@ -47,6 +47,23 @@ def _custom_properties(contract: dict) -> dict:
     }
 
 
+def _typed_surface(repo_root: Path, category: str) -> str:
+    """The category's typed surface per engine.marts (D-36; D-31/D-32 as
+    amended): the materialized mart under ``table`` or ``both``, the
+    projection view under ``view``. A missing key reads as ``both``. The
+    pointer is config-derived deterministic content, so the registry and
+    the engine's emission agree by construction.
+    """
+    config_path = Path(repo_root) / "config" / "default.yaml"
+    engine_cfg = yaml.safe_load(config_path.read_text(encoding="utf-8"))[
+        "engine"
+    ]
+    marts = engine_cfg.get("marts", "both")
+    if marts in ("table", "both"):
+        return f"mart_{category}_typed"
+    return f"vw_{category}_typed"
+
+
 def build_compiled_context(repo_root: Path) -> dict:
     """The artifact content dict, pure: contracts in, no writes (D-30).
 
@@ -62,6 +79,7 @@ def build_compiled_context(repo_root: Path) -> dict:
 
     mapping = inputs.mapping
     properties = {p["name"]: p for p in emission.category["properties"]}
+    typed_surface = _typed_surface(repo_root, emission.category_name)
 
     def entry(schema_key: str, entity_group: str, compiled: dict) -> dict:
         return {
@@ -126,6 +144,7 @@ def build_compiled_context(repo_root: Path) -> dict:
                 "manifest": emission.dim_manifest,
                 "role": "dimensions",
                 "source_table": emission.source_table,
+                "typed_surface": typed_surface,
             },
         ),
         entry(
@@ -139,6 +158,7 @@ def build_compiled_context(repo_root: Path) -> dict:
                 "manifest": emission.measure_manifest,
                 "role": "measures",
                 "source_table": emission.source_table,
+                "typed_surface": typed_surface,
             },
         ),
     ]
