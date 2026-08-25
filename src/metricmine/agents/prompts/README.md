@@ -2,8 +2,8 @@
 
 Prompts are versioned artifacts. One file per proposer stance lives in
 this directory (`silver_cleanup.md` for the silver `cleanup` stance,
-`gold_mapping.md` for the mapping `propose` stance; later stances add
-their own file). The harness refuses to run without the prompt file for
+`gold_mapping.md` for the mapping `propose` stance, `silver_describe.md`
+for the silver `describe` stance; later stances add their own file). The harness refuses to run without the prompt file for
 the invoked stance, and it refuses a prompt whose front matter carries no
 `version`. `tests/agents/test_prompts.py` holds every prompt to this
 anatomy: the schema summary must name every property and enum value of
