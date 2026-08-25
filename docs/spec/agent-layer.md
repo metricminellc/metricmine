@@ -12,7 +12,7 @@ The pipeline has exactly two agents (D-10): the **silver cleanup proposer** (bro
 Each proposer is **one structured call** to the Anthropic Messages API through the official Python SDK (`anthropic>=1.0,<1.1`, resolved 1.0.0, a normal locked dependency from the Phase 6 harness PR onward; upgrades are deliberate, by pull request; D-21 Amendment F).
 
 - **Model:** `claude-sonnet-5` by default. Model IDs of this generation are fixed snapshots, so the string is the pin. Never `latest`. An operator may swap the model for a run to an allow-listed ID (`claude-sonnet-5`, `claude-opus-5`, `claude-fable-5`) via `--model` or `MM_PROPOSER_MODEL`, in that precedence; an unlisted ID fails closed before any call; the model used is recorded and stamped in provenance (D-34).
-- **Structured outputs:** the request sets `output_config.format` to the proposer's **proposal schema**, a structured-outputs-compatible projection of the contract shape kept at `docs/spec/agent-layer/gold-mapping-proposal.schema.json` and `docs/spec/agent-layer/silver-cleanup-proposal.schema.json` (flat; every property required; every enum typed; variants flattened into a discriminator plus sibling arrays the validator holds consistent). Constrained decoding guarantees the response parses against it. The model cannot emit prose or a malformed proposal. The frozen mapping-contract schema is never sent to the API; it validates the rendered contract instead ([F-26](../verification/gate_proof_findings.md#f-26)). Each schema file is paired with an example proposal beside it.
+- **Structured outputs:** the request sets `output_config.format` to the proposer's **proposal schema**, a structured-outputs-compatible projection of the contract shape kept at `docs/spec/agent-layer/gold-mapping-proposal.schema.json`, `docs/spec/agent-layer/silver-cleanup-proposal.schema.json`, and `docs/spec/agent-layer/table-contract-proposal.schema.json` (flat; every property required; every enum typed; variants flattened into a discriminator plus sibling arrays the validator holds consistent; the table-contract projection serves the `describe` and `amend` stances through its `stance` discriminator, D-35). Constrained decoding guarantees the response parses against it. The model cannot emit prose or a malformed proposal. The frozen mapping-contract schema is never sent to the API; it validates the rendered contract instead ([F-26](../verification/gate_proof_findings.md#f-26)). Each schema file is paired with an example proposal beside it.
 - **Parameters:** effort set explicitly, `max_tokens` capped, all request parameters recorded per run.
 - **Serialization boundary:** the model emits a structured proposal; deterministic glue renders canonical ODCS YAML with stable key order. Judgment proposes; code serializes.
 - **Failure containment:** post-parse validation failures retry at most twice with errors fed back, then **fail closed**: exit nonzero, nothing written, raw response preserved for inspection. Retries apply only to errors the model can repair (schema, groundedness, completeness, lint); staleness and integrity failures fail closed at once without consuming the retry budget, and an SDK or transport error at the call fails closed at once with the error class and message in the record (Session N, S-N-1). Writes are atomic (temp file, rename). Loops are impossible by construction.
@@ -53,13 +53,18 @@ The proposers use **no RAG**: no vector store, no embeddings, no similarity sear
 The interaction surface is the CLI, the editor, and the pull request. Nothing else.
 
 ```
-make propose-silver     # bronze profile -> draft cleanup contract
-make propose-mapping    # silver profile -> draft mapping contract
+make propose-silver                    # bronze profile -> draft cleanup contract
+make propose-mapping                   # silver profile -> draft mapping contract
+make propose-describe TABLE=t          # the table's own profile -> draft table contract (D-35)
+make verify-grain TABLE=t KEYS=a,b     # measure a declared grain, deterministic (F-10)
+make enforce-properties TABLE=t        # the two enforcement keys sync omits (D-16 Amendment J)
 ```
 
 1. **Propose.** The target selects the latest profile (or `--profile PATH`), runs the call, validates, and writes the draft contract, the validated proposal object (`proposal.json`), and its proposal record to `proposals/`, a **gitignored outbox**. Nothing under `contracts/` is touched. The terminal prints a rationale summary citing profile evidence, and, on regeneration (the draft carries the committed contract's id), a unified diff with both documents normalized through the same parse-and-dump path so comments and scalar styles never appear as changes; a first proposal for a new id starts its version line at 1.0.0 and prints no diff.
 2. **Review.** Open the draft in the editor and edit freely; the draft is the reviewer's to change. Business context added during review lands in the contract fields the context compiler already harvests (D-19).
 3. **Approve.** Copy the reviewed contract into `contracts/` on a branch with the version bump D-08 requires, and open the contract-only pull request. The three gates run. **Merge is approval.** Rejected drafts never leave the outbox.
+
+4. **Adopt (the describe stance, D-35).** `make propose-describe TABLE=<model>` drafts the contract that would enforce an EXISTING silver table from that table's own profile artifact. It refuses when `contracts/<model>.odcs.yaml` already exists (the amend stance is the path for a contracted table); an explicit `ORACLE=<path>` bypasses the refusal for the recorded n=1 agreement study and writes `agreement.json` beside the record. The proposed grain is unverified until `make verify-grain TABLE=<model> KEYS=<a,b>` measures it against the warehouse (F-10). After the contract PR merges, `datacontract dbt sync` creates the properties file with exact types (F-27) and `make enforce-properties TABLE=<model>` adds only `contract.enforced` and the `not_null` constraints the contract implies (D-16 Amendment J); the file stays human-owned and the edit is reviewed in the model PR. The deterministic adoption tools live at `src/metricmine/adoption/`, never in the agents package: they are code, not agents (D-10 Amendment G).
 
 `make demo` replays committed contracts and models, keyless and deterministic, unchanged. A regenerate path chains the propose targets live. Determinism belongs to replay; the human gate contains live variance.
 
@@ -68,6 +73,7 @@ make propose-mapping    # silver profile -> draft mapping contract
 - **Fixtures:** the golden-profile set named in `config/default.yaml` under `agents.eval.fixtures`: the two committed Online Retail II profiles by reference (D-15), one constructed pathological profile under `tests/agents/fixtures/profiles/` built by the script beside it, and the faker path when issue #15 lands. The recorded live proposals live under `tests/agents/fixtures/recorded/` for the render tests.
 - **Offline, every CI run, keyless:** the render path is tested against recorded proposals and the validator against constructed inputs, in the existing pytest lane.
 - **Live, manual:** `make eval-agents` runs both proposers against the fixtures when a key is present and reports **first-attempt lint pass rate** and **first-attempt groundedness pass rate**, with token and cost actuals. It honors the D-34 model override, so a model comparison is one command; comparing is enabled, not performed.
+- **The agreement study (describe):** under an explicit `--oracle PATH` the describe stance scores its rendered draft against that committed contract on profile-evidenced elements only (per-column first-class fields, presence and order, the grain tuple, rule type shapes) and writes `agreement.json` beside the record. Reported as an n=1 study against self-authored ground truth, never as accuracy.
 - **Deferred by intent:** LLM-as-judge scoring, automated A/B optimization, drift dashboards.
 
 Phase 6 exits with fixtures committed, offline assertions green, and one recorded live run.
@@ -98,6 +104,7 @@ src/metricmine/agents/
 ├── __main__.py         # CLI: propose silver | propose mapping; --profile, --model
 ├── harness.py          # shared call: structured outputs, retry budget, record writing
 ├── models.py           # D-34: default model, allow-list with rate rows, resolver
+├── agreement.py        # the first-class agreement metric (describe, --oracle)
 ├── validate.py         # groundedness, completeness, staleness, lint
 ├── render.py           # proposal JSON -> canonical ODCS YAML
 ├── silver_proposer.py  # thin: schema + prompt binding
@@ -105,6 +112,7 @@ src/metricmine/agents/
 └── prompts/            # versioned prompt artifacts (semver front matter)
     ├── README.md       # template anatomy, versioning rules
     ├── silver_cleanup.md
+    ├── silver_describe.md
     └── gold_mapping.md
 docs/spec/agent-layer/  # proposal schemas (the API-facing projection) + examples
 proposals/              # gitignored outbox: drafts + records
