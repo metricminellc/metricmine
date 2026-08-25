@@ -39,6 +39,18 @@ def grain_rule_description(grain_keys: list[str]) -> str:
     )
 
 
+def not_null_rule_description(column: str) -> str:
+    return f"{column} is never null"
+
+
+def non_negative_rule_description(column: str) -> str:
+    return f"{column} is never negative"
+
+
+def accepted_values_rule_description(column: str) -> str:
+    return f"{column} stays inside the accepted value set"
+
+
 @dataclass(frozen=True)
 class Provenance:
     """Appendix B stamp; extras is HOOK 3 (empty today, ordered, verbatim)."""
@@ -238,6 +250,169 @@ def render_cleanup(proposal: dict, provenance: Provenance, version: str) -> dict
         "customProperties": _custom_properties(
             provenance, proposal.get("decisions", [])
         ),
+    }
+
+
+_TABLE_LEVEL_RULE_KINDS = ("row_count_positive", "grain_unique")
+
+
+def _describe_rule(
+    rule: dict, schema: str, table: str, grain_keys: list[str]
+) -> dict:
+    """One closed-enum proposal rule to one ODCS quality entry.
+
+    Descriptions are the STABLE PROSE constants above, never the
+    proposal's rationale text: `datacontract dbt sync` names generated
+    test files from rule descriptions (F-27), so evidence sentences stay
+    in the proposal record. Severities are fixed here at error, the
+    value the committed contracts established (D-35: no stance emits
+    severities).
+    """
+    kind = rule["kind"]
+    if kind == "row_count_positive":
+        return {
+            "type": "library",
+            "metric": "rowCount",
+            "description": ROW_COUNT_RULE_DESCRIPTION,
+            "severity": "error",
+            "mustBeGreaterThan": 0,
+        }
+    if kind == "grain_unique":
+        key_csv = ", ".join(grain_keys)
+        return {
+            "type": "sql",
+            "description": grain_rule_description(grain_keys),
+            "severity": "error",
+            "query": (
+                "SELECT COUNT(*) FROM (\n"
+                f"  SELECT {key_csv}\n"
+                f"  FROM {schema}.{table}\n"
+                f"  GROUP BY {key_csv}\n"
+                "  HAVING COUNT(*) > 1\n"
+                ")\n"
+            ),
+            "mustBe": 0,
+        }
+    column = rule["column"]
+    if kind == "not_null":
+        description = not_null_rule_description(column)
+        query = (
+            f"SELECT COUNT(*) FROM {schema}.{table} "
+            f"WHERE {column} IS NULL\n"
+        )
+    elif kind == "non_negative":
+        description = non_negative_rule_description(column)
+        query = f"SELECT COUNT(*) FROM {schema}.{table} WHERE {column} < 0\n"
+    else:  # accepted_values_subset; the schema enum admits nothing else
+        description = accepted_values_rule_description(column)
+        listed = ", ".join(
+            "'" + value.replace("'", "''") + "'" for value in rule["values"]
+        )
+        query = (
+            f"SELECT COUNT(*) FROM {schema}.{table} "
+            f"WHERE {column} NOT IN ({listed})\n"
+        )
+    return {
+        "type": "sql",
+        "description": description,
+        "severity": "error",
+        "query": query,
+        "mustBe": 0,
+    }
+
+
+def render_describe(proposal: dict, provenance: Provenance, version: str) -> dict:
+    """Insertion-ordered ODCS table document for the describe stance.
+
+    Mirrors the committed hand-written table contract
+    (contracts/silver_invoice_lines.odcs.yaml) in key order, grain
+    encoding (primaryKey positions plus the error-severity enforcing
+    rule), and provenance order, so the describe draft and a committed
+    contract diff element for element. The version comes from the
+    harness parameter (a described table starts its own line at 1.0.0
+    through the existing new-id rule; a regeneration under --oracle
+    bumps the committed line); this renderer never reads
+    proposal["proposed_version"].
+    """
+    schema_name = proposal["target_schema"]
+    table = proposal["target_table"]
+    grain_keys = list(proposal["grain_keys"])
+    key_positions = {key: i + 1 for i, key in enumerate(grain_keys)}
+
+    table_rules: list[dict] = []
+    column_rules: dict[str, list[dict]] = {}
+    for rule in proposal["quality_rules"]:
+        rendered = _describe_rule(rule, schema_name, table, grain_keys)
+        if rule["kind"] in _TABLE_LEVEL_RULE_KINDS:
+            table_rules.append(rendered)
+        else:
+            column_rules.setdefault(rule["column"], []).append(rendered)
+
+    properties = []
+    for column in proposal["columns"]:
+        prop: dict = {
+            "name": column["name"],
+            "logicalType": column["logical_type"],
+            "physicalType": column["physical_type"],
+            "required": column["required"],
+        }
+        if column["name"] in key_positions:
+            prop["primaryKey"] = True
+            prop["primaryKeyPosition"] = key_positions[column["name"]]
+        prop["description"] = column["description"]
+        if column["name"] in column_rules:
+            prop["quality"] = column_rules[column["name"]]
+        properties.append(prop)
+
+    grain_clause = "(" + ", ".join(grain_keys) + ")"
+    table_object: dict = {
+        "name": table,
+        "physicalName": table,
+        "logicalType": "object",
+        "physicalType": "table",
+        "description": (
+            f"One row per distinct {grain_clause}. The {len(grain_keys)} "
+            "grain columns are flagged primaryKey so sync generates the "
+            "composite uniqueness test; that generated test is "
+            "warn-severity by tool design at datacontract-cli 1.0.12, and "
+            "the error-severity grain rule below is the enforcing twin "
+            "(rule 5: uniqueness as a test, never a trusted constraint)."
+        ),
+        "dataGranularityDescription": f"One row per distinct {grain_clause}.",
+        "properties": properties,
+    }
+    if table_rules:
+        table_object["quality"] = table_rules
+
+    custom = _custom_properties(provenance, proposal.get("decisions", []))
+    custom.append({"property": "grain", "value": ", ".join(grain_keys)})
+
+    words = table.split("_")
+    return {
+        "apiVersion": API_VERSION,
+        "kind": "DataContract",
+        "id": table,
+        "name": " ".join([words[0].capitalize()] + words[1:]),
+        "version": version,
+        "status": "draft",
+        "domain": DOMAIN,
+        "dataProduct": DATA_PRODUCT,
+        "tenant": TENANT,
+        "description": {
+            "purpose": proposal["purpose"],
+            "usage": proposal["usage"],
+            "limitations": proposal["limitations"],
+        },
+        "schema": [table_object],
+        "servers": [
+            {
+                "server": "local",
+                "type": "duckdb",
+                "database": WAREHOUSE_DB,
+                "schema": schema_name,
+            }
+        ],
+        "customProperties": custom,
     }
 
 
