@@ -43,8 +43,18 @@ INSTRUCTIONS = """\
 Read-only access to the MetricMine gold layer: a unified event star of
 content-addressed dimensions and category-parameterized facts.
 
+Start with list_fact_categories: each category names its typed table
+(gold.mart_<category>_typed, or gold.vw_<category>_typed where only the
+view is emitted) with its columns. Ask analytical questions against that
+typed table. The star tables (fact_*, dim_*) are the content-addressed
+provenance layer: hash keys and canonical JSON payloads, joined by hash,
+meant for lookup_record and audit, not for analytics. Values read through
+the typed surface and the payloads are the canonical lowercased text
+(D-18 as amended): case-insensitive by design, not a defect.
+
 Five tools, all reads:
-- list_fact_categories: the fact categories and their row counts.
+- list_fact_categories: the fact categories, their typed tables and
+  columns, and row counts.
 - get_schema: a schema key's contract, role, and declared field manifest.
 - get_context: a schema key's full compiled context.
 - query: one SELECT statement, row-capped, against the gold schema.
