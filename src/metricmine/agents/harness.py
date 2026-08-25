@@ -348,7 +348,10 @@ def run_proposer(
         / cfg.outbox_dir
         / spec.name
         / (
-            f"{now.strftime('%Y%m%dT%H%M%SZ')}_"
+            # Microseconds keep same-second runs in distinct folders: the
+            # batch driver (D-35) fires proposer runs back to back, and a
+            # second-granular stamp collided in rehearsal (Session O-1).
+            f"{now.strftime('%Y%m%dT%H%M%S')}{now.microsecond:06d}Z_"
             f"{profile_hash.removeprefix('sha256:')[:8]}"
         )
     )

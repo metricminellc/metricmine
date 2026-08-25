@@ -336,3 +336,29 @@ def test_missing_datacontract_refused_before_any_call(
     )
     assert exit_code == 1
     assert client.calls == []
+
+
+def test_run_folder_stamps_are_sub_second(
+    spec: ProposerSpec, root: Path, good_proposal: str
+) -> None:
+    # Same-second runs must land in distinct folders: the batch driver
+    # (D-35) fires proposer runs back to back, and a second-granular
+    # stamp collided in the Session O-1 rehearsal. The module's _run
+    # helper pins its own now, so run_proposer is called directly here.
+    first = datetime(2026, 8, 25, 12, 0, 0, 111111, tzinfo=timezone.utc)
+    second = datetime(2026, 8, 25, 12, 0, 0, 222222, tzinfo=timezone.utc)
+    for now in (first, second):
+        code = harness.run_proposer(
+            spec,
+            root,
+            client=FakeClient([_response(good_proposal)]),
+            lint_runner=_lint_recorder()[0],
+            now=now,
+        )
+        assert code == 0
+    run_dirs = sorted(
+        path.name for path in (root / "proposals" / spec.name).iterdir()
+    )
+    assert len(run_dirs) == 2
+    assert run_dirs[0].startswith("20260825T120000111111Z_")
+    assert run_dirs[1].startswith("20260825T120000222222Z_")
