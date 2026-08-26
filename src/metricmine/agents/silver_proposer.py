@@ -10,9 +10,15 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import yaml
+
 from metricmine.agents.harness import ProposerSpec, load_agents_config
-from metricmine.agents.render import render_cleanup, render_describe
-from metricmine.agents.validate import validate_cleanup, validate_describe
+from metricmine.agents.render import render_amend, render_cleanup, render_describe
+from metricmine.agents.validate import (
+    validate_amend,
+    validate_cleanup,
+    validate_describe,
+)
 
 NAME = "silver-cleanup-proposer"
 VERSION = "0.1.0"
@@ -59,3 +65,42 @@ def build_describe_spec(repo_root: Path, table: str) -> ProposerSpec:
         render=render_describe,
         validate=validate_describe,
     )
+
+
+def build_amend_spec(
+    repo_root: Path, table: str, *, allow_relaxation: bool = False
+) -> tuple[ProposerSpec, dict, bytes]:
+    """The amend stance over one contracted silver table (D-35).
+
+    Amend consumes three governed inputs: the fresh profile, the
+    committed contract it amends, and the operator's intent (D-23
+    Amendment H). The committed document is read here ONCE, and its raw
+    bytes are the canonical bytes both consumers hash: the
+    amendsContract stamp and the staleness re-check (D-22 Amendment I).
+    The validator and renderer close over the parsed document, so the
+    harness stays stance-agnostic. Returns the spec, the parsed
+    committed document, and its raw bytes; the CLI builds the governed
+    input and the provenance stamp from the latter two. Same proposer,
+    same provenance identity (D-10 Amendment G).
+    """
+    stance_cfg = load_agents_config(repo_root)["silver"]["stances"]["amend"]
+    target = repo_root / "contracts" / f"{table}.odcs.yaml"
+    committed_bytes = target.read_bytes()
+    committed = yaml.safe_load(committed_bytes.decode("utf-8"))
+    spec = ProposerSpec(
+        name=NAME,
+        version=VERSION,
+        stance="amend",
+        profile_dir=repo_root / "profiles" / f"silver.{table}",
+        prompt_path=repo_root / stance_cfg["prompt"],
+        proposal_schema=repo_root / stance_cfg["proposal_schema"],
+        contract_schema=None,
+        target_contract=target,
+        render=lambda proposal, provenance, version: render_amend(
+            committed, proposal, provenance, version
+        ),
+        validate=lambda proposal, profile: validate_amend(
+            proposal, profile, committed, allow_relaxation=allow_relaxation
+        ),
+    )
+    return spec, committed, committed_bytes
