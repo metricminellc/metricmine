@@ -7,6 +7,7 @@ copied profile; no network, no key, no real client is ever constructed.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import shutil
 from datetime import datetime, timezone
@@ -362,3 +363,123 @@ def test_run_folder_stamps_are_sub_second(
     assert len(run_dirs) == 2
     assert run_dirs[0].startswith("20260825T120000111111Z_")
     assert run_dirs[1].startswith("20260825T120000222222Z_")
+
+
+def test_amend_inputs_bind_the_contract_and_the_intent_verbatim(
+    spec: ProposerSpec, root: Path, good_proposal: str
+) -> None:
+    """The three governed inputs (D-23 Amendment H): the record carries
+    the ordered inputs with hashes and the intent verbatim (Amendment I),
+    and the user turn wraps each in its own delimiter tag, intent LAST."""
+    contract_path = root / "committed.odcs.yaml"
+    contract_path.write_text("id: fake\nversion: 1.0.0\n", encoding="utf-8")
+    digest = "sha256:" + hashlib.sha256(contract_path.read_bytes()).hexdigest()
+    bound = harness.GovernedInput(
+        kind="committed_contract",
+        path=str(contract_path),
+        content_hash=digest,
+        schema_version="1.0.0",
+    )
+    client = FakeClient([_response(good_proposal)])
+    code = _run(
+        spec,
+        root,
+        client,
+        extra_inputs=[(bound, contract_path.read_text(encoding="utf-8"))],
+        intent="correct the quantity description",
+        provenance_extras={"amendsContract": "fake@1.0.0#" + digest},
+    )
+    assert code == 0
+    record = json.loads(
+        (_only_run_dir(root) / "record.json").read_text(encoding="utf-8")
+    )
+    assert record["intent"] == "correct the quantity description"
+    kinds = [entry["kind"] for entry in record["inputs"]]
+    assert kinds == ["profile_artifact", "committed_contract", "operator_intent"]
+    assert record["inputs"][1]["content_hash"] == digest
+    assert record["inputs"][2]["path"] == ""
+    user_content = client.calls[0]["messages"][0]["content"]
+    assert user_content.index("<profile_artifact>") < user_content.index(
+        "<committed_contract>"
+    )
+    assert user_content.index("<committed_contract>") < user_content.index(
+        "<operator_intent>"
+    )
+    assert (
+        "<operator_intent>\ncorrect the quantity description\n"
+        "</operator_intent>" in user_content
+    )
+
+
+def test_a_moved_committed_contract_fails_closed_at_once(
+    spec: ProposerSpec, root: Path, good_proposal: str
+) -> None:
+    """The committed contract is a hashed governed input: moving it
+    between read and write fails staleness with no retry (Amendment H)."""
+    contract_path = root / "committed.odcs.yaml"
+    contract_path.write_text("id: fake\nversion: 1.0.0\n", encoding="utf-8")
+    digest = "sha256:" + hashlib.sha256(contract_path.read_bytes()).hexdigest()
+    bound = harness.GovernedInput(
+        kind="committed_contract",
+        path=str(contract_path),
+        content_hash=digest,
+        schema_version="1.0.0",
+    )
+
+    def tampering_lint(path: Path) -> tuple[bool, str]:
+        contract_path.write_text("id: fake\nversion: 1.0.1\n", encoding="utf-8")
+        return True, "valid"
+
+    client = FakeClient([_response(good_proposal), _response(good_proposal)])
+    code = _run(
+        spec,
+        root,
+        client,
+        lint_runner=tampering_lint,
+        extra_inputs=[(bound, "id: fake\nversion: 1.0.0\n")],
+        intent="x",
+    )
+    assert code == 2
+    assert len(client.calls) == 1
+    record = json.loads(
+        (_only_run_dir(root) / "record.json").read_text(encoding="utf-8")
+    )
+    assert record["validation"]["attempts"] == 1
+    assert record["disposition"] == "failed_closed"
+    assert any(
+        "committed_contract" in error
+        for error in record["validation"]["errors"]
+    )
+
+
+def test_a_relaxation_refusal_fails_closed_without_a_retry(
+    spec: ProposerSpec, root: Path, good_proposal: str
+) -> None:
+    """A relaxation: error is the operator's gate (D-35, D-08): re-asking
+    the model would only talk it out of the narrowing the intent asked
+    for, so the harness breaks at once, exactly like staleness."""
+    refusing = ProposerSpec(
+        name=spec.name,
+        version=spec.version,
+        stance="amend",
+        profile_dir=spec.profile_dir,
+        prompt_path=spec.prompt_path,
+        proposal_schema=spec.proposal_schema,
+        contract_schema=None,
+        target_contract=spec.target_contract,
+        render=spec.render,
+        validate=lambda proposal, profile: [
+            "relaxation: this amendment NARROWS the contract "
+            "(drop_column x); narrowing is refused without "
+            "--allow-relaxation"
+        ],
+    )
+    client = FakeClient([_response(good_proposal), _response(good_proposal)])
+    code = _run(refusing, root, client)
+    assert code == 2
+    assert len(client.calls) == 1
+    record = json.loads(
+        (_only_run_dir(root) / "record.json").read_text(encoding="utf-8")
+    )
+    assert record["validation"]["attempts"] == 1
+    assert record["validation"]["errors"][0].startswith("relaxation:")

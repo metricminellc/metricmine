@@ -1,4 +1,4 @@
-"""CLI: propose silver | propose mapping | propose describe (D-24, D-35).
+"""CLI: propose silver | mapping | describe | amend (D-24, D-35).
 
 Spec: docs/spec/agent-layer.md §4. The interaction surface is the CLI,
 the editor, and the pull request; this module is the CLI half of
@@ -19,7 +19,13 @@ import yaml
 
 from metricmine.agents import agreement
 from metricmine.agents import eval as eval_lane
-from metricmine.agents import harness, mapping_proposer, silver_proposer
+from metricmine.agents import (
+    harness,
+    mapping_proposer,
+    render,
+    silver_proposer,
+    validate,
+)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -37,17 +43,33 @@ def main(argv: list[str] | None = None) -> int:
     )
     propose.add_argument(
         "proposer",
-        choices=["silver", "mapping", "describe"],
+        choices=["silver", "mapping", "describe", "amend"],
         help="silver: cleanup stance over the bronze profile; "
         "mapping: propose stance over the silver profile; "
         "describe: describe stance over an existing silver table's own "
-        "profile (D-35; requires --table)",
+        "profile (D-35; requires --table); "
+        "amend: amend stance over a contracted silver table (D-35; "
+        "requires --table and --intent)",
     )
     propose.add_argument(
         "--table",
         default=None,
-        help="describe only: the existing silver table to describe; the "
+        help="describe and amend: the existing silver table; the "
         "profile directory and the target contract derive from it",
+    )
+    propose.add_argument(
+        "--intent",
+        default=None,
+        help="amend only: the operator's intent for this amendment, "
+        "recorded verbatim in the proposal record and bound as a "
+        "governed input (D-22 Amendment I, D-23 Amendment H)",
+    )
+    propose.add_argument(
+        "--allow-relaxation",
+        action="store_true",
+        help="amend only: permit a NARROWING change set; it renders at "
+        "a major version bump with the printed rule-6 warning (D-35, "
+        "D-08)",
     )
     propose.add_argument(
         "--oracle",
@@ -95,6 +117,8 @@ def main(argv: list[str] | None = None) -> int:
         )
     if args.proposer == "describe":
         return _run_describe(repo_root, args)
+    if args.proposer == "amend":
+        return _run_amend(repo_root, args)
     build = (
         silver_proposer.build_spec
         if args.proposer == "silver"
@@ -167,6 +191,95 @@ def _run_describe(repo_root: Path, args: argparse.Namespace) -> int:
         )
         tmp.replace(out)
         print(f"agreement: {out}")
+    return code
+
+
+def _run_amend(repo_root: Path, args: argparse.Namespace) -> int:
+    """The amend stance: refusal gates, three governed inputs, one run.
+
+    Amend evolves a COMMITTED contract (D-35), so it refuses when no
+    contract with the table's id exists and points at describe, the
+    mirror of describe's duplicate-id refusal. The operator's intent is
+    required and non-empty: an amendment without a stated intent has no
+    governed reason to exist (D-23 Amendment H). After a draft lands,
+    the declared change directions and the derived bump print so the
+    reviewer reads the D-08 posture before opening the draft.
+    """
+    table = (args.table or "").strip()
+    if not table:
+        print(
+            "error: amend requires --table "
+            '(make propose-amend TABLE=<model> INTENT="...")',
+            file=sys.stderr,
+        )
+        return 1
+    intent = (args.intent or "").strip()
+    if not intent:
+        print(
+            "error: amend requires a non-empty --intent; the operator's "
+            "intent is a governed input recorded verbatim in the "
+            'proposal record (make propose-amend TABLE=<model> INTENT="...")',
+            file=sys.stderr,
+        )
+        return 1
+    target = repo_root / "contracts" / f"{table}.odcs.yaml"
+    if not target.exists():
+        relative = target.relative_to(repo_root)
+        print(
+            f"error: {relative} does not exist; amend evolves a "
+            "committed contract (D-35). The describe stance is the "
+            "adoption path for an uncontracted table: "
+            f"make propose-describe TABLE={table}",
+            file=sys.stderr,
+        )
+        return 1
+    spec, committed, committed_bytes = silver_proposer.build_amend_spec(
+        repo_root, table, allow_relaxation=args.allow_relaxation
+    )
+    bound = harness.GovernedInput(
+        kind="committed_contract",
+        path=str(target),
+        content_hash=render.canonical_contract_bytes(committed_bytes),
+        schema_version=str(committed.get("version", "")),
+    )
+    stamp = render.amends_contract_stamp(committed, committed_bytes)
+    report: dict = {}
+    code = harness.run_proposer(
+        spec,
+        repo_root,
+        profile=args.profile,
+        model_flag=args.model,
+        report=report,
+        extra_inputs=[(bound, committed_bytes.decode("utf-8"))],
+        intent=intent,
+        provenance_extras={"amendsContract": stamp},
+    )
+    if code == 0:
+        proposal = json.loads(
+            (Path(report["run_dir"]) / "proposal.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        changes = proposal["changes"]
+        directions = sorted(
+            {validate.classify_change(change) for change in changes}
+        )
+        bump = validate.derive_bump(changes)
+        draft_version = yaml.safe_load(
+            Path(report["record"]["draft_path"]).read_text(encoding="utf-8")
+        ).get("version")
+        print(
+            f"amendment direction: {', '.join(directions)}; {bump} bump "
+            f"to {draft_version} over {committed.get('version')} "
+            f"(amends {stamp.split('#')[0]})"
+        )
+        if "narrowing" in directions:
+            print(
+                "rule 6 warning: this amendment NARROWS the contract; "
+                "--allow-relaxation was passed, it renders at a MAJOR "
+                "bump, and the reviewer owns the consequence (D-35, "
+                "D-08)."
+            )
     return code
 
 

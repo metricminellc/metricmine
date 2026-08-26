@@ -76,6 +76,18 @@ ORACLE_FLAG := $(if $(ORACLE),--oracle $(ORACLE),)
 propose-describe:
 	uv run python -m metricmine.agents propose describe --table "$(TABLE)" $(MODEL_FLAG) $(ORACLE_FLAG)
 
+# The amend stance (D-35): evolve a COMMITTED contract by a declared change
+# set applied as a patch; the diff is the declared set by construction.
+# Requires TABLE and a non-empty INTENT (recorded verbatim, D-22 Amendment I).
+# A narrowing change set is refused unless ALLOW_RELAXATION=1 is passed; it
+# then renders at a major bump with the printed rule-6 warning. Needs the key.
+ALLOW_RELAXATION ?=
+RELAX_FLAG := $(if $(ALLOW_RELAXATION),--allow-relaxation,)
+
+.PHONY: propose-amend
+propose-amend:
+	uv run python -m metricmine.agents propose amend --table "$(TABLE)" --intent "$(INTENT)" $(MODEL_FLAG) $(RELAX_FLAG)
+
 # Deterministic adoption tools (D-35): never agents, keyless by construction.
 # The scan derives the review queue from the tree and the read-only warehouse
 # on every run and writes it to the gitignored outbox; nothing is stored.

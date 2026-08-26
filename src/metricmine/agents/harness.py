@@ -38,7 +38,7 @@ import sys
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Mapping
 
 import anthropic
 import yaml
@@ -48,10 +48,9 @@ from metricmine.agents import models
 from metricmine.agents.render import (
     Provenance,
     dump_yaml,
-    next_version,
     to_yaml,
 )
-from metricmine.agents.validate import check_staleness
+from metricmine.agents.validate import check_staleness, next_version
 from metricmine.profiling import canonical, writer
 
 LintRunner = Callable[[Path], tuple[bool, str]]
@@ -154,6 +153,11 @@ def recheck_inputs(inputs: list[GovernedInput]) -> list[str]:
     """Re-read and re-hash EVERY governed input (D-23 Amendment H)."""
     errors: list[str] = []
     for bound in inputs:
+        if not bound.path:
+            # The operator intent is bound verbatim from memory (D-22
+            # Amendment I); there is no file to re-read, so it cannot
+            # move between read and write.
+            continue
         path = Path(bound.path)
         if bound.kind == "profile_artifact":
             errors.extend(check_staleness(path, bound.content_hash))
@@ -228,6 +232,9 @@ def _rationale_lines(proposal: dict) -> list[str]:
     lines: list[str] = []
     if "grain_rationale" in proposal:
         lines.append(f"grain: {proposal['grain_rationale']}")
+    for change in proposal.get("changes", []):
+        target = change["column"] or "table"
+        lines.append(f"{change['kind']} {target}: {change['rationale']}")
     for decision in proposal.get("decisions", []):
         lines.append(f"{decision['key']}: {decision['rationale']}")
     return lines
@@ -244,6 +251,9 @@ def run_proposer(
     now: datetime | None = None,
     report: dict | None = None,
     quiet: bool = False,
+    extra_inputs: list[tuple[GovernedInput, str]] | None = None,
+    intent: str | None = None,
+    provenance_extras: Mapping[str, str] | None = None,
 ) -> int:
     """One governed proposer run. 0 = draft written; 1 = refused before
     any call; 2 = failed closed after the retry budget or on staleness.
@@ -251,7 +261,10 @@ def run_proposer(
     the record is written, so a caller (the eval lane, D-25) reads the
     outcome without guessing the outbox folder. When `quiet` is true the
     success summary and the diff are not printed; the record carries
-    everything."""
+    everything. `extra_inputs` binds further governed inputs after the
+    profile, each under its own kind tag; `intent` binds the operator's
+    intent verbatim as the LAST governed input; `provenance_extras`
+    merge after proposerStance (D-23 Amendment H, D-22 Amendment I)."""
     raw_cfg = load_agents_config(repo_root)
     cfg = AgentsConfig(
         effort=raw_cfg["effort"],
@@ -327,7 +340,7 @@ def run_proposer(
         model_id=resolved.model_id,
         profile_hash=profile_hash,
         proposed_at=now.date().isoformat(),
-        extras={"proposerStance": spec.stance},
+        extras={"proposerStance": spec.stance, **(provenance_extras or {})},
     )
 
     canonical_text = (
@@ -341,7 +354,26 @@ def run_proposer(
             schema_version=str(artifact.get("schema_version", "")),
         )
     ]
-    user_content = build_user_content([("profile_artifact", canonical_text)])
+    tagged = [("profile_artifact", canonical_text)]
+    for bound, text in extra_inputs or []:
+        inputs.append(bound)
+        tagged.append((bound.kind, text))
+    if intent is not None:
+        # The operator's intent is a governed input (D-23 Amendment H),
+        # hashed over its UTF-8 bytes and recorded verbatim (D-22
+        # Amendment I). It joins the payload LAST so the evidence
+        # artifacts read before the instruction that interprets them.
+        inputs.append(
+            GovernedInput(
+                kind="operator_intent",
+                path="",
+                content_hash="sha256:"
+                + hashlib.sha256(intent.encode("utf-8")).hexdigest(),
+                schema_version="",
+            )
+        )
+        tagged.append(("operator_intent", intent))
+    user_content = build_user_content(tagged)
 
     run_dir = (
         repo_root
@@ -452,9 +484,15 @@ def run_proposer(
             ]
             errors.extend(schema_errors)
             validation["schema_pass"] = not schema_errors
+        relaxation = False
         if proposal is not None and not errors:
             found = spec.validate(proposal, artifact)
             errors.extend(found)
+            # A relaxation refusal is the operator's gate, not a model
+            # error: re-asking the model would only talk it out of the
+            # narrowing the intent asked for. Fail closed at once; the
+            # remedy is the explicit flag (D-35, D-08).
+            relaxation = any(e.startswith("relaxation:") for e in found)
             validation["groundedness_pass"] = not any(
                 e.startswith("groundedness") for e in found
             )
@@ -506,7 +544,7 @@ def run_proposer(
                 "errors": list(errors),
             }
         )
-        if not errors or stale:
+        if not errors or stale or relaxation:
             break
         if attempts < cfg.max_retries + 1:
             messages.append({"role": "assistant", "content": raw_text})
@@ -541,6 +579,7 @@ def run_proposer(
         "profile_hash": profile_hash,
         "profile_schema_version": str(artifact.get("schema_version", "")),
         "inputs": [asdict(bound) for bound in inputs],
+        "intent": intent,
         "created_at": created_at,
         "response_id": response_id,
         "stop_reason": stop_reason,

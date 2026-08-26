@@ -1,0 +1,75 @@
+{
+  "agent": {
+    "name": "silver-cleanup-proposer",
+    "version": "0.1.0"
+  },
+  "api_error": null,
+  "cost_usd_estimate": 0.06459000000000001,
+  "created_at": "2026-08-26T15:37:12.684636+00:00",
+  "disposition": "draft_written",
+  "draft_path": "proposals/silver-cleanup-proposer/20260826T153712684636Z_e65bee81/draft.odcs.yaml",
+  "inputs": [
+    {
+      "content_hash": "sha256:e65bee8117b65958b8c4741b43509ece19a581dd1d6bad9a7e1da9b67b0b5fcd",
+      "kind": "profile_artifact",
+      "path": "profiles/silver.silver_invoice_lines/v0001.json",
+      "schema_version": "1.0.0"
+    },
+    {
+      "content_hash": "sha256:c7b1c4c0c6fb8d490346ab520871a7dfe5d9220e8a8a064e0d829a19e3c4a2fe",
+      "kind": "committed_contract",
+      "path": "contracts/silver_invoice_lines.odcs.yaml",
+      "schema_version": "1.1.0"
+    },
+    {
+      "content_hash": "sha256:c068dc92979d27dc79c7964e55abaa53a7e80fef85a22fe579b01997f89761a0",
+      "kind": "operator_intent",
+      "path": "",
+      "schema_version": ""
+    }
+  ],
+  "intent": "Correct the quantity column description: measured against the warehouse, 90 negative-quantity rows are not cancellation lines; all 90 carry unit_price 0 (stock-adjustment lines, zero revenue impact). The description must state both negative cases instead of claiming cancellations only.",
+  "model_id": "claude-sonnet-5",
+  "model_source": "default",
+  "profile_hash": "sha256:e65bee8117b65958b8c4741b43509ece19a581dd1d6bad9a7e1da9b67b0b5fcd",
+  "profile_path": "profiles/silver.silver_invoice_lines/v0001.json",
+  "profile_schema_version": "1.0.0",
+  "prompt_path": "src/metricmine/agents/prompts/silver_amend.md",
+  "prompt_version": "1.0.0",
+  "rates": {
+    "input_per_mtok": 2.0,
+    "output_per_mtok": 10.0
+  },
+  "request_params": {
+    "effort": "high",
+    "max_tokens": 16384
+  },
+  "response_id": "msg_011CeRcENDdYWcbkTFCU1Ys1",
+  "sdk_version": "1.0.0",
+  "stance": "amend",
+  "stop_reason": "end_turn",
+  "usage": {
+    "input_tokens": 10710,
+    "output_tokens": 4317
+  },
+  "validation": {
+    "attempt_log": [
+      {
+        "completeness_pass": true,
+        "errors": [],
+        "groundedness_pass": true,
+        "lint_pass": true,
+        "schema_pass": true,
+        "staleness_pass": true,
+        "stop_reason": "end_turn"
+      }
+    ],
+    "attempts": 1,
+    "completeness_pass": true,
+    "errors": [],
+    "groundedness_pass": true,
+    "lint_pass": true,
+    "schema_pass": true,
+    "staleness_pass": true
+  }
+}

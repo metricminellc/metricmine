@@ -163,3 +163,46 @@ def test_rendered_describe_example_lints_clean(tmp_path: Path) -> None:
         ["datacontract", "lint", str(draft)], capture_output=True, text=True
     )
     assert proc.returncode == 0, proc.stdout + proc.stderr
+
+
+def test_rendered_amend_example_lints_clean(tmp_path: Path) -> None:
+    # The staged amend example patched over the real committed contract
+    # (D-35 patch semantics), restamped per Amendment I with the real
+    # amendsContract stamp, judged by the real tool: the offline half of
+    # the Session Q amend rehearsal.
+    import yaml
+
+    from metricmine.agents.render import amends_contract_stamp, render_amend
+
+    example = json.loads(
+        (
+            REPO_ROOT / "docs" / "spec" / "agent-layer"
+            / "example-amend-proposal.json"
+        ).read_text(encoding="utf-8")
+    )
+    committed_path = REPO_ROOT / "contracts" / "silver_invoice_lines.odcs.yaml"
+    committed_bytes = committed_path.read_bytes()
+    committed = yaml.safe_load(committed_bytes.decode("utf-8"))
+    provenance = Provenance(
+        proposed_by=silver_proposer.NAME,
+        proposer_version=silver_proposer.VERSION,
+        prompt_version="1.0.0",
+        model_id="claude-sonnet-5",
+        profile_hash="sha256:" + "0" * 64,
+        proposed_at="2026-08-25",
+        extras={
+            "proposerStance": "amend",
+            "amendsContract": amends_contract_stamp(committed, committed_bytes),
+        },
+    )
+    document = render_amend(committed, example, provenance, "ignored")
+    assert document["version"] == "1.1.1"
+    draft = tmp_path / "draft.odcs.yaml"
+    draft.write_text(
+        to_yaml(document, ["Lint fixture.", "Review before approval (D-24)."]),
+        encoding="utf-8",
+    )
+    proc = subprocess.run(
+        ["datacontract", "lint", str(draft)], capture_output=True, text=True
+    )
+    assert proc.returncode == 0, proc.stdout + proc.stderr
