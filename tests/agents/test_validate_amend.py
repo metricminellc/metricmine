@@ -32,10 +32,18 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 
 @pytest.fixture(scope="module")
 def committed() -> dict:
+    # The FROZEN 1.1.0 baseline, not the live contracts/ file: the amend
+    # example documents amending v1.1.0, and the live contract moves the
+    # moment a real amendment lands (the first one did, Session Q).
     return yaml.safe_load(
-        (REPO_ROOT / "contracts" / "silver_invoice_lines.odcs.yaml").read_text(
-            encoding="utf-8"
-        )
+        (
+            REPO_ROOT
+            / "tests"
+            / "agents"
+            / "fixtures"
+            / "contracts"
+            / "silver_invoice_lines_v1.1.0.odcs.yaml"
+        ).read_text(encoding="utf-8")
     )
 
 

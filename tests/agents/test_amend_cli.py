@@ -118,6 +118,13 @@ def _stub_run(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> dict:
             encoding="utf-8"
         )
     )
+    # Self-relative to the LIVE committed contract: the CLI reads
+    # contracts/ directly, and the live version moves with every landed
+    # amendment, so the expectations derive from the file, never from a
+    # pinned literal.
+    major, minor, patch = (int(x) for x in str(committed["version"]).split("."))
+    captured["committed_version"] = str(committed["version"])
+    captured["next_patch"] = f"{major}.{minor}.{patch + 1}"
 
     def fake_run_proposer(spec, repo_root, **kwargs):  # noqa: ANN001
         captured["intent"] = kwargs.get("intent")
@@ -129,7 +136,7 @@ def _stub_run(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> dict:
             json.dumps(example), encoding="utf-8"
         )
         draft = dict(committed)
-        draft["version"] = "1.1.1"
+        draft["version"] = captured["next_patch"]
         draft_path = run_dir / "draft.odcs.yaml"
         draft_path.write_text(yaml.safe_dump(draft), encoding="utf-8")
         report = kwargs["report"]
@@ -164,13 +171,14 @@ def test_the_happy_path_binds_three_inputs_and_prints_the_direction(
     assert bound.kind == "committed_contract"
     assert bound.path.endswith("contracts/silver_invoice_lines.odcs.yaml")
     assert bound.content_hash.startswith("sha256:")
-    assert bound.schema_version == "1.1.0"
-    assert text.startswith("# Contract: silver.silver_invoice_lines")
+    assert bound.schema_version == captured["committed_version"]
+    assert "id: silver_invoice_lines" in text
     assert captured["provenance_extras"]["amendsContract"].startswith(
-        "silver_invoice_lines@1.1.0#sha256:"
+        f"silver_invoice_lines@{captured['committed_version']}#sha256:"
     )
     assert (
-        "amendment direction: neutral; patch bump to 1.1.1 over 1.1.0"
+        "amendment direction: neutral; patch bump to "
+        f"{captured['next_patch']} over {captured['committed_version']}"
         in out
     )
     assert "rule 6 warning" not in out
