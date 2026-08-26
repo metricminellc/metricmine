@@ -56,6 +56,7 @@ The interaction surface is the CLI, the editor, and the pull request. Nothing el
 make propose-silver                    # bronze profile -> draft cleanup contract
 make propose-mapping                   # silver profile -> draft mapping contract
 make propose-describe TABLE=t          # the table's own profile -> draft table contract (D-35)
+make propose-amend TABLE=t INTENT="..."  # declared change set over the committed contract (D-35)
 make verify-grain TABLE=t KEYS=a,b     # measure a declared grain, deterministic (F-10)
 make enforce-properties TABLE=t        # the two enforcement keys sync omits (D-16 Amendment J)
 ```
@@ -65,6 +66,8 @@ make enforce-properties TABLE=t        # the two enforcement keys sync omits (D-
 3. **Approve.** Copy the reviewed contract into `contracts/` on a branch with the version bump D-08 requires, and open the contract-only pull request. The three gates run. **Merge is approval.** Rejected drafts never leave the outbox.
 
 4. **Adopt (the describe stance, D-35).** `make propose-describe TABLE=<model>` drafts the contract that would enforce an EXISTING silver table from that table's own profile artifact. It refuses when `contracts/<model>.odcs.yaml` already exists (the amend stance is the path for a contracted table); an explicit `ORACLE=<path>` bypasses the refusal for the recorded n=1 agreement study and writes `agreement.json` beside the record. The proposed grain is unverified until `make verify-grain TABLE=<model> KEYS=<a,b>` measures it against the warehouse (F-10). After the contract PR merges, `datacontract dbt sync` creates the properties file with exact types (F-27) and `make enforce-properties TABLE=<model>` adds only `contract.enforced` and the `not_null` constraints the contract implies (D-16 Amendment J); the file stays human-owned and the edit is reviewed in the model PR. The deterministic adoption tools live at `src/metricmine/adoption/`, never in the agents package: they are code, not agents (D-10 Amendment G).
+
+5. **Amend (the amend stance, D-35).** `make propose-amend TABLE=<model> INTENT="<why>"` evolves a COMMITTED contract. Three governed inputs (D-23 Amendment H): the fresh profile, the committed contract (its raw bytes are the canonical bytes hashed into the `amendsContract` stamp, D-22 Amendment I; the staleness re-check hashes the same bytes), and the operator's intent, recorded verbatim in the proposal record. The model emits a declared `changes[]` set; deterministic code applies it as a patch over the committed document, so the draft's diff is the declared set by construction. The validator refuses false claims and undeclared moves symmetrically, derives the version bump from the change directions (patch for neutral, minor for widening, major for narrowing; the human sets the final version at approval), and refuses a narrowing set unless `ALLOW_RELAXATION=1` passes `--allow-relaxation`, which renders at a major bump with the printed rule-6 warning. Additions enter `required: false` with the tightening declared as a follow-up amendment after the model lands (F-28). Amend refuses an uncontracted table and points at describe, the mirror of describe's duplicate-id refusal.
 
 `make demo` replays committed contracts and models, keyless and deterministic, unchanged. A regenerate path chains the propose targets live. Determinism belongs to replay; the human gate contains live variance.
 
@@ -88,7 +91,7 @@ No third runtime agent; the generate-and-verify authoring loop stays in the SDLC
 
 ## Appendix A: Proposal record fields
 
-`agent` (name, version) · `prompt_version` · `prompt_path` · `model_id` · `model_source` (`default` | `env` | `flag`) · `rates` (input_per_mtok, output_per_mtok) · `sdk_version` · `request_params` (effort, max_tokens) · `profile_path` · `profile_hash` · `profile_schema_version` · `created_at` · `response_id` · `stop_reason` · `usage` (input_tokens, output_tokens, summed over attempts) · `cost_usd_estimate` · `validation` (schema_pass, groundedness_pass, completeness_pass, staleness_pass, lint_pass, attempts, errors, attempt_log: one entry per attempt with the same pass flags and that attempt's errors) · `api_error` (class, message; null unless the call itself failed) · `disposition` (`draft_written` | `failed_closed`) · `draft_path`
+`agent` (name, version) · `prompt_version` · `prompt_path` · `model_id` · `model_source` (`default` | `env` | `flag`) · `rates` (input_per_mtok, output_per_mtok) · `sdk_version` · `request_params` (effort, max_tokens) · `profile_path` · `profile_hash` · `profile_schema_version` · `created_at` · `response_id` · `stop_reason` · `usage` (input_tokens, output_tokens, summed over attempts) · `cost_usd_estimate` · `validation` (schema_pass, groundedness_pass, completeness_pass, staleness_pass, lint_pass, attempts, errors, attempt_log: one entry per attempt with the same pass flags and that attempt's errors) · `api_error` (class, message; null unless the call itself failed) · `disposition` (`draft_written` | `failed_closed`) · `draft_path` · `inputs` (the ordered governed inputs, each kind, path, content_hash, schema_version; Amendment H) · `intent` (the operator's intent verbatim; null outside the amend stance, Amendment I)
 
 ## Appendix B: Contract provenance keys (ODCS customProperties)
 
@@ -113,6 +116,7 @@ src/metricmine/agents/
     ├── README.md       # template anatomy, versioning rules
     ├── silver_cleanup.md
     ├── silver_describe.md
+    ├── silver_amend.md
     └── gold_mapping.md
 docs/spec/agent-layer/  # proposal schemas (the API-facing projection) + examples
 proposals/              # gitignored outbox: drafts + records
