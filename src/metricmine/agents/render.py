@@ -16,10 +16,18 @@ and amendment keys without a renderer rewrite).
 
 from __future__ import annotations
 
+import copy
+import hashlib
 from dataclasses import dataclass, field
 from typing import Mapping
 
 import yaml
+
+from metricmine.agents.validate import (
+    derive_bump,
+    next_version,
+    rule_signature_of_committed,
+)
 
 # Mirrors both committed contracts; the vanilla scope is one product.
 API_VERSION = "v3.1.0"
@@ -62,20 +70,6 @@ class Provenance:
     profile_hash: str
     proposed_at: str  # date, YYYY-MM-DD
     extras: Mapping[str, str] = field(default_factory=dict)
-
-
-def next_version(current: str | None, bump: str) -> str:
-    """Semver bump; a missing committed target starts the line at 1.0.0."""
-    if current is None:
-        return "1.0.0"
-    major, minor, patch = (int(part) for part in current.split("."))
-    if bump == "major":
-        return f"{major + 1}.0.0"
-    if bump == "minor":
-        return f"{major}.{minor + 1}.0"
-    if bump == "patch":
-        return f"{major}.{minor}.{patch + 1}"
-    raise ValueError(f"unknown bump {bump!r}")
 
 
 def _custom_properties(provenance: Provenance, decisions: list[dict]) -> list[dict]:
@@ -455,3 +449,255 @@ def to_yaml(doc: dict, header_lines: list[str]) -> str:
     """Block-style YAML behind a comment header; same inputs, same bytes."""
     header = "".join(f"# {line}\n" for line in header_lines)
     return header + dump_yaml(doc)
+
+
+# ---------------------------------------------------------------------------
+# The amend stance: patch semantics over the committed document (D-35)
+
+_PROVENANCE_KEYS = frozenset(
+    {
+        "proposedBy",
+        "proposerVersion",
+        "promptVersion",
+        "modelId",
+        "profileHash",
+        "proposedAt",
+        "proposerStance",
+        "amendsContract",
+    }
+)
+
+
+def canonical_contract_bytes(text_bytes: bytes) -> str:
+    """sha256 over a committed contract's canonical bytes (Amendment I).
+
+    Canonical bytes ARE the committed file's raw bytes exactly as read
+    (S-Q-prep-5), because the committed file is itself the canonical
+    artifact: git holds it, review approved it, and no re-serialization
+    can make it more canonical than it already is. This is the same
+    digest the harness staleness re-check computes over a non-profile
+    governed input (raw bytes), so one definition serves both the
+    `amendsContract` stamp and the staleness gate; a test pins the
+    alignment (D-22 Amendment I).
+    """
+    return "sha256:" + hashlib.sha256(text_bytes).hexdigest()
+
+
+def amends_contract_stamp(committed: dict, committed_bytes: bytes) -> str:
+    """`<id>@<version>#sha256:<hash>` per D-22 Amendment I."""
+    digest = canonical_contract_bytes(committed_bytes)
+    return f"{committed['id']}@{committed['version']}#{digest}"
+
+
+def _grain_texts(table_object: dict, grain_keys: list[str]) -> None:
+    """Re-template the two grain prose fields after a grain_change.
+
+    Uses the describe renderer's stable sentences: the committed
+    hand-written prose is richer, but a stance never authors prose for a
+    changed grain; the reviewer rewrites it in the editor if the
+    template reads thin (D-24: the draft is the reviewer's to change).
+    """
+    clause = "(" + ", ".join(grain_keys) + ")"
+    table_object["description"] = (
+        f"One row per distinct {clause}. The {len(grain_keys)} "
+        "grain columns are flagged primaryKey so sync generates the "
+        "composite uniqueness test; that generated test is "
+        "warn-severity by tool design at datacontract-cli 1.0.12, and "
+        "the error-severity grain rule below is the enforcing twin "
+        "(rule 5: uniqueness as a test, never a trusted constraint)."
+    )
+    table_object["dataGranularityDescription"] = (
+        f"One row per distinct {clause}."
+    )
+
+
+def _find_rule(table_object: dict, signature: str) -> tuple[list, int] | None:
+    """Locate a committed rule by its closed-list signature."""
+    table_rules = table_object.get("quality", [])
+    for index, entry in enumerate(table_rules):
+        if rule_signature_of_committed(entry, "") == signature:
+            return table_rules, index
+    for prop in table_object.get("properties", []):
+        rules = prop.get("quality", [])
+        for index, entry in enumerate(rules):
+            if rule_signature_of_committed(entry, prop["name"]) == signature:
+                return rules, index
+    return None
+
+
+def _server_schema(document: dict) -> str:
+    servers = document.get("servers", [])
+    return servers[0].get("schema", "silver") if servers else "silver"
+
+
+def _grain_keys_after(committed: dict, proposal: dict) -> list[str]:
+    """The post-change grain: the declared grain_change's keys, else the
+    committed primaryKey tuple in position order."""
+    for change in proposal["changes"]:
+        if change["kind"] == "grain_change":
+            return [
+                part.strip()
+                for part in change["after"].split(",")
+                if part.strip()
+            ]
+    keyed = [
+        prop
+        for prop in committed["schema"][0].get("properties", [])
+        if prop.get("primaryKey")
+    ]
+    keyed.sort(key=lambda prop: prop.get("primaryKeyPosition", 0))
+    return [prop["name"] for prop in keyed]
+
+
+def apply_changes(committed: dict, proposal: dict) -> dict:
+    """The declared changes applied as a patch over the committed
+    document (D-35): nothing undeclared moves, so the diff is the
+    declared change set by construction. The validator has already held
+    every change true against the committed document; this function
+    only applies, over a deepcopy (the committed dict is never mutated).
+    A same-column required_change on an added column is the declared
+    F-28 follow-up and is deliberately NOT applied here: additions enter
+    optional and tighten in their own later amendment.
+    """
+    document = copy.deepcopy(committed)
+    table_object = document["schema"][0]
+    properties = table_object.setdefault("properties", [])
+    by_name = {prop["name"]: prop for prop in properties}
+    proposal_cols = {c["name"]: c for c in proposal["columns"]}
+    rules_by_signature = {
+        f"{r['kind']}:{r['column']}" if r["column"] else r["kind"]: r
+        for r in proposal["quality_rules"]
+    }
+    added = {
+        c["column"] for c in proposal["changes"] if c["kind"] == "add_column"
+    }
+
+    grain_keys = _grain_keys_after(committed, proposal)
+
+    for change in proposal["changes"]:
+        kind = change["kind"]
+        column = change["column"]
+        if kind == "no_change":
+            continue
+        if kind == "add_column":
+            entry = proposal_cols[column]
+            prop: dict = {
+                "name": entry["name"],
+                "logicalType": entry["logical_type"],
+                "physicalType": entry["physical_type"],
+                "required": False,
+            }
+            prop["description"] = entry["description"]
+            properties.append(prop)
+            by_name[column] = prop
+        elif kind == "drop_column":
+            properties.remove(by_name.pop(column))
+        elif kind == "retype_column":
+            prop = by_name[column]
+            prop["physicalType"] = change["after"]
+            entry = proposal_cols[column]
+            prop["logicalType"] = entry["logical_type"]
+        elif kind == "required_change":
+            if column in added:
+                continue  # the declared F-28 follow-up, deferred
+            by_name[column]["required"] = change["after"] == "true"
+        elif kind == "description_change":
+            by_name[column]["description"] = change["after"]
+        elif kind == "grain_change":
+            for prop in properties:
+                prop.pop("primaryKey", None)
+                prop.pop("primaryKeyPosition", None)
+            for position, key in enumerate(grain_keys, 1):
+                by_name[key]["primaryKey"] = True
+                by_name[key]["primaryKeyPosition"] = position
+            _grain_texts(table_object, grain_keys)
+            located = _find_rule(table_object, "grain_unique")
+            if located is not None:
+                rules, index = located
+                rules[index] = _describe_rule(
+                    {"kind": "grain_unique", "column": "", "values": []},
+                    _server_schema(document),
+                    table_object["name"],
+                    grain_keys,
+                )
+        elif kind == "rule_change":
+            if change["before"]:
+                located = _find_rule(table_object, change["before"])
+                if located is not None:
+                    rules, index = located
+                    del rules[index]
+                    for prop in properties:
+                        if prop.get("quality") == []:
+                            del prop["quality"]
+            if change["after"]:
+                sig_kind, _, sig_column = change["after"].partition(":")
+                rendered = _describe_rule(
+                    rules_by_signature[change["after"]],
+                    _server_schema(document),
+                    table_object["name"],
+                    grain_keys,
+                )
+                if sig_column:
+                    by_name[sig_column].setdefault("quality", []).append(
+                        rendered
+                    )
+                else:
+                    table_object.setdefault("quality", []).append(rendered)
+    return document
+
+
+def _copy_entries(entries: list[dict]) -> list[dict]:
+    return [copy.deepcopy(entry) for entry in entries]
+
+
+def render_amend(
+    committed: dict, proposal: dict, provenance: Provenance, version: str
+) -> dict:
+    """The amend render: patch, bump, restamp; everything else stands.
+
+    The version parameter from the harness is deliberately ignored: the
+    bump class derives from the declared change directions
+    (validate.derive_bump; D-08, F-20; the human still sets the final
+    version at approval), so a neutral amendment lands a patch bump and
+    a narrowing one lands major; the harness's new-id fallback never
+    fires because the patched id equals the committed id. Provenance is
+    rebuilt per Appendix B plus the extras hook (proposerStance,
+    amendsContract; D-22 Amendment I); every committed customProperty
+    outside the provenance key set (the decision* record, the grain
+    note) is carried deep-copied in its committed order, and the
+    proposal's NEW decision keys append after it (a key already present
+    is never re-valued; the validator refused it). status returns to
+    draft: the human door re-approves every amendment (D-24).
+    """
+    del version  # derived from the declared changes, never passed in
+    document = apply_changes(committed, proposal)
+    document["version"] = next_version(
+        committed["version"], derive_bump(proposal["changes"])
+    )
+    document["status"] = "draft"
+
+    carried = [
+        entry
+        for entry in committed.get("customProperties", [])
+        if entry.get("property") not in _PROVENANCE_KEYS
+    ]
+    carried_keys = {entry.get("property") for entry in carried}
+    new_decisions = [
+        decision
+        for decision in proposal.get("decisions", [])
+        if decision["key"] not in carried_keys
+    ]
+    custom = _custom_properties(provenance, [])
+    custom.extend(_copy_entries(carried))
+    for decision in new_decisions:
+        custom.append({"property": decision["key"], "value": decision["value"]})
+    grain_changed = any(
+        c["kind"] == "grain_change" for c in proposal["changes"]
+    )
+    if grain_changed:
+        keys_csv = ", ".join(_grain_keys_after(committed, proposal))
+        for entry in custom:
+            if entry.get("property") == "grain":
+                entry["value"] = keys_csv
+    document["customProperties"] = custom
+    return document
