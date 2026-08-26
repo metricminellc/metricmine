@@ -39,6 +39,10 @@ PAIRS = {
         "table-contract-proposal.schema.json",
         "example-describe-proposal.json",
     ),
+    "table-contract-amend": (
+        "table-contract-proposal.schema.json",
+        "example-amend-proposal.json",
+    ),
 }
 
 # The composition and constraint keywords the API's grammar compiler
@@ -153,3 +157,38 @@ def test_describe_example_grounded_in_the_silver_profile() -> None:
     )
     ungrounded = sorted(claimed - columns)
     assert not ungrounded, f"columns absent from the silver profile: {ungrounded}"
+
+
+def test_amend_example_is_grounded_in_the_contract_and_profile() -> None:
+    """The amend example's claims are true against the committed
+    document and the fresh profile (D-35): every changed column exists
+    in the committed contract or the fresh profile, the first change is
+    the quantity description_change whose before text is a real quote,
+    and the re-emitted columns are exactly the committed properties."""
+    import yaml
+
+    example = _load("example-amend-proposal.json")
+    committed = yaml.safe_load(
+        (
+            REPO_ROOT / "contracts" / "silver_invoice_lines.odcs.yaml"
+        ).read_text(encoding="utf-8")
+    )
+    committed_names = {
+        prop["name"] for prop in committed["schema"][0]["properties"]
+    }
+    profile_names = _profile_columns(
+        "profiles/silver.silver_invoice_lines/v0001.json"
+    )
+    assert example["stance"] == "amend"
+    for change in example["changes"]:
+        if change["column"]:
+            assert change["column"] in committed_names | profile_names
+    quantity = next(
+        prop
+        for prop in committed["schema"][0]["properties"]
+        if prop["name"] == "quantity"
+    )
+    assert example["changes"][0]["kind"] == "description_change"
+    assert example["changes"][0]["column"] == "quantity"
+    assert example["changes"][0]["before"] in str(quantity["description"])
+    assert {c["name"] for c in example["columns"]} == committed_names
