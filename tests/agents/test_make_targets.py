@@ -134,3 +134,20 @@ def test_adoption_tools_are_deterministic_module_calls() -> None:
         )
         for marker in ("metricmine.agents", "ANTHROPIC"):
             assert marker not in recipe[0], f"{name} reaches a proposer: {recipe[0]!r}"
+
+
+def test_propose_amend_carries_table_intent_model_and_relax_flags() -> None:
+    """propose-amend is one proposer invocation carrying TABLE, the
+    verbatim INTENT, the D-34 model override, and the explicit
+    relaxation flag (D-35): the narrowing gate is a human decision
+    expressed as a make variable, never a default."""
+    targets = _parse()
+    prerequisites, recipe = targets["propose-amend"]
+    assert prerequisites == []
+    assert len(recipe) == 1
+    line = recipe[0]
+    assert line.startswith("uv run python -m metricmine.agents propose amend")
+    assert '--table "$(TABLE)"' in line
+    assert '--intent "$(INTENT)"' in line
+    assert "$(MODEL_FLAG)" in line  # the D-34 per-run override
+    assert "$(RELAX_FLAG)" in line  # the D-35 narrowing gate, explicit
