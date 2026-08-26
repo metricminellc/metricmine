@@ -1,0 +1,125 @@
+{
+  "stance": "amend",
+  "target_schema": "silver",
+  "target_table": "silver_invoice_lines",
+  "proposed_version": "1.1.1",
+  "columns": [
+    {
+      "name": "invoice_id",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "description": "Invoice number, kept as text (identifiers are text; Session D rule). A leading C marks a cancellation invoice; see is_cancellation.",
+      "rationale": "Unchanged from the committed contract; fresh profile agrees (VARCHAR, required true)."
+    },
+    {
+      "name": "is_cancellation",
+      "logical_type": "boolean",
+      "physical_type": "BOOLEAN",
+      "required": true,
+      "description": "True when invoice_id carries the C cancellation prefix. Decision: cancellations are retained and flagged, not dropped, so conservation arithmetic against bronze stays auditable; exclusion is a consumer decision made at the mapping contract, not silently here.",
+      "rationale": "Unchanged from the committed contract; fresh profile agrees (BOOLEAN, required true)."
+    },
+    {
+      "name": "stock_code",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "description": "Product code as landed, kept as text; alphanumeric suffixes and non-product adjustment codes (for example POST, M) occur.",
+      "rationale": "Unchanged from the committed contract; fresh profile agrees (VARCHAR, required true)."
+    },
+    {
+      "name": "product_description",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "description": "Product description, whitespace-trimmed. Null rate 0.005041 at profile v0001; nulls retained rather than imputed.",
+      "rationale": "Unchanged from the committed contract; fresh profile agrees (VARCHAR, required false)."
+    },
+    {
+      "name": "quantity",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "description": "Units on the line, cast DECIMAL(38,9) to INTEGER (integral min, max, and samples at v0001). Negative on cancellation lines and on zero-price stock-adjustment lines; consumers must not read every negative quantity as a cancellation.",
+      "rationale": "Fresh profile: INTEGER, null_rate 0.0, min -1395; the warehouse holds negative-quantity lines outside cancellations, all at unit_price 0."
+    },
+    {
+      "name": "invoiced_at",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": true,
+      "description": "Invoice timestamp. Decision: strict cast from the VARCHAR landing (\"YYYY-MM-DD HH:MM:SS\"); an unparseable value fails the build loudly rather than becoming a silent null. On within-invoice clock-drift duplicates the earliest scan tick wins (min).",
+      "rationale": "Unchanged from the committed contract; fresh profile agrees (TIMESTAMP, required true)."
+    },
+    {
+      "name": "unit_price",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(10,2)",
+      "required": true,
+      "description": "Unit price in sterling, cast from DECIMAL(38,9). Observed range 0.00 to 1998.49 at v0001. Decision: zero-price lines (freebies and adjustments) are retained; negative prices are contract-invalid.",
+      "rationale": "Unchanged from the committed contract; fresh profile agrees (DECIMAL(10,2), required true)."
+    },
+    {
+      "name": "customer_id",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "description": "Customer identifier, cast DECIMAL(38,9) to INTEGER (integral min, max, and samples, 12346 to 18287 at v0001). Decision: the 0.29778 bronze null rate is retained as null (guest or unregistered checkouts), not dropped and not imputed.",
+      "rationale": "Unchanged from the committed contract; fresh profile agrees (INTEGER, required false)."
+    },
+    {
+      "name": "country",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "description": "Customer country as landed (24 distinct at v0001).",
+      "rationale": "Unchanged from the committed contract; fresh profile agrees (VARCHAR, required true)."
+    }
+  ],
+  "grain_keys": [
+    "invoice_id",
+    "stock_code",
+    "quantity",
+    "unit_price"
+  ],
+  "quality_rules": [
+    {
+      "kind": "row_count_positive",
+      "column": "",
+      "values": [],
+      "rationale": "The committed sample yields tens of thousands of surviving lines; an empty table is a broken build."
+    },
+    {
+      "kind": "grain_unique",
+      "column": "",
+      "values": [],
+      "rationale": "The committed four-column grain is unique by measurement after capture-artifact exclusion; duplicate_row_rate 0.0 at the fresh profile."
+    },
+    {
+      "kind": "non_negative",
+      "column": "unit_price",
+      "values": [],
+      "rationale": "Profiled min 0.0; the committed contract already declares negative prices invalid."
+    }
+  ],
+  "changes": [
+    {
+      "kind": "description_change",
+      "column": "quantity",
+      "before": "Negative only on cancellation lines.",
+      "after": "Units on the line, cast DECIMAL(38,9) to INTEGER (integral min, max, and samples at v0001). Negative on cancellation lines and on zero-price stock-adjustment lines; consumers must not read every negative quantity as a cancellation.",
+      "rationale": "Measured against the warehouse: negative-quantity rows exist outside cancellation lines, every one at unit_price 0 (stock-adjustment lines with zero revenue impact), so the committed sentence is inaccurate as written."
+    }
+  ],
+  "decisions": [
+    {
+      "key": "decisionNegativeNoncancellationQuantities",
+      "value": "zero-price-adjustment-lines-documented",
+      "rationale": "Negative quantities on non-cancellation lines are real and carry unit_price 0; the description now states both negative cases instead of claiming cancellations only."
+    }
+  ],
+  "purpose": "The cleaned, typed, one-row-per-invoice-line view of the Online Retail II sample: the first contracted silver table and the sole silver input to the gold unified event star.",
+  "usage": "Read silver.silver_invoice_lines for line-level retail sales analysis. Cancellation lines are retained and flagged (is_cancellation); consumers aggregating revenue must filter or net them deliberately. Zero-price lines are retained, including negative-quantity stock-adjustment lines.",
+  "limitations": "Exact duplicate bronze rows are treated as capture artifacts and excluded; rows identical except invoicedate collapse to the earliest timestamp; customer_id is null on guest checkouts and retained as null."
+}
