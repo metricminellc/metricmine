@@ -26,7 +26,17 @@ from metricmine.agents.render import (
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-CONTRACT = REPO_ROOT / "contracts" / "silver_invoice_lines.odcs.yaml"
+# The FROZEN 1.1.0 baseline (see test_validate_amend): patch semantics
+# are proven against the version the example amends, which the live
+# contracts/ file moved past when the amendment landed.
+CONTRACT = (
+    REPO_ROOT
+    / "tests"
+    / "agents"
+    / "fixtures"
+    / "contracts"
+    / "silver_invoice_lines_v1.1.0.odcs.yaml"
+)
 
 
 @pytest.fixture(scope="module")
