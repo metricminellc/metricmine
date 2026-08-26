@@ -180,7 +180,14 @@ def test_rendered_amend_example_lints_clean(tmp_path: Path) -> None:
             / "example-amend-proposal.json"
         ).read_text(encoding="utf-8")
     )
-    committed_path = REPO_ROOT / "contracts" / "silver_invoice_lines.odcs.yaml"
+    committed_path = (
+        REPO_ROOT
+        / "tests"
+        / "agents"
+        / "fixtures"
+        / "contracts"
+        / "silver_invoice_lines_v1.1.0.odcs.yaml"
+    )
     committed_bytes = committed_path.read_bytes()
     committed = yaml.safe_load(committed_bytes.decode("utf-8"))
     provenance = Provenance(

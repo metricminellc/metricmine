@@ -170,7 +170,12 @@ def test_amend_example_is_grounded_in_the_contract_and_profile() -> None:
     example = _load("example-amend-proposal.json")
     committed = yaml.safe_load(
         (
-            REPO_ROOT / "contracts" / "silver_invoice_lines.odcs.yaml"
+            REPO_ROOT
+            / "tests"
+            / "agents"
+            / "fixtures"
+            / "contracts"
+            / "silver_invoice_lines_v1.1.0.odcs.yaml"
         ).read_text(encoding="utf-8")
     )
     committed_names = {
