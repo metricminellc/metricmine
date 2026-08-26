@@ -81,6 +81,15 @@ agents:
       describe:
         prompt: src/metricmine/agents/prompts/silver_describe.md
         proposal_schema: docs/spec/agent-layer/table-contract-proposal.schema.json
+      # The amend stance (D-35) evolves a COMMITTED contract: the fresh
+      # profile, the committed contract (canonical bytes hashed into the
+      # amendsContract stamp, D-22 Amendment I), and the operator's
+      # intent are its governed inputs (D-23 Amendment H). The profile
+      # directory and the target contract derive from TABLE at the CLI,
+      # exactly as describe.
+      amend:
+        prompt: src/metricmine/agents/prompts/silver_amend.md
+        proposal_schema: docs/spec/agent-layer/table-contract-proposal.schema.json
   mapping:
     stances:
       propose:
