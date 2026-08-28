@@ -1,7 +1,7 @@
 Arc 1 gate re-proof at dbt-core 1.12.3 with dbt-duckdb 1.11.0, 2026-08-28 (the Mac)
 Repo head at branch cut: 73b76987ede5af91c792daa4046d1b44dbfd8e1b
 
-Environment: macOS 26.2, arm64; uv 0.11.28; CPython 3.12.2 (the python.org framework build at /Library/Frameworks/Python.framework/Versions/3.12); datacontract-cli 1.0.12 as an isolated uv tool with the [duckdb] extra; network open (dbt deps against hub.getdbt.com; the parser wheel from GitHub releases; the v2 driver from public.cdn.getdbt.com). Wall times and byte sizes are per-machine reports; the D-33 digest is the gate. The sandbox record this re-proves: 2026-08-28_arc1_prep_probe_transcript.md.
+Environment: macOS 26.2, arm64; uv 0.11.28; CPython 3.12.2 (the python.org framework build at /Library/Frameworks/Python.framework/Versions/3.12); datacontract-cli 1.0.12 as an isolated uv tool with the [duckdb] extra; network open (dbt deps against hub.getdbt.com; the parser wheel from GitHub releases; public.cdn.getdbt.com reachable but not used: section 6 measured the v2 driver as the Homebrew libduckdb 1.5.4 already on this machine). Wall times and byte sizes are per-machine reports; the D-33 digest is the gate. The sandbox record this re-proves: 2026-08-28_arc1_prep_probe_transcript.md.
 
 == 1. The pin and the lock ==
 $ uv add --no-sync "dbt-core>=1.12,<1.13" "dbt-duckdb>=1.11,<1.12"
@@ -46,7 +46,7 @@ Installed 8 packages in 15ms
  + dbt-duckdb==1.11.0
  - dbt-semantic-interfaces==0.9.0
  + metricflow==0.212.0
- ~ metricmine==0.1.0 (from file:///Users/justingoff/Documents/code/metricminellc/metricmine)
+ ~ metricmine==0.1.0 (from the repository root; the absolute path relativized)
  + sqlglot==30.17.0
  + tabulate==0.10.0
 uv sync --frozen  0.40s user 0.29s system 19% cpu 3.496 total
