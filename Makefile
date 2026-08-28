@@ -88,6 +88,15 @@ RELAX_FLAG := $(if $(ALLOW_RELAXATION),--allow-relaxation,)
 propose-amend:
 	uv run python -m metricmine.agents propose amend --table "$(TABLE)" --intent "$(INTENT)" $(MODEL_FLAG) $(RELAX_FLAG)
 
+# The batch driver (D-35): walk the derived queue's adopt and amend items in
+# plan order, one structured call per item, stopping at the explicit MAX cap or
+# the first fail-closed exit (never re-invoked unattended, Amendment G). Amend
+# items run only under an operator INTENT; without it they are listed with
+# their exact per-item command. Deterministic sequencing, never an agent.
+.PHONY: propose-queue
+propose-queue:
+	uv run python -m metricmine.agents propose-queue --max "$(MAX)" --intent "$(INTENT)" $(MODEL_FLAG)
+
 # Deterministic adoption tools (D-35): never agents, keyless by construction.
 # The scan derives the review queue from the tree and the read-only warehouse
 # on every run and writes it to the gitignored outbox; nothing is stored.
