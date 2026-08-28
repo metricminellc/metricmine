@@ -4,7 +4,9 @@ Scratch gate proof run July 11, 2026, prior to Phase 1 exit (Decision
 [D-12](../decisions/decision-register.md#d-12)).
 Toolchain: dbt-core 1.11.12 · dbt-duckdb 1.10.1 · DuckDB engine 1.4.3 ·
 datacontract-cli 1.0.12 (isolated uv tool). All findings below were observed
-directly, not inferred from documentation. They supersede any conflicting
+directly, not inferred from documentation. The gate path was re-proven at
+dbt-core 1.12.3 with dbt-duckdb 1.11.0 at Arc 1 ([F-30](#f-30)); every
+finding stands. They supersede any conflicting
 guidance in older references. Governing rules: CLAUDE.md rules 10–11.
 
 Findings carry canonical IDs of the form **F-nn**, cited from the
@@ -43,6 +45,8 @@ order by design.
 | [F-27](#f-27) | `datacontract dbt sync` creates the properties file for a contracted model that has none | Agent rung |
 | [F-28](#f-28) | The contract-before-model window admits optional additions and rejects required ones | Agent rung |
 | [F-29](#f-29) | A governing-contract version bump closes the F-28 window at the compiled-context freshness gate | Agent rung |
+| [F-30](#f-30) | dbt 1.12 lands clean; the line brings a lock-pinned binary the register must name | Toolchain rung |
+| [F-31](#f-31) | The v2 parser gate is parse-only for a contract-enforced project; the beta engine builds it | Toolchain rung |
 
 ## Command surface (datacontract-cli 1.0.12)
 
@@ -642,3 +646,60 @@ half (the properties re-pin and the version-named generated tests) still
 lands after, as its own PR (D-08's order; measured at PR #101).
 ([`evidence/2026-08-26_sessionQ_amend_live.md`](evidence/2026-08-26_sessionQ_amend_live.md),
 [`evidence/2026-08-26_sessionQ_amend_live_record.json`](evidence/2026-08-26_sessionQ_amend_live_record.json))
+
+## Toolchain rung (Arc 1 prep, August 28, 2026)
+
+### F-30
+**dbt 1.12 lands clean on the emitted project, and the line brings a
+lock-pinned binary the register must name.** Measured at the Arc 1 prep
+against main 0708240: dbt-core 1.12.3 with dbt-duckdb 1.11.0 co-resolves
+against the committed lock on the first try (`uv add --no-sync`, the P1
+pattern) with airbyte, anthropic, mcp, and duckdb untouched, and the
+full gate re-proof at that state lands every lane (411 passed, 52
+deselected, 13 warnings; 240; 8 passed, 232 deselected; the scan module
+11), the build (PASS=109; the Done line gains a REUSED=0 field at 1.12
+and nothing in the repository couples to the line), the adoption scan
+(13 models, 12 skip_engine_owned, 1 in_sync, queue Empty, the plan body
+byte-identical to head's), gates 1 through 3 (sync writes zero YAML;
+85 plus 11 tests), zero deprecations under --show-all-deprecations, and
+the D-33 digest unchanged. datacontract-cli 1.0.12 needs nothing: its
+tool environment carries no dbt, and `datacontract dbt test` shells out
+to the project's dbt and reads run_results.json (F-04, F-09). The
+require-dbt-version mirror in transform/dbt_project.yml refuses the new
+line until edited, as designed. The line adds two dependencies:
+metricflow, and dbt-core-experimental-parser at a pre-release
+(>=2.0.0b1), published as a download-at-install source distribution
+whose build step fetches a platform wheel from GitHub releases and
+verifies it against the sha256 the sdist carries; uv.lock pins the
+sdist by hash, so the chain is deterministic, and the install adds a
+150 MB binary to the environment (49.9 MB compressed on the wire). The
+rule that earns: a pin's surface is whatever the lock resolves, and a
+pin amendment names every new install-time source, not only the
+package that asked for it.
+([`evidence/2026-08-28_arc1_prep_probe_transcript.md`](evidence/2026-08-28_arc1_prep_probe_transcript.md), sections 2 through 5)
+
+### F-31
+**The v2 parser gate is parse-only for a contract-enforced project; the
+beta engine itself builds it.** At dbt-core 1.12.3 with
+dbt-core-experimental-parser 2.0.0b2, `dbt parse --use-v2-parser` passes
+clean on the emitted project (109 nodes, no warnings, 834 ms in the
+prep sandbox), and `dbt build --use-v2-parser` fails on every
+contract-enforced model: the delegated manifest serializes column
+constraints with warn_unenforced and warn_unsupported as null, and
+dbt-adapters' constraint parser rejects them (`Could not parse
+constraint`; PASS=2 ERROR=8 SKIP=99). Every contracted model here carries
+not_null constraints (rule 5), so at this pairing the flag can gate
+parsing and nothing else, which is the low-risk probe dbt Labs documents
+it as (the 1.12 guide: a beta parser whose manifest may differ in edge
+cases; dbt-core #16010 records the same manifest-copy family).
+Separately, dbt Core 2.0.0-beta.2 in an isolated environment parses and
+builds the emitted project unchanged, 109 of 109, and its warehouse
+reproduces the D-33 digest with the 1.12 gate-3 tests green over its
+relations; the beta's PyPI source distribution omits the
+mashumaro[msgpack] dependency its wheel declares, and its DuckDB driver
+arrives through the ADBC driver manager from public.cdn.getdbt.com on
+first use (measured with the pinned duckdb 1.4.3 wheel as the driver
+where that host was unreachable). The deferral stands on evidence rather
+than caution: the engine, the contracts, and the emitted models need no
+change for v2; the toolchain around it is not yet stable.
+([`evidence/2026-08-28_arc1_prep_probe_transcript.md`](evidence/2026-08-28_arc1_prep_probe_transcript.md), sections 6 and 7)
