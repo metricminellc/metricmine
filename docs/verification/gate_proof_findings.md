@@ -42,6 +42,7 @@ order by design.
 | [F-26](#f-26) | The frozen mapping-contract schema is not a structured-outputs schema | Agent rung |
 | [F-27](#f-27) | `datacontract dbt sync` creates the properties file for a contracted model that has none | Agent rung |
 | [F-28](#f-28) | The contract-before-model window admits optional additions and rejects required ones | Agent rung |
+| [F-29](#f-29) | A governing-contract version bump closes the F-28 window at the compiled-context freshness gate | Agent rung |
 
 ## Command surface (datacontract-cli 1.0.12)
 
@@ -618,3 +619,26 @@ add as optional, land the model, then tighten to required in a second
 contract version. The amend stance (D-35) proposes additions as optional
 with a declared follow-up change.
 ([`evidence/2026-08-21_adoption_lab_transcript.md`](evidence/2026-08-21_adoption_lab_transcript.md))
+
+### F-29
+**A governing-contract version bump carries its compiled-context refresh
+in the same PR; the F-28 window closes at the D-30 freshness gate.** The
+first landed amendment (silver_invoice_lines v1.1.1, PR #99) proved the
+ordering: the engine reader fails closed when the committed
+compiled-context artifact cites an older source version than the tree
+(`run make context`, D-30 by design), and four CI emission tests enforce
+it, so a contract-only PR cannot go green, while the refresh cannot be
+generated before the contract lands. No separate-PR ordering keeps every
+merge green. Measured on the neutral v1.1.1 amendment: the whole cascade
+is three metadata lines. `make context` minted v0004 differing from v0003
+in exactly one line (the silver source version); `make regen` landed only
+the ownership manifest's compiled_context pointer, with all 24 model
+files unchanged; the golden manifest fixture followed by the same line;
+the demo digest was untouched. Rule 6 stands: `context/compiled/`
+artifacts and the ownership manifest are governance metadata under D-30
+and D-09, not transform changes, so the amendment PR carrying them stays
+a contract change with its derived downstream record. The model-plane
+half (the properties re-pin and the version-named generated tests) still
+lands after, as its own PR (D-08's order; measured at PR #101).
+([`evidence/2026-08-26_sessionQ_amend_live.md`](evidence/2026-08-26_sessionQ_amend_live.md),
+[`evidence/2026-08-26_sessionQ_amend_live_record.json`](evidence/2026-08-26_sessionQ_amend_live_record.json))
