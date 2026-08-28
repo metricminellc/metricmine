@@ -151,3 +151,18 @@ def test_propose_amend_carries_table_intent_model_and_relax_flags() -> None:
     assert '--intent "$(INTENT)"' in line
     assert "$(MODEL_FLAG)" in line  # the D-34 per-run override
     assert "$(RELAX_FLAG)" in line  # the D-35 narrowing gate, explicit
+
+
+def test_propose_queue_is_one_capped_driver_invocation() -> None:
+    """propose-queue is deterministic sequencing (D-35): one module
+    call carrying the explicit MAX cap, the optional batch INTENT, and
+    the D-34 model override; never a loop in make itself."""
+    targets = _parse()
+    prerequisites, recipe = targets["propose-queue"]
+    assert prerequisites == []
+    assert len(recipe) == 1
+    line = recipe[0]
+    assert line.startswith("uv run python -m metricmine.agents propose-queue")
+    assert '--max "$(MAX)"' in line
+    assert '--intent "$(INTENT)"' in line
+    assert "$(MODEL_FLAG)" in line  # the D-34 per-run override
