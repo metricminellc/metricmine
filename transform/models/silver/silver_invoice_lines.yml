@@ -30,7 +30,7 @@ models:
                     check: silver_invoice_lines__invoice_id__field_required
                     include_in_tests: true
                     contract_versions:
-                      - 1.1.0
+                      - 1.1.1
                     generated: true
               description: Check that field invoice_id has no missing values
       - name: is_cancellation
@@ -47,7 +47,7 @@ models:
                     check: silver_invoice_lines__is_cancellation__field_required
                     include_in_tests: true
                     contract_versions:
-                      - 1.1.0
+                      - 1.1.1
                     generated: true
               description: Check that field is_cancellation has no missing values
       - name: stock_code
@@ -64,7 +64,7 @@ models:
                     check: silver_invoice_lines__stock_code__field_required
                     include_in_tests: true
                     contract_versions:
-                      - 1.1.0
+                      - 1.1.1
                     generated: true
               description: Check that field stock_code has no missing values
       - name: product_description
@@ -74,7 +74,7 @@ models:
         data_type: INTEGER
         constraints:
           - type: not_null
-        description: Units on the line, cast DECIMAL(38,9) to INTEGER (integral min, max, and samples at v0001; range -1395 to 5184). Negative only on cancellation lines.
+        description: Units on the line, cast from DECIMAL(38,9) to INTEGER. Negative values occur both on cancellation-invoice lines and on zero-unit-price stock-adjustment lines; consumers must not infer cancellation from negative quantity alone.
         data_tests:
           - not_null:
               config:
@@ -84,7 +84,7 @@ models:
                     check: silver_invoice_lines__quantity__field_required
                     include_in_tests: true
                     contract_versions:
-                      - 1.1.0
+                      - 1.1.1
                     generated: true
               description: Check that field quantity has no missing values
       - name: invoiced_at
@@ -101,7 +101,7 @@ models:
                     check: silver_invoice_lines__invoiced_at__field_required
                     include_in_tests: true
                     contract_versions:
-                      - 1.1.0
+                      - 1.1.1
                     generated: true
               description: Check that field invoiced_at has no missing values
       - name: unit_price
@@ -118,7 +118,7 @@ models:
                     check: silver_invoice_lines__unit_price__field_required
                     include_in_tests: true
                     contract_versions:
-                      - 1.1.0
+                      - 1.1.1
                     generated: true
               description: Check that field unit_price has no missing values
       - name: customer_id
@@ -138,6 +138,6 @@ models:
                     check: silver_invoice_lines__country__field_required
                     include_in_tests: true
                     contract_versions:
-                      - 1.1.0
+                      - 1.1.1
                     generated: true
               description: Check that field country has no missing values
