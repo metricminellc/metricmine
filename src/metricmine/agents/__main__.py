@@ -22,6 +22,7 @@ from metricmine.agents import eval as eval_lane
 from metricmine.agents import (
     harness,
     mapping_proposer,
+    propose_queue,
     render,
     silver_proposer,
     validate,
@@ -90,6 +91,31 @@ def main(argv: list[str] | None = None) -> int:
         help="allow-listed model ID override (D-34); precedence "
         "--model, then MM_PROPOSER_MODEL, then the pinned default",
     )
+    queue = subparsers.add_parser(
+        "propose-queue",
+        help="walk the derived queue's adopt and amend items, one call "
+        "per item, capped (D-35); deterministic sequencing, never an "
+        "agent; needs a key when items run",
+    )
+    queue.add_argument(
+        "--max",
+        default=None,
+        help="the explicit cap on invoked items (required; make "
+        "propose-queue MAX=<n>)",
+    )
+    queue.add_argument(
+        "--intent",
+        default=None,
+        help="the operator's batch intent for amend items, recorded "
+        "verbatim per proposal (D-22 Amendment I); without it amend "
+        "items are listed, never invoked",
+    )
+    queue.add_argument(
+        "--model",
+        default=None,
+        help="allow-listed model ID override (D-34), the same precedence "
+        "as propose",
+    )
     evaluate = subparsers.add_parser(
         "eval",
         help="the live eval lane over the golden-profile set (D-25); "
@@ -111,6 +137,8 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     repo_root = Path(__file__).resolve().parents[3]
+    if args.command == "propose-queue":
+        return _run_queue(repo_root, args)
     if args.command == "eval":
         return eval_lane.run_eval(
             repo_root, model_flag=args.model, labels=args.fixture
@@ -192,6 +220,29 @@ def _run_describe(repo_root: Path, args: argparse.Namespace) -> int:
         tmp.replace(out)
         print(f"agreement: {out}")
     return code
+
+
+def _run_queue(repo_root: Path, args: argparse.Namespace) -> int:
+    """The batch driver: an explicit cap, an optional batch intent.
+
+    The cap is never defaulted (D-35 names it: the driver walks the
+    queue WITH a cap; S-Q-prep-5), so an empty MAX from make is a
+    refusal, the same posture as an empty TABLE. The intent gate lives
+    in the driver: an amend item without an operator intent has no
+    governed reason to run (D-23 Amendment H)."""
+    raw = (args.max or "").strip()
+    if not raw.isdigit() or int(raw) < 1:
+        print(
+            "error: propose-queue requires an explicit positive cap "
+            "(make propose-queue MAX=<n>); the cap is part of the D-35 "
+            "contract, never a default",
+            file=sys.stderr,
+        )
+        return 1
+    intent = (args.intent or "").strip() or None
+    return propose_queue.run_queue(
+        repo_root, int(raw), intent=intent, model_flag=args.model
+    )
 
 
 def _run_amend(repo_root: Path, args: argparse.Namespace) -> int:

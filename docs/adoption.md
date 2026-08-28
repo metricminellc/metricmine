@@ -81,6 +81,20 @@ and wait. An amendment never weakens a contract without the explicit
 relaxation flag and a major version bump (D-35, rule 6), and required
 additions enter optional and tighten after the model lands (F-28).
 
+## Walking the queue in batch
+
+`make propose-queue MAX=<n>` walks the queue's `adopt` and `amend` items
+in plan order, one structured call per item, and stops at the explicit
+cap or the first fail-closed exit. Adopt items run the describe stance.
+Amend items run only when the batch carries your `INTENT="..."`,
+recorded verbatim in every proposal record; without it they are listed
+with their exact per-item command and never invoked. A failed item stops
+the batch and is never re-invoked unattended (D-10 as amended): review
+the record, fix the cause, re-run the item yourself. The driver prints
+tokens and cost per call and in total. Review stays per draft, one
+contract per PR; the queue is derived fresh on every walk and nothing is
+stored.
+
 ## Scope
 
 The silver plane and the committed sample are the demonstrated scope

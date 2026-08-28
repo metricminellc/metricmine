@@ -503,6 +503,21 @@ def inventory(repo: Path) -> dict:
     }
 
 
+def queued_models(models: list[dict]) -> list[dict]:
+    """The review queue in plan order: queue-state order, then layer,
+    then name. Public because the batch driver (make propose-queue,
+    D-35) walks EXACTLY the order the plan prints; one function serves
+    both so they cannot disagree."""
+    return sorted(
+        (model for model in models if model["state"] in QUEUE_ORDER),
+        key=lambda model: (
+            QUEUE_ORDER.index(model["state"]),
+            LAYER_ORDER.get(model["layer"], 9),
+            model["name"],
+        ),
+    )
+
+
 def _counts(models: list[dict]) -> dict[str, int]:
     """Nonzero state counts in the fixed ALL_STATES order."""
     counts = {
@@ -593,14 +608,7 @@ def render_md(repo: Path, inv: dict, head: str) -> str:
     ]
     lines += [_row(model) for model in models]
     lines += ["", "## The queue", ""]
-    queued = sorted(
-        (model for model in models if model["state"] in QUEUE_ORDER),
-        key=lambda model: (
-            QUEUE_ORDER.index(model["state"]),
-            LAYER_ORDER.get(model["layer"], 9),
-            model["name"],
-        ),
-    )
+    queued = queued_models(models)
     if not queued:
         lines += ["Empty. Every model is in sync or skipped by decision.", ""]
     for position, model in enumerate(queued, 1):

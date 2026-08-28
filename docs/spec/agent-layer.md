@@ -59,6 +59,7 @@ make propose-describe TABLE=t          # the table's own profile -> draft table 
 make propose-amend TABLE=t INTENT="..."  # declared change set over the committed contract (D-35)
 make verify-grain TABLE=t KEYS=a,b     # measure a declared grain, deterministic (F-10)
 make enforce-properties TABLE=t        # the two enforcement keys sync omits (D-16 Amendment J)
+make propose-queue MAX=n               # walk the derived queue, capped, one call per item (D-35)
 ```
 
 1. **Propose.** The target selects the latest profile (or `--profile PATH`), runs the call, validates, and writes the draft contract, the validated proposal object (`proposal.json`), and its proposal record to `proposals/`, a **gitignored outbox**. Nothing under `contracts/` is touched. The terminal prints a rationale summary citing profile evidence, and, on regeneration (the draft carries the committed contract's id), a unified diff with both documents normalized through the same parse-and-dump path so comments and scalar styles never appear as changes; a first proposal for a new id starts its version line at 1.0.0 and prints no diff.
@@ -110,6 +111,7 @@ src/metricmine/agents/
 ├── agreement.py        # the first-class agreement metric (describe, --oracle)
 ├── validate.py         # groundedness, completeness, staleness, lint
 ├── render.py           # proposal JSON -> canonical ODCS YAML
+├── propose_queue.py    # the batch driver: deterministic sequencing (D-35)
 ├── silver_proposer.py  # thin: schema + prompt binding
 ├── mapping_proposer.py # thin: schema + prompt binding
 └── prompts/            # versioned prompt artifacts (semver front matter)
