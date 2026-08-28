@@ -21,7 +21,9 @@ layer, and Amendment D to D-32. Decision Record 006 (August 14, 2026)
 carries Amendment E to D-03 and D-33. Decision Record 007 (August 22,
 2026) carries D-34, D-35, Amendments F through J, and findings F-26
 through F-28. Decision Record 008 part one (August 24, 2026) carries
-D-36 and Amendments K, L, and M; part two follows with Arc 5b.
+D-36 and Amendments K, L, and M; part two follows with Arc 5b. Decision
+Record 009 (August 28, 2026) carries Amendment N to D-05 and findings
+F-30 and F-31.
 
 **Status meanings.** `adopted` — in force. `proposed` — agreed in working
 session, applied by the plans below, formal adoption pending; treat as binding
@@ -35,7 +37,7 @@ unless amended.
 | [D-02](#d-02) | Apache-2.0 license; provenance in NOTICE | adopted |
 | [D-03](#d-03) | Working warehouse gitignored; demo export committed | adopted |
 | [D-04](#d-04) | dbt Core + dbt-duckdb is the transform plane | adopted |
-| [D-05](#d-05) | Version pins; dbt 1.12 and Core v2 deferred | adopted |
+| [D-05](#d-05) | Version pins; dbt 1.12 adopted (Amendment N); Core v2 deferred | adopted |
 | [D-06](#d-06) | ODCS v3.1.0 contracts; datacontract-cli as isolated tool | adopted |
 | [D-07](#d-07) | The engine emits dbt models, never DDL | adopted |
 | [D-08](#d-08) | Symmetric gates; contracts never weakened to pass | adopted |
@@ -116,6 +118,32 @@ Three planes organize the repo: `contracts/` (specification), `transform/`
 dbt-duckdb `>=1.10,<1.11` (resolved 1.10.1). dbt 1.12 waits for GA. dbt Core
 v2 is deliberately deferred. Upgrading any pin requires amending this register
 first (CLAUDE.md rule 1).
+Amended August 28, 2026 (Record 009, Amendment N): the dbt line moves to
+1.12. dbt-core `>=1.12,<1.13` (resolved 1.12.3) with dbt-duckdb
+`>=1.11,<1.12` (resolved 1.11.0); transform/dbt_project.yml mirrors the
+range as require-dbt-version [">=1.12.0", "<1.13.0"]. The condition this
+decision set is met: 1.12.0 went GA on July 16, 2026, 1.11 leaves
+critical support on December 18, 2026, and dbt-duckdb 1.11.0 is the
+adapter line developed against 1.12. The move was proven before it
+bound: the full gate re-proof at 1.12.3 lands every lane, gate, the
+adoption scan, and the D-33 digest at their head values with zero
+deprecations, and datacontract-cli 1.0.12 (D-06, unchanged) shells out
+to the project's dbt and needs nothing
+([F-30](../verification/gate_proof_findings.md#f-30)). Two dependencies
+arrive with the line and are named here because rule 1 pins by the
+lock: dbt-core-experimental-parser, the v2 parser binary dbt-core 1.12
+requires at a pre-release (2.0.0b2 in uv.lock, pinned by the sdist hash
+and by that sdist's own wheel digest, fetched from GitHub releases at
+install time), and metricflow. Neither is a project dependency, neither
+is invoked by any target, and both move only with the dbt-core lock.
+dbt Core v2 stays deferred: the 1.12 `--use-v2-parser` flag is a
+parse-only probe for this project, never a build path
+([F-31](../verification/gate_proof_findings.md#f-31)), and the
+2.0.0-beta.2 engine's own build of the emitted project reproduces the
+digest with its packaging and driver gaps recorded. The deferral lifts
+only by a further amendment on a verified GA. The 1.11.14 lock refresh
+that preceded this amendment was a chore inside the previous range and
+needed no amendment (rule 1).
 
 ### D-06
 **Contract standard and tooling.** Contracts are authored natively in ODCS
@@ -649,7 +677,7 @@ authority. The mapping:
 | CLAUDE.md rule | Governing decision(s) |
 |---|---|
 | 1 (pins; amendment required) | D-05, D-06 |
-| 2 (1.12 / v2 deferred) | D-05 |
+| 2 (v2 deferred; the 1.12 parser flag is parse-only) | D-05 (Amendment N), evidence [F-31](../verification/gate_proof_findings.md#f-31) |
 | 3 (profiler uncontracted; transforms contracted SQL) | D-04 |
 | 4 (contracts all-or-nothing) | D-06, D-08 |
 | 5 (only not_null trusted; tests for the rest) | D-12, evidence [F-06](../verification/gate_proof_findings.md#f-06)/[F-08](../verification/gate_proof_findings.md#f-08) |
@@ -676,7 +704,8 @@ Record 004), D-31 through D-33 as of the August 13, 2026 revision
 (Decision Record 005), D-34 and D-35 (with Amendments F through J)
 as of the August 22, 2026 revision (Decision Record 007), and D-36
 (with Amendments K, L, and M) as of the August 24, 2026 revision
-(Decision Record 008 part one). D-20 has no
+(Decision Record 008 part one), and Amendment N to D-05 as of the
+August 28, 2026 revision (Decision Record 009). D-20 has no
 dedicated
 CLAUDE.md rule; its substance
 is encoded directly in

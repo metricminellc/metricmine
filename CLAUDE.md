@@ -8,8 +8,11 @@ Agents propose data contracts; deterministic code and dbt execute them; a human
 approves every contract.
 
 ## Hard rules (do not violate)
-1. Pinned versions only: dbt-core 1.11.x (resolved 1.11.12), dbt-duckdb 1.10.x
-   (resolved 1.10.1), datacontract-cli 1.0.12, airbyte (PyAirbyte) >=0.53,<0.54
+1. Pinned versions only: dbt-core 1.12.x (resolved 1.12.3; D-05 as amended
+   by Amendment N, which also names the two dependencies the 1.12 line
+   brings, dbt-core-experimental-parser at a lock-pinned pre-release and
+   metricflow, neither a project dependency), dbt-duckdb 1.11.x (resolved
+   1.11.0), datacontract-cli 1.0.12, airbyte (PyAirbyte) >=0.53,<0.54
    (resolved in uv.lock), duckdb==1.4.3 (explicit runtime dependency as of
    the profiler PR, matching PyAirbyte's pin), and the connector
    airbyte-source-file==0.3.15 with numpy<2 on uv-provisioned CPython 3.10
@@ -25,8 +28,11 @@ approves every contract.
    and never upgrade any of these
    without an amendment to docs/decisions/decision-register.md in its own
    documentation PR.
-2. dbt Core v2 and dbt Core 1.12 are deliberately deferred. Do not upgrade to
-   them.
+2. dbt Core v2 is deliberately deferred. Do not upgrade to it. The 1.12
+   `--use-v2-parser` flag is a parse-only probe here: the delegated build
+   fails on every contract-enforced model (F-31), so never build, gate, or
+   ship through it. The deferral lifts only by register amendment on a
+   verified GA (D-05 as amended).
 3. Profiling is standalone Python and carries no contract. Contracted transforms
    are SQL dbt models with `contract: enforced: true`.
 4. Contracts are all-or-nothing: every column declares `name` and `data_type`.
