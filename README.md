@@ -160,7 +160,7 @@ is next. The live roadmap is the
 
 ## Toolchain
 
-dbt-core 1.11.x with the dbt-duckdb 1.10.x adapter runs the transforms.
+dbt-core 1.12.x with the dbt-duckdb 1.11.x adapter runs the transforms.
 datacontract-cli 1.0.12, installed as an isolated uv tool, executes the
 contracts. DuckDB 1.4.3 is the local warehouse. PyAirbyte handles
 ingestion. The MCP server runs on the official `mcp` SDK, pinned to the
