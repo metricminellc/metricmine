@@ -676,7 +676,7 @@ sdist by hash, so the chain is deterministic, and the install adds a
 rule that earns: a pin's surface is whatever the lock resolves, and a
 pin amendment names every new install-time source, not only the
 package that asked for it.
-([`evidence/2026-08-28_arc1_prep_probe_transcript.md`](evidence/2026-08-28_arc1_prep_probe_transcript.md), sections 2 through 5)
+([`evidence/2026-08-28_arc1_prep_probe_transcript.md`](evidence/2026-08-28_arc1_prep_probe_transcript.md), sections 2 through 5; [`evidence/2026-08-28_arc1_gate_reproof.md`](evidence/2026-08-28_arc1_gate_reproof.md), the Mac re-proof)
 
 ### F-31
 **The v2 parser gate is parse-only for a contract-enforced project; the
@@ -702,4 +702,4 @@ first use (measured with the pinned duckdb 1.4.3 wheel as the driver
 where that host was unreachable). The deferral stands on evidence rather
 than caution: the engine, the contracts, and the emitted models need no
 change for v2; the toolchain around it is not yet stable.
-([`evidence/2026-08-28_arc1_prep_probe_transcript.md`](evidence/2026-08-28_arc1_prep_probe_transcript.md), sections 6 and 7)
+([`evidence/2026-08-28_arc1_prep_probe_transcript.md`](evidence/2026-08-28_arc1_prep_probe_transcript.md), sections 6 and 7; [`evidence/2026-08-28_arc1_gate_reproof.md`](evidence/2026-08-28_arc1_gate_reproof.md), the Mac probes)
