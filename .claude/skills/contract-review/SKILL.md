@@ -2,10 +2,6 @@
 name: contract-review
 description: Review an ODCS contract change or a proposer draft against the MetricMine contract rules before it lands. Use when reviewing a file under contracts/ or proposals/, a contract-only pull request, a version bump, or an amend proposal. Covers the all-or-nothing column rule, trusted constraints, the never-weaken rule and its relaxation gate, provenance, the properties-file obligations, and the separate-PR order.
 argument-hint: [contract-path]
-paths:
-  - contracts/**
-  - proposals/**
-  - transform/models/**/*.yml
 allowed-tools:
   - Read
   - Grep
