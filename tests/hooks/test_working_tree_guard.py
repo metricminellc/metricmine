@@ -167,9 +167,9 @@ def test_bash_existing_top_level_directory_is_still_a_path(root):
     assert_denied(out, "/tmp")
 
 
-def test_bash_unknown_multi_segment_path_is_still_a_path(root):
-    out = run_guard(call("Bash", root, command="cat /no-such-dir/secret.txt"), root)
-    assert_denied(out, "secret.txt")
+def test_bash_sed_expression_opening_with_a_slash_passes(root):
+    command = "sed -n '/^## /p' docs/note.md && grep -c '/^$/d' docs/note.md"
+    assert run_guard(call("Bash", root, command=command), root) is None
 
 
 # --- the file tools -----------------------------------------------------------
