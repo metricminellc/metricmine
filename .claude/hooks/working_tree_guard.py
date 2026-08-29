@@ -32,6 +32,12 @@ a sed expression such as /^$/d), which is a slash command, a word quoted
 in prose, or a pattern. A token under /tmp, /var, or any existing
 top-level directory stays a path.
 
+On a GitHub Actions runner (GITHUB_ACTIONS is true) it also allows the
+runner's own directories: the downloaded actions under the work
+directory's _actions folder (where the Claude Code GitHub Action keeps
+the push helper it hands to Claude), GITHUB_ACTION_PATH, and RUNNER_TEMP.
+The runner's home directory and everything else stay denied.
+
 What it cannot see: a path a subprocess computes, a path built from an
 environment variable other than HOME, or a path assembled by a script.
 This is a guard, not a sandbox; the prose rule stays in force where the
@@ -137,7 +143,7 @@ def outside(candidate, cwd, root):
     real = resolve(candidate, cwd)
     if under(real, root):
         return None
-    if any(under(real, prefix) for prefix in SYSTEM_PREFIXES):
+    if any(under(real, prefix) for prefix in SYSTEM_PREFIXES + runner_prefixes()):
         return None
     return real
 
@@ -154,6 +160,28 @@ def prose_slash_word(token):
         return False
     first = token[1:].split("/", 1)[0]
     return not os.path.lexists("/" + first)
+
+
+def runner_prefixes():
+    """The GitHub Actions runner's own directories, present only on a runner.
+
+    The Claude Code GitHub Action keeps its push helper under the work
+    directory's _actions folder and stages its prompt and configuration
+    under RUNNER_TEMP; both sit beside the checkout, outside the root.
+    """
+    if os.environ.get("GITHUB_ACTIONS", "").lower() != "true":
+        return ()
+    prefixes = []
+    for var in ("GITHUB_ACTION_PATH", "RUNNER_TEMP"):
+        value = os.environ.get(var)
+        if value:
+            prefixes.append(os.path.realpath(value))
+    workspace = os.environ.get("GITHUB_WORKSPACE")
+    if workspace:
+        work = os.path.dirname(os.path.dirname(os.path.realpath(workspace)))
+        prefixes.append(os.path.join(work, "_actions"))
+        prefixes.append(os.path.join(work, "_temp"))
+    return tuple(prefixes)
 
 
 def claude_memory_dir(real):
