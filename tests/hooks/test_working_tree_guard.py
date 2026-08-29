@@ -244,6 +244,56 @@ def test_bash_over_claude_memory_dir_is_denied(root, config_dir):
     assert_denied(out, "MEMORY.md")
 
 
+# --- the GitHub Actions runner's own directories, only on a runner ------------
+
+
+@pytest.fixture
+def runner(tmp_path):
+    work = tmp_path / "work"
+    checkout = work / "metricmine" / "metricmine"
+    (checkout / "docs").mkdir(parents=True)
+    action = work / "_actions" / "anthropics" / "claude-code-action" / "v1"
+    action.mkdir(parents=True)
+    (action / "git-push.sh").write_text("#!/bin/sh\n")
+    temp = work / "_temp"
+    temp.mkdir()
+    (temp / "prompt.txt").write_text("prompt\n")
+    home = tmp_path / "runner-home"
+    home.mkdir()
+    (home / "secret.txt").write_text("outside\n")
+    env = {
+        "GITHUB_ACTIONS": "true",
+        "GITHUB_WORKSPACE": str(checkout),
+        "GITHUB_ACTION_PATH": str(action),
+        "RUNNER_TEMP": str(temp),
+    }
+    return checkout.resolve(), action.resolve(), temp.resolve(), home.resolve(), env
+
+
+def test_action_push_helper_passes_on_a_runner(runner):
+    checkout, action, _, _, env = runner
+    command = f"{action}/git-push.sh claude/issue-74-20260829-1300"
+    assert run_guard(call("Bash", checkout, command=command), checkout, env_extra=env) is None
+
+
+def test_runner_temp_passes_for_the_file_tools_on_a_runner(runner):
+    checkout, _, temp, _, env = runner
+    assert run_guard(call("Read", checkout, file_path=str(temp / "prompt.txt")), checkout, env_extra=env) is None
+
+
+def test_runner_home_is_still_denied_on_a_runner(runner):
+    checkout, _, _, home, env = runner
+    out = run_guard(call("Bash", checkout, command=f"cat {home}/secret.txt"), checkout, env_extra=env)
+    assert_denied(out, "secret.txt")
+
+
+def test_action_directories_are_denied_off_a_runner(runner):
+    checkout, action, _, _, env = runner
+    env = dict(env, GITHUB_ACTIONS="false")
+    out = run_guard(call("Bash", checkout, command=f"{action}/git-push.sh main"), checkout, env_extra=env)
+    assert_denied(out, "git-push.sh")
+
+
 # --- failure modes ask instead of failing open --------------------------------
 
 
