@@ -247,7 +247,14 @@ contract gates, or working on the adoption scan and its helpers, read
 - Prefer editing existing files over creating new ones.
 - Never read or write paths outside the repository working tree.
   External inputs are staged into the repo by Justin before a session
-  needs them.
+  needs them. The working-tree guard enforces this rule (D-37): a
+  PreToolUse hook in .claude/settings.json runs
+  .claude/hooks/working_tree_guard.py before every Bash, Read, Edit,
+  Write, NotebookEdit, Glob, and Grep call and denies any path that
+  resolves outside the project root, naming the path. The guard reads
+  command text, never a subprocess, so this rule stays in force where
+  the guard cannot see. Hooks are local to Claude Code; CI is the gate
+  of record and no check migrates out of it.
 
 ### Commit and PR conventions
 Every commit and PR follows these:
