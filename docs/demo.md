@@ -14,11 +14,11 @@
   provisions the pinned Python 3.12 and every dependency; nothing else is
   installed globally.
 - [Claude Desktop](https://claude.ai/download) for the serving beat
-  (optional — path A works from the terminal without it).
+  (optional; path A works from the terminal without it).
 - No API keys, no accounts, no cloud resources. Everything below is
   keyless by design (D-24).
 
-## Path A — serve the committed gold star (2 minutes)
+## Path A: serve the committed gold star (2 minutes)
 
 The repository commits `demo/demo.duckdb`: a ~11 MB export carrying the
 gold schema only, verified content-equal by query to the built warehouse
@@ -37,8 +37,8 @@ Expected output: one category, `invoice_lines`, table
 
 ### Wire it into Claude Desktop
 
-Merge this entry into `claude_desktop_config.json` — on macOS at
-`~/Library/Application Support/Claude/claude_desktop_config.json` — keeping
+Merge this entry into `claude_desktop_config.json` (on macOS at
+`~/Library/Application Support/Claude/claude_desktop_config.json`), keeping
 any existing keys, and replacing the command path with your absolute clone
 path:
 
@@ -70,17 +70,17 @@ Quit Claude Desktop fully and reopen it. A new chat should list
 > invoice line count, and what does the country field mean in this model?
 
 The answer carries the counts from the star and the meaning from the
-context registry, cited to the mapping contract version that created it —
+context registry, cited to the mapping contract version that created it;
 data and meaning in one exchange. Two follow-ups worth trying:
 
-- *"By gross value instead of line count, does the podium change?"* — the
+- *"By gross value instead of line count, does the podium change?"*: the
   model does analysis, not retrieval, and the answer is different in an
   interesting way.
 - *"Take one line_identity from a dimension payload and run
-  lookup_record on it."* — the provenance round trip: every payload is
+  lookup_record on it."*: the provenance round trip: every payload is
   reachable by content key.
 
-## Path B — replay the whole pipeline (about 8 minutes)
+## Path B: replay the whole pipeline (about 8 minutes)
 
 The Online Retail II sample is committed (D-15), so the full path is
 keyless too. From the repo root:
@@ -120,28 +120,36 @@ What to expect, step by step:
 
 ## Troubleshooting
 
-- **`uv: command not found`** — install uv (link above) and reopen the
+- **`uv: command not found`**: install uv (link above) and reopen the
   terminal. Everything else flows from it.
-- **`dbt` cannot find a profile** — `DBT_PROFILES_DIR` must point at the
+- **`dbt` cannot find a profile**: `DBT_PROFILES_DIR` must point at the
   repo's `transform/` directory (the export line above); run dbt from the
   repo root, not from inside `transform/`.
-- **Claude Desktop does not show the server** — quit it fully (Cmd+Q on
+- **Claude Desktop does not show the server**: quit it fully (Cmd+Q on
   macOS) rather than closing the window; confirm the config file is valid
   JSON and the `command` path exists (`ls .venv/bin/python` from the repo
   root). Running `uv run python -m metricmine.server` by hand should
-  produce no output at all — silence is correct on stdio; Ctrl-C to exit.
+  produce no output at all; silence is correct on stdio; Ctrl-C to exit.
 - **First tool call asks for permission, or the chat runs a visible
-  tool-search step** — both are normal Desktop behavior on a newly added
+  tool-search step**: both are normal Desktop behavior on a newly added
   server; approve and continue.
-- **macOS asks whether Claude may access your Documents folder** — approve
+- **macOS asks whether Claude may access your Documents folder**: approve
   it if the clone lives there; the server reads the committed database
   from the repo.
-- **A query returns `truncated: true`** — by design. Results are
+- **A query returns `truncated: true`**: by design. Results are
   row-capped (default 100, hard cap 500) and a truncated result announces
   itself; aggregate or narrow the query instead of raising the cap.
-- **A write or PRAGMA attempt refuses** — also by design. Serving is
+- **A write or PRAGMA attempt refuses**: also by design. Serving is
   read-only three layers deep; the refusal names the failed check
   ([serving spec](spec/serving.md)).
+- **`uv sync` fails with `CERTIFICATE_VERIFY_FAILED` while building
+  `dbt-core-experimental-parser`**: the parser's source distribution
+  fetches its wheel from GitHub releases through the project
+  interpreter's own TLS trust, and a python.org framework CPython on
+  macOS ships with no CA bundle at its OpenSSL default path. Run the
+  framework's `Install Certificates.command` once, or export
+  `SSL_CERT_FILE=/etc/ssl/cert.pem` for the session, then rerun
+  `uv sync`.
 
 ## Where to next
 

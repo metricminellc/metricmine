@@ -1,7 +1,7 @@
 <div align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/assets/mm_logo_on_dark.png">
-    <img src="docs/assets/mm_logo_on_light.png" alt="MetricMine — data mined and refined" width="420">
+    <img src="docs/assets/mm_logo_on_light.png" alt="MetricMine, data mined and refined" width="420">
   </picture>
 
   <p><strong>A contract-driven data pipeline that ends in an answer, not a table.</strong><br>
@@ -21,8 +21,8 @@ machine-readable Mermaid twin: <a href="docs/diagrams/">docs/diagrams/</a></sub>
 
 MetricMine is a contract-driven medallion pipeline that runs end to end on
 one machine. Raw data lands in bronze; a deterministic profiler describes
-it; machine-readable ODCS contracts — hand-written today, proposed by two
-narrow AI agents in Phase 6 — shape silver and gold behind a human approval
+it; machine-readable ODCS contracts, hand-written or proposed by two
+narrow AI agents, shape silver and gold behind a human approval
 gate; and an auto-modeling engine emits the entire gold layer from the
 approved contract. The result is a governed dimensional gold layer with a
 context registry one join from any payload, served read-only over MCP, so
@@ -38,7 +38,7 @@ end to end.
 
 ## What this repository demonstrates
 
-**Strategy you can audit.** Thirty-three binding decisions in a versioned
+**Strategy you can audit.** Thirty-seven binding decisions in a versioned
 [decision register](docs/decisions/decision-register.md); specifications
 written before code; explicit non-goals; and no claim without a
 reproducible command behind it. The plan is not a slide deck. It is a
@@ -63,8 +63,8 @@ right-sized for the project and documented like everything else.
 > **Agents propose. Code executes. A human approves.**
 > Judgment and execution stay separate. Every approval becomes a versioned,
 > machine-readable contract that CI enforces from then on. In the age of
-> context windows, contracts are how agents get compact, reliable truth —
-> and this pipeline makes that governance automatic rather than
+> context windows, contracts are how agents get compact, reliable truth,
+> and this pipeline makes that governance mechanical rather than
 > aspirational.
 
 ## See it run
@@ -79,9 +79,9 @@ uv sync
 uv run python -c "from metricmine.query import GoldWarehouse; print(GoldWarehouse().list_fact_categories())"
 ```
 
-The full walkthrough — wiring the MCP server into Claude Desktop, the
+The full walkthrough (wiring the MCP server into Claude Desktop, the
 questions to ask, the complete keyless replay from raw data to a fresh
-export, and troubleshooting — is **[docs/demo.md](docs/demo.md)**, about
+export, and troubleshooting) is **[docs/demo.md](docs/demo.md)**, about
 ten minutes end to end. A recording of the demo is attached to the
 [latest release](https://github.com/metricminellc/metricmine/releases/latest).
 
@@ -89,7 +89,7 @@ ten minutes end to end. A recording of the demo is attached to the
 
 Three planes organize the repository: `contracts/` is the specification
 (ODCS data contracts a human approves), `transform/` is the dbt execution
-project, and `src/` is hand-written Python — the profiler, the
+project, and `src/` is hand-written Python: the profiler, the
 auto-modeling engine, the context compiler, the shared query module, and
 the MCP server. Data moves bronze → silver → gold in one local DuckDB
 file. Gold is terminal and machine-emitted: a source-invariant,
@@ -104,18 +104,18 @@ module. Designs: the
 
 The demo runs end to end on one machine, on DuckDB by design. Portability
 is delegated to dbt profiles, with Snowflake named as the swap target, and
-the patterns that matter — contracts, symmetric gates, ownership
-manifests, human-gated agents — are the same ones that run at enterprise
+the patterns that matter (contracts, symmetric gates, ownership
+manifests, human-gated agents) are the same ones that run at enterprise
 scale on any cloud. Nothing here depends on the demo staying small.
 
 ## Proof, committed
 
 The contract gates were broken deliberately, in both directions, and the
-evidence is committed. A shape defect — a renamed column — fails at
+evidence is committed. A shape defect, a renamed column, fails at
 compile time, before any DDL runs: proven live in
 [break-demo PR #45](https://github.com/metricminellc/metricmine/pull/45),
 opened against the real pipeline and closed unmerged by design, its red
-check permanent. A content defect — data violating a declared rule —
+check permanent. A content defect, data violating a declared rule,
 builds, then fails as an error-severity contract test:
 
 ![PR #45: the shape gate fails red in CI](docs/verification/evidence/2026-07-31_pr45_break_demo_red_check.png)
@@ -125,7 +125,7 @@ builds, then fails as an error-severity contract test:
 The signature property (D-17) is the payoff, demonstrated rather than
 asserted: adding the reserved `country` dimension took one
 mapping-contract amendment and one regeneration. No engine code changed,
-no physical schema changed, no gold contract amendment — 23 emitted files
+no physical schema changed, no gold contract amendment: 23 emitted files
 moved, one schema key appeared, and row conservation held to the digit
 (44,721 in, 44,721 out). The full narrative, with the staleness-guard and
 ownership-drift refusals captured live, is
@@ -151,11 +151,13 @@ and in findings
 
 ## Status and roadmap
 
-v0.1.0 is the first tagged release: Phases 0 through 5 complete — the
+v0.1.0 is the first tagged release: Phases 0 through 5 complete, the
 scaffold and pinned toolchain, bronze ingestion, the profiler and
 contracted silver, the engine-emitted unified event star, and the serving
 layer with the committed demo artifact. Phase 6, the two proposer agents,
-is next. The live roadmap is the
+is complete on main: the proposers run in governed stances, drafts land
+only through reviewed pull requests, and the first agent-proposed
+contract amendment is live. The live roadmap is the
 [Issues tab](https://github.com/metricminellc/metricmine/issues).
 
 ## Toolchain
