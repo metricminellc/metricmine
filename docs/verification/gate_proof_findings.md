@@ -47,6 +47,7 @@ order by design.
 | [F-29](#f-29) | A governing-contract version bump closes the F-28 window at the compiled-context freshness gate | Agent rung |
 | [F-30](#f-30) | dbt 1.12 lands clean; the line brings a lock-pinned binary the register must name | Toolchain rung |
 | [F-31](#f-31) | The v2 parser gate is parse-only for a contract-enforced project; the beta engine builds it | Toolchain rung |
+| [F-32](#f-32) | A prose working-tree rule needs a PreToolUse hook; the guard is measured | SDLC rung |
 
 ## Command surface (datacontract-cli 1.0.12)
 
@@ -703,3 +704,34 @@ where that host was unreachable). The deferral stands on evidence rather
 than caution: the engine, the contracts, and the emitted models need no
 change for v2; the toolchain around it is not yet stable.
 ([`evidence/2026-08-28_arc1_prep_probe_transcript.md`](evidence/2026-08-28_arc1_prep_probe_transcript.md), sections 6 and 7; [`evidence/2026-08-28_arc1_gate_reproof.md`](evidence/2026-08-28_arc1_gate_reproof.md), the Mac probes)
+
+## SDLC rung (Phase 8 prep, August 28, 2026)
+
+### F-32
+**A prose working-tree rule has no deterministic backstop in the default
+permission flow; a PreToolUse hook is the check that sees every call.**
+Observed at the Arc 1 sitting (August 28, 2026): during a driver hunt,
+Claude Code ran `find` over the home directory and `~/Library` against
+the CLAUDE.md Conventions rule, with no permission prompt, because
+`find`, `ls`, `cat`, `grep`, and a fixed set of other commands are
+built-in read-only commands that run unprompted in every permission
+mode, and the set is not configurable. Read and Edit deny rules match
+paths by pattern and cannot say "outside the project root"; the sandbox
+is opt-in and OS-level. A PreToolUse hook runs before the permission
+prompt for every tool call, sees the tool input, and can deny it with a
+JSON decision, so it is the one local check that sees those calls.
+Measured at the Phase 8 prep: the working-tree guard
+(`.claude/hooks/working_tree_guard.py`, wired by `.claude/settings.json`)
+denies a Bash command naming the home directory, a parent climb out of
+the tree, a `/tmp` write, and a Read, Edit, or Write outside the root,
+and passes in-tree work and system toolchain paths, in 40 subprocess
+tests of the script (the CI lane rises from 411 to 451 tests) and in one
+end-to-end run of Claude Code 2.1.251 in which the deny reached the
+model (`Hook PreToolUse (working-tree guard) returned
+permissionDecision: deny`). A project hook committed in
+`.claude/settings.json` applies to a clone once its owner trusts the
+folder, which the trust dialog lists, and to headless runs; a session
+opts out with `--settings '{"disableAllHooks": true}'` or `--bare`. The
+guard reads command text, never a subprocess, so the prose rule keeps
+its line.
+([`evidence/2026-08-28_phase8_prep_probe_transcript.md`](evidence/2026-08-28_phase8_prep_probe_transcript.md))
