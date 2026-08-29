@@ -18,8 +18,19 @@ realpath, so a link out of the tree counts as out.
 What it allows outside the root: directories that hold installed software
 and devices, never a person's files (/dev, /usr, /bin, /sbin, /opt, /etc
 and its macOS twin /private/etc, /Library, /System, /Applications, /nix,
-/proc, /sys). The home directory, /tmp, /var, and everything else outside
-the root are denied.
+/proc, /sys), and, for the file tools only, Claude Code's own auto-memory
+directory for a project (<config dir>/projects/<project>/memory/, where
+the config dir is CLAUDE_CONFIG_DIR or ~/.claude), which Claude reads and
+writes with those tools during a session. The home directory, /tmp, /var,
+and everything else outside the root are denied. Plan files stay inside
+the tree because .claude/settings.json sets plansDirectory to
+.claude/plans, which .gitignore covers.
+
+What it does not treat as a path: a Bash token that opens with a slash
+but whose first segment names nothing on disk (/contract-review, /hooks,
+a sed expression such as /^$/d), which is a slash command, a word quoted
+in prose, or a pattern. A token under /tmp, /var, or any existing
+top-level directory stays a path.
 
 What it cannot see: a path a subprocess computes, a path built from an
 environment variable other than HOME, or a path assembled by a script.
@@ -131,6 +142,35 @@ def outside(candidate, cwd, root):
     return real
 
 
+def prose_slash_word(token):
+    """True for an absolute token whose first segment names nothing on disk.
+
+    A slash command or a word quoted in prose (/contract-review in a commit
+    body) and a sed or grep expression that opens with a slash (/^$/d) are
+    not paths; a token under an existing top-level directory such as /tmp
+    still is.
+    """
+    if not token.startswith("/"):
+        return False
+    first = token[1:].split("/", 1)[0]
+    return not os.path.lexists("/" + first)
+
+
+def claude_memory_dir(real):
+    """True when real lies in Claude Code's auto-memory directory for a project.
+
+    The documented layout is <config dir>/projects/<project>/memory/, where
+    the config dir is CLAUDE_CONFIG_DIR or ~/.claude; Claude reads and
+    writes there with the file tools during a session.
+    """
+    config = os.environ.get("CLAUDE_CONFIG_DIR") or os.path.join(os.path.expanduser("~"), ".claude")
+    projects = os.path.join(os.path.realpath(config), "projects")
+    if not real.startswith(projects + os.sep):
+        return False
+    parts = real[len(projects) + 1 :].split(os.sep)
+    return len(parts) >= 2 and parts[1] == "memory"
+
+
 def main():
     try:
         raw = sys.stdin.read()
@@ -154,7 +194,11 @@ def main():
                 if value:
                     candidates.append(str(value))
         for candidate in candidates:
+            if tool == "Bash" and prose_slash_word(candidate):
+                continue
             real = outside(candidate, cwd, root)
+            if real is not None and tool != "Bash" and claude_memory_dir(real):
+                continue
             if real is not None:
                 emit(
                     decision(

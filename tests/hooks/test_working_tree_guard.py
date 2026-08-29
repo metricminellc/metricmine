@@ -154,6 +154,24 @@ def test_bash_parent_climb_that_stays_inside_passes(root):
     assert run_guard(call("Bash", root, cwd=root / "docs", command="cat ../docs/note.md"), root) is None
 
 
+# --- prose that starts with a slash is not a path ----------------------------
+
+
+def test_bash_slash_command_quoted_in_a_commit_message_passes(root):
+    command = "git commit -m 'feat(claude): the review Skill' -m 'why: gives /contract-review a fixed report shape and a line in the /hooks menu'"
+    assert run_guard(call("Bash", root, command=command), root) is None
+
+
+def test_bash_existing_top_level_directory_is_still_a_path(root):
+    out = run_guard(call("Bash", root, command="ls /tmp"), root)
+    assert_denied(out, "/tmp")
+
+
+def test_bash_sed_expression_opening_with_a_slash_passes(root):
+    command = "sed -n '/^## /p' docs/note.md && grep -c '/^$/d' docs/note.md"
+    assert run_guard(call("Bash", root, command=command), root) is None
+
+
 # --- the file tools -----------------------------------------------------------
 
 
@@ -190,6 +208,42 @@ def test_unrelated_tool_gets_no_decision(root):
     assert run_guard(call("WebFetch", root, url="https://example.com"), root) is None
 
 
+# --- Claude Code's own auto-memory directory, file tools only -----------------
+
+
+@pytest.fixture
+def config_dir(tmp_path):
+    config = tmp_path / "claude-config"
+    memory = config / "projects" / "-tmp-project" / "memory"
+    memory.mkdir(parents=True)
+    (memory / "MEMORY.md").write_text("- a memory\n")
+    (config / "settings.json").write_text("{}\n")
+    (config / "projects" / "-tmp-project" / "session.jsonl").write_text("{}\n")
+    return config.resolve()
+
+
+@pytest.mark.parametrize("tool,key", [("Read", "file_path"), ("Write", "file_path"), ("Edit", "file_path"), ("Glob", "path"), ("Grep", "path")])
+def test_file_tool_in_claude_memory_dir_passes(root, config_dir, tool, key):
+    target = config_dir / "projects" / "-tmp-project" / "memory" / "MEMORY.md"
+    env = {"CLAUDE_CONFIG_DIR": str(config_dir)}
+    assert run_guard(call(tool, root, **{key: str(target)}), root, env_extra=env) is None
+
+
+def test_file_tool_elsewhere_in_claude_config_is_denied(root, config_dir):
+    env = {"CLAUDE_CONFIG_DIR": str(config_dir)}
+    out = run_guard(call("Read", root, file_path=str(config_dir / "settings.json")), root, env_extra=env)
+    assert_denied(out, "settings.json")
+    out = run_guard(call("Read", root, file_path=str(config_dir / "projects" / "-tmp-project" / "session.jsonl")), root, env_extra=env)
+    assert_denied(out, "session.jsonl")
+
+
+def test_bash_over_claude_memory_dir_is_denied(root, config_dir):
+    target = config_dir / "projects" / "-tmp-project" / "memory" / "MEMORY.md"
+    env = {"CLAUDE_CONFIG_DIR": str(config_dir)}
+    out = run_guard(call("Bash", root, command=f"cat {target}"), root, env_extra=env)
+    assert_denied(out, "MEMORY.md")
+
+
 # --- failure modes ask instead of failing open --------------------------------
 
 
@@ -217,6 +271,13 @@ def test_settings_register_the_guard():
     assert hook["type"] == "command"
     assert "working_tree_guard.py" in hook["command"]
     assert "${CLAUDE_PROJECT_DIR}" in hook["command"]
+
+
+def test_settings_keep_plan_files_inside_the_tree():
+    settings = json.loads(SETTINGS.read_text())
+    assert settings["plansDirectory"] == ".claude/plans"
+    ignored = (_REPO_ROOT / ".gitignore").read_text().splitlines()
+    assert ".claude/plans/" in ignored
 
 
 def test_guard_is_executable_and_standard_library_only():
