@@ -23,7 +23,8 @@ carries Amendment E to D-03 and D-33. Decision Record 007 (August 22,
 through F-28. Decision Record 008 part one (August 24, 2026) carries
 D-36 and Amendments K, L, and M; part two follows with Arc 5b. Decision
 Record 009 (August 28, 2026) carries Amendment N to D-05 and findings
-F-30 and F-31.
+F-30 and F-31. Decision Record 010 (August 29, 2026) carries D-37, the
+local enforcement hooks in the SDLC layer, and finding F-32.
 
 **Status meanings.** `adopted` — in force. `proposed` — agreed in working
 session, applied by the plans below, formal adoption pending; treat as binding
@@ -69,6 +70,7 @@ unless amended.
 | [D-34](#d-34) | Proposer model selection: pinned default, allow-listed override | adopted |
 | [D-35](#d-35) | Proposer stances and the adoption scan | adopted |
 | [D-36](#d-36) | The typed surface: a materialized mart by default | adopted |
+| [D-37](#d-37) | Local enforcement hooks in the SDLC layer | adopted |
 
 ## The decisions
 
@@ -657,6 +659,27 @@ mart than through the view, for a one-time mart build of 61 to 151
 seconds; at the committed sample the demo content digest is unchanged
 and `dbt build` gains one node. Full text: Decision Record 008.
 
+### D-37
+**Local enforcement hooks in the SDLC layer.** A CLAUDE.md rule that a
+script can decide from the tool call alone may be enforced by a Claude
+Code hook: deterministic code committed at `.claude/settings.json` with
+its script under `.claude/hooks/`, applying to every session that trusts
+the repository and to headless runs, so a clone inherits the guard. A
+hook only denies or asks; it never allows a call past a permission rule,
+never weakens a gate, and never moves a check out of CI, which stays the
+gate of record. Each hook enforces exactly one rule, and that rule keeps
+its CLAUDE.md line naming the hook, because a hook reads the tool input
+and nothing a subprocess does. Hooks run no model and are not agents;
+the D-10 count is unchanged. The first hook is the working-tree guard,
+enforcing the Conventions rule against reading or writing outside the
+repository, adopted on the Arc 1 finding that a prose rule alone did not
+keep an agent inside the tree
+([F-32](../verification/gate_proof_findings.md#f-32)). Every further
+rule migrates one at a time by amendment here, with its issue #53 bucket
+recorded. Machine-specific overrides live in the gitignored
+`.claude/settings.local.json`; `disableAllHooks` is a per-session
+opt-out and is never committed. Full text: Decision Record 010.
+
 ## Session-decision and finding IDs
 
 IDs of the form `A<n>` (working-session decisions, e.g. A4) and `F-0x`
@@ -694,6 +717,7 @@ authority. The mapping:
 | 16 (versioned prompts; contract provenance incl. proposerStance and amendsContract; pattern-derived absence rule) | D-22 (Amendment I), D-29 |
 | 17 (human-only draft-to-contract flow; no relaxation without the flag; report-and-stop on fail-closed; keyless make demo) | D-24, D-08, D-10 (Amendment G), D-35 |
 | 18 (serving boundary: shared module, three-layer read-only, capped results, the typed-surface steer) | D-31, D-32, D-33 |
+| Conventions (never read or write outside the working tree; enforced by the working-tree guard hook) | D-37, D-13, evidence [F-32](../verification/gate_proof_findings.md#f-32) |
 
 All decisions in this register are adopted: D-01 through D-20 as of the
 July 11, 2026 revision (Decision Record 001 Rev. 3), D-21 through D-25 as
@@ -705,7 +729,8 @@ Record 004), D-31 through D-33 as of the August 13, 2026 revision
 as of the August 22, 2026 revision (Decision Record 007), and D-36
 (with Amendments K, L, and M) as of the August 24, 2026 revision
 (Decision Record 008 part one), and Amendment N to D-05 as of the
-August 28, 2026 revision (Decision Record 009). D-20 has no
+August 28, 2026 revision (Decision Record 009), and D-37 as of the
+August 29, 2026 revision (Decision Record 010). D-20 has no
 dedicated
 CLAUDE.md rule; its substance
 is encoded directly in
