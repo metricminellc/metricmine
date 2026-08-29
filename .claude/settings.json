@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Read|Edit|MultiEdit|Write|NotebookEdit|Glob|Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR}/.claude/hooks/working_tree_guard.py\"",
+            "timeout": 10,
+            "statusMessage": "working-tree guard"
+          }
+        ]
+      }
+    ]
+  }
+}
