@@ -6,12 +6,12 @@ warehouse protocol), D-04 (profiler outside dbt), D-03 (warehouse files).
 Configuration comes from config/default.yaml's profiling block; this
 script takes no arguments, the same posture as metricmine.ingest.
 land_sample. Since the silver-pass scope amendment (spec §8), the block
-carries a list of targets — one artifact directory per table — run by the
+carries a list of targets, one artifact directory per table, run by the
 same code over each schema. Targets process sequentially and fail fast:
 per-artifact atomicity is the writer's (temp-then-rename), and a rerun
 after a mid-list failure converges because minting is write-if-changed.
-The warehouse opens read-only; the run timestamp — the only time this
-component touches — goes to the sidecar, never into artifact bytes.
+The warehouse opens read-only; the run timestamp, the only time this
+component touches, goes to the sidecar, never into artifact bytes.
 """
 
 from __future__ import annotations
