@@ -2,7 +2,7 @@
 
 No warehouse: everything here is pure. The matrix below is the probed
 refusal set from the pre-L prep session (duckdb 1.4.3, August 13, 2026),
-parametrized verbatim — same inputs, same expected verdicts. It is the
+parametrized verbatim: same inputs, same expected verdicts. It is the
 regression gate on docs/spec/serving.md §3, and the reason the leading-
 keyword check exists: PRAGMA reads, SHOW, DESCRIBE, and SUMMARIZE are all
 SELECT-typed by the parser, so they appear here as refusals that the type
@@ -26,7 +26,7 @@ from metricmine.query import (
     resolve_db_path,
 )
 
-# (label, sql, should_pass) — the 29 probed cases.
+# (label, sql, should_pass): the 29 probed cases.
 CASES = [
     ("plain select", "SELECT 1", True),
     ("cte", "WITH x AS (SELECT 1 AS a) SELECT * FROM x", True),
