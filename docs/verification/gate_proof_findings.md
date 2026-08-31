@@ -1,4 +1,4 @@
-# Gate Proof Findings — Verified Toolchain Behavior
+# Gate Proof Findings: Verified Toolchain Behavior
 
 Scratch gate proof run July 11, 2026, prior to Phase 1 exit (Decision
 [D-12](../decisions/decision-register.md#d-12)).
@@ -167,8 +167,8 @@ Louder red, same verdict; ref-based tests skip as [F-07](#f-07) describes.
 **`datacontract dbt test` re-invokes dbt from INSIDE the project
 directory.** Both `DBT_PROFILES_DIR` and any path inside `profiles.yml`
 must be absolute or env-resolved there. The profile's relative db path
-failed exactly this way in rehearsal — resolving to `transform/warehouse/`,
-the same failure class as the #41 `DBT_PROFILES_DIR` fix one level deeper —
+failed exactly this way in rehearsal (resolving to `transform/warehouse/`,
+the same failure class as the #41 `DBT_PROFILES_DIR` fix one level deeper)
 and was fixed by `MM_WAREHOUSE_PATH` env indirection: CI pins it absolute;
 the default preserves repo-root runs.
 
@@ -195,7 +195,7 @@ These findings are load-bearing for
 **DuckDB key-function semantics at the pinned engine (1.4.3), verified
 live.** `sha256()` exists in core, returns VARCHAR, 64-char lowercase hex,
 and matches Python `hashlib` byte-for-byte on shared vectors. `to_json()`
-over structs emits COMPACT JSON and preserves INSERTION order — it does
+over structs emits COMPACT JSON and preserves INSERTION order; it does
 not sort, so sorted payload fields are an EMISSION-time property, never
 assumed from the engine. `lower()` is unicode-safe over serialized JSON
 text (ä, ß verified) and parity with Python `str.lower()` is
@@ -203,7 +203,7 @@ vector-checked. `json_valid()` and `json_extract()`/`json_extract_string()`
 behave as C4 and the typed projections need. `to_json(list)` yields
 compact JSON arrays (the manifest mechanism). VARCHAR casts are
 scale-preserving for DECIMAL ("2.50", never "2.5") and render TIMESTAMP
-as "YYYY-MM-DD HH:MM:SS" — so the Python keying reference must render
+as "YYYY-MM-DD HH:MM:SS", so the Python keying reference must render
 decimals via `decimal.Decimal`, never float repr, and the golden vectors
 must include decimal, timestamp, and unicode cases. NULL inside a struct
 payload serializes as JSON null; the keying spec rules include-as-null
@@ -216,7 +216,7 @@ a model-name collision fails loudly and fail-safe.** Sync resolves each
 schema object to a dbt model BY NAME and skips unmatched objects with a
 stderr warning before any quality-rule translation: `Synced 0 models`,
 `no tests` in the per-contract results, exit 0, zero files written, zero
-effect on sibling contracts in the same glob — even when the unmatched
+effect on sibling contracts in the same glob, even when the unmatched
 object carries query-bearing error-severity quality rules (they are never
 half-applied; equally, they are never applied, so rules on a permanently
 model-less contract are dead letters and are banned by the engine spec's
@@ -226,18 +226,18 @@ dbt models`) and write nothing. Flat placement of mapping contracts is
 therefore permanent-safe at the pin, under the engine spec's naming rule.
 ODCS lint at 1.0.12 tolerates the mapping contract's additive first-class
 keys (object-level entityGroup/sourceTable/timeColumn/timeGrain/grain,
-property-level mappingRole) — verified, and frozen by the pin.
+property-level mappingRole): verified, and frozen by the pin.
 
 ### F-13
 **A partially-modeled multi-object contract holds the gate green.** With
-one schema object modeled and built and a second object unmodeled — the
-second carrying a C3-shaped query rule against its nonexistent table —
+one schema object modeled and built and a second object unmodeled (the
+second carrying a C3-shaped query rule against its nonexistent table),
 sync syncs the matched object (properties updated, singular test written)
 and skips the unmatched one; test runs the matched object's tests and
 reports the contract PASSED; exit 0 end to end. Consequence for the
 ladder: the registry amendment window (contract-first, model one PR
 later) is safe in the preferred order. Stated honestly: a skipped
-object's rules are declared but NOT enforced until its model lands —
+object's rules are declared but NOT enforced until its model lands;
 skip is no coverage, not passing coverage.
 
 ### F-14
@@ -266,14 +266,14 @@ over that state ([`docs/spec/engine.md`](../spec/engine.md) §6).
 
 ### F-15
 **json_valid gates and json_extract projects over VARCHAR canonical
-text.** At duckdb 1.4.3, a VARCHAR column holding canonical JSON text —
-object, object with a null member, unicode content, and compact-array
-manifest forms — returns json_valid true, while garbage and truncated
+text.** At duckdb 1.4.3, a VARCHAR column holding canonical JSON text (object,
+object with a null member, unicode content, and compact-array
+manifest forms) returns json_valid true, while garbage and truncated
 JSON return false; `COUNT(*) ... WHERE NOT json_valid(payload)` counts
 exactly the invalid rows, which is the C4 rule shape the gold star
 contract declares at error severity. json_extract and
 json_extract_string project payload fields from the same VARCHAR text,
-and a projected numeric string casts cleanly to DECIMAL(10,2) — the
+and a projected numeric string casts cleanly to DECIMAL(10,2), the
 typed-projection path. Payload and manifest columns therefore declare
 `physicalType: VARCHAR` (canonical JSON text, the registry precedent in
 [`docs/spec/engine.md`](../spec/engine.md) §4); no JSON physical type is
@@ -285,10 +285,10 @@ needed anywhere in the star.
 function level.** The committed golden vectors
 (`tests/golden/canonical_key_v2.json`: 16 payload, 5 manifest, 4 scalar
 cases, with the canonical serialization stored beside every key) were
-recomputed through DuckDB SQL at the pinned engine —
-`lower(to_json(struct_pack(...)))` over VARCHAR-cast members in
+recomputed through DuckDB SQL at the pinned engine
+(`lower(to_json(struct_pack(...)))` over VARCHAR-cast members in
 lowercase-sorted field order, then `sha256()`; manifests via
-`lower(to_json([...]))` — and compared against the Python reference
+`lower(to_json([...]))`) and compared against the Python reference
 (`src/metricmine/keys.py`): 18 payload and 6 manifest serializations
 checked, zero disagreements. Coverage exercised through SQL: unicode
 lowercasing (ü/ä/ß), DECIMAL scale-preserving rendering ("2.50",
@@ -297,8 +297,8 @@ preserved, include-as-null, boolean rendering, embedded-quote escaping,
 hyphen preservation, the empty string (digest equal to hashlib's), and
 the form-(b) derived line_identity composition over the real silver
 grain tuple types. The scalar path pins Python only: schema keys embed
-as emission-time literals by design. The dbt-path half — the same
-semantics THROUGH dbt-built models — deliberately remains with the
+as emission-time literals by design. The dbt-path half (the same
+semantics THROUGH dbt-built models) deliberately remains with the
 pre-regeneration rehearsal ([`docs/spec/engine.md`](../spec/engine.md)
 §3).
 ([`evidence/2026-08-08_probe_sql_python_parity.log`](evidence/2026-08-08_probe_sql_python_parity.log);
@@ -308,7 +308,7 @@ the vector generator and parity probe are staged beside it as
 ### F-17
 **Sync generates a per-column `unique:` data_test twin for single-column
 primaryKey flags.** At datacontract-cli 1.0.12, `datacontract dbt sync`
-writes — beyond the §6-listed `not_null` block — a sync-shaped `unique:`
+writes, beyond the §6-listed `not_null` block, a sync-shaped `unique:`
 data_test (severity warn, `check: <model>__<column>__field_unique`,
 description `Check that field <column> has no duplicate values`) on every
 column flagged `primaryKey: true` ALONE; a composite primaryKey generates
@@ -340,7 +340,7 @@ real star.
 ### F-19
 **Contract-declared singular tests without ref() join the DAG root layer
 and break fresh-warehouse builds.** Sync passes contract quality-rule SQL
-through verbatim — a property this finding both exposed and now exploits.
+through verbatim, a property this finding both exposed and now exploits.
 Raw schema-qualified references (`gold.<table>`) give dbt no dependency
 edge, so the generated singular tests schedule in the ROOT layer, before
 the models they query exist on a first-ever build. A warmed warehouse
@@ -348,9 +348,9 @@ masks the hazard completely (early tests find the previous build's
 tables), which is why local runs and the pre-I rehearsal were green while
 CI's fresh build errored 12 of the 20 no-ref tests with catalog errors
 (PR #64, closed unmerged as this finding's primary evidence; the eight
-that passed cold did so only by root-layer ordering luck — all twenty
+that passed cold did so only by root-layer ordering luck; all twenty
 were unordered). The fix, verified at the pinned toolchain over a fresh
-warehouse: gold references in quality SQL use `{{ ref('<model>') }}` —
+warehouse: gold references in quality SQL use `{{ ref('<model>') }}`;
 sync passes the Jinja through verbatim into the generated tests
 (measured, not assumed), dbt gains real edges, and the cold build goes
 green end to end (the fact model built at node 61, its C1 test ran at
@@ -371,14 +371,14 @@ under new version-prefixed filenames and re-edits committed properties;
 neither effect cleans up after itself.** Measured at the pinned toolchain
 during the pre-J rehearsal, with the gold contract amended to v1.2.0 over
 the committed v1.1.0 star. (a) Sync writes a full fresh singular-test set
-under `<contract>__1_2_0__...` filenames — byte-identical to the 1_1_0
-set modulo version strings — and never deletes the stale files; both sets
+under `<contract>__1_2_0__...` filenames (byte-identical to the 1_1_0
+set modulo version strings) and never deletes the stale files; both sets
 coexist and `datacontract dbt test` still passes, but a plain `dbt build`
 would run both. The transition is therefore sync-owned work committed
 post-review in the amendment PR: regenerate, review against the rehearsal
 reference, delete the stale set. (b) The same sync run updates every
 committed engine-emitted properties file in place (contract_versions
-1.1.0 to 1.2.0 — the only delta), which on a working tree MUST be
+1.1.0 to 1.2.0, the only delta), which on a working tree MUST be
 reverted (`git restore transform/models/gold/`), never committed: the
 files are engine-owned at the old fixed point, and committing sync's edit
 would diverge their ownership-manifest checksums and trip the engine's
@@ -387,7 +387,7 @@ between the amendment merge and the regeneration merge, gate 3 therefore
 reports `updated 9 YAML files` ephemerally and still passes end to end
 (the F-13 skip covers the not-yet-modeled registry object); the fixed
 point returns when the regeneration lands. Re-verified in the same
-rehearsal: the fixed point holds over the EXTENDED emission — the
+rehearsal: the fixed point holds over the EXTENDED emission; the
 engine-emitted registry properties synced `updated 0` on the first pass,
 and the minimal uncontracted projection properties survived the F-18
 project-wide canonicalization byte-identically.
@@ -409,12 +409,12 @@ old emission (old registry rows agree with old columns-dim keys), so
 window. The unit lane is the only coupled surface, through two designed
 fail-closed mechanisms: the compiled-context staleness guard (the v0001
 artifact cites mapping 1.0.0, so `make regen` AND the emission tests
-refuse with `run make context` until v0002 mints — first live fire of the
+refuse with `run make context` until v0002 mints, the first live fire of the
 D-30 guard, exactly as specified) and the golden-fixture equality test.
 Consequence, now the recorded packaging rule: the amendment PR carries
-exactly three things — the contract bump, the freshly minted
+exactly three things: the contract bump, the freshly minted
 compiled-context artifact, and the refreshed byte oracle (the recorded
-D-08 reading, third application) — and the regeneration PR carries
+D-08 reading, third application); the regeneration PR carries
 exactly the emitted set. The signature diff measured: 23 files
 +58/−55, ONE new schema key (dims manifest re-keyed; measures, source,
 run, timeframe keys unchanged), all five registry rows re-cited at
@@ -473,8 +473,8 @@ carried inside the dimension payload so content keys stay unique.
 Rule-13 payload hashing (D-18) then makes `dim_hash_id` inherit that
 uniqueness transitively: every fact row mints exactly one dimension row.
 The dedup content addressing buys elsewhere in the same star is real and
-measured — `dim_timeframe_values` carries 2,004 rows for 44,721 facts,
-`dim_source_values` and `dim_run_values` one row each — and the category
+measured (`dim_timeframe_values` carries 2,004 rows for 44,721 facts,
+`dim_source_values` and `dim_run_values` one row each), and the category
 group deliberately spends it, because the alternative the spec names is
 worse: without the identifier, the composite hash key silently collapses
 duplicate rows. Two consequences for consumers, stated in the spec's
@@ -486,9 +486,9 @@ addressability rather than compression at this grain.
 
 **Position (documented, not changed).** This is the designed trade at
 transaction grain, now stated where a reader will look. The
-alternative — relocating `line_identity` out of the dimension manifest
+alternative (relocating `line_identity` out of the dimension manifest
 onto the fact as a true degenerate dimension, restoring dedup to the
-category group — is a mapping-contract amendment plus a regeneration
+category group) is a mapping-contract amendment plus a regeneration
 that moves the signature-test evidence base. Banked as a post-tag
 decision candidate, not rushed to beat a release.
 ([`evidence/2026-08-14_sessionM_star_key_semantics.log`](evidence/2026-08-14_sessionM_star_key_semantics.log))
@@ -501,7 +501,7 @@ fact_col_hash_id 1`. Rule-13 hashing covers the measure payload alone,
 so every line with the same quantity and price collides by design:
 2,041 distinct measure payloads across 44,721 rows.
 `COUNT(DISTINCT fact_hash_id)` is therefore wrong as a row count by
-95%, and the column name invites exactly that query — the
+95%, and the column name invites exactly that query, the
 highest-probability misread in the model. Row identity at transaction
 grain is the full composite key (`fact_hash_id`, `source_hash_id`,
 `timeframe_hash_id`, `dim_hash_id`), or `line_identity` inside the
@@ -513,7 +513,7 @@ keys they govern.
 **Position (documented, not changed).** The composite-key design stands
 (D-18, D-19); the exposure is the name. A rename (`measures_hash_id` or
 similar) is an engine-and-contract change with a full regeneration,
-banked with the F-23 candidate as one post-tag decision item — alongside
+banked with the F-23 candidate as one post-tag decision item, alongside
 a registry-context enrichment so the `country` meaning string says what
 the signature test asserts, which a consumer reaching gold only through
 MCP currently cannot learn.
@@ -524,22 +524,22 @@ MCP currently cannot learn.
 catalog, and two-part `gold.<x>` SQL fails as ambiguous at DuckDB
 1.4.3.** A directly opened database takes its catalog name from the file
 stem, so `demo/gold.duckdb` opens as catalog `gold` holding schema
-`gold`, and every two-part reference — SELECT and CREATE alike — raises
+`gold`, and every two-part reference, SELECT and CREATE alike, raises
 `Ambiguous reference to catalog or schema "gold"`. Found live at Session
 M's export implementation, before anything merged: the exporter could
 not build the artifact as specified (the plain `gold.` view re-anchor
 fails to bind inside the colliding catalog), and four of the five
 serving tools fail through the unmodified query module, which renders
 relations two-part by design. Three-part `gold.gold.<x>` works, and the
-same file served through an ATTACH alias works — which is exactly why
+same file served through an ATTACH alias works, which is exactly why
 nothing caught this earlier: the export replay was probed through an
 ATTACH alias in a sandbox, and the live serving checkpoint ran against
 the working warehouse, whose catalog is `metricmine`. Two individually
-probed halves, never probed through each other — the F-22 class at the
+probed halves, never probed through each other: the F-22 class at the
 artifact boundary. The remedy is Amendment E (Record 006): the committed
 artifact is `demo/demo.duckdb`, whose catalog collides with nothing. The
 plain `gold.` re-anchor then binds on a direct open and under any attach
-alias, and natural two-part SQL works on every serving path — measured
+alias, and natural two-part SQL works on every serving path, measured
 on the Mac and reproduced clean-room by the Architect before the
 amendment bound. The probe rule this mints: an artifact is proved by
 opening it exactly the way its consumer opens it, never only through a
