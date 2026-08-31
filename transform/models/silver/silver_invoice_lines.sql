@@ -1,5 +1,5 @@
 -- Contracted silver model: silver.silver_invoice_lines.
--- Contract: contracts/silver_invoice_lines.odcs.yaml v1.1.0 (D-06); shape
+-- Contract: contracts/silver_invoice_lines.odcs.yaml v1.1.1 (D-06); shape
 -- enforced at build time via the hand-authored properties file (rules 3, 4,
 -- 11). Dedup: one GROUP BY over every business column except the timestamp
 -- collapses exact duplicate captures (506 rows at v0001) and within-invoice
