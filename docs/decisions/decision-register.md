@@ -21,10 +21,12 @@ layer, and Amendment D to D-32. Decision Record 006 (August 14, 2026)
 carries Amendment E to D-03 and D-33. Decision Record 007 (August 22,
 2026) carries D-34, D-35, Amendments F through J, and findings F-26
 through F-28. Decision Record 008 part one (August 24, 2026) carries
-D-36 and Amendments K, L, and M; part two follows with Arc 5b. Decision
+D-36 and Amendments K, L, and M; part two lands with Arc 5b (below). Decision
 Record 009 (August 28, 2026) carries Amendment N to D-05 and findings
 F-30 and F-31. Decision Record 010 (August 29, 2026) carries D-37, the
-local enforcement hooks in the SDLC layer, and finding F-32.
+local enforcement hooks in the SDLC layer, and finding F-32. Decision
+Record 008 part two (Arc 5b) carries D-38 through D-40 and Amendments
+O, P, and Q, completing the record part one opened.
 
 **Status meanings.** `adopted`: in force. `proposed`: agreed in working
 session, applied by the plans below, formal adoption pending; treat as binding
@@ -71,6 +73,9 @@ unless amended.
 | [D-35](#d-35) | Proposer stances and the adoption scan | adopted |
 | [D-36](#d-36) | The typed surface: a materialized mart by default | adopted |
 | [D-37](#d-37) | Local enforcement hooks in the SDLC layer | adopted |
+| [D-38](#d-38) | Incremental materialization behind engine.materialization | adopted |
+| [D-39](#d-39) | Batch-scoped gates; make audit-gold full-table audit | adopted |
+| [D-40](#d-40) | docs/scale.md and the measurement rule | adopted |
 
 ## The decisions
 
@@ -158,6 +163,10 @@ dbt model generator: mapping contract in, gold model files out. It never
 executes DDL. dbt build materializes gold as `table`, with a documented path
 to `incremental`. `materialized_view` is never used (not implemented by
 dbt-duckdb; not the portable choice).
+Amended at Record 008 part two (Amendment O): the documented path is
+built. [D-38](#d-38) governs the incremental mode behind
+`engine.materialization`; `table` stays the committed default and
+every other clause stands, the never-DDL clause above all.
 
 ### D-08
 **Symmetric gates.** The gates judge output, not authorship; humans and
@@ -273,6 +282,11 @@ behind `engine.marts`, with the projection view kept beside it in the
 committed default. Every other clause stands: table materialization for
 contracted objects, the uncontracted derivative posture of the typed
 surface, and the serving clause.
+Amended at Record 008 part two (Amendment P): the table-materialization
+clause reads, from here, as the committed default rather than the only
+mode. [D-38](#d-38) adds `incremental` behind `engine.materialization`
+(contract enforcement permits table or incremental, as this decision
+has always noted). Every other clause stands.
 
 ### D-18
 **Keying scheme v2.** All record and schema keys use
@@ -658,6 +672,11 @@ analytical questions answered 100 to 2,000 times faster against the
 mart than through the view, for a one-time mart build of 61 to 151
 seconds; at the committed sample the demo content digest is unchanged
 and `dbt build` gains one node. Full text: Decision Record 008.
+Amended at Record 008 part two (Amendment Q): the lean shape carries
+one further column, `captured_at`, the D-38 incremental watermark
+carried from the fact, and the mart's config line follows
+`engine.materialization` like every emitted model. Every other
+clause stands, the uncontracted derivative posture above all.
 
 ### D-37
 **Local enforcement hooks in the SDLC layer.** A CLAUDE.md rule that a
@@ -679,6 +698,88 @@ rule migrates one at a time by amendment here, with its issue #53 bucket
 recorded. Machine-specific overrides live in the gitignored
 `.claude/settings.local.json`; `disableAllHooks` is a per-session
 opt-out and is never committed. Full text: Decision Record 010.
+
+### D-38
+**Materialization for engine-emitted models: incremental behind
+configuration.** Every engine-emitted model carries an explicit
+materialization config line governed by `engine.materialization`:
+`table`, the committed default and the keyless demo path, or
+`incremental` for deployments that load continuously. An unrecognized
+value fails closed before anything emits. The emitted SQL is one shape
+in both modes: the `is_incremental()` blocks ride every model and are
+inert under `table`, so a regeneration that flips modes diffs exactly
+one config line per model plus the manifest (measured at this prep).
+Under `incremental`, contracted models additionally set
+`on_schema_change: 'fail'`, which dbt 1.12 requires on contracted
+incremental models and which is the contract-first posture: a shape
+change arrives through a contract amendment and a regeneration (D-08,
+D-09), never silently at build time. The batch mechanics, measured in
+the August 23 pressure test and re-proven end to end at this prep:
+silver carries `captured_at`, the bronze capture timestamp
+(`_airbyte_extracted_at`) carried forward, additive and optional-first
+under the F-28 rule with the declared follow-up tightening to required
+once the path is proven populated; the fact, the category values
+dimension, and the timeframe values dimension carry `captured_at` as a
+plain audit-class column outside every hashed payload (rule 13
+unchanged), first-seen (minimum) per distinct payload on the
+dimensions and per row on the fact, so full-rebuild and incremental
+converge to the same stored value; each silver-derived model filters
+its source to `captured_at >=` its own stored high-water mark and
+every insert passes an anti-join on its content key (the fact on the
+full composite), so the `>=` boundary re-scan is idempotent by content
+addressing; the constant source and run groups, the columns dimensions,
+and the registry insert-if-absent by anti-join alone. The mart appends
+fact rows strictly above its own watermark; an interrupted run between
+the fact and the mart is repaired by a full rebuild, which the demo
+path exercises on every run. Silver's own incremental variant is a
+documented adopter pattern in `docs/scale.md`, not a committed mode:
+silver is the human-owned plane by design. Engine version 0.4.0.
+Full text: Decision Record 008 part two.
+
+### D-39
+**Batch-scoped gates with the full-table audit.** The twelve expensive
+gold rules (content-key uniqueness on the two silver-derived
+dimensions, fact grain enforcement, the five C2 anti-joins, C4 on the
+three `captured_at` objects, and C5) carry a guard in their contract
+SQL: when a run passes the dbt var `mm_batch_floor`, each scopes to
+rows with `captured_at >=` that floor; with the var unset, every rule
+runs in its full-table form, byte-identical in effect to the unguarded
+rules. CI and the `table` default never pass the var, so the gates of
+record are unchanged; an incremental deployment passes its batch floor
+so the per-batch cost tracks the batch, not the table (measured August
+23: 0.8 s against 17 to 18 s per check at 21 million rows); and
+`make audit-gold` runs every contract-generated gold test in the
+unscoped form on demand, so the full-table guarantee stays one command
+away. Cross-batch uniqueness is guaranteed by the D-38 anti-join
+inserts; the scoped uniqueness rules catch in-batch duplication, and
+the audit target proves the global property whenever asked. The
+mechanism was probed before this decision bound: `datacontract dbt
+sync` at 1.0.12 carries jinja var guards in quality-rule SQL verbatim
+into the generated singular tests, and dbt compiles both branches
+(F-35). Symmetric gates stay symmetric (D-08): nothing narrows with
+the var unset, and the scoped form exists only where the anti-join
+mechanics carry the global guarantee. Rules that stay cheap at scale
+(C1's two counts, the rowCount library rules, the constant-dimension
+checks) never scope. Full text: Decision Record 008 part two.
+
+### D-40
+**`docs/scale.md` and the measurement rule.** The scale posture is
+documented in one place, `docs/scale.md`: what scales by design and
+why (the build linear in rows; the mart answering questions 100 to
+2,000 times faster than the view; a 1 percent batch in seconds against
+minutes of rebuild), the measured curve with its environment stated,
+the disk and memory guidance (roughly 3.5 times bronze bytes plus
+spill; a 2 GB DuckDB memory cap completes; rebuild into a fresh file
+after a failed run), the dbt-duckdb profile gotcha (`temp_directory`
+in profile settings fails after the first spill; leave the default
+spill location), and the incremental and audit recipes (D-38, D-39).
+The standing rule this decision mints: a performance number is
+published only with its environment stated, never as a promise, and
+never on the website; throughput claims and SLAs remain non-goals.
+The August 23 sandbox curve (45 thousand to 21 million rows, 2 CPUs,
+7 GB) is the founding measurement; the Mac re-measure at 1 and 10
+million rows lands in the same file with its own environment line at
+the Arc 5b sitting. Full text: Decision Record 008 part two.
 
 ## Session-decision and finding IDs
 
@@ -705,12 +806,12 @@ authority. The mapping:
 | 4 (contracts all-or-nothing) | D-06, D-08 |
 | 5 (only not_null trusted; tests for the rest) | D-12, evidence [F-06](../verification/gate_proof_findings.md#f-06)/[F-08](../verification/gate_proof_findings.md#f-08) |
 | 6 (never weaken a contract) | D-08, D-28 |
-| 7 (no materialized views) | D-07 |
+| 7 (no materialized views; incremental behind configuration) | D-07 (Amendment O), D-38 |
 | 8 (ownership-manifest checksums) | D-09 |
 | 9 (engine emits models, never DDL; mapping-contract placement) | D-07, D-29 |
 | 10 (gate three under uv run; top-level `datacontract test` unused) | D-12, D-16; gate-two mechanics per D-20 |
 | 11 (properties hand-authored on the silver plane; sync-created at adoption; engine-emitted on gold; sync output reviewed) | D-16 (Amendments C, J), D-29, evidence [F-02](../verification/gate_proof_findings.md#f-02)/[F-05](../verification/gate_proof_findings.md#f-05)/[F-14](../verification/gate_proof_findings.md#f-14)/[F-27](../verification/gate_proof_findings.md#f-27) |
-| 12 (unified event star; tables; the typed mart default; projections) | D-17, D-36 |
+| 12 (unified event star; materialization modes; the typed mart default; projections; batch-scoped gates) | D-17 (Amendment P), D-36 (Amendment Q), D-38, D-39 |
 | 13 (canonical_key v2, deterministic payloads) | D-18 |
 | 14 (registry binding; fact key; declared grain) | D-19 |
 | 15 (proposer runtime: one structured call; proposal schema projection; allow-listed model override; governed inputs per stance; no tools/MCP/loops; outbox-only) | D-21 (Amendment F), D-23 (Amendment H), D-34, D-35, evidence [F-26](../verification/gate_proof_findings.md#f-26) |
@@ -730,7 +831,9 @@ as of the August 22, 2026 revision (Decision Record 007), and D-36
 (with Amendments K, L, and M) as of the August 24, 2026 revision
 (Decision Record 008 part one), and Amendment N to D-05 as of the
 August 28, 2026 revision (Decision Record 009), and D-37 as of the
-August 29, 2026 revision (Decision Record 010). D-20 has no
+August 29, 2026 revision (Decision Record 010), and D-38 through D-40
+(with Amendments O, P, and Q) as of the Decision Record 008 part two
+revision landed with Arc 5b. D-20 has no
 dedicated
 CLAUDE.md rule; its substance
 is encoded directly in
