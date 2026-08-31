@@ -1,0 +1,39 @@
+%%{init: {"fontFamily": "Manrope, Inter, Arial, sans-serif", "theme": "base", "themeVariables": {"fontFamily": "Manrope, Inter, Arial, sans-serif"}}}%%
+%% MetricMine · Layer Flow Overview (README edition): machine-readable twin of
+%% docs/diagrams/layer_flow_overview_light.svg and _dark.svg (one geometry,
+%% two token sets, per the brand standard Section 6.4).
+%% The condensed dual-audience overview: four beats, the governance band,
+%% and the credibility strip. The full current-state layer flow, with the
+%% type journey and gate list, is docs/diagrams/layer_flow_current_state.mmd.
+%% Facts carried on the face: 45,228 bronze rows; 44,721 silver lines;
+%% 12 engine-emitted dbt models; conservation tests C1 to C5 in CI on every
+%% pull request; byte-reproducible builds; one local DuckDB file; Apache-2.0.
+%% Decisions: D-04 dbt plane, D-07 engine emits models, D-10 two proposers,
+%% D-17 unified event star, D-36 typed mart, D-38 incremental path.
+
+flowchart LR
+
+  BRZ["BRONZE<br/>Raw data lands<br/>PyAirbyte, one command · committed sample · 45,228 rows"]
+  SLV["SILVER<br/>A human decides meaning<br/>cleanup contract, ODCS · human-owned SQL · 44,721 clean lines"]
+  GLD["GOLD<br/>The engine builds the star<br/>mapping contract in · 12 dbt models out · never DDL, PRs only"]
+  ANS["ANSWERS<br/>Agents answer with context<br/>typed mart, MCP server · read-only, three layers · meaning one join away"]
+
+  BRZ -->|"profile, propose, approve"| SLV
+  SLV -->|"contract, engine, regeneration PR"| GLD
+  GLD -->|"steered to the typed mart"| ANS
+
+  GOV["EVERY CHANGE IS A REVIEWED PULL REQUEST<br/>Two narrow agents draft contracts. Three CI gates judge human and agent work identically.<br/>Failures stop the line; nothing an agent writes reaches the warehouse unreviewed."]
+
+  BRZ ~~~ GOV
+  ANS ~~~ GOV
+
+  classDef bronze stroke:#B0805B,stroke-width:2.5px;
+  classDef silver stroke:#AEB6BC,stroke-width:2.5px;
+  classDef gold stroke:#D9A441,stroke-width:2.5px;
+  classDef mint stroke:#5CAC94,stroke-width:2.5px;
+  classDef band stroke:#25444C,stroke-width:1.5px;
+  class BRZ bronze
+  class SLV silver
+  class GLD gold
+  class ANS mint
+  class GOV band
