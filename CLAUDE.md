@@ -1,7 +1,7 @@
-# MetricMine — Project Instructions for Claude Code
+# MetricMine: Project Instructions for Claude Code
 
 ## What this is
-A contract-driven medallion pipeline, built as a portfolio reference
+A contract-driven medallion pipeline, built as a reference
 implementation. It runs locally, end to end, on one machine with one command.
 Bronze, silver, and gold live as three schemas in one local DuckDB file.
 Agents propose data contracts; deterministic code and dbt execute them; a human
@@ -50,7 +50,7 @@ approves every contract.
    Mapping contracts live flat in contracts/ beside table contracts
    (physicalType: mapping is the discriminator). A mapping contract's
    category name must never equal a dbt model name: gate 3 fails loudly on
-   the collision (F-12). Mapping contracts carry no quality rules — gate 3
+   the collision (F-12). Mapping contracts carry no quality rules; gate 3
    skips unmatched schema objects entirely (F-12), so such rules are dead
    letters; enforcement belongs to the gold star contract. Input schema
    and emission rules: docs/spec/engine.md.
@@ -58,7 +58,7 @@ approves every contract.
     `uv run datacontract dbt test ...`. The `uv run` prefix is mandatory:
     the isolated tool cannot find dbt on PATH by itself. The TOP-LEVEL
     `datacontract test` command (no `dbt`) is a different, unsupported path
-    against DuckDB (server type unsupported at 1.0.12) — never use it. The
+    against DuckDB (server type unsupported at 1.0.12); never use it. The
     gate's `datacontract dbt test` subcommand is required and is not the
     same command.
 11. dbt properties files are hand-authored. Treat `datacontract export
@@ -212,7 +212,7 @@ production SLAs.
 Python 3.12, uv for packaging, ruff for linting, pytest for tests. dbt Core with
 the dbt-duckdb adapter for transforms. ODCS v3.1.0 for contracts, executed via
 datacontract-cli 1.0.12, installed as an isolated tool with
-`uv tool install --python 3.12 "datacontract-cli[duckdb]==1.0.12"` — never added to
+`uv tool install --python 3.12 "datacontract-cli[duckdb]==1.0.12"`, never added to
 pyproject.toml as a project dependency. GitHub Actions for CI.
 
 The MCP server runs on the official mcp SDK over stdio, pinned to the 1.x
@@ -232,14 +232,19 @@ the engine, or the context compiler, read
 `docs/spec/gold-unified-event-star.md` and `docs/spec/engine.md`. Before
 working on the profiler or
 the read-only warehouse protocol, read `docs/spec/profiler.md`. Before
-working on the serving layer — the query module, the MCP server, or the
-demo export — read `docs/spec/serving.md`. Before
-working on the agent layer —
-the proposers, their prompts, or the proposal validator — read
+working on the serving layer (the query module, the MCP server, or the
+demo export), read `docs/spec/serving.md`. Before
+working on the agent layer (the proposers, their prompts, or the
+proposal validator), read
 `docs/spec/agent-layer.md`. Before adopting an existing model into the
 contract gates, or working on the adoption scan and its helpers, read
 `docs/adoption.md`. Decisions cited anywhere as D-0x resolve in
 `docs/decisions/decision-register.md`.
+
+## Brand standards
+- Diagrams, README visuals, and any published imagery follow the MetricMine brand standard: https://github.com/metricminellc/website/blob/main/brand/BRAND_STANDARDS.md
+- Mermaid diagrams use the theme block in spec Section 6.4. Published diagrams ship as paired light and dark SVGs with PNG exports.
+- Copy rules: short declarative sentences, no em dashes, no throughput or SLA claims.
 
 ## Conventions
 - Small, reviewed pull requests with meaningful commit messages.
@@ -268,8 +273,8 @@ Every commit and PR follows these:
   (cite the D-0x number when one applies; every D-0x resolves in
   docs/decisions/decision-register.md), or the problem it solves.
 - **PR description:** three sections, in this order:
-  - **Summary** — one or two sentences on the intent.
-  - **What changed** — the concrete edits, as a short list.
-  - **Why** — the reasoning or the decision/phase this advances.
+  - **Summary**: one or two sentences on the intent.
+  - **What changed**: the concrete edits, as a short list.
+  - **Why**: the reasoning or the decision/phase this advances.
 - Keep it honest and specific. Do not pad. A one-line chore does not need a
   three-paragraph body; match the depth to the change.
