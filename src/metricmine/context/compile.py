@@ -2,7 +2,7 @@
 
 Spec §4 (D-30): deterministic code, not an agent. It merges the governing
 contracts' harvested context fields into one canonical artifact under
-context/compiled/ (vNNNN.json plus meta sidecar — the profiles/ artifact
+context/compiled/ (vNNNN.json plus meta sidecar, the profiles/ artifact
 discipline, reused verbatim); the engine carries the newest artifact into
 the emitted context_registry model as SQL VALUES literals. It writes
 nowhere else and never reads the warehouse. ``build_compiled_context`` is
@@ -69,7 +69,7 @@ def build_compiled_context(repo_root: Path) -> dict:
 
     Schema keys and manifests come from the same Emission the emitters
     use, so every registry key equals its emitted manifest_key literal by
-    construction — that identity is what makes C3 pass. Every entry cites
+    construction; that identity is what makes C3 pass. Every entry cites
     the MAPPING contract (its approval created the keys); the star
     contract governs the container and sits in sources.
     """
