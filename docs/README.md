@@ -26,9 +26,11 @@
 | [`diagrams/runtime_workflow_diagram.svg`](diagrams/runtime_workflow_diagram.svg) (+ [`.mmd`](diagrams/runtime_workflow_diagram.mmd)) | End-to-end runtime workflow: the `make demo` path from sources through bronze, silver, the engine, and the unified event star to MCP serving. |
 | [`diagrams/agent_proposal_flow.svg`](diagrams/agent_proposal_flow.svg) (+ [`.mmd`](diagrams/agent_proposal_flow.mmd)) | The proposer runtime: propose, validate, approve. Zoom-in companion to the runtime workflow diagram, which is unchanged. |
 | [`diagrams/gold_unified_event_star_flow.svg`](diagrams/gold_unified_event_star_flow.svg) (+ [`.mmd`](diagrams/gold_unified_event_star_flow.mmd)) | Gold layer target-state flow: modeling plane, star objects, serving posture. Companion to the gold spec. |
+| [`diagrams/layer_flow_current_state_light.svg`](diagrams/layer_flow_current_state_light.svg) (+ [dark](diagrams/layer_flow_current_state_dark.svg), [`.mmd`](diagrams/layer_flow_current_state.mmd), PNG exports at 2x) | The current-state layer flow at head: source to serving with measured row counts, the governance and modeling loops, the typed surface, and what each hop costs. A published pair per the brand standard, one geometry and two token sets. |
+| [`diagrams/star_erd_current_state_light.svg`](diagrams/star_erd_current_state_light.svg) (+ [dark](diagrams/star_erd_current_state_dark.svg), [`.mmd`](diagrams/star_erd_current_state.mmd), PNG exports at 2x) | The current-state ERD of the unified event star: every table, key, and payload column with measured row counts, and the reading rules the shape needs (F-23, F-24, Amendment M to D-18). |
 | [`assets/`](assets/) | Brand and README assets: the MetricMine logo pair (served per color scheme by the README's picture element) and the dark-canvas workflow overview graphic (rendered PNG plus hand-authored SVG source). |
 
-Every SVG under `diagrams/` has a machine-readable Mermaid (`.mmd`) twin.
+Every diagram under `diagrams/` has a machine-readable Mermaid (`.mmd`) twin; a published light and dark pair shares one twin.
 
 Conventions: specs are written in engineering voice, self-contained, and cite
 decisions by `D-0x` anchor into the register. Extended working history lives
