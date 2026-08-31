@@ -30,11 +30,12 @@ models, landing as pull requests under the ownership manifest (D-09).
 | `fact_<category>_values` | table | composite PK, below | Measure payload, manifest FK, group-key FKs. One row per declared grain. |
 | `context_registry` | table | schema key PK | `schema_key`, entity group, contract name, contract version, compiled context. Written by the context compiler. |
 | `vw_<category>_typed` | view | none | Typed projection: `json_extract` + cast per manifest field. Uncontracted; header-labeled derivative. |
-| `mart_<category>_typed` | table | none | Materialized typed mart (D-36): the projection's SELECT as a table, lean, typed columns plus `fact_hash_id`, ordered by the time column. Uncontracted; header-labeled derivative. |
+| `mart_<category>_typed` | table | none | Materialized typed mart (D-36 as amended): the projection's SELECT as a table, lean, typed columns plus `fact_hash_id` and `captured_at`, ordered by the time column. Uncontracted; header-labeled derivative. |
 
 Every `*_values` row carries the four-element pattern: value payload (JSON object),
 schema manifest (held in the columns dim, referenced by schema key), record key,
-and schema key. Audit stamps (`loaded_at`) sit outside the pattern as plain columns,
+and schema key. Audit stamps (`loaded_at`, and `captured_at` on the silver-derived
+tables, D-38) sit outside the pattern as plain columns,
 outside every hashed payload. Hashed payloads contain deterministic content only;
 that rule keeps `make demo` byte-reproducible.
 
@@ -119,6 +120,15 @@ Enforced as dbt tests in CI on every pull request:
   [`engine.md`](engine.md) section 7).
 - **C3** every schema key present in gold exists in `context_registry`.
 - **C4** every payload parses as valid JSON.
+- **C5** field-level reconciliation: every silver row joins the typed
+  surface on the derived line identity and every mapped field matches
+  its served value (V1-06; the Session J runbook validation promoted
+  to a standing test at contract v1.3.0).
+
+When a deployment runs incrementally, the expensive rules batch-scope
+behind the `mm_batch_floor` var and `make audit-gold` runs the
+unscoped full-table forms on demand (D-39); with the var unset, CI
+included, every rule runs full-table exactly as declared.
 
 Regeneration output and the regeneration PR narrative keep the arithmetic
 self-verification style (`N rows + offset = total`); the engine itself
@@ -127,8 +137,15 @@ enforcement lives in the tests.
 
 ## Materialization and contracts
 
-Star tables materialize as `table` (D-07); dbt contract enforcement requires
-table or incremental, so views are not an option for contracted objects.
+Star tables materialize as `table` by default, or `incremental` behind
+`engine.materialization` (D-38; D-07 as amended); dbt contract
+enforcement requires
+table or incremental, so views are not an option for contracted
+objects. At incremental, every silver-derived model filters its
+source to the `captured_at` watermark and inserts by content-key
+anti-join, and contracted models set `on_schema_change: 'fail'`
+(F-34): a shape change arrives through a contract amendment and a
+regeneration, never silently at build time.
 Projections are views and carry no contract. The typed mart (D-36) is a
 table and also carries no contract: enforcement is a property of the star
 tables and the registry, and the typed surface stays derivative. One ODCS contract,
@@ -153,9 +170,10 @@ get context by schema key; row-limited query; lookup record by content key
 
 ## Explicitly out of scope
 
-Incremental materialization (documented path, built when
-warranted), partitioning, multiple dimension groups per category, and any
-performance claims without measurement. Non-goals in the README remain standing.
+Partitioning, multiple dimension groups per category, and any
+performance claims without measurement (D-40 states the measurement
+rule; `docs/scale.md` carries the measured curve). Non-goals in the
+README remain standing.
 
 ## References
 

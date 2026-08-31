@@ -49,6 +49,8 @@ order by design.
 | [F-31](#f-31) | The v2 parser gate is parse-only for a contract-enforced project; the beta engine builds it | Toolchain rung |
 | [F-32](#f-32) | A prose working-tree rule needs a PreToolUse hook; the guard is measured | SDLC rung |
 | [F-33](#f-33) | A working-tree guard must allow the tool's own state and a runner's action directory; the prep's stdin cases could not see either | SDLC rung |
+| [F-34](#f-34) | Contracted incremental models require on_schema_change at dbt 1.12 | Incremental rung |
+| [F-35](#f-35) | Sync carries jinja var guards in quality-rule SQL verbatim | Incremental rung |
 
 ## Command surface (datacontract-cli 1.0.12)
 
@@ -766,3 +768,38 @@ shipping a guard around them, because stdin cases only model the calls
 their author imagined.
 ([`evidence/2026-08-29_phase8_exit.md`](evidence/2026-08-29_phase8_exit.md);
 [`tests/hooks/test_working_tree_guard.py`](../../tests/hooks/test_working_tree_guard.py))
+
+### F-34
+**Contracted incremental models require `on_schema_change` at dbt 1.12.**
+Observed at the Arc 5b prep (August 31, 2026), on the first incremental
+build of the emitted star: dbt-core 1.12.3 refuses to run a contracted
+model materialized as incremental with the default `on_schema_change:
+ignore` ("Models materialized as incremental with contracts enabled must
+set on_schema_change to 'append_new_columns' or 'fail'"). The engine
+therefore emits `on_schema_change='fail'` on every incremental config
+line, and `fail` is the right value here by design, not just by
+requirement: a shape change must arrive through a contract amendment and
+a regeneration (D-08, D-09), never silently at build time. The
+uncontracted mart carries the same setting for the same reason.
+([`tests/test_engine_emission.py`](../../tests/test_engine_emission.py),
+the D-38 mode tests; the emitted config lines under
+[`transform/models/gold/`](../../transform/models/gold/))
+
+### F-35
+**Sync carries jinja var guards in quality-rule SQL verbatim into the
+generated singular tests.** Probed at the Arc 5b prep (August 31, 2026)
+before D-39 bound: a quality rule whose query carries
+`{% if var('mm_batch_floor', none) is not none %} ... {% endif %}`
+survives `datacontract dbt sync` at 1.0.12 byte-verbatim inside the
+generated singular test, and dbt compiles both branches: with the var
+unset the guarded predicate is absent from the compiled SQL and the test
+runs in its full-table form; with `--vars` passing a floor, the compiled
+SQL carries the bound `captured_at >= TIMESTAMP` predicate. The F-19
+lesson (sync passes `{{ ref() }}` through) extends to arbitrary jinja,
+which is the mechanism the D-39 batch scope stands on: one contract, one
+test set, the scope switched by a declared var, and `make audit-gold`
+the unscoped run.
+(The guarded rules in
+[`contracts/gold_unified_event_star.odcs.yaml`](../../contracts/gold_unified_event_star.odcs.yaml);
+the compiled forms under dbt's target directory on any `--vars` run)
+
