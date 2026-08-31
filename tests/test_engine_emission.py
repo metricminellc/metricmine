@@ -1,17 +1,17 @@
 """Unit surface for the auto-modeling engine (docs/spec/engine.md §5; D-29).
 
 CI-lane, keyless: everything here runs from the committed contracts and the
-committed golden fixtures — no warehouse, no network. The fixtures under
+committed golden fixtures: no warehouse, no network. The fixtures under
 ``tests/golden/emitted/`` are the sync fixed point verified at the pre-I
 rehearsal (sync pass over the emitted set updated 0 YAML files; second pass
 byte-identical), so byte-equality against them IS the Q8 fixed-point claim
 in test form, and emission determinism is meaningful because of it.
 
 Interface under test (pinned at the Sitting I runbook):
-- ``metricmine.engine.emit.build_emission_set(repo_root)`` — pure; returns
+- ``metricmine.engine.emit.build_emission_set(repo_root)``: pure; returns
   ``{relative_path_under_transform/models/gold: content}`` for the nine
   models, nine properties files, and ``ownership-manifest.json``.
-- ``metricmine.engine.reader`` — ``load_inputs(repo_root)``,
+- ``metricmine.engine.reader``: ``load_inputs(repo_root)``,
   ``validate_mapping(mapping, silver, json_schema)``, raising
   ``EngineContractError`` on any schema or cross-check violation.
 """

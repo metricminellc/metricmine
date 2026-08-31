@@ -5,7 +5,7 @@ config-resolved string (HOOK 1); the user turn is an ordered list of
 delimited governed inputs whose hashes are all re-checked (HOOK 2);
 provenance extras append after the six Appendix B keys (HOOK 3). A later
 stance is a config block plus a prompt plus a validator, never a harness
-rewrite — these tests hold the seams open. Keyless.
+rewrite; these tests hold the seams open. Keyless.
 """
 
 from __future__ import annotations

@@ -1,7 +1,7 @@
 """DuckDB implementation of the read-only warehouse protocol (D-11).
 
 Spec: docs/spec/profiler.md §7. The connection opens with read_only=True:
-no DDL, no DML — every method is a SELECT. Sample ordering relies on
+no DDL, no DML; every method is a SELECT. Sample ordering relies on
 DuckDB's default binary collation; the profiling layer re-sorts in Python
 as the spec's codepoint-order guarantee (§4).
 """

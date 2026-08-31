@@ -15,7 +15,7 @@ _FIXTURE = """---
 version: 1.2.3
 date: 2026-08-22
 changelog: >
-  1.2.3 — fixture prompt.
+  1.2.3: fixture prompt.
 ---
 
 You are the fixture proposer.

@@ -1,19 +1,19 @@
 """Unit surface for the context compiler and registry emission (spec §4; D-30).
 
-CI-lane, keyless: everything runs from the committed contracts — no
+CI-lane, keyless: everything runs from the committed contracts; no
 warehouse, no network, and no committed compiled-context artifact is
 required (the artifact-pinning manifest assertion lives in
 test_engine_emission.py and arrives with the v1.2.0 amendment).
 
 Interface under test (pinned at the Sitting J runbook):
-- ``metricmine.context.compile.build_compiled_context(repo_root)`` — pure;
+- ``metricmine.context.compile.build_compiled_context(repo_root)``: pure;
   the artifact content dict.
 - ``metricmine.profiling.canonical.canonical_bytes`` /
-  ``metricmine.profiling.writer.write_if_changed`` — the shared artifact
+  ``metricmine.profiling.writer.write_if_changed``: the shared artifact
   discipline the compiler reuses (the mirror is exact by construction).
-- ``metricmine.engine.reader.load_compiled_context`` — newest committed
+- ``metricmine.engine.reader.load_compiled_context``: newest committed
   vNNNN, fail-closed on absence and on staleness.
-- ``metricmine.engine.emitters.registry_sql / registry_declared`` — VALUES
+- ``metricmine.engine.emitters.registry_sql / registry_declared``: VALUES
   literals carried from the artifact; deterministic quote doubling.
 """
 
@@ -56,7 +56,7 @@ def test_artifact_is_deterministic() -> None:
 
 def test_artifact_schema_keys_match_the_emitters() -> None:
     """One entry per schema key present in the star, in fixed group
-    order — the same manifest_key literals the emitted models carry, so
+    order, the same manifest_key literals the emitted models carry, so
     C3 passes by construction."""
     emission = _emission()
     artifact = build_compiled_context(REPO)

@@ -6,12 +6,12 @@ Record 006). `make export-demo` builds
 READ_ONLY, copy every gold base table in sorted-name order, recreate each
 gold view from the catalog's stored SQL re-anchored to the export's own
 catalog, then verify. The claim is content equality proven by query, never
-byte equality — a DuckDB file embeds storage details that make byte
+byte equality: a DuckDB file embeds storage details that make byte
 determinism a claim this project does not need and will not make.
 
 The source is only ever ATTACHed READ_ONLY; the one write surface is the
 destination file this module creates. Printing is fine here: this is a
-build tool, not the server — the stdio discipline of CLAUDE.md rule 18
+build tool, not the server; the stdio discipline of CLAUDE.md rule 18
 governs `src/metricmine/server/`.
 """
 
@@ -25,7 +25,7 @@ import duckdb
 
 ENV_VAR = "MM_WAREHOUSE_PATH"
 # Both defaults anchor from this module's own location, never the process
-# CWD — the same resolution posture as metricmine.query (spec §5).
+# CWD, the same resolution posture as metricmine.query (spec §5).
 _REPO = Path(__file__).resolve().parents[2]
 DEFAULT_SOURCE = _REPO / "warehouse" / "metricmine.duckdb"
 DEFAULT_DEST = _REPO / "demo" / "demo.duckdb"

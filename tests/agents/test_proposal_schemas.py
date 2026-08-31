@@ -1,8 +1,8 @@
 """The proposal schemas stay inside the structured-outputs subset (F-26).
 
 Spec: docs/spec/agent-layer.md. Each proposer emits against its proposal
-schema under docs/spec/agent-layer/ — a flat projection of the contract
-shape — because the API's grammar compiler cannot compile the frozen
+schema under docs/spec/agent-layer/ (a flat projection of the contract
+shape) because the API's grammar compiler cannot compile the frozen
 mapping-contract schema (F-26, D-21 Amendment F). These tests hold each
 projection inside the documented subset (no composition keywords, typed
 enums, closed objects with every property required), hold the paired

@@ -2,7 +2,7 @@
 
 Marked `local`: it inspects the gitignored working warehouse that only
 `make ingest` produces, so CI deselects it with -m "not local". The test
-never runs the pipeline itself — it asserts on the warehouse read-only,
+never runs the pipeline itself; it asserts on the warehouse read-only,
 matching acceptance criterion 3 (bronze is inspectable read-only).
 """
 

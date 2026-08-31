@@ -1,7 +1,7 @@
 """Proposer model selection: pinned default, allow-listed override (D-34).
 
 Spec: docs/spec/agent-layer.md §1. The default model and the allow-list
-live here in code by decision — never in config — so moving either is a
+live here in code by decision, never in config, so moving either is a
 register amendment in its own documentation PR (rule 1 discipline).
 Membership is measured, not preferred: an ID must support structured
 outputs and the effort parameter, carry a pinned rate row here, and have

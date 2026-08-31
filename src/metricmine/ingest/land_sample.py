@@ -27,7 +27,7 @@ def build_source_config(cfg: dict, csv_path: Path) -> dict:
     """Build the source-file connector config from the ingestion block.
 
     Config keys verified against connector docs v0.6.0 (spec §2). PyAirbyte
-    runs the connector in a local venv, so a plain absolute path is used —
+    runs the connector in a local venv, so a plain absolute path is used;
     the Docker-era "/local/" prefix from the platform docs does not apply.
     """
     source_config = {

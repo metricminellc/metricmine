@@ -2,7 +2,7 @@
 
 No warehouse and no subprocess: the app is imported in-process and its
 tools listed. That works only because the warehouse opens lazily, which is
-itself asserted below — an import that connected would make this lane
+itself asserted below; an import that connected would make this lane
 depend on a database CI does not build.
 
 The tool listing is async. This project configures neither pytest-asyncio
