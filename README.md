@@ -8,6 +8,20 @@
   Apache-2.0 &nbsp;·&nbsp; Python 3.12 &nbsp;·&nbsp; dbt + DuckDB &nbsp;·&nbsp; ODCS v3.1.0 &nbsp;·&nbsp; MCP</p>
 </div>
 
+## Agents propose. Humans approve. Deterministic code executes.
+
+Every design judgment in this pipeline is a versioned, machine-readable
+contract that a person approved by merging a pull request. Two narrow AI
+agents draft contracts; deterministic code and dbt execute them; a
+three-gate CI enforces them from then on. Nothing an agent produces reaches
+the warehouse unreviewed, and the reasoning is in the repository: every
+binding decision in the
+[decision register](docs/decisions/decision-register.md), every measured
+finding in the [findings register](docs/verification/gate_proof_findings.md),
+and the [evidence](docs/verification/evidence/) each one cites. Contracts
+are also how an AI assistant gets compact, reliable truth at serving time:
+the gold layer carries a context registry one join from any payload.
+
 ![The MetricMine workflow: sources land in bronze and are profiled; an
 approved cleanup contract shapes silver; a second profile and an approved
 mapping contract feed the auto-modeling engine; the engine emits the gold
@@ -36,6 +50,58 @@ specification that got it here. The unified event star at the gold layer is
 the experimental centerpiece; the practices around it are industry-standard
 end to end.
 
+## What the human owns, and what the machine owns
+
+The human decides what the data means and how sources reconcile. The
+machine decides how that meaning is structured and served. Meaning is
+declared in two places, the silver cleanup contract and the gold mapping
+contract, and everything downstream of those two declarations is a
+mechanical, byte-reproducible function of them: 12 of the 13 dbt models on
+`main` are engine-emitted and never hand-written. The one exception is
+silver, `silver_invoice_lines.sql`, which stays human-owned on purpose,
+because silver is where meaning is decided. What the agent proposes for
+silver is the contract, not the SQL.
+
+That split is what the design buys. A wrong number has an address: it
+traces to the silver logic or to the mapping declaration, never to a hand
+edit somewhere in the DAG. Determinism means the same inputs emit
+byte-identical model files, verified against a committed golden fixture, so
+a change is reproducible, diffable, and reviewable; it does not mean the
+models are right. Correctness comes from separate machinery: contracts
+enforced at build time, four conservation tests in CI, and a grain check
+that measures a declared grain rather than trusting it. The pipeline offers
+traceability and conservation, not observability, and regeneration lands as
+a pull request, never as an automatic update.
+
+The gold layer is a generic content-addressed container by design, not an
+automated star schema. Dimensional intent (the grain, the entity groups, the
+time column, an aggregation per measure) lives in the mapping contract, and
+the engine materializes it into a fixed shape whose keys are content hashes.
+That choice has three measured trade-offs, each recorded where a reader
+will look: at transaction grain the category dimension is one-to-one with
+its fact by construction
+([F-23](docs/verification/gate_proof_findings.md#f-23)); `fact_hash_id` is a
+content address, not a row identifier, and the name invites the wrong query
+([F-24](docs/verification/gate_proof_findings.md#f-24)); and every served
+value is canonical lowercased text, stated at the serving surface rather
+than changed
+([Amendment M to D-18](docs/decisions/decision-register.md#d-18)). One
+source and one fact category exist today. The star's physical schema is
+fixed regardless of how many sources feed it, so a second source adds rows
+and a schema key rather than a schema migration: demonstrated at one
+source, designed for more.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/layer_flow_current_state_dark.svg">
+  <img alt="The current-state layer flow: bronze, governance, silver, modeling, gold, the typed surface, and serving, with measured row counts" src="docs/diagrams/layer_flow_current_state_light.svg">
+</picture>
+
+<div align="center"><sub>The current state at head with measured counts; open
+the image for full size. The star itself is drawn in the
+<a href="docs/diagrams/star_erd_current_state_light.svg">current-state ERD</a>
+(<a href="docs/diagrams/star_erd_current_state_dark.svg">dark</a>), each with a
+Mermaid twin beside it.</sub></div>
+
 ## What this repository demonstrates
 
 **Strategy you can audit.** Thirty-seven binding decisions in a versioned
@@ -59,13 +125,6 @@ ingestion through serving, a unified event star with a content-addressed
 context registry, and MCP at the serving edge. The agent layer is designed
 against GenAIOps practice across PromptOps, RAGOps, and AgentOps,
 right-sized for the project and documented like everything else.
-
-> **Agents propose. Code executes. A human approves.**
-> Judgment and execution stay separate. Every approval becomes a versioned,
-> machine-readable contract that CI enforces from then on. In the age of
-> context windows, contracts are how agents get compact, reliable truth,
-> and this pipeline makes that governance mechanical rather than
-> aspirational.
 
 ## See it run
 
@@ -92,8 +151,8 @@ Three planes organize the repository: `contracts/` is the specification
 project, and `src/` is hand-written Python: the profiler, the
 auto-modeling engine, the context compiler, the shared query module, and
 the MCP server. Data moves bronze → silver → gold in one local DuckDB
-file. Gold is terminal and machine-emitted: a source-invariant,
-content-addressed star, so a new source adds rows, not schema. Serving is
+file. Gold is terminal and machine-emitted: a content-addressed star whose
+physical schema does not depend on the sources that feed it. Serving is
 read-only three layers deep, through five MCP tools over one shared query
 module. Designs: the
 [gold layer spec](docs/spec/gold-unified-event-star.md), the
@@ -148,17 +207,24 @@ and in findings
 | The evidence: findings, the signature test, gate breaks | [docs/verification/](docs/verification/) |
 | The diagrams, SVG with Mermaid twins | [docs/diagrams/](docs/diagrams/) |
 | The guardrails the coding agent works under | [CLAUDE.md](CLAUDE.md) |
+| How to contribute, and what a pull request needs | [CONTRIBUTING.md](CONTRIBUTING.md) |
+| What changed since the last release | [CHANGELOG.md](CHANGELOG.md) |
 
 ## Status and roadmap
 
-v0.1.0 is the first tagged release: Phases 0 through 5 complete, the
-scaffold and pinned toolchain, bronze ingestion, the profiler and
-contracted silver, the engine-emitted unified event star, and the serving
-layer with the committed demo artifact. Phase 6, the two proposer agents,
-is complete on main: the proposers run in governed stances, drafts land
-only through reviewed pull requests, and the first agent-proposed
-contract amendment is live. The live roadmap is the
-[Issues tab](https://github.com/metricminellc/metricmine/issues).
+[v0.2.0](https://github.com/metricminellc/metricmine/releases/tag/v0.2.0)
+(August 29, 2026) is the current tagged release. v0.1.0 shipped Phases 0
+through 5: the scaffold and pinned toolchain, bronze ingestion, the
+profiler and contracted silver, the engine-emitted unified event star, and
+the serving layer with the committed demo artifact. v0.2.0 added the agent
+layer (the two proposers in governed stances, drafts landing only through
+reviewed pull requests, the first agent-proposed contract amendment live),
+the typed surface, the dbt 1.12 line, and the SDLC layer's working-tree
+guard, contract-review Skill, and GitHub Action. The remaining steps to a
+stable v1.0.0 are this documentation arc, incremental loading with the
+scale documentation, then the release work. The live roadmap is the
+[Issues tab](https://github.com/metricminellc/metricmine/issues); the
+[changelog](CHANGELOG.md) records what landed in each release.
 
 ## Toolchain
 
@@ -177,6 +243,20 @@ streaming, Redshift, orchestration platforms, autonomous multi-step
 agents, more than one or two source types, petabyte or throughput claims,
 and production SLAs.
 
+## Contributing
+
+Contributions are welcome under the conventions in
+[CONTRIBUTING.md](CONTRIBUTING.md): small reviewed pull requests, contracts
+never weakened to pass, and a sign-off on every commit. Everyone taking part
+follows the [code of conduct](CODE_OF_CONDUCT.md); vulnerabilities go
+through [SECURITY.md](SECURITY.md), never a public issue.
+
 ## License
 
 Apache-2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
+
+## Name and logo
+
+The MetricMine name and the MetricMine logo are not covered by the
+Apache-2.0 license. Forks and derivative works may not use them in a way
+that suggests endorsement by, or affiliation with, this project.
