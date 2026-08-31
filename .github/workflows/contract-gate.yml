@@ -23,10 +23,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up uv + Python 3.12
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           python-version: "3.12"
 
@@ -41,7 +41,7 @@ jobs:
           uv run pytest -m "not local" -q || code=$?
           code=${code:-0}
           if [ "$code" -eq 5 ]; then
-            echo "::notice::pytest collected no tests (exit 5) — treated as success"
+            echo "::notice::pytest collected no tests (exit 5); treated as success"
             exit 0
           fi
           exit "$code"
@@ -64,7 +64,7 @@ jobs:
       # repo-root-relative default; CI pins it absolute.
       MM_WAREHOUSE_PATH: ${{ github.workspace }}/warehouse/metricmine.duckdb
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Per-gate guard (D-20, split at the dbt-init PR as the decision
       # records): gate one activates on a contract alone, gate two on the dbt
@@ -87,15 +87,15 @@ jobs:
             echo "gate3=$gate3"
             echo "any=$any"
           } >> "$GITHUB_OUTPUT"
-          echo "::notice::Gates — lint:$has_contracts build:$has_dbt sync+test:$gate3"
+          echo "::notice::Gates: lint:$has_contracts build:$has_dbt sync+test:$gate3"
 
       - name: Set up uv + Python 3.12
         if: steps.gate.outputs.any == 'true'
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           python-version: "3.12"
 
-      - name: Install project (uv sync — provides dbt on PATH for `uv run`, F-04)
+      - name: Install project (uv sync; provides dbt on PATH for `uv run`, F-04)
         if: steps.gate.outputs.gate2 == 'true' || steps.gate.outputs.gate3 == 'true'
         run: uv sync
 
@@ -131,18 +131,18 @@ jobs:
       # `datacontract lint` takes a single [LOCATION]; a glob of ≥2 contracts
       # would be an "unexpected extra argument". Lint each contract. (sync/test
       # below accept variadic [CONTRACT]... globs, so they keep the glob form.)
-      - name: Gate 1 — datacontract lint
+      - name: "Gate 1: datacontract lint"
         if: steps.gate.outputs.gate1 == 'true'
         run: |
           for contract in contracts/*.odcs.yaml; do
             datacontract lint "$contract"
           done
 
-      - name: Gate 2 — dbt build (compile-time shape enforcement)
+      - name: "Gate 2: dbt build (compile-time shape enforcement)"
         if: steps.gate.outputs.gate2 == 'true'
         run: uv run dbt build --project-dir transform --target local
 
-      - name: Gate 3 — datacontract dbt sync + test
+      - name: "Gate 3: datacontract dbt sync + test"
         if: steps.gate.outputs.gate3 == 'true'
         run: |
           uv run datacontract dbt sync contracts/*.odcs.yaml --project-dir transform --target local
