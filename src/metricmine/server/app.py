@@ -1,7 +1,7 @@
 """The MCP server: a thin stdio adapter over the shared query module.
 
 Spec: docs/spec/serving.md §7 (D-31, D-32 as amended). This module holds no
-SQL, no connection logic, and no fallback paths of its own — every tool is
+SQL, no connection logic, and no fallback paths of its own; every tool is
 one delegation to `metricmine.query.GoldWarehouse`, which owns the read-only
 posture and the statement gate (CLAUDE.md rule 18). Nothing here imports
 duckdb; that is the adapter boundary, not an accident.
@@ -15,7 +15,7 @@ Two SDK mechanics this file depends on, both measured at the pinned mcp
 - `FastMCP` carries no `version` argument on the 1.x line; the lowlevel
   server underneath it does, and that is what `initialize` reports.
 
-stdio discipline: this process never writes to stdout — stdout carries
+stdio discipline: this process never writes to stdout; stdout carries
 JSON-RPC. There is no `print` in this package.
 """
 
@@ -140,8 +140,8 @@ def query(sql: str, row_cap: int = ROW_CAP_DEFAULT) -> QueryResult | QueryRefusa
     """Run one read-only SELECT against gold, row-capped.
 
     Accepts exactly one statement that parses as a SELECT and leads with
-    select, with, or from. Anything else — DDL, DML, multiple statements,
-    PRAGMA, SHOW, DESCRIBE, ATTACH, COPY — comes back as
+    select, with, or from. Anything else (DDL, DML, multiple statements,
+    PRAGMA, SHOW, DESCRIBE, ATTACH, COPY) comes back as
     {"refused": true, "reason": ...} naming the check that failed, rather
     than as an error. Results are capped at row_cap rows (default 100,
     maximum 500) and set truncated=true when more rows existed.
