@@ -91,9 +91,9 @@ def test_mapping_first_class_elements_equal_committed(
     assert ours_tuples == theirs_tuples
 
 
-def test_version_rule(committed_mapping: dict) -> None:
-    assert committed_mapping["version"] == "1.1.0"
-    assert next_version(committed_mapping["version"], "minor") == "1.2.0"
+def test_version_rule() -> None:
+    assert next_version("1.1.0", "minor") == "1.2.0"
+    assert next_version("1.1.1", "minor") == "1.2.0"
     assert next_version(None, "minor") == "1.0.0"
 
 
