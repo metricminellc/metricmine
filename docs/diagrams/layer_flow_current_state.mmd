@@ -1,0 +1,132 @@
+%%{init: {'theme':'base','fontFamily':'Manrope, Inter, sans-serif','themeVariables':{
+  'primaryColor':'#B4DACC','primaryTextColor':'#04041C',
+  'primaryBorderColor':'#25444C','lineColor':'#38626D',
+  'secondaryColor':'#DDEEE9','tertiaryColor':'#F8F9F9',
+  'fontFamily':'Manrope, Inter, sans-serif'}}}%%
+
+%% MetricMine current-state layer flow. Cut 2026-08-27 from the committed
+%% demo artifact and the working warehouse; no pipeline file changed
+%% between that cut and this publication.
+%% Published pair: layer_flow_current_state_light.svg and
+%% layer_flow_current_state_dark.svg, with PNG exports at 2x beside them
+%% (brand standard Section 6.4: one geometry, two token sets).
+%% This is the CURRENT STATE at head, not the target state. The target
+%% state flow lives in gold_unified_event_star_flow.mmd beside this file.
+%% The difference: this one carries measured numbers and names what the
+%% shape costs.
+
+flowchart TB
+
+  subgraph BRONZE_L["BRONZE - landed as received, no agent"]
+    SRC["Online Retail II<br/>committed sample"]
+    ING["PyAirbyte ingest<br/>one to one, nothing cleaned"]
+    BRZ[("bronze.online_retail_ii<br/>45,228 rows, raw schema")]
+    SRC --> ING --> BRZ
+  end
+
+  subgraph GOV["GOVERNANCE - agents propose, humans approve (D-10, D-21)"]
+    PRF["Profiler<br/>deterministic Python, no model call<br/>emits a versioned hashed artifact"]
+    CP["Silver cleanup proposer<br/>one structured call, no tools, no loops<br/>stances: cleanup, describe, amend"]
+    OUT["proposals/ outbox<br/>gitignored, disposable"]
+    PR1["Contract-only pull request<br/>I read it, edit it, merge it<br/>merge is approval"]
+    CC["contracts/silver_invoice_lines.odcs.yaml<br/>v1.1.1 ACTIVE"]
+    PRF -- "the agents' entire worldview (D-23)" --> CP
+    CP --> OUT --> PR1 --> CC
+  end
+
+  subgraph SILVER_L["SILVER - hand-written SQL, contract enforced at build"]
+    SLV[("silver.silver_invoice_lines<br/>44,721 rows, 9 typed columns<br/>renames, strict casts, dedupe,<br/>cancellations retained and flagged")]
+  end
+
+  subgraph MODEL["MODELING - contract in, dbt model files out"]
+    MP["Mapping proposer<br/>one structured call"]
+    MC["gold_invoice_lines_mapping.odcs.yaml<br/>declares category, grain,<br/>dimensions, measures, time column"]
+    ENG["Auto-modeling engine<br/>deterministic Python<br/>emits dbt models, never DDL (D-07)<br/>writes only by PR under the<br/>ownership manifest (D-09)"]
+    EMF["12 emitted model files<br/>generated-by headers, sha256 checksums"]
+    MP -. proposes .-> MC -. contract .-> ENG --> EMF
+  end
+
+  subgraph GOLD_L["GOLD - the unified event star (D-17), materialized as tables"]
+    DC[("4 columns dims<br/>dim_source / run / timeframe / invoice_lines<br/>PK = sha256(manifest)<br/>a shape change mints a new key,<br/>never a schema migration")]
+    DV[("4 values dims<br/>PK = sha256(payload)<br/>source 1, run 1, timeframe 2,004,<br/>invoice_lines 44,721")]
+    FT[("fact_invoice_lines_values<br/>44,721 rows<br/>PK = fact + source + timeframe + dim<br/>run_hash_id non-key by design")]
+    CR[("context_registry<br/>one row per schema key<br/>meaning is one join away,<br/>never embedded in a payload")]
+    DC --> DV --> FT
+  end
+
+  CMP["Context compiler<br/>merges profiles and both approved contracts<br/>D-30 freshness guard"]
+
+  subgraph TYPED["TYPED SURFACE - uncontracted, derivative (D-36)"]
+    MRT[("mart_invoice_lines_typed<br/>TABLE, the default analytical surface<br/>lean, ordered by invoiced_at<br/>plus fact_hash_id for provenance")]
+    VW["vw_invoice_lines_typed<br/>VIEW, kept for the keyless demo<br/>re-joins and re-parses per question"]
+  end
+
+  subgraph SERVE["SERVING - one shared read-only module (D-11)"]
+    QM["Query module<br/>five methods, row-limited"]
+    MCP["MCP server, five tools<br/>steers analytics to the typed table,<br/>star tables are the provenance layer"]
+    AGT["Claude<br/>answers grounded in data and meaning,<br/>cites exact records by content key"]
+    QM --> MCP --> AGT
+  end
+
+  BRZ --> PRF
+  CC -. governs .-> SLV
+  BRZ -- "select, clean, type" --> SLV
+  SLV -- "model input" --> ENG
+  SLV -- "profiled again for mapping" --> MP
+  EMF -- "dbt build, contracts enforced" --> GOLD_L
+  CC -. context .-> CMP
+  MC -. context .-> CMP
+  CMP --> CR
+  FT --> MRT
+  FT --> VW
+  MRT -- "read-only" --> QM
+  CR -- "get_context" --> QM
+
+  classDef bronze fill:#B0805B,stroke:#25444C,color:#04041C;
+  classDef silver fill:#AEB6BC,stroke:#25444C,color:#04041C;
+  classDef gold   fill:#D9A441,stroke:#25444C,color:#04041C;
+  classDef agent  fill:#B4DACC,stroke:#25444C,color:#04041C;
+  classDef human  fill:#5CAC94,stroke:#25444C,color:#04041C;
+  classDef code   fill:#25444C,stroke:#25444C,color:#FFFFFF;
+  classDef file   fill:#F0F2F2,stroke:#25444C,color:#04041C;
+  classDef typed  fill:#EEF6F4,stroke:#5CAC94,color:#04041C;
+
+  class SRC,ING,BRZ bronze
+  class SLV silver
+  class DC,DV,FT,CR gold
+  class CP,MP,OUT,AGT agent
+  class PR1,CC,MC human
+  class PRF,ENG,CMP,QM,MCP code
+  class EMF file
+  class MRT,VW typed
+
+%% FILLS: agents propose (mint), a human approves (brand green), deterministic
+%% code executes (slate), the three medallion accents, the typed surface, and
+%% one emitted-files artifact; the same classes drive the published pair.
+
+%% THE TYPE JOURNEY, the thing worth seeing once:
+%%   silver        quantity = 6                       (typed)
+%%   gold payload  {"quantity":"6","unit_price":"2.55"}
+%%                 lowercased, sorted keys, compact
+%%   gold key      sha256(that text) = fact_hash_id
+%%   mart          quantity = 6                       (typed again)
+
+%% The middle is what buys content addressing, source invariance, and
+%% provenance-grade citation. It is also what costs the lowercasing
+%% (Amendment M to D-18) and roughly ten times silver's bytes. Both are
+%% recorded, neither is hidden.
+
+%% GATES ON EVERY HOP:
+%%   gate 1  datacontract lint on every contract
+%%   gate 2  dbt build with contracts enforced
+%%   gate 3  datacontract dbt sync, then test
+%%   rule 8  an edited engine-emitted file is refused, never overridden
+%%   D-08    a contract never narrows without an explicit flag, a major
+%%           bump, and a printed warning
+%%   D-09    regeneration lands only as a pull request
+
+%% THE GAP THIS DIAGRAM MAKES VISIBLE: one source. Everything
+%% downstream is built so that source two adds rows and a schema key
+%% instead of a schema migration, and nothing here has run with two
+%% sources yet. Until it does, word it as a design property and never
+%% as a demonstrated one (V1-03). Proving it is X-04.

@@ -1,0 +1,156 @@
+%%{init: {'theme':'base','fontFamily':'Manrope, Inter, sans-serif','themeVariables':{
+  'primaryColor':'#B4DACC','primaryTextColor':'#04041C',
+  'primaryBorderColor':'#25444C','lineColor':'#38626D',
+  'secondaryColor':'#DDEEE9','tertiaryColor':'#F8F9F9',
+  'fontFamily':'Manrope, Inter, sans-serif'}}}%%
+
+%% MetricMine current-state ERD of the unified event star. Cut 2026-08-27
+%% from the committed demo artifact and the working warehouse; no pipeline
+%% file changed between that cut and this publication.
+%% Published pair: star_erd_current_state_light.svg and
+%% star_erd_current_state_dark.svg, with PNG exports at 2x beside them
+%% (brand standard Section 6.4: one geometry, two token sets).
+%% Decisions: D-07 engine emits dbt models; D-09 ownership manifest;
+%% D-17 the star is terminal gold; D-18 canonical_key v2 (Amendment M:
+%% the canonical text is also the served text); D-19 context binds by
+%% schema key; D-36 the typed mart is the default typed surface.
+
+%% Scope honesty: one source, one fact category. Physical types are
+%% omitted on purpose; they are declared in the contracts and were not
+%% re-read for this cut. fact_col_hash_id's exact target table is
+%% inferred, not verified.
+
+erDiagram
+
+    SILVER_INVOICE_LINES ||--|| FACT_INVOICE_LINES_VALUES : "one fact row per silver row"
+    SILVER_INVOICE_LINES ||--|| DIM_INVOICE_LINES_VALUES : "one dim row per silver row (F-23)"
+    SILVER_INVOICE_LINES }o--|| DIM_TIMEFRAME_VALUES : "deduped to 2004 by content"
+
+    DIM_SOURCE_VALUES ||--o{ FACT_INVOICE_LINES_VALUES : source_hash_id
+    DIM_TIMEFRAME_VALUES ||--o{ FACT_INVOICE_LINES_VALUES : timeframe_hash_id
+    DIM_INVOICE_LINES_VALUES ||--|| FACT_INVOICE_LINES_VALUES : "dim_hash_id (1:1 here, F-23)"
+    DIM_RUN_VALUES ||--o{ FACT_INVOICE_LINES_VALUES : "run_hash_id (non-key lineage)"
+
+    DIM_SOURCE_COLUMNS ||--o{ DIM_SOURCE_VALUES : "manifest"
+    DIM_RUN_COLUMNS ||--o{ DIM_RUN_VALUES : "manifest"
+    DIM_TIMEFRAME_COLUMNS ||--o{ DIM_TIMEFRAME_VALUES : "manifest"
+    DIM_INVOICE_LINES_COLUMNS ||--o{ DIM_INVOICE_LINES_VALUES : "manifest"
+
+    CONTEXT_REGISTRY ||--|| DIM_SOURCE_COLUMNS : "schema_key"
+    CONTEXT_REGISTRY ||--|| DIM_RUN_COLUMNS : "schema_key"
+    CONTEXT_REGISTRY ||--|| DIM_TIMEFRAME_COLUMNS : "schema_key"
+    CONTEXT_REGISTRY ||--|| DIM_INVOICE_LINES_COLUMNS : "schema_key"
+
+    FACT_INVOICE_LINES_VALUES ||--|| MART_INVOICE_LINES_TYPED : "json_extract + cast"
+    FACT_INVOICE_LINES_VALUES ||--|| VW_INVOICE_LINES_TYPED : "json_extract + cast"
+
+    SILVER_INVOICE_LINES {
+        string invoice_id "dimension"
+        string stock_code "dimension"
+        string product_description "dimension"
+        string customer_id "dimension, null on ~29.8 pct of bronze"
+        string country "dimension, the signature-test field"
+        boolean is_cancellation "dimension flag, rows retained"
+        timestamp invoiced_at "TIME COLUMN, feeds the timeframe group"
+        number quantity "MEASURE, feeds the fact payload"
+        number unit_price "MEASURE, feeds the fact payload"
+    }
+
+    DIM_SOURCE_COLUMNS {
+        string source_col_hash_id PK "sha256(manifest)"
+        json manifest "field manifest, declared order"
+        timestamp loaded_at "audit, outside every hash"
+    }
+    DIM_RUN_COLUMNS {
+        string run_col_hash_id PK "sha256(manifest)"
+        json manifest "contract, version, engine version"
+        timestamp loaded_at "audit"
+    }
+    DIM_TIMEFRAME_COLUMNS {
+        string timeframe_col_hash_id PK "sha256(manifest)"
+        json manifest "the declared time column"
+        timestamp loaded_at "audit"
+    }
+    DIM_INVOICE_LINES_COLUMNS {
+        string dim_col_hash_id PK "sha256(manifest)"
+        json manifest "dimension and measure manifests"
+        timestamp loaded_at "audit"
+    }
+
+    DIM_SOURCE_VALUES {
+        string source_hash_id PK "sha256(payload), 1 row"
+        string source_col_hash_id FK "to dim_source_columns"
+        json source_values "canonical lowercased JSON"
+        timestamp loaded_at "audit"
+    }
+    DIM_RUN_VALUES {
+        string run_hash_id PK "sha256(payload), 1 row"
+        string run_col_hash_id FK "to dim_run_columns"
+        json run_values "build-time lineage"
+        timestamp loaded_at "audit"
+    }
+    DIM_TIMEFRAME_VALUES {
+        string timeframe_hash_id PK "sha256(payload), 2004 rows"
+        string timeframe_col_hash_id FK "to dim_timeframe_columns"
+        json timeframe_values "date_trunc at the declared grain"
+        timestamp loaded_at "audit"
+    }
+    DIM_INVOICE_LINES_VALUES {
+        string dim_hash_id PK "sha256(payload), 44721 rows"
+        string dim_col_hash_id FK "to dim_invoice_lines_columns"
+        json dim_values "6 fields plus line_identity"
+        timestamp loaded_at "audit"
+    }
+
+    FACT_INVOICE_LINES_VALUES {
+        string fact_hash_id PK "1of4, sha256(fact_values). NOT a row id (F-24)"
+        string source_hash_id PK "2of4"
+        string timeframe_hash_id PK "3of4"
+        string dim_hash_id PK "4of4"
+        string run_hash_id FK "non-key lineage, excluded from the key"
+        string fact_col_hash_id FK "measure manifest key, target inferred"
+        json fact_values "quantity and unit_price"
+        timestamp loaded_at "audit, outside every hash"
+    }
+
+    CONTEXT_REGISTRY {
+        string schema_key PK "equals a col_hash_id above"
+        string entity_group "source run timeframe dimensions measures"
+        string contract_name "the governing contract"
+        string contract_version "the version at approval"
+        json compiled_context "descriptions, grain, decisions"
+        timestamp loaded_at "audit"
+    }
+
+    MART_INVOICE_LINES_TYPED {
+        string invoice_id "from dim_values"
+        string stock_code "from dim_values"
+        string product_description "from dim_values"
+        string customer_id "from dim_values"
+        string country "from dim_values"
+        boolean is_cancellation "from dim_values"
+        timestamp invoiced_at "from timeframe_values, ordered by"
+        number quantity "from fact_values"
+        number unit_price "from fact_values"
+        string fact_hash_id "provenance pointer back to the star"
+    }
+
+    VW_INVOICE_LINES_TYPED {
+        string six_dimension_fields "from dim_values"
+        string line_identity "the row fingerprint (F-23)"
+        timestamp invoiced_at "from timeframe_values"
+        number quantity "from fact_values"
+        number unit_price "from fact_values"
+    }
+
+%% Reading rules that this diagram cannot draw:
+%% 1. COUNT(DISTINCT fact_hash_id) is wrong as a row count by 95 pct.
+%%    Use COUNT(*), or COUNT(DISTINCT line_identity) through the view.
+%% 2. At transaction grain the category dimension is 1:1 with the fact
+%%    by construction. Content addressing buys identity there, not
+%%    compression. Dedup is real on timeframe, source, and run.
+%% 3. Every value served through the star, the view, and the mart is
+%%    canonical lowercased text (Amendment M to D-18). Deliberate.
+%% 4. One source and one category exist today. The uniform-shape
+%%    property is designed for more and has not been demonstrated at
+%%    more. Word it as a design property until it has (V1-03, X-04).
