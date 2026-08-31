@@ -32,9 +32,9 @@ All toolchain behavior cited below was observed at the pinned toolchain
 ## 1. Purpose and boundary
 
 The auto-modeling engine is deterministic code, not an agent. It consumes
-two approved contracts — a **mapping contract** (declared by this spec) and
-the **gold star contract** (`contracts/gold_unified_event_star.odcs.yaml`)
-— and emits the dbt model files that build the unified event star: the
+two approved contracts, a **mapping contract** (declared by this spec) and
+the **gold star contract** (`contracts/gold_unified_event_star.odcs.yaml`),
+and emits the dbt model files that build the unified event star: the
 values/columns dimension pairs, the category fact table, the context
 registry, and the uncontracted typed surface per category: the
 materialized typed mart and the projection view, per the `engine.marts`
@@ -47,7 +47,7 @@ three gates judge the result exactly as they judge human work (D-08).
 The signature property this machinery exists to demonstrate (D-17): a new
 dimension added to the mapping contract flows through regeneration and
 `dbt build` with no engine code change, no physical schema change, and no
-gold contract amendment — announced by a new schema key in the columns
+gold contract amendment, announced by a new schema key in the columns
 dimension and a registry row.
 
 ## 2. The mapping contract
@@ -56,7 +56,7 @@ One mapping contract declares how one silver table maps into one fact
 category. It is a native ODCS v3.1.0 document living flat in `contracts/`
 beside the table contracts, and simultaneously an instance of the machine
 schema in [`engine/mapping-contract.schema.json`](engine/mapping-contract.schema.json).
-Every mapping element is **first-class YAML** — machine-consumed schema
+Every mapping element is **first-class YAML**: machine-consumed schema
 elements, never customProperties decoration. ODCS lint at 1.0.12 validates
 the known ODCS structure and tolerates these additive keys (F-12, probe
 P1d); the pin freezes that behavior, and any datacontract-cli upgrade
@@ -81,7 +81,7 @@ Document shape (normative; the JSON Schema is the enforceable statement):
   - **`type: transaction`** with `degenerateIdentifiers`, a non-empty
     array. Each entry is either `source: column` naming a declared field
     to be carried in the dimension payload for content-key uniqueness
-    (a field may be so named regardless of its role — a measure that is
+    (a field may be so named regardless of its role; a measure that is
     part of the declared silver grain tuple may deliberately appear in
     both payloads), or `source: derived` with `name`, `derivation:
     canonical-key-v2`, and `of` (the declared fields hashed into one
@@ -93,12 +93,12 @@ Document shape (normative; the JSON Schema is the enforceable statement):
     `_row_count` measure so conservation stays checkable by arithmetic.
 - `customProperties` carry provenance and rationale ONLY: `proposedBy`,
   `profileHash` (the silver profile artifact this mapping was authored
-  from — for `invoice_lines`, silver profile v0001), `proposedAt`, and the
+  from; for `invoice_lines`, silver profile v0001), `proposedAt`, and the
   proposer keys per the agent-layer Appendix B when an agent authored the
   draft. Rationale entries are welcome; mapping semantics are not.
 - **No quality rules, anywhere in a mapping contract.** Gate 3 resolves
   schema objects to dbt models by name and skips unmatched objects before
-  quality-rule translation (F-12), so a rule here would never run — a dead
+  quality-rule translation (F-12), so a rule here would never run, a dead
   letter inviting false confidence. The JSON Schema rejects `quality` on
   the category object and on every field. Enforcement belongs to the gold
   star contract, whose objects are all modeled.
@@ -115,9 +115,9 @@ Verified end to end at the pinned toolchain (F-12, F-13):
   contracts. Flat placement is permanent-safe; no CI change and no D-12
   amendment is needed.
 - **Naming rule (load-bearing):** the category name must never equal a dbt
-  model name. The collision is loud and fail-safe — sync and test both
+  model name. The collision is loud and fail-safe: sync and test both
   exit 1 with `Cannot sync — overlapping dbt models` and write nothing
-  (F-12, probe P1c) — but it reddens the gate, so the rule is structural:
+  (F-12, probe P1c), but it reddens the gate, so the rule is structural:
   category names are bare nouns; every emitted model carries a `dim_`,
   `fact_`, `vw_`, or `mart_` prefix or the reserved name
   `context_registry`; the JSON Schema rejects category names matching any
@@ -147,11 +147,11 @@ depend on:
 
 - **Record keys** (values-dimension and fact content keys) are
   data-dependent: computed **in SQL inside the emitted models at build
-  time** — `sha256(lower(to_json(<payload struct>)))` over the canonical
+  time**: `sha256(lower(to_json(<payload struct>)))` over the canonical
   payload.
 - **Schema keys** (columns-dimension manifest keys) are contract-derived:
   computed **in Python at emission time** and embedded in the emitted SQL
-  as literals — `sha256` over the lowercased compact JSON array of the
+  as literals: `sha256` over the lowercased compact JSON array of the
   manifest in declared order.
 
 Because the same value must be computable on both paths, the rule is
@@ -206,7 +206,7 @@ its materialization with the engine. The mechanism, decided here:
    governing contracts and their harvested context fields (silver contract,
    mapping contract, gold star contract, and the profile references they
    cite) into one **compiled-context artifact**:
-   `context/compiled/vNNNN.json` plus a `vNNNN.meta.json` sidecar —
+   `context/compiled/vNNNN.json` plus a `vNNNN.meta.json` sidecar:
    canonical JSON, deterministic content only, write-if-changed, immutable
    monotonic versions. The same artifact discipline as `profiles/`, and
    the same reason: a committed, reviewable, versioned input.
@@ -239,7 +239,7 @@ it; the diff arrives as a regeneration PR (D-09).
   (`degenerateIdentifiers` columns, `of` lists, `aggregations` keys)
   names a declared field; measures are numeric logical types; the
   category name violates no reserved pattern.
-- **Outputs (the emission set — category-parameterized tables plus the
+- **Outputs (the emission set: category-parameterized tables plus the
   star-global objects):** `dim_<category>_values.sql`,
   `dim_<category>_columns.sql`, the shared group dims
   (`dim_source_*`, `dim_run_*`, `dim_timeframe_*`), the fact
@@ -253,7 +253,7 @@ it; the diff arrives as a regeneration PR (D-09).
   the typed surface join it once the contract declares
   `context_registry` (the extended-star activation, F-20 era), and the
   ownership manifest then pins the compiled-context artifact version. `dim_run` payload carries the
-  mapping contract name and version and the engine version — lineage as
+  mapping contract name and version and the engine version, lineage as
   deterministic content (D-17); audit stamps (`loaded_at`) stay plain
   columns outside every hashed payload.
 - **Generated-by headers** (D-09), exact form, first two lines of every
@@ -270,13 +270,13 @@ it; the diff arrives as a regeneration PR (D-09).
   `-- Derivative typed mart over the star; uncontracted by design (D-17 as amended by D-36). Do not edit; flag drift instead (rule 8).`
   Headers survive sync verbatim (F-14).
 - **Ownership manifest:** `transform/models/gold/ownership-manifest.json`,
-  canonical JSON, deterministic content only (no timestamps — regeneration
+  canonical JSON, deterministic content only (no timestamps; regeneration
   must be byte-reproducible): `engine_version`, `sources` (mapping
   contract id + version, gold contract id + version, compiled-context
   version), and `files` mapping each emitted path to `sha256:<hex>` over
   its fixed-point bytes. The manifest never lists itself.
 - **Write discipline:** compute the full emission set in memory; validate
-  everything; **drift-check before writing** — any target file whose
+  everything; **drift-check before writing**: any target file whose
   current bytes diverge from its manifest baseline is human-owned now
   (rule 8): the engine refuses to overwrite it, names it, and exits
   nonzero; then write-if-changed per file (byte compare; temp-then-rename
@@ -285,7 +285,7 @@ it; the diff arrives as a regeneration PR (D-09).
   written.
 - **Idempotency, now a testable claim:** engine re-run over unchanged
   inputs writes nothing and leaves `git status` clean. This claim is only
-  meaningful because emission targets the sync fixed point — see section 6.
+  meaningful because emission targets the sync fixed point; see section 6.
 - **Interface:** `uv run python -m metricmine.engine.emit`, config-driven
   from an `engine:` block in `config/default.yaml`, no CLI arguments (the
   ingest and profile posture). `make regen` wraps it.
@@ -301,13 +301,13 @@ If sync modified an engine-emitted file, the file's manifest checksum
 would diverge and the engine would flag its own gate as drift. The
 resolution, verified by probe: **the engine emits the post-sync fixed
 point directly**, and manifest checksums are defined over that state.
-Sync then has nothing to add — pass 2 over the fixed point updates zero
+Sync then has nothing to add: pass 2 over the fixed point updates zero
 files, byte-identically (F-14).
 
 What the fixed point requires of the emitter, exhaustively at the pinned
 toolchain (F-14):
 
-1. Every description — model-level and column-level — is emitted from the
+1. Every description, model-level and column-level, is emitted from the
    governing contract, verbatim. Measured, not assumed: with deliberately
    divergent emitter texts, sync replaced the model description and every
    column description with the contract's text (the F-14 delta diff);
@@ -339,7 +339,7 @@ sync`. Do not edit."), are left byte-identical by a second sync at the
 fixed point, and sit **outside the engine's ownership manifest**. They stay under the
 committed-post-review discipline that governs them today (F-05, F-08,
 rule 11): the regeneration PR author runs sync, reviews the generated
-tests — deleting any duplicateValues mistranslation on sight — and
+tests, deleting any duplicateValues mistranslation on sight, and
 commits the reviewed state.
 
 The pre-regeneration rehearsal re-verifies sync no-op over the real
@@ -348,7 +348,7 @@ emitted star before the first regeneration PR goes live.
 ## 7. Test placement (conservation as contract severity)
 
 All gate-capable enforcement on gold lives as **error-severity sql quality
-rules in the gold star contract**, generated into singular tests by sync —
+rules in the gold star contract**, generated into singular tests by sync,
 the one channel proven to gate at the pinned toolchain (D-28, F-08), and
 the channel the partially-modeled probe verified end to end (F-13):
 
@@ -356,7 +356,7 @@ the channel the partially-modeled probe verified end to end (F-13):
   (transaction grain) or `sum(_row_count)` (aggregated grain), referencing
   silver by schema-qualified SQL (the F-08 nuance: such tests
   catalog-error loudly, rather than skip, when a referenced table is
-  missing — a louder red, same verdict).
+  missing: a louder red, same verdict).
 - **C2** key resolution: one anti-join rule per fact group key (source,
   timeframe, dim, plus the non-key run reference and the manifest's
   columns-dim reference), each requiring zero unresolved keys. The gold
@@ -370,7 +370,7 @@ the channel the partially-modeled probe verified end to end (F-13):
 - **C3** registry coverage: every schema key present in gold exists in
   `context_registry`. Declared on the registry object; it becomes live
   the moment the registry model lands (F-13 records the one-PR window in
-  which it is declared but not yet running — skip is no coverage, not
+  which it is declared but not yet running; skip is no coverage, not
   passing coverage).
 - **C4** payload validity: `json_valid` over every values payload
   (function behavior verified, F-11).
@@ -391,7 +391,7 @@ the ownership manifest. The review obligations rule 11 exists for are
 unchanged on both planes: sync output is a proposal until reviewed;
 `export dbt-models` output remains scaffold only; the duplicateValues
 deletion rule stands. What changes is only who authors the bytes on the
-gold plane — and that authorship is exactly what D-07 and D-09 exist to
+gold plane, and that authorship is exactly what D-07 and D-09 exist to
 govern.
 
 ## 9. Provenance for non-profile-derived contracts (Q9)
@@ -402,7 +402,7 @@ cases exist in Phase 4:
 - The **mapping contract** IS profile-derived: it carries
   `profileHash` of the silver profile artifact it was authored from
   (silver v0001), with `proposedBy: human` and `proposedAt`.
-- The **gold star contract** is pattern-derived — authored from the
+- The **gold star contract** is pattern-derived: authored from the
   unified event star specification, not from any profile artifact. It
   carries the standard keys with `profileHash` **absent**, plus
   `provenanceNote: pattern-derived; authored from
@@ -443,23 +443,23 @@ plus: the engine never reads the warehouse (it reads contracts and the
 compiled-context artifact; conservation numbers come from dbt tests, not
 engine queries); no template language or plugin surface (emitters are
 plain Python); no multi-source fan-in (one mapping contract, one silver
-table, one category — more source types stay a standing non-goal); no
+table, one category; more source types stay a standing non-goal); no
 engine-side scheduling (regeneration is a human-invoked make target
 landing as a PR).
 
 ## References
 
-- [`docs/spec/gold-unified-event-star.md`](gold-unified-event-star.md) —
+- [`docs/spec/gold-unified-event-star.md`](gold-unified-event-star.md):
   the star this engine builds; object catalog, keying scheme, conservation
   ledger, signature property.
-- [`docs/spec/agent-layer.md`](agent-layer.md) — the Phase 6 proposer that
+- [`docs/spec/agent-layer.md`](agent-layer.md): the Phase 6 proposer that
   will emit proposals against this spec's JSON Schema; Appendix B
   provenance keys.
-- [`docs/spec/profiler.md`](profiler.md) — the artifact discipline the
+- [`docs/spec/profiler.md`](profiler.md): the artifact discipline the
   compiled-context artifact mirrors; the silver profile the mapping
   contract cites.
-- [`docs/verification/gate_proof_findings.md`](../verification/gate_proof_findings.md)
-  — F-11 (function semantics), F-12 (flat placement), F-13 (partial
+- [`docs/verification/gate_proof_findings.md`](../verification/gate_proof_findings.md):
+  F-11 (function semantics), F-12 (flat placement), F-13 (partial
   modeling), F-14 (sync fixed point), atop F-01 through F-10.
 - Project records (design history outside the repository; nothing here
   depends on them): Gold Layer Design 001 (July 11, 2026) and Phase 4
