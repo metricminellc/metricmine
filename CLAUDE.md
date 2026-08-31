@@ -41,8 +41,9 @@ approves every contract.
 6. Never weaken a contract to make a failing build pass. Contract changes and
    transform changes are separate pull requests, and a contract change requires
    a version bump.
-7. `materialized_view` does not exist on dbt-duckdb. Use `table`, then
-   `incremental`. Never design around materialized views.
+7. `materialized_view` does not exist on dbt-duckdb. Use `table`, the
+   committed default, or `incremental` behind engine.materialization
+   (D-38). Never design around materialized views.
 8. Never edit a generated file whose ownership-manifest checksum has diverged
    from its baseline. Flag the drift instead.
 9. The auto-modeling engine emits dbt model files; it does not execute DDL
@@ -79,10 +80,14 @@ approves every contract.
 12. Gold is the unified event star per docs/spec/gold-unified-event-star.md:
     content-addressed values/columns dimensions, category-parameterized fact
     tables, context_registry, and a typed surface per category. Star tables
-    and the registry materialize as `table` (contract enforcement requires
-    it). The typed surface follows engine.marts (D-36): the materialized
+    and the registry materialize as `table` by default or `incremental`
+    behind engine.materialization (D-38; contract enforcement permits
+    both, and incremental config lines set on_schema_change fail, F-34).
+    The expensive contract rules carry the mm_batch_floor guard (D-39):
+    unset, CI included, they run full-table; an incremental deployment
+    passes its batch floor, and make audit-gold runs the unscoped forms. The typed surface follows engine.marts (D-36): the materialized
     mart mart_<category>_typed (a table, lean, typed columns plus
-    fact_hash_id, ordered by the time column) by default, with the
+    fact_hash_id and captured_at, ordered by the time column) by default, with the
     projection view vw_<category>_typed kept beside it. Both are
     engine-emitted, uncontracted, and carry a derivative header. Never
     propose a typed surface the engine does not emit, a fourth schema, or a
@@ -92,8 +97,8 @@ approves every contract.
     serialization with sorted keys, lowercase everything, SHA-256, hex.
     Scalars/manifests: text, lowercase, strip whitespace, KEEP hyphens;
     manifests are compact JSON arrays in declared order. Hashed payloads carry
-    deterministic content only; audit stamps (loaded_at) stay outside
-    payloads. Never put run timestamps or build ids inside a hashed payload.
+    deterministic content only; audit stamps (loaded_at, captured_at)
+    stay outside payloads. Never put run timestamps or build ids inside a hashed payload.
 
 14. Context binds by content address: schema_key rows in context_registry
     point to contract name + version and compiled context. Never embed
