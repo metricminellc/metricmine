@@ -1,8 +1,8 @@
-# Contract: gold unified event star v1.2.0 (ODCS v3.1.0) — the extended star.
+# Contract: gold unified event star v1.3.0 (ODCS v3.1.0): the extended star.
 # Pattern-derived: authored from docs/spec/gold-unified-event-star.md (the
 # committed gold spec) and the four-element event-packet pattern it carries
 # forward (docs/spec/current-state/data-capture-baseline.md §3.4), not from
-# any profile artifact — profileHash is deliberately ABSENT with rationale
+# any profile artifact; profileHash is deliberately ABSENT with rationale
 # (rule 16; docs/spec/engine.md §9). One contract covers all star tables as
 # schema objects, versioned as one unit; because the physical shape is
 # source-invariant, payload evolution surfaces as new schema keys (data),
@@ -21,18 +21,24 @@
 # carried from the committed compiled-context artifact (D-30); C3 is
 # declared here and starts RUNNING when the registry model lands in the
 # regeneration PR (F-13: skip is no coverage, not passing coverage).
+# v1.3.0 (V1-06): C5, the field-level reconciliation, joins the
+# conservation set as an error-severity rule on the fact: every silver
+# row reconciles field by field through the typed surface, the Session
+# J runbook validation promoted to a standing test. Comment and
+# description em dashes leave at this bump per the Arc 3 sweep
+# deferral; no schema object and no property changes.
 # Severity discipline (D-28): every gating rule declares severity: error;
 # primaryKey flags generate warn-severity advisory twins at 1.0.12 (F-08),
 # and each carries its error-severity enforcing twin below. Payload and
 # manifest columns are canonical JSON TEXT in VARCHAR (the engine hashes
 # the text form; registry precedent, docs/spec/engine.md §4), with
-# json_valid gating per C4 — verified over VARCHAR at the pinned engine
+# json_valid gating per C4, verified over VARCHAR at the pinned engine
 # (F-15).
 apiVersion: v3.1.0
 kind: DataContract
 id: gold_unified_event_star
 name: Gold unified event star
-version: 1.2.0
+version: 1.3.0
 status: active
 domain: retail
 dataProduct: metricmine
@@ -178,7 +184,7 @@ schema:
     physicalType: table
     description: >
       Lineage group, values side: mapping contract name and version plus
-      engine version as deterministic content (D-17) — lineage as data,
+      engine version as deterministic content (D-17): lineage as data,
       never a build timestamp. run_hash_id is referenced by the fact as a
       NON-key attribute, so a contract version bump never mints duplicate
       facts. Engine-emitted (D-09).
@@ -201,7 +207,7 @@ schema:
         required: true
         description: >
           Run payload: canonical JSON text; deterministic content only
-          (rule 13) — mapping contract name + version, engine version.
+          (rule 13): mapping contract name + version, engine version.
       - name: loaded_at
         logicalType: date
         physicalType: TIMESTAMP
@@ -280,7 +286,7 @@ schema:
     physicalName: dim_timeframe_values
     logicalType: object
     description: >
-      Time group, values side: one row per distinct timeframe payload —
+      Time group, values side: one row per distinct timeframe payload;
       the mapping contract's declared time column truncated to its
       declared grain (invoiced_at at minute grain for invoice_lines),
       rendered canonically. Engine-emitted (D-09).
@@ -386,7 +392,7 @@ schema:
       invoice_lines category group, values side: the dimension-attribute
       payload per the mapping contract (dimension-role fields plus the
       derived line_identity degenerate identifier), deduplicated by
-      content key — line-unique at transaction grain because line_identity
+      content key, line-unique at transaction grain because line_identity
       carries the declared silver grain tuple as one canonical_key v2
       digest. Generic column names (dim_*) keep the physical shape
       source-invariant; the category lives in the table name.
@@ -448,7 +454,7 @@ schema:
     physicalType: table
     description: >
       invoice_lines category group, columns side: one row per distinct
-      category manifest — the dimension-payload field set and the
+      category manifest: the dimension-payload field set and the
       measure-payload field set both live here, keyed by schema key. The
       signature test's public announcement is a new row in this table plus
       a registry row (D-17).
@@ -496,7 +502,7 @@ schema:
     description: >
       The invoice_lines fact: measure payload (quantity, unit_price per
       mapping v1.0.0), manifest reference, and group-key references. One
-      row per declared transaction grain — one row per silver invoice line
+      row per declared transaction grain: one row per silver invoice line
       (44,721 at silver v1.1.0 over the committed sample; the C1
       conservation arithmetic). Composite primary key (fact, source,
       timeframe, dim) hashes; run_hash_id is deliberately NON-key so a
@@ -578,6 +584,37 @@ schema:
                - (SELECT COUNT(*) FROM {{ ref('fact_invoice_lines_values') }})
         mustBe: 0
       - type: sql
+        description: >
+          C5 field-level reconciliation: every silver row joins the typed
+          surface on the derived line identity and every mapped field
+          matches its served value (text fields lowercased per D-18;
+          invoiced_at at the declared minute grain; null-safe compare).
+          The Session J runbook validation, ten matching counts of
+          44,721 over the committed sample, promoted to a standing test
+          (V1-06). Zero rows may disagree.
+        severity: error
+        query: |
+          SELECT COUNT(*) FROM (
+            SELECT *, sha256(lower(to_json(struct_pack(
+              invoice_id := cast(invoice_id as varchar),
+              quantity := cast(quantity as varchar),
+              stock_code := cast(stock_code as varchar),
+              unit_price := cast(unit_price as varchar)
+            )))) AS line_identity
+            FROM silver.silver_invoice_lines
+          ) s
+          LEFT JOIN {{ ref('vw_invoice_lines_typed') }} v USING (line_identity)
+          WHERE v.invoice_id IS DISTINCT FROM lower(s.invoice_id)
+             OR v.is_cancellation IS DISTINCT FROM s.is_cancellation
+             OR v.stock_code IS DISTINCT FROM lower(s.stock_code)
+             OR v.product_description IS DISTINCT FROM lower(s.product_description)
+             OR v.customer_id IS DISTINCT FROM s.customer_id
+             OR v.country IS DISTINCT FROM lower(s.country)
+             OR v.invoiced_at IS DISTINCT FROM date_trunc('minute', s.invoiced_at)
+             OR v.quantity IS DISTINCT FROM s.quantity
+             OR v.unit_price IS DISTINCT FROM s.unit_price
+        mustBe: 0
+      - type: sql
         description: "C2: every source_hash_id resolves in dim_source_values."
         severity: error
         query: |
@@ -633,7 +670,7 @@ schema:
       - type: sql
         description: >
           Grain enforcement: zero duplicate (fact, source, timeframe, dim)
-          key tuples — the error-severity twin of the composite primaryKey
+          key tuples, the error-severity twin of the composite primaryKey
           flag, whose generated test is warn-hardcoded (F-08).
         severity: error
         query: |
