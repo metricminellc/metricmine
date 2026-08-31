@@ -3,8 +3,8 @@
 Marked `local`: they need the gitignored warehouse that `make ingest` and
 `dbt build` produce, so CI deselects them with -m "not local". Every
 expectation is a measurement of the committed sample at mapping contract
-v1.1.0 — the 44,721-line fact, the five registry rows, the seven-field
-dimensions manifest — not a spec value. A new sample window changes them
+v1.1.0 (the 44,721-line fact, the five registry rows, the seven-field
+dimensions manifest), not a spec value. A new sample window changes them
 deliberately, with the contract.
 
 Read-only throughout: the module opens the warehouse read_only and the
