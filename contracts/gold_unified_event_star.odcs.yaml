@@ -1,4 +1,4 @@
-# Contract: gold unified event star v1.3.0 (ODCS v3.1.0): the extended star.
+# Contract: gold unified event star v1.4.0 (ODCS v3.1.0): the extended star.
 # Pattern-derived: authored from docs/spec/gold-unified-event-star.md (the
 # committed gold spec) and the four-element event-packet pattern it carries
 # forward (docs/spec/current-state/data-capture-baseline.md §3.4), not from
@@ -27,6 +27,18 @@
 # J runbook validation promoted to a standing test. Comment and
 # description em dashes leave at this bump per the Arc 3 sweep
 # deferral; no schema object and no property changes.
+# v1.4.0 (Record 008 part two, D-38 and D-39): incremental readiness.
+# captured_at, the capture watermark carried from silver, joins the
+# three silver-derived objects as an optional property (F-28: enters
+# optional; the declared follow-up tightens it to required once the
+# incremental path is proven populated). The twelve expensive rules
+# (content-key uniqueness on the two silver-derived dims, grain
+# enforcement, the five C2 anti-joins, C4 on the three captured_at
+# objects, and C5) gain the mm_batch_floor guard: inert in CI and at
+# table materialization, batch-scoping the checks when an incremental
+# deployment passes the var; make audit-gold is the unscoped
+# full-table run. With the var unset every rule's semantics are
+# unchanged from v1.3.0: nothing narrows (D-08).
 # Severity discipline (D-28): every gating rule declares severity: error;
 # primaryKey flags generate warn-severity advisory twins at 1.0.12 (F-08),
 # and each carries its error-severity enforcing twin below. Payload and
@@ -38,7 +50,7 @@ apiVersion: v3.1.0
 kind: DataContract
 id: gold_unified_event_star
 name: Gold unified event star
-version: 1.3.0
+version: 1.4.0
 status: active
 domain: retail
 dataProduct: metricmine
@@ -315,6 +327,16 @@ schema:
         physicalType: TIMESTAMP
         required: true
         description: Audit stamp; outside every hashed payload (rule 13).
+      - name: captured_at
+        logicalType: date
+        physicalType: TIMESTAMP
+        required: false
+        description: >
+          Capture watermark carried from silver (D-38): first-seen
+          (minimum) capture timestamp over the silver rows behind this
+          timeframe payload. Outside every hashed payload (rule 13).
+          Optional under the F-28 rule; the declared follow-up tightens
+          it to required once the incremental path is proven populated.
     quality:
       - type: library
         metric: rowCount
@@ -329,6 +351,7 @@ schema:
         query: |
           SELECT COUNT(*) FROM (
             SELECT timeframe_hash_id FROM {{ ref('dim_timeframe_values') }}
+            {% if var('mm_batch_floor', none) is not none %} WHERE captured_at >= TIMESTAMP '{{ var("mm_batch_floor") }}' {% endif %}
             GROUP BY timeframe_hash_id HAVING COUNT(*) > 1
           )
         mustBe: 0
@@ -338,6 +361,7 @@ schema:
         query: |
           SELECT COUNT(*) FROM {{ ref('dim_timeframe_values') }}
           WHERE NOT json_valid(timeframe_values)
+          {% if var('mm_batch_floor', none) is not none %} AND captured_at >= TIMESTAMP '{{ var("mm_batch_floor") }}' {% endif %}
         mustBe: 0
 
   - name: dim_timeframe_columns
@@ -423,6 +447,16 @@ schema:
         physicalType: TIMESTAMP
         required: true
         description: Audit stamp; outside every hashed payload (rule 13).
+      - name: captured_at
+        logicalType: date
+        physicalType: TIMESTAMP
+        required: false
+        description: >
+          Capture watermark carried from silver (D-38): first-seen
+          (minimum) capture timestamp over the silver rows behind this
+          payload. Outside every hashed payload (rule 13). Optional under
+          the F-28 rule; the declared follow-up tightens it to required
+          once the incremental path is proven populated.
     quality:
       - type: library
         metric: rowCount
@@ -437,6 +471,7 @@ schema:
         query: |
           SELECT COUNT(*) FROM (
             SELECT dim_hash_id FROM {{ ref('dim_invoice_lines_values') }}
+            {% if var('mm_batch_floor', none) is not none %} WHERE captured_at >= TIMESTAMP '{{ var("mm_batch_floor") }}' {% endif %}
             GROUP BY dim_hash_id HAVING COUNT(*) > 1
           )
         mustBe: 0
@@ -446,6 +481,7 @@ schema:
         query: |
           SELECT COUNT(*) FROM {{ ref('dim_invoice_lines_values') }}
           WHERE NOT json_valid(dim_values)
+          {% if var('mm_batch_floor', none) is not none %} AND captured_at >= TIMESTAMP '{{ var("mm_batch_floor") }}' {% endif %}
         mustBe: 0
 
   - name: dim_invoice_lines_columns
@@ -565,6 +601,16 @@ schema:
         physicalType: TIMESTAMP
         required: true
         description: Audit stamp; outside every hashed payload (rule 13).
+      - name: captured_at
+        logicalType: date
+        physicalType: TIMESTAMP
+        required: false
+        description: >
+          Capture watermark carried from silver (D-38): the contributing
+          silver row's capture timestamp, per fact row. Outside every
+          hashed payload (rule 13). Optional under the F-28 rule; the
+          declared follow-up tightens it to required once the incremental
+          path is proven populated.
     quality:
       - type: library
         metric: rowCount
@@ -602,6 +648,7 @@ schema:
               unit_price := cast(unit_price as varchar)
             )))) AS line_identity
             FROM silver.silver_invoice_lines
+            {% if var('mm_batch_floor', none) is not none %} WHERE captured_at >= TIMESTAMP '{{ var("mm_batch_floor") }}' {% endif %}
           ) s
           LEFT JOIN {{ ref('vw_invoice_lines_typed') }} v USING (line_identity)
           WHERE v.invoice_id IS DISTINCT FROM lower(s.invoice_id)
@@ -623,6 +670,7 @@ schema:
             SELECT 1 FROM {{ ref('dim_source_values') }} d
             WHERE d.source_hash_id = f.source_hash_id
           )
+          {% if var('mm_batch_floor', none) is not none %} AND f.captured_at >= TIMESTAMP '{{ var("mm_batch_floor") }}' {% endif %}
         mustBe: 0
       - type: sql
         description: "C2: every timeframe_hash_id resolves in dim_timeframe_values."
@@ -633,6 +681,7 @@ schema:
             SELECT 1 FROM {{ ref('dim_timeframe_values') }} d
             WHERE d.timeframe_hash_id = f.timeframe_hash_id
           )
+          {% if var('mm_batch_floor', none) is not none %} AND f.captured_at >= TIMESTAMP '{{ var("mm_batch_floor") }}' {% endif %}
         mustBe: 0
       - type: sql
         description: "C2: every dim_hash_id resolves in dim_invoice_lines_values."
@@ -643,6 +692,7 @@ schema:
             SELECT 1 FROM {{ ref('dim_invoice_lines_values') }} d
             WHERE d.dim_hash_id = f.dim_hash_id
           )
+          {% if var('mm_batch_floor', none) is not none %} AND f.captured_at >= TIMESTAMP '{{ var("mm_batch_floor") }}' {% endif %}
         mustBe: 0
       - type: sql
         description: >
@@ -654,6 +704,7 @@ schema:
             SELECT 1 FROM {{ ref('dim_run_values') }} d
             WHERE d.run_hash_id = f.run_hash_id
           )
+          {% if var('mm_batch_floor', none) is not none %} AND f.captured_at >= TIMESTAMP '{{ var("mm_batch_floor") }}' {% endif %}
         mustBe: 0
       - type: sql
         description: >
@@ -666,6 +717,7 @@ schema:
             SELECT 1 FROM {{ ref('dim_invoice_lines_columns') }} d
             WHERE d.dim_col_hash_id = f.fact_col_hash_id
           )
+          {% if var('mm_batch_floor', none) is not none %} AND f.captured_at >= TIMESTAMP '{{ var("mm_batch_floor") }}' {% endif %}
         mustBe: 0
       - type: sql
         description: >
@@ -677,6 +729,7 @@ schema:
           SELECT COUNT(*) FROM (
             SELECT fact_hash_id, source_hash_id, timeframe_hash_id, dim_hash_id
             FROM {{ ref('fact_invoice_lines_values') }}
+            {% if var('mm_batch_floor', none) is not none %} WHERE captured_at >= TIMESTAMP '{{ var("mm_batch_floor") }}' {% endif %}
             GROUP BY fact_hash_id, source_hash_id, timeframe_hash_id, dim_hash_id
             HAVING COUNT(*) > 1
           )
@@ -687,6 +740,7 @@ schema:
         query: |
           SELECT COUNT(*) FROM {{ ref('fact_invoice_lines_values') }}
           WHERE NOT json_valid(fact_values)
+          {% if var('mm_batch_floor', none) is not none %} AND captured_at >= TIMESTAMP '{{ var("mm_batch_floor") }}' {% endif %}
         mustBe: 0
 
   - name: context_registry

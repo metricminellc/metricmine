@@ -4,7 +4,7 @@ apiVersion: v3.1.0
 kind: DataContract
 id: silver_invoice_lines
 name: Silver invoice lines
-version: 1.1.1
+version: 1.2.0
 status: active
 domain: retail
 dataProduct: metricmine
@@ -98,6 +98,12 @@ schema:
     physicalType: VARCHAR
     required: true
     description: Customer country as landed (24 distinct at v0001).
+  - name: captured_at
+    logicalType: date
+    physicalType: TIMESTAMP
+    required: false
+    description: |
+      Capture timestamp carried forward from the bronze landing (_airbyte_extracted_at): when the surviving line's earliest capture entered the pipeline. The incremental watermark the gold layer builds on (Record 008 part two, D-38). Enters optional under the F-28 rule; the declared follow-up tightens it to required once the incremental path lands and the column is proven populated. v1.2.0 adds this column and changes nothing else.
   quality:
   - type: library
     metric: rowCount
