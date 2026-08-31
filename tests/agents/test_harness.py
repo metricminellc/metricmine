@@ -28,7 +28,7 @@ NOW = datetime(2026, 8, 22, 12, 0, 0, tzinfo=timezone.utc)
 _PROMPT = """---
 version: 1.0.0
 date: 2026-08-22
-changelog: 1.0.0 — harness test fixture.
+changelog: 1.0.0, harness test fixture.
 ---
 
 You are the fixture proposer.
