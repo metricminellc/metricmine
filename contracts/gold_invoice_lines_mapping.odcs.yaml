@@ -1,4 +1,4 @@
-# Mapping contract: invoice_lines category, v1.1.0 (ODCS v3.1.0).
+# Mapping contract: invoice_lines category, v1.1.1 (ODCS v3.1.0).
 # Engine input, never a table: physicalType: mapping is the machine
 # discriminator (CLAUDE.md rule 9); gate 1 lints this file, gate 3 skips it
 # by design (F-12), and the auto-modeling engine validates it against
@@ -9,18 +9,22 @@
 # Instance decisions, made at Sitting H planning:
 # - Grain form (b): one derived degenerate identifier, canonical-key-v2
 #   over the declared silver grain tuple (invoice_id, stock_code,
-#   quantity, unit_price — two of the four are measures). The identity IS
+#   quantity, unit_price; two of the four are measures). The identity IS
 #   the whole tuple, exactly as silver v1.1.0 declares it; measure VALUES
 #   stay out of the dimension payload.
 # - country joins at v1.1.0, the amendment this reservation existed for:
-#   the signature test made real (D-17) — regeneration with no engine
+#   the signature test made real (D-17): regeneration with no engine
 #   code change, no physical schema change, no gold contract amendment.
 #   v1.0.0 recorded the reservation; this version discharges it.
+# - v1.1.1: the two comment em dashes leave per the Arc 3 sweep
+#   deferral. A comment and version patch only; no mapping semantics
+#   change. The run lineage payload carries this version by design
+#   (D-17), so the regeneration that follows re-keys dim_run_values.
 apiVersion: v3.1.0
 kind: DataContract
 id: gold_invoice_lines_mapping
 name: Gold mapping, invoice_lines category
-version: 1.1.0
+version: 1.1.1
 status: active
 domain: retail
 dataProduct: metricmine

@@ -1,0 +1,167 @@
+{
+  "entries": [
+    {
+      "compiled_context": {
+        "manifest": [
+          "source_table"
+        ],
+        "role": "source",
+        "source_table": "silver.silver_invoice_lines"
+      },
+      "contract_name": "gold_invoice_lines_mapping",
+      "contract_version": "1.1.1",
+      "entity_group": "source",
+      "schema_key": "61e74223d961799a0f8b12bf9045b422b5cad4fc9273e1ce3f65eb07966a2e1f"
+    },
+    {
+      "compiled_context": {
+        "manifest": [
+          "mapping_contract_name",
+          "mapping_contract_version",
+          "engine_version"
+        ],
+        "role": "run"
+      },
+      "contract_name": "gold_invoice_lines_mapping",
+      "contract_version": "1.1.1",
+      "entity_group": "run",
+      "schema_key": "dacafb1855b6ce1628eb3be9b6c8eeeedc3d4f45454a6fd87093deda9d0cc848"
+    },
+    {
+      "compiled_context": {
+        "fields": {
+          "invoiced_at": {
+            "description": "Invoice timestamp; the declared time column.",
+            "logicalType": "date",
+            "mappingRole": "time",
+            "physicalType": "TIMESTAMP"
+          }
+        },
+        "manifest": [
+          "invoiced_at"
+        ],
+        "role": "timeframe",
+        "time_grain": "minute"
+      },
+      "contract_name": "gold_invoice_lines_mapping",
+      "contract_version": "1.1.1",
+      "entity_group": "timeframe",
+      "schema_key": "8f99de0c5aa34c2e3e2e66890f7b986f0c2d39b9276b901f1232efd0ebcc0dd8"
+    },
+    {
+      "compiled_context": {
+        "derived_identifiers": {
+          "line_identity": {
+            "derivation": "canonical-key-v2",
+            "of": [
+              "invoice_id",
+              "stock_code",
+              "quantity",
+              "unit_price"
+            ],
+            "source": "derived"
+          }
+        },
+        "fields": {
+          "country": {
+            "description": "Customer country as landed; the signature-test dimension, mapped at v1.1.0.",
+            "logicalType": "string",
+            "mappingRole": "dimension",
+            "physicalType": "VARCHAR"
+          },
+          "customer_id": {
+            "description": "Customer identifier; null on guest checkouts.",
+            "logicalType": "integer",
+            "mappingRole": "dimension",
+            "physicalType": "INTEGER"
+          },
+          "invoice_id": {
+            "description": "Invoice number; C prefix marks a cancellation.",
+            "logicalType": "string",
+            "mappingRole": "dimension",
+            "physicalType": "VARCHAR"
+          },
+          "is_cancellation": {
+            "description": "Cancellation flag; exclusion is a consumer decision.",
+            "logicalType": "boolean",
+            "mappingRole": "dimension",
+            "physicalType": "BOOLEAN"
+          },
+          "product_description": {
+            "description": "Product description; nulls retained.",
+            "logicalType": "string",
+            "mappingRole": "dimension",
+            "physicalType": "VARCHAR"
+          },
+          "stock_code": {
+            "description": "Product code as landed.",
+            "logicalType": "string",
+            "mappingRole": "dimension",
+            "physicalType": "VARCHAR"
+          }
+        },
+        "manifest": [
+          "invoice_id",
+          "is_cancellation",
+          "stock_code",
+          "product_description",
+          "customer_id",
+          "country",
+          "line_identity"
+        ],
+        "role": "dimensions",
+        "source_table": "silver.silver_invoice_lines",
+        "typed_surface": "mart_invoice_lines_typed"
+      },
+      "contract_name": "gold_invoice_lines_mapping",
+      "contract_version": "1.1.1",
+      "entity_group": "invoice_lines",
+      "schema_key": "2d27bd360b5092ff22047c65407ff05699afad98f455de2409665a5950a05e82"
+    },
+    {
+      "compiled_context": {
+        "fields": {
+          "quantity": {
+            "description": "Units on the line; negative only on cancellations.",
+            "logicalType": "integer",
+            "mappingRole": "measure",
+            "physicalType": "INTEGER"
+          },
+          "unit_price": {
+            "description": "Unit price in sterling; zero-price lines retained.",
+            "logicalType": "number",
+            "mappingRole": "measure",
+            "physicalType": "DECIMAL(10,2)"
+          }
+        },
+        "manifest": [
+          "quantity",
+          "unit_price"
+        ],
+        "role": "measures",
+        "source_table": "silver.silver_invoice_lines",
+        "typed_surface": "mart_invoice_lines_typed"
+      },
+      "contract_name": "gold_invoice_lines_mapping",
+      "contract_version": "1.1.1",
+      "entity_group": "invoice_lines",
+      "schema_key": "9dbc23cabca765eeaed72eb8161c90b5ae7857f81031656002f03e5bd9d99319"
+    }
+  ],
+  "schema_version": "1.1.0",
+  "sources": {
+    "gold_contract": {
+      "id": "gold_unified_event_star",
+      "version": "1.3.0"
+    },
+    "mapping_contract": {
+      "id": "gold_invoice_lines_mapping",
+      "profileHash": "sha256:e65bee8117b65958b8c4741b43509ece19a581dd1d6bad9a7e1da9b67b0b5fcd",
+      "version": "1.1.1"
+    },
+    "silver_contract": {
+      "id": "silver_invoice_lines",
+      "version": "1.1.1"
+    }
+  }
+}

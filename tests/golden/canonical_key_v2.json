@@ -143,7 +143,7 @@
     },
     {
       "name": "null_included_as_null",
-      "description": "A declared field whose value is NULL appears as JSON null — include-as-null, decided at the engine spec (§3.3).",
+      "description": "A declared field whose value is NULL appears as JSON null: include-as-null, decided at the engine spec (§3.3).",
       "fields": {
         "customer_id": {
           "t": "null"
@@ -210,7 +210,7 @@
     },
     {
       "name": "line_identity_regular",
-      "description": "The form-(b) derived degenerate identity over the declared silver grain tuple (invoice_id, stock_code, quantity, unit_price) — a regular sales line.",
+      "description": "The form-(b) derived degenerate identity over the declared silver grain tuple (invoice_id, stock_code, quantity, unit_price), a regular sales line.",
       "fields": {
         "invoice_id": {
           "t": "str",
@@ -274,7 +274,7 @@
     },
     {
       "name": "dim_manifest_v1_reversed",
-      "description": "The same names reversed: manifests are ORDER-SENSITIVE by design (declared order, never sorted) — this key must differ from dim_manifest_v1.",
+      "description": "The same names reversed: manifests are ORDER-SENSITIVE by design (declared order, never sorted); this key must differ from dim_manifest_v1.",
       "names": [
         "line_identity",
         "customer_id",
@@ -323,7 +323,7 @@
   "scalar": [
     {
       "name": "scalar_empty_string",
-      "description": "sha256 of the empty string — the digest byte-verified against Python hashlib at the live probe (F-11).",
+      "description": "sha256 of the empty string: the digest byte-verified against Python hashlib at the live probe (F-11).",
       "value": {
         "t": "str",
         "v": ""
