@@ -2,8 +2,8 @@
 
 Network-free and warehouse-free: they pin the shape of
 config/default.yaml's profiling block after the silver-pass scope
-amendment (docs/spec/profiler.md §8) — a list of targets, one artifact
-directory per table — without opening any warehouse. The end-to-end
+amendment (docs/spec/profiler.md §8), a list of targets, one artifact
+directory per table, without opening any warehouse. The end-to-end
 profile runs stay local (`make profile` + the local-marked smoke tests).
 """
 
