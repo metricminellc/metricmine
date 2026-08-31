@@ -2,7 +2,7 @@
 
 Marked `local`: needs the gitignored warehouse that `make ingest` and
 `dbt build` produce, so CI deselects it with -m "not local". The server is
-spawned as a subprocess exactly the way a desktop client spawns it —
+spawned as a subprocess exactly the way a desktop client spawns it;
 `python -m metricmine.server`, configured entirely through MM_SERVE_DB.
 
 The working directory is a temp directory, never the repo. Spec §5 resolves
@@ -13,7 +13,7 @@ one condition under which a CWD dependency would stay invisible.
 Every asserted shape was measured against this server before it was written
 down, including the one asymmetry: the query tool returns a union, which the
 SDK wraps under a `result` key, while the four single-shape tools are not
-wrapped. Same async rule as the surface tests — anyio.run inside synchronous
+wrapped. Same async rule as the surface tests: anyio.run inside synchronous
 tests, no pytest plugin.
 """
 
@@ -120,7 +120,7 @@ def test_lookup_record_routes_a_schema_key_to_the_registry(wire):
 def test_an_unexecutable_select_is_deliberately_not_caught(wire):
     # A statement that passes the gate and then fails to run is a mistake in
     # the SQL, not a policy decision, so it surfaces as a protocol error
-    # carrying DuckDB's own diagnostic — not as a refusal. Pinned here
+    # carrying DuckDB's own diagnostic, not as a refusal. Pinned here
     # because it is a decision, and decisions that look like oversights get
     # "fixed" by the next contributor.
     typo = wire["typo"]
