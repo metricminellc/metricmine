@@ -22,11 +22,10 @@ and the [evidence](docs/verification/evidence/) each one cites. Contracts
 are also how an AI assistant gets compact, reliable truth at serving time:
 the gold layer carries a context registry one join from any payload.
 
-![The MetricMine workflow: sources land in bronze and are profiled; an
-approved cleanup contract shapes silver; a second profile and an approved
-mapping contract feed the auto-modeling engine; the engine emits the gold
-unified event star; an MCP server serves it read-only and Claude answers
-with data plus meaning](docs/assets/mm_workflow.png)
+<a href="docs/diagrams/runtime_workflow_diagram_light.svg"><picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/runtime_workflow_diagram_dark.svg">
+  <img alt="The MetricMine workflow: sources land in bronze and are profiled; an approved cleanup contract shapes silver; a second profile and an approved mapping contract feed the auto-modeling engine; the engine emits the gold unified event star; an MCP server serves it read-only and Claude answers with data plus meaning" src="docs/diagrams/runtime_workflow_diagram_light.svg">
+</picture></a>
 
 <div align="center"><sub>Detailed component diagrams, each with a
 machine-readable Mermaid twin: <a href="docs/diagrams/">docs/diagrams/</a></sub></div>
