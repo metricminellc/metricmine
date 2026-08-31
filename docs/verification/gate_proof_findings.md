@@ -48,6 +48,7 @@ order by design.
 | [F-30](#f-30) | dbt 1.12 lands clean; the line brings a lock-pinned binary the register must name | Toolchain rung |
 | [F-31](#f-31) | The v2 parser gate is parse-only for a contract-enforced project; the beta engine builds it | Toolchain rung |
 | [F-32](#f-32) | A prose working-tree rule needs a PreToolUse hook; the guard is measured | SDLC rung |
+| [F-33](#f-33) | A working-tree guard must allow the tool's own state and a runner's action directory; the prep's stdin cases could not see either | SDLC rung |
 
 ## Command surface (datacontract-cli 1.0.12)
 
@@ -735,3 +736,33 @@ opts out with `--settings '{"disableAllHooks": true}'` or `--bare`. The
 guard reads command text, never a subprocess, so the prose rule keeps
 its line.
 ([`evidence/2026-08-28_phase8_prep_probe_transcript.md`](evidence/2026-08-28_phase8_prep_probe_transcript.md))
+
+### F-33
+**A working-tree guard must allow the tool's own state and a runner's
+action directory; the prep's stdin cases could not see either.** Observed
+at the Phase 8 sitting (August 29, 2026), after the guard shipped and
+before the first action-prepared pull request merged. Four false positives,
+each measured live and each fixed by an allowance a subprocess test now
+pins: (1) plan mode writes its plan file through the Write tool under the
+user's Claude directory, so the guard denied entering plan mode; the fix
+keeps plan files in the tree (`plansDirectory: .claude/plans`, gitignored).
+(2) Claude Code reads and writes its auto-memory directory through the
+file tools; the guard allows that documented directory for the file tools
+only, never for Bash. (3) A commit body or a sed expression whose token
+opens with a slash (`/contract-review`, `/^$/d`) tokenized as an absolute
+path; a slash-opening token is now a path only when its first segment
+names something on disk. (4) On a GitHub Actions runner the Claude Code
+GitHub Action's push helper lives beside the checkout under the runner's
+`_actions` directory, pre-approved by the action as `Bash(git-push.sh:*)`,
+so the first action run (33253883455) applied issue #74's edits, committed,
+and could not push; the guard now allows `GITHUB_ACTION_PATH`,
+`RUNNER_TEMP`, and the work directory's `_actions` and `_temp` on a runner
+and nothing more, and off a runner nothing changes. The subprocess suite
+grew from 40 to 55 cases (the CI lane from 451 to 466), and the class the
+guard exists for still denies: a `find` over the home directory. The rule
+this mints for every further hook (D-37): measure the tool's own
+behaviors, its plan files, its memory, and a runner's plumbing, before
+shipping a guard around them, because stdin cases only model the calls
+their author imagined.
+([`evidence/2026-08-29_phase8_exit.md`](evidence/2026-08-29_phase8_exit.md);
+[`tests/hooks/test_working_tree_guard.py`](../../tests/hooks/test_working_tree_guard.py))
