@@ -4,7 +4,7 @@ Spec: docs/spec/serving.md §§2-6 (D-31). All gold access flows through
 `GoldWarehouse`; the MCP server and the hosted demo import it and neither
 reimplements it (CLAUDE.md rule 18). Read-only runs three layers deep: a
 `read_only=True` connection, a hardened session, and a statement gate that
-accepts exactly one literal SELECT. Every method here is a SELECT — no DDL
+accepts exactly one literal SELECT. Every method here is a SELECT: no DDL
 and no DML anywhere in this module, which is the same posture as the D-11
 protocol in `metricmine.warehouse.duckdb`.
 
@@ -196,7 +196,7 @@ class GoldWarehouse:
         # Layer 1: the connection itself refuses DDL and DML on the data.
         self._con = duckdb.connect(str(resolved), read_only=True)
         # Layer 2: session hardening, before any client statement. Order
-        # matters and was probed at 1.4.3 — lock_configuration seals every
+        # matters and was probed at 1.4.3: lock_configuration seals every
         # option including the timezone, so the D-11 determinism setting has
         # to be applied before the seal, never after.
         self._con.execute("SET enable_external_access = false")
