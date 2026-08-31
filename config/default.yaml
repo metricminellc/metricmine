@@ -27,7 +27,7 @@ profiling:
 
 # Auto-modeling engine per docs/spec/engine.md (D-29): mapping contract in,
 # gold model files out; dbt builds them (D-07). The engine reads contracts
-# and this config only — never the warehouse — and writes only under
+# and this config only (never the warehouse) and writes only under
 # output_dir plus its ownership manifest (D-09).
 engine:
   mapping_contract: contracts/gold_invoice_lines_mapping.odcs.yaml

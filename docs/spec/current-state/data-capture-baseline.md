@@ -5,9 +5,9 @@
 > Current-State Technical Specification v1.0 (a project record). This is a
 > **baseline, not a build target**: PyAirbyte owns ingestion in this system,
 > so the acquisition machinery below is summarized for the record only. What
-> the rebuild preserves at full fidelity — the event-packet data model, the
+> the rebuild preserves at full fidelity (the event-packet data model, the
 > hashing contract, the row-conservation invariants, and the tuning
-> parameters — is reproduced here in full.
+> parameters) is reproduced here in full.
 >
 > Provenance: this baseline is an independent, technology-agnostic
 > transcription by purpose and flow. No original source code, function names,
@@ -27,11 +27,11 @@ its largest verified run within bounded memory.
 
 Three behaviors carried the value and are preserved by the rebuild:
 
-1. **The event-packet data model** (Section 3) — carried forward into the
+1. **The event-packet data model** (Section 3): carried forward into the
    gold design ([`docs/spec/gold-unified-event-star.md`](../gold-unified-event-star.md), D-17).
-2. **Arithmetically self-verifying logging** (Section 4) — carried forward as
+2. **Arithmetically self-verifying logging** (Section 4): carried forward as
    conservation tests C1–C4 plus ledger-style engine logs.
-3. **Bounded-memory batching** (Section 5) — carried forward as principles;
+3. **Bounded-memory batching** (Section 5): carried forward as principles;
    the mechanics belong to PyAirbyte, dbt, and DuckDB now.
 
 ## 2. Pipeline stages (historical summary)
@@ -62,13 +62,13 @@ itself data.
 ### 3.1 Concept
 
 Every captured row was wrapped in a self-describing event packet organized
-into six entity groups — job, source, account, capture timeframe, dimension
-set, measure set — each carrying four elements:
+into six entity groups (job, source, account, capture timeframe, dimension
+set, measure set), each carrying four elements:
 
 | Element | Form | Description |
 |---|---|---|
 | Value payload | JSON object (text) | The group's field names mapped to their values for this record. |
-| Schema manifest | JSON array (text) | The group's field names, in order — the schema the payload conforms to. |
+| Schema manifest | JSON array (text) | The group's field names, in order: the schema the payload conforms to. |
 | Record key | 64-char SHA-256 hex | Hash of the canonicalized value payload: content-derived identity of the record within the group. |
 | Schema key | 64-char SHA-256 hex | Hash of the canonicalized schema manifest: content-derived identity of the field set itself. |
 
@@ -112,7 +112,7 @@ stripped **hyphens** as well as spaces.
 
 Every output record had the same 24 fields in the same order: the six record
 keys grouped at the front (job, source, account, timeframe, dimension,
-measure — so loaders could key, join, and deduplicate without parsing any
+measure, so loaders could key, join, and deduplicate without parsing any
 payload), followed by a schema-key / manifest / payload triplet per group in
 the same group order. Constant-group fields were replicated onto every row.
 
@@ -199,11 +199,11 @@ uniform, reconciled outputs; deterministic keys enabling idempotent reloads.
 
 **Deliberately not rebuilt:** credential-materialization mechanics,
 compute-environment choreography, adaptive request geometry, slicing and
-partitioned persistence — their purposes (secure auth, clean memory, bounded
+partitioned persistence: their purposes (secure auth, clean memory, bounded
 transfer, loader-friendly files) are honored by the new stack (PyAirbyte,
 dbt, DuckDB) through its own means.
 
 **Deliberately changed:** the canonicalization scheme (Section 3.2 note;
-D-18), the fact-key composition and entity-group set, and grain handling —
+D-18), the fact-key composition and entity-group set, and grain handling,
 each specified with rationale in the
 [gold layer spec](../gold-unified-event-star.md).

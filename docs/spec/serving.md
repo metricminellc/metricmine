@@ -50,14 +50,14 @@ The posture is defense in depth. Each layer was probed on August 13,
 2026; the middle layer exists because the probe showed the first is not
 enough.
 
-**Layer 1 — the connection.** `duckdb.connect(path, read_only=True)`.
+**Layer 1, the connection.** `duckdb.connect(path, read_only=True)`.
 Probed: DELETE and CREATE refuse (`Cannot execute statement of type
 ... on data`), and in-memory ATTACH refuses. But **ATTACH of another
 file database is ALLOWED on a read-only connection** (probed both bare
 and `(READ_ONLY)`): read-only protects the served file, not the
 filesystem. Layers 2 and 3 close that.
 
-**Layer 2 — session hardening.** Immediately after connect, before any
+**Layer 2, session hardening.** Immediately after connect, before any
 client statement:
 
 ```sql
@@ -80,7 +80,7 @@ after it, DuckDB raises `Cannot change configuration option "timezone" -
 the configuration has been locked` and the session keeps the machine's
 local zone.
 
-**Layer 3 — the statement gate.** The `query` tool accepts exactly one
+**Layer 3, the statement gate.** The `query` tool accepts exactly one
 statement that is literally a SELECT. Three checks, in order, all
 probe-validated at duckdb 1.4.3:
 
@@ -121,10 +121,10 @@ per-table hits at the same default.
 
 The module resolves its database in this order:
 
-1. `MM_SERVE_DB` (environment variable), if set — absolute path
+1. `MM_SERVE_DB` (environment variable), if set; absolute path
    recommended; the MCP server is launched by a desktop client whose
    working directory is not the repo root.
-2. `demo/demo.duckdb` — the committed demo artifact (D-03 as amended,
+2. `demo/demo.duckdb`, the committed demo artifact (D-03 as amended,
    Amendment E), the default surface. The keyless posture holds: no
    credentials, no network, one file. The stem is deliberately not
    `gold`: a directly opened DuckDB file takes its catalog name from its
@@ -194,7 +194,7 @@ re-measured unchanged at the pinned 1.29.0 (F-22):
   discovery and calls (probe P1 platform pass).
 - **A union return is wrapped; a single shape is not.** Structured output
   is validated against the declared schema and undeclared keys are
-  dropped, so a refusal cannot ride inside `QueryResult` — `query`
+  dropped, so a refusal cannot ride inside `QueryResult`; `query`
   declares `QueryResult | QueryRefusal`, and the SDK renders that as a
   `result` property whose schema is an `anyOf` over both. Its structured
   content is therefore `{"result": {…}}`, while the other four tools
@@ -203,7 +203,7 @@ re-measured unchanged at the pinned 1.29.0 (F-22):
   forms.
 - **A gated SELECT that fails to execute is deliberately not caught.**
   `query` catches `QueryRefused` and nothing else. A statement that
-  passes the gate and then fails to run — `SELECT * FROM gold.typo` —
+  passes the gate and then fails to run (`SELECT * FROM gold.typo`)
   surfaces as `isError` with DuckDB's own diagnostic, `structuredContent`
   null, and the session continues serving (measured). A refusal is a
   policy decision and stays a normal answer; a broken statement is a
@@ -212,7 +212,7 @@ re-measured unchanged at the pinned 1.29.0 (F-22):
   broadly enough to disguise real defects as user error, since the
   adapter imports no duckdb by design.
 
-stdio discipline: the server process never prints to stdout — stdout
+stdio discipline: the server process never prints to stdout; stdout
 carries JSON-RPC. Diagnostics go to stderr or nowhere.
 
 Claude Desktop wiring (documented shape, verified live at P1):
@@ -246,7 +246,7 @@ warehouse built (ingest, build, gates green), a Python exporter
 3. `DETACH`, then recreate `vw_invoice_lines_typed` from the working
    catalog's stored SQL (`duckdb_views()`), re-anchoring the database
    qualifier (`metricmine.gold.` → `gold.`) so the view resolves inside
-   its own file — probed: the stored SQL is db-qualified and fails
+   its own file (probed: the stored SQL is db-qualified and fails
    verbatim in another catalog. The view lands after the detach, with
    only the export's own catalog attached: its stem is deliberately not
    `gold` (F-25), so the plain `gold.` target and body references bind
@@ -268,13 +268,13 @@ could bind ambiguously, so the exporter never does).
 
 Probed measurements at the current sample: export 11,022,336 bytes
 (11.02 MB) against a 14.95 MB working warehouse; schemas in the export:
-`gold` only (bronze and silver absent — the committed artifact carries
+`gold` only (bronze and silver absent; the committed artifact carries
 no raw data, D-03/D-15 posture); read-only open works; the typed view
 answers the top-countries question with the same rows as the working
 warehouse.
 
 Refresh policy (D-33): the artifact is rebuilt only when gold content
-changes — at regeneration merges and at tags — never on a schedule. Each
+changes, at regeneration merges and at tags, never on a schedule. Each
 refresh travels in a PR whose body carries the size and the verification
 line.
 
@@ -291,7 +291,7 @@ line.
   content-equality on a freshly built export.
 - The server's tool registration (five tools, expected names) is
   asserted in the CI lane by importing the app and listing tools
-  in-process — no subprocess, no warehouse.
+  in-process: no subprocess, no warehouse.
 
 ## 10. Explicitly out of scope
 
@@ -305,13 +305,13 @@ README remain standing.
 ## References
 
 In this repository:
-[`docs/decisions/decision-register.md`](../decisions/decision-register.md)
-— D-03, D-10, D-11, D-17, D-24, and (minted with this phase) D-31,
+[`docs/decisions/decision-register.md`](../decisions/decision-register.md):
+D-03, D-10, D-11, D-17, D-24, and (minted with this phase) D-31,
 D-32, D-33.
-[`docs/spec/gold-unified-event-star.md`](gold-unified-event-star.md) —
+[`docs/spec/gold-unified-event-star.md`](gold-unified-event-star.md):
 the frozen serving surface and the star this layer serves.
-[`docs/verification/gate_proof_findings.md`](../verification/gate_proof_findings.md)
-— the evidence discipline this spec's probed claims follow.
+[`docs/verification/gate_proof_findings.md`](../verification/gate_proof_findings.md):
+the evidence discipline this spec's probed claims follow.
 
 Project records (design history outside the repository; nothing here
 depends on them): the Phase 5 planning checkpoint and pre-L probe

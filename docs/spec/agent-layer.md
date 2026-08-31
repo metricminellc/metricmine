@@ -98,7 +98,7 @@ No third runtime agent; the generate-and-verify authoring loop stays in the SDLC
 
 `proposedBy` (`human` | `silver-cleanup-proposer` | `gold-mapping-proposer`) · `proposerVersion` (absent for human: it versions the proposer harness, which does not exist for a human author) · `promptVersion` (absent for human) · `modelId` (absent for human) · `profileHash` (absent, with a
 `provenanceNote` stating why, for hand-written contracts not derived from
-a profile artifact — the pattern-derived gold star contract; never
+a profile artifact, the pattern-derived gold star contract; never
 fabricated) · `proposedAt`
 
 ## Appendix C: Layout delta (lands in Phase 6)

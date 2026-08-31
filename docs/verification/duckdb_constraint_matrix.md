@@ -12,7 +12,7 @@
 Model `silver_orders` (`materialized: table`, `contract: enforced: true`)
 over a 12-row seed. For each constraint type: declare the constraint in the
 model's properties yml, inject one violating row via `UNION ALL` in the
-model SQL, rebuild, and observe where the failure lands — the MODEL CREATION
+model SQL, rebuild, and observe where the failure lands: the MODEL CREATION
 step erroring means DuckDB enforced the constraint in DDL; a test step
 failing would mean enforcement lives only in tests.
 
@@ -27,7 +27,7 @@ uv run dbt build --select silver_orders --profiles-dir .
 ```
 
 Sequence per probe: a green baseline build (`PASS=7 WARN=0 ERROR=0`), the
-violating build, then a restored build returning to green (`PASS=7`) —
+violating build, then a restored build returning to green (`PASS=7`),
 proving the failure was the injected violation and nothing else.
 
 ## The matrix

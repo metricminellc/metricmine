@@ -26,7 +26,7 @@ Record 009 (August 28, 2026) carries Amendment N to D-05 and findings
 F-30 and F-31. Decision Record 010 (August 29, 2026) carries D-37, the
 local enforcement hooks in the SDLC layer, and finding F-32.
 
-**Status meanings.** `adopted` — in force. `proposed` — agreed in working
+**Status meanings.** `adopted`: in force. `proposed`: agreed in working
 session, applied by the plans below, formal adoption pending; treat as binding
 unless amended.
 
@@ -100,8 +100,8 @@ Amended August 14, 2026 (Record 006, Amendment E): the committed artifact
 is `demo/demo.duckdb`. A directly opened DuckDB database takes its
 catalog name from the file stem, so the originally named
 `demo/gold.duckdb` opens as catalog `gold` holding schema `gold`, and at
-the pinned 1.4.3 every two-part `gold.<x>` reference — SELECT and CREATE
-alike — fails as ambiguous
+the pinned 1.4.3 every two-part `gold.<x>` reference, SELECT and CREATE
+alike, fails as ambiguous
 ([F-25](../verification/gate_proof_findings.md#f-25)). Path only: the
 export mechanism, the D-33 content-equality claim, the gitignore
 exception, and the D-31 keyless default all follow the new path;
@@ -197,10 +197,10 @@ dbt does not: the profiler reading bronze and the shared query module serving
 gold. The README claims only the isolation that exists.
 
 ### D-12
-**CI gates.** Every pull request runs the three-gate contract workflow —
+**CI gates.** Every pull request runs the three-gate contract workflow:
 gate one `datacontract lint`, run once per contract (the lint command takes a
 single location, not a glob); gate two `dbt build` (compile-time shape
-enforcement), exact invocation per D-20; gate three per D-16 — alongside ruff
+enforcement), exact invocation per D-20; gate three per D-16, alongside ruff
 and pytest. The toolchain was proven end to end in a scratch gate-proof
 session before Phase 1 exit; findings in
 [`docs/verification/gate_proof_findings.md`](../verification/gate_proof_findings.md).
@@ -242,8 +242,8 @@ gold models carry engine-emitted properties files at the sync fixed point
 per [`docs/spec/engine.md`](../spec/engine.md) §6
 ([F-14](../verification/gate_proof_findings.md#f-14)), reviewed as
 generated code in regeneration PRs under the D-09 ownership manifest.
-Every review obligation in the clause — sync output as proposal, export
-as scaffold only, the duplicateValues deletion rule — stands unchanged on
+Every review obligation in the clause (sync output as proposal, export
+as scaffold only, the duplicateValues deletion rule) stands unchanged on
 both planes.
 Amended August 22, 2026 (Record 007, Amendment J): at adoption, the
 human-owned silver properties file may be CREATED by `datacontract dbt
@@ -311,7 +311,7 @@ the profiles directory is set, and `profiles.yml` lives inside `transform/`
 per D-11 while CI runs from the repository root. Every gate step is guarded
 to skip cleanly while `contracts/` is empty or `transform/dbt_project.yml` is
 absent. Standing obligation: the pull request that initializes the dbt
-project splits the guard to per-gate granularity — gate one activates on a
+project splits the guard to per-gate granularity: gate one activates on a
 contract alone, gate two on the dbt project alone, gate three on both.
 Clarifies D-12; complements D-16.
 Amended July 31, 2026 (Record 003, Amendment B): decision text unchanged;
@@ -460,8 +460,8 @@ Decision Record 003.
 [`docs/spec/engine.md`](../spec/engine.md) governs the engine end to end:
 the mapping contract shape with every mapping element first-class and its
 frozen machine schema
-([`docs/spec/engine/mapping-contract.schema.json`](../spec/engine/mapping-contract.schema.json)
-— the same JSON Schema the Phase 6 gold mapping proposer emits structured
+([`docs/spec/engine/mapping-contract.schema.json`](../spec/engine/mapping-contract.schema.json),
+the same JSON Schema the Phase 6 gold mapping proposer emits structured
 output against per D-21, discharging the agent layer's Phase 4 schema
 obligation); flat placement of mapping contracts in `contracts/` under
 the category-naming rule, with quality rules banned in mapping contracts
@@ -504,8 +504,8 @@ access flows through `src/metricmine/query.py`, implementing the D-17
 serving clause in the D-11 read-only posture. The MCP server at
 `src/metricmine/server/` is a thin stdio adapter over the module: the
 five spec tools and nothing else. Read-only is enforced three layers
-deep — `read_only=True` connections, `enable_external_access=false` with
-`lock_configuration=true`, and a single-statement SELECT gate — and every
+deep (`read_only=True` connections, `enable_external_access=false` with
+`lock_configuration=true`, and a single-statement SELECT gate), and every
 query result is row-capped with an explicit truncation flag. The database
 resolves `MM_SERVE_DB` first, then `demo/demo.duckdb` (D-03 as amended,
 Amendment E), keeping the keyless posture. The D-31 number was reserved and left unminted at
@@ -531,7 +531,7 @@ Full text: Decision Record 008.
 ### D-32
 **MCP SDK selection and pin.** The official `mcp` package at 2.0.x,
 added as a project dependency (`mcp>=2.0,<2.1`, resolved 2.0.0 in
-uv.lock) — the server imports it, so an isolated tool cannot serve
+uv.lock): the server imports it, so an isolated tool cannot serve
 (contrast D-06). 2.0 is the current stable line and tracks the current
 MCP specification. Probe P1 verified the stdio server, type-hint
 schemas, structured output (a concrete TypedDict return is required; a
@@ -560,8 +560,8 @@ change, no new tool.
 
 ### D-33
 **Demo export: content equality by query, never byte equality.**
-`make export-demo` builds `demo/gold.duckdb` — the only committed
-database artifact, exactly as D-03 has always said — from the keyless
+`make export-demo` builds `demo/gold.duckdb`, the only committed
+database artifact, exactly as D-03 has always said, from the keyless
 replay path: attach the working warehouse read-only, copy the gold
 tables, recreate the typed view from the catalog SQL re-anchored to the
 export's own catalog, checkpoint, verify. Verification is per-table
