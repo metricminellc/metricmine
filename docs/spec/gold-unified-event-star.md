@@ -84,16 +84,16 @@ because the first live serving sessions proved a consumer needs them
 - **The category dimension is 1:1 with its fact at transaction grain, by
   construction:** the declared degenerate identifier rides inside the
   dimension payload precisely so content keys stay unique (F-23). Dedup
-  shows up where payloads repeat — the timeframe, source, and run
-  groups — not in the category group, which spends it to keep the grain
+  shows up where payloads repeat (the timeframe, source, and run
+  groups), not in the category group, which spends it to keep the grain
   lossless.
 - **`line_identity` is a row fingerprint, not a business key:** a
   restated measure mints a new identity, with nothing linking old to
   new. Cross-version record linkage is out of scope for this star and
   stated as such.
 - **The signature-test citation:** the registry's `country` context calls
-  it "the signature-test dimension"; what that test asserts — a new
-  dimension by contract amendment and regeneration alone — is narrated
+  it "the signature-test dimension"; what that test asserts (a new
+  dimension by contract amendment and regeneration alone) is narrated
   with evidence in
   [`docs/verification/signature-test.md`](../verification/signature-test.md).
 
@@ -161,14 +161,14 @@ performance claims without measurement. Non-goals in the README remain standing.
 
 In this repository:
 
-- [`docs/decisions/decision-register.md`](../decisions/decision-register.md) —
+- [`docs/decisions/decision-register.md`](../decisions/decision-register.md):
   D-07, D-08, D-09, D-11, D-17, D-18, D-19 (all adopted), with the
   CLAUDE.md rule crosswalk.
-- [`docs/spec/current-state/data-capture-baseline.md`](current-state/data-capture-baseline.md) —
+- [`docs/spec/current-state/data-capture-baseline.md`](current-state/data-capture-baseline.md):
   the abridged clean-room baseline: packet model, 2023 canonicalization
   contract, conservation ledger, decomposition pattern, and the recorded
   deltas this spec makes deliberately.
-- [`docs/verification/gate_proof_findings.md`](../verification/gate_proof_findings.md) —
+- [`docs/verification/gate_proof_findings.md`](../verification/gate_proof_findings.md):
   empirical toolchain findings this spec's materialization and gate rules
   rest on.
 
