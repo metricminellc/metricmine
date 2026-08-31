@@ -22,10 +22,14 @@ and the [evidence](docs/verification/evidence/) each one cites. Contracts
 are also how an AI assistant gets compact, reliable truth at serving time:
 the gold layer carries a context registry one join from any payload.
 
-<a href="docs/diagrams/runtime_workflow_diagram_light.svg"><picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/runtime_workflow_diagram_dark.svg">
-  <img alt="The MetricMine workflow: sources land in bronze and are profiled; an approved cleanup contract shapes silver; a second profile and an approved mapping contract feed the auto-modeling engine; the engine emits the gold unified event star; an MCP server serves it read-only and Claude answers with data plus meaning" src="docs/diagrams/runtime_workflow_diagram_light.svg">
-</picture></a>
+<div align="center">
+<a href="docs/diagrams/runtime_workflow_diagram_light.svg">
+<picture>
+<source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/runtime_workflow_diagram_dark.svg">
+<img alt="The MetricMine workflow: sources land in bronze and are profiled; an approved cleanup contract shapes silver; a second profile and an approved mapping contract feed the auto-modeling engine; the engine emits the gold unified event star; an MCP server serves it read-only and Claude answers with data plus meaning" src="docs/diagrams/runtime_workflow_diagram_light.svg">
+</picture>
+</a>
+</div>
 
 <div align="center"><sub>Detailed component diagrams, each with a
 machine-readable Mermaid twin: <a href="docs/diagrams/">docs/diagrams/</a></sub></div>
@@ -90,10 +94,14 @@ fixed regardless of how many sources feed it, so a second source adds rows
 and a schema key rather than a schema migration: demonstrated at one
 source, designed for more.
 
-<a href="docs/diagrams/layer_flow_overview_light.svg"><picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/layer_flow_overview_dark.svg">
-  <img alt="The pipeline at a glance: bronze lands raw data, a human decides meaning in silver, the engine builds the gold star, and agents answer with context through the typed mart" src="docs/diagrams/layer_flow_overview_light.svg">
-</picture></a>
+<div align="center">
+<a href="docs/diagrams/layer_flow_overview_light.svg">
+<picture>
+<source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/layer_flow_overview_dark.svg">
+<img alt="The pipeline at a glance: bronze lands raw data, a human decides meaning in silver, the engine builds the gold star, and agents answer with context through the typed mart" src="docs/diagrams/layer_flow_overview_light.svg">
+</picture>
+</a>
+</div>
 
 <div align="center"><sub>Click the image for full size. The detailed
 current-state <a href="docs/diagrams/layer_flow_current_state_light.svg">layer
