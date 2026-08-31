@@ -22,11 +22,10 @@ and the [evidence](docs/verification/evidence/) each one cites. Contracts
 are also how an AI assistant gets compact, reliable truth at serving time:
 the gold layer carries a context registry one join from any payload.
 
-![The MetricMine workflow: sources land in bronze and are profiled; an
-approved cleanup contract shapes silver; a second profile and an approved
-mapping contract feed the auto-modeling engine; the engine emits the gold
-unified event star; an MCP server serves it read-only and Claude answers
-with data plus meaning](docs/assets/mm_workflow.png)
+<a href="docs/diagrams/runtime_workflow_diagram_light.svg"><picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/runtime_workflow_diagram_dark.svg">
+  <img alt="The MetricMine workflow: sources land in bronze and are profiled; an approved cleanup contract shapes silver; a second profile and an approved mapping contract feed the auto-modeling engine; the engine emits the gold unified event star; an MCP server serves it read-only and Claude answers with data plus meaning" src="docs/diagrams/runtime_workflow_diagram_light.svg">
+</picture></a>
 
 <div align="center"><sub>Detailed component diagrams, each with a
 machine-readable Mermaid twin: <a href="docs/diagrams/">docs/diagrams/</a></sub></div>
@@ -91,13 +90,15 @@ fixed regardless of how many sources feed it, so a second source adds rows
 and a schema key rather than a schema migration: demonstrated at one
 source, designed for more.
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/layer_flow_current_state_dark.svg">
-  <img alt="The current-state layer flow: bronze, governance, silver, modeling, gold, the typed surface, and serving, with measured row counts" src="docs/diagrams/layer_flow_current_state_light.svg">
-</picture>
+<a href="docs/diagrams/layer_flow_overview_light.svg"><picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/layer_flow_overview_dark.svg">
+  <img alt="The pipeline at a glance: bronze lands raw data, a human decides meaning in silver, the engine builds the gold star, and agents answer with context through the typed mart" src="docs/diagrams/layer_flow_overview_light.svg">
+</picture></a>
 
-<div align="center"><sub>The current state at head with measured counts; open
-the image for full size. The star itself is drawn in the
+<div align="center"><sub>Click the image for full size. The detailed
+current-state <a href="docs/diagrams/layer_flow_current_state_light.svg">layer
+flow</a> (<a href="docs/diagrams/layer_flow_current_state_dark.svg">dark</a>)
+keeps every measured count, and the star itself is drawn in the
 <a href="docs/diagrams/star_erd_current_state_light.svg">current-state ERD</a>
 (<a href="docs/diagrams/star_erd_current_state_dark.svg">dark</a>), each with a
 Mermaid twin beside it.</sub></div>
