@@ -25,7 +25,7 @@ Canonical text rendering is scale- and platform-safe: decimals render via
 ``decimal.Decimal`` (``2.50`` stays ``"2.50"``), never float repr;
 timestamps render ``YYYY-MM-DD HH:MM:SS``; booleans render ``true`` /
 ``false`` exactly as DuckDB casts them. Unsupported inputs raise instead
-of guessing — a fail-closed reference implementation.
+of guessing: a fail-closed reference implementation.
 """
 
 from __future__ import annotations
@@ -51,7 +51,7 @@ def render_value(value: object) -> str | None:
 
     Mirrors the emitted SQL's ``CAST(<col> AS VARCHAR)`` at the pinned
     engine (F-11): scale-preserving decimals, ``true``/``false`` booleans,
-    ``YYYY-MM-DD HH:MM:SS`` timestamps. Floats are rejected outright —
+    ``YYYY-MM-DD HH:MM:SS`` timestamps. Floats are rejected outright;
     float repr is platform-hostile and the engine never passes one
     (docs/spec/engine.md §3.2).
     """
@@ -114,8 +114,8 @@ def payload_key(fields: Mapping[str, object]) -> str:
 def canonical_manifest(names: Sequence[str]) -> str:
     """Serialize a schema manifest to its canonical (pre-hash) form.
 
-    Compact JSON array of the field names in DECLARED order — manifests
-    are order-sensitive by design (D-18) — with the whole serialization
+    Compact JSON array of the field names in DECLARED order (manifests
+    are order-sensitive by design, D-18) with the whole serialization
     lowercased.
     """
     if isinstance(names, str):
