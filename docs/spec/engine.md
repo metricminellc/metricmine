@@ -288,7 +288,16 @@ it; the diff arrives as a regeneration PR (D-09).
   meaningful because emission targets the sync fixed point; see section 6.
 - **Interface:** `uv run python -m metricmine.engine.emit`, config-driven
   from an `engine:` block in `config/default.yaml`, no CLI arguments (the
-  ingest and profile posture). `make regen` wraps it.
+  ingest and profile posture). `make regen` wraps it. Beside
+  `engine.marts` (D-36), `engine.materialization` selects `table`, the
+  committed default, or `incremental` (D-38); an unrecognized value
+  fails closed before anything emits. The emitted SQL is one shape in
+  both modes: every model carries an explicit config line and inert
+  `is_incremental()` blocks (the `captured_at >=` watermark filter on
+  the silver-derived models and the content-key anti-join on every
+  insert), so a mode flip regenerates as one config-line diff per
+  model. Incremental config lines add `on_schema_change='fail'`
+  (F-34).
 - **Unit surface (CI lane):** emission determinism (same contracts, byte-
   identical files), golden emitted-file fixtures, the SQL-versus-Python
   keying consistency test, JSON Schema validation of the example mapping
@@ -374,12 +383,24 @@ the channel the partially-modeled probe verified end to end (F-13):
   passing coverage).
 - **C4** payload validity: `json_valid` over every values payload
   (function behavior verified, F-11).
+- **C5** field-level reconciliation (V1-06, star contract v1.3.0):
+  every silver row joins the typed surface on the derived line
+  identity and every mapped field matches its served value,
+  null-safe, with text fields compared lowercased per D-18 and the
+  time column at the declared grain.
 - **Grain enforcement** on the fact at transaction grain: zero duplicate
   content-key tuples, the error-severity twin of the composite PK flags
   (whose generated composite test is hardcoded warn, F-08).
 
 The emitted properties files carry none of this (section 6.5): contracts
 declare enforcement, sync generates it, review approves it.
+
+The twelve expensive rules carry the `mm_batch_floor` guard in their
+contract SQL (D-39): unset, CI included, they run full-table exactly
+as declared; an incremental deployment passes its batch floor to
+scope them, cross-batch guarantees riding the D-38 anti-join inserts;
+`make audit-gold` runs the unscoped forms on demand. Sync carries the
+jinja guards verbatim into the generated singular tests (F-35).
 
 ## 8. Ownership boundary (Amendment C to D-16; rule 11 scoped)
 
@@ -437,8 +458,8 @@ placeholder is a standalone chore, not part of any ladder PR.
 
 ## 11. Explicitly out of scope
 
-Everything the gold spec excludes (incremental materialization,
-partitioning, multiple dimension groups per category, performance claims),
+Everything the gold spec excludes (partitioning, multiple dimension
+groups per category, performance claims),
 plus: the engine never reads the warehouse (it reads contracts and the
 compiled-context artifact; conservation numbers come from dbt tests, not
 engine queries); no template language or plugin surface (emitters are
