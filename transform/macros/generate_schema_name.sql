@@ -1,7 +1,7 @@
 {#-
   Use a model's +schema config verbatim instead of dbt's default
   "<target_schema>_<custom_schema>" concatenation, so silver models land in
-  schema `silver` and gold models in `gold` — the three-schema medallion layout
+  schema `silver` and gold models in `gold`, the three-schema medallion layout
   the README promises. Models with no +schema fall back to the target schema.
 -#}
 {% macro generate_schema_name(custom_schema_name, node) -%}
