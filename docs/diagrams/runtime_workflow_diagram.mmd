@@ -1,5 +1,6 @@
-%% MetricMine · Runtime Workflow — machine-readable twin of
-%% docs/diagrams/runtime_workflow_diagram.svg
+%% MetricMine · Runtime Workflow: machine-readable twin of the published
+%% pair docs/diagrams/runtime_workflow_diagram_light.svg and _dark.svg
+%% (one geometry, two token sets, per the brand standard Section 6.4).
 %% Contract-driven medallion pipeline on a dbt plane, serving the unified event star.
 %% Decisions (see docs/decisions/decision-register.md): D-03 warehouse files,
 %% D-04 dbt plane, D-07 engine emits models, D-09 PR + ownership manifest,
@@ -7,7 +8,7 @@
 %% D-18 canonical_key v2, D-19 context registry.
 %% Runtime principle: make demo replays the committed contracts and the committed
 %% engine-emitted models (keyless, deterministic); the regenerate flag invokes the
-%% two agents live; the engine writes only via pull request — the gates judge output.
+%% two agents live; the engine writes only via pull request: the gates judge output.
 
 flowchart TB
 
