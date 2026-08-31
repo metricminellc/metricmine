@@ -3,7 +3,7 @@
 fmt() is the single source of the sample's byte-stability guarantee, so it
 is worth pinning independently of the network fetch. The module is loaded
 by path (scripts/ is not a package) via importlib, which also keeps the
-import off the top of this file — sys.path juggling would trip ruff E402.
+import off the top of this file; sys.path juggling would trip ruff E402.
 """
 
 import importlib.util
