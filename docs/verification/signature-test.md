@@ -4,15 +4,15 @@ Phase 4 exit evidence, Sitting K (August 11-12, 2026). The unified event star's
 signature property (D-17, [engine spec §1](../spec/engine.md)): a new
 dimension added to the mapping contract flows through regeneration and
 `dbt build` with **no engine code change, no physical schema change, and
-no gold contract amendment** — announced by a new schema key in the
+no gold contract amendment**, announced by a new schema key in the
 columns dimension and a registry row. This document records the live
 demonstration; every number below was first measured at the pre-K
 rehearsal ([F-21](gate_proof_findings.md#f-21)) and then reproduced live.
 
 ## The sequence
 
-1. **The amendment (PR #70).** `country` — deliberately reserved
-   out of mapping v1.0.0 at Sitting H exactly for this test — joins as a
+1. **The amendment (PR #70).** `country`, deliberately reserved
+   out of mapping v1.0.0 at Sitting H exactly for this test, joins as a
    ninth mapped field, `mappingRole: dimension`. The contract bumps to
    v1.1.0. Per the recorded D-08 reading, the PR carries the bump, the
    freshly minted compiled-context artifact `v0002`, and the refreshed
@@ -38,11 +38,11 @@ rehearsal ([F-21](gate_proof_findings.md#f-21)) and then reproduced live.
 
 ## The numbers
 
-Conservation is unchanged to the digit — the star's shape did not move:
+Conservation is unchanged to the digit; the star's shape did not move:
 `44721 | 44721 | 44721 | 2004 | 1 | 1 | 2 | 5 | 44721` (silver, fact,
 dim lines, timeframe, source, run, manifests, registry, typed view). The
 typed projection reconciles TEN fields (the nine mapped fields plus the
-derived `line_identity` join key) — country now among them — at
+derived `line_identity` join key), country now among them, at
 44,721 for 44,721 against silver
 ([evidence](evidence/2026-08-10_prek_typed_reconciliation_ten_fields.log)).
 
@@ -63,7 +63,7 @@ Captured live on the break-demo branch (closed unmerged by design):
 ## Why this matters
 
 A star that absorbs a new dimension through a reviewed contract amendment
-and a deterministic regeneration — with its lineage re-cited and its
-conservation intact — is the legibility argument made executable. The
+and a deterministic regeneration, with its lineage re-cited and its
+conservation intact, is the legibility argument made executable. The
 next source, the next column, the next category are contract events, not
 engineering projects.
