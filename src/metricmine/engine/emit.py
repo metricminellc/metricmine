@@ -37,6 +37,7 @@ from metricmine.engine.reader import (
 )
 
 MARTS_MODES = ("table", "view", "both")
+MATERIALIZATION_MODES = ("table", "incremental")
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 
@@ -45,8 +46,18 @@ def build_emission_set(repo_root: Path) -> dict[str, str]:
     """The full emission set, keyed by bare filename. Pure; no writes."""
     inputs = load_inputs(repo_root)
     validate_mapping(inputs.mapping, inputs.silver, inputs.json_schema)
-    emission = Emission(inputs.mapping, inputs.star)
     cfg = _config(repo_root)
+    # Materialization for the engine-emitted models (D-38): `table` is the
+    # committed default (the keyless demo path); `incremental` arms the
+    # emitted is_incremental() blocks. A missing key reads as the default
+    # and an unknown value fails closed before anything emits.
+    materialization = cfg.get("materialization", "table")
+    if materialization not in MATERIALIZATION_MODES:
+        raise EngineContractError(
+            "engine.materialization must be one of"
+            f" {MATERIALIZATION_MODES}, not {materialization!r}"
+        )
+    emission = Emission(inputs.mapping, inputs.star, materialization)
     files = emit_models(emission)
     # Extended-star activation (spec §5): the registry and the typed
     # projection join the set only once the gold contract declares
