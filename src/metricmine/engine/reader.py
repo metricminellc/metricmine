@@ -4,7 +4,7 @@ The reader is the engine's static groundedness, all fail-closed: the JSON
 Schema rejects shape violations (including quality rules, dead letters per
 F-12, and reserved category names), and the cross-checks below hold the
 mapping contract to the silver contract it maps. jsonschema comes from the
-dev dependency group — regeneration is a dev workflow, never a runtime one.
+dev dependency group; regeneration is a dev workflow, never a runtime one.
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ import yaml
 from metricmine.profiling.writer import latest_version
 
 # Every emitted model carries one of these prefixes or the reserved name,
-# so a category name matching them could collide with a model name — the
+# so a category name matching them could collide with a model name: the
 # loud gate-3 failure F-12 probed. The JSON Schema rejects them first;
 # this re-check is defense in depth.
 _RESERVED_PREFIXES = ("dim_", "fact_", "vw_", "mart_", "silver_", "bronze_", "stg_")
@@ -63,7 +63,7 @@ def load_compiled_context(repo_root: Path) -> tuple[str, dict]:
 
     Resolves the context: block of config/default.yaml, picks the newest
     vNNNN, and refuses an artifact whose cited contract versions diverge
-    from the loaded contracts — the registry must never embed stale
+    from the loaded contracts; the registry must never embed stale
     context.
     """
     config_path = Path(repo_root) / "config" / "default.yaml"

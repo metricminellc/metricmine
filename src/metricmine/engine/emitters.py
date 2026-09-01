@@ -4,7 +4,7 @@ Every emitted byte is deterministic from the two contracts plus
 ENGINE_VERSION. SQL: payloads are ``lower(to_json(struct_pack(...)))``
 with fields pre-sorted by lowercased name (sortedness is an emission-time
 property, F-11), every value cast to VARCHAR, record keys ``sha256()``
-computed in SQL uniformly — constant source and run payloads included.
+computed in SQL uniformly; constant source and run payloads included.
 Schema keys are Python literals via ``metricmine.keys.manifest_key``.
 Properties YAML is emitted in sync's own canonical form (F-18) so gate 3
 has nothing to rewrite (Q8/F-14): ``yaml.safe_dump`` with descriptions
@@ -66,9 +66,16 @@ def _description(raw: str) -> str:
 class Emission:
     """Parameter view over the validated contracts."""
 
-    def __init__(self, mapping: dict, star: dict) -> None:
+    def __init__(
+        self, mapping: dict, star: dict, materialization: str = "table"
+    ) -> None:
         self.mapping = mapping
         self.star = star
+        # D-38: `table` or `incremental`; validated fail-closed in emit.py.
+        # The emitted SQL carries the is_incremental() blocks either way
+        # (inert under table), so the two modes differ only in the config
+        # line and a regeneration that flips modes diffs one line per model.
+        self.materialization = materialization
         self.category = mapping["schema"][0]
         self.category_name = self.category["name"]
         self.source_table = self.category["sourceTable"]
@@ -137,6 +144,42 @@ class Emission:
     def yml_header(self) -> str:
         return _YML_HEADER.format(**self.header_args)
 
+    def config_line(self) -> str:
+        """The explicit materialization config (D-38).
+
+        Incremental adds on_schema_change='fail': dbt 1.12 requires it on
+        contracted incremental models, and failing is the contract-first
+        posture; a shape change arrives through the contract and a
+        regeneration (D-08, D-09), never silently at build time.
+        """
+        if self.materialization == "incremental":
+            return (
+                "{{ config(materialized='incremental',"
+                " on_schema_change='fail') }}"
+            )
+        return "{{ config(materialized='table') }}"
+
+
+_SOURCE_BATCH_FILTER = """
+    {% if is_incremental() %}
+    where captured_at >= (
+        select coalesce(max(captured_at), timestamp '1900-01-01')
+        from {{ this }}
+    )
+    {% endif %}"""
+
+
+def _anti_join(key_equalities: str) -> str:
+    """The insert-if-absent guard (D-38): inert under table; the global
+    dedupe under incremental (content addressing makes the >= boundary
+    re-scan idempotent)."""
+    return f"""{{% if is_incremental() %}}
+where not exists (
+    select 1 from {{{{ this }}}} t
+    where {key_equalities}
+)
+{{% endif %}}"""
+
 
 def _struct_block(entries: dict[str, str], indent: int) -> str:
     """Render struct_pack member lines, fields sorted by lowercased name.
@@ -184,19 +227,34 @@ def _timeframe_expression(emission: Emission) -> str:
 
 def category_values_sql(emission: Emission) -> str:
     entries = _struct_block(_dim_payload_entries(emission, 12), 12)
+    guard = _anti_join("t.dim_hash_id = sha256(grouped.dim_values)")
     return f"""{emission.sql_header()}
+{emission.config_line()}
+
 with source as (
 
-    select * from {{{{ ref('{emission.source_model}') }}}}
+    select * from {{{{ ref('{emission.source_model}') }}}}{_SOURCE_BATCH_FILTER}
 
 ),
 
 payloads as (
 
-    select distinct lower(to_json(struct_pack(
+    select
+        lower(to_json(struct_pack(
 {entries}
-        ))) as dim_values
+        ))) as dim_values,
+        captured_at
     from source
+
+),
+
+grouped as (
+
+    select
+        dim_values,
+        min(captured_at) as captured_at
+    from payloads
+    group by dim_values
 
 )
 
@@ -204,15 +262,20 @@ select
     sha256(dim_values)          as dim_hash_id,
     '{emission.dim_col_key}' as dim_col_hash_id,
     dim_values,
-    current_localtimestamp()    as loaded_at
-from payloads
+    current_localtimestamp()    as loaded_at,
+    captured_at
+from grouped
+{guard}
 """
 
 
 def category_columns_sql(emission: Emission) -> str:
     dim_manifest = canonical_manifest(emission.dim_manifest)
     measure_manifest = canonical_manifest(emission.measure_manifest)
+    guard = _anti_join("t.dim_col_hash_id = manifests.dim_col_hash_id")
     return f"""{emission.sql_header()}
+{emission.config_line()}
+
 with manifests as (
 
     select '{dim_manifest}' as dim_columns, '{emission.dim_col_key}' as dim_col_hash_id
@@ -226,11 +289,15 @@ select
     dim_columns,
     current_localtimestamp()    as loaded_at
 from manifests
+{guard}
 """
 
 
 def source_values_sql(emission: Emission) -> str:
+    guard = _anti_join("t.source_hash_id = sha256(payload.source_values)")
     return f"""{emission.sql_header()}
+{emission.config_line()}
+
 with payload as (
 
     select lower(to_json(struct_pack(
@@ -245,12 +312,16 @@ select
     source_values,
     current_localtimestamp()    as loaded_at
 from payload
+{guard}
 """
 
 
 def run_values_sql(emission: Emission) -> str:
     entries = _struct_block(emission.run_entries, 12)
+    guard = _anti_join("t.run_hash_id = sha256(payload.run_values)")
     return f"""{emission.sql_header()}
+{emission.config_line()}
+
 with payload as (
 
     select lower(to_json(struct_pack(
@@ -265,24 +336,42 @@ select
     run_values,
     current_localtimestamp()    as loaded_at
 from payload
+{guard}
 """
 
 
 def timeframe_values_sql(emission: Emission) -> str:
     entry = f"{emission.time_column} := {_timeframe_expression(emission)}"
+    guard = _anti_join(
+        "t.timeframe_hash_id = sha256(grouped.timeframe_values)"
+    )
     return f"""{emission.sql_header()}
+{emission.config_line()}
+
 with source as (
 
-    select * from {{{{ ref('{emission.source_model}') }}}}
+    select * from {{{{ ref('{emission.source_model}') }}}}{_SOURCE_BATCH_FILTER}
 
 ),
 
 payloads as (
 
-    select distinct lower(to_json(struct_pack(
+    select
+        lower(to_json(struct_pack(
             {entry}
-        ))) as timeframe_values
+        ))) as timeframe_values,
+        captured_at
     from source
+
+),
+
+grouped as (
+
+    select
+        timeframe_values,
+        min(captured_at) as captured_at
+    from payloads
+    group by timeframe_values
 
 )
 
@@ -290,19 +379,36 @@ select
     sha256(timeframe_values)    as timeframe_hash_id,
     '{emission.timeframe_col_key}' as timeframe_col_hash_id,
     timeframe_values,
-    current_localtimestamp()    as loaded_at
-from payloads
+    current_localtimestamp()    as loaded_at,
+    captured_at
+from grouped
+{guard}
 """
 
 
 def _shared_columns_sql(
     emission: Emission, prefix: str, key: str, manifest: list[str]
 ) -> str:
+    guard = _anti_join(
+        f"t.{prefix}_col_hash_id = manifest.{prefix}_col_hash_id"
+    )
     return f"""{emission.sql_header()}
+{emission.config_line()}
+
+with manifest as (
+
+    select
+        '{key}' as {prefix}_col_hash_id,
+        '{canonical_manifest(manifest)}' as {prefix}_columns
+
+)
+
 select
-    '{key}' as {prefix}_col_hash_id,
-    '{canonical_manifest(manifest)}' as {prefix}_columns,
+    {prefix}_col_hash_id,
+    {prefix}_columns,
     current_localtimestamp()    as loaded_at
+from manifest
+{guard}
 """
 
 
@@ -334,11 +440,19 @@ def fact_values_sql(emission: Emission) -> str:
         f"{emission.time_column} := {_timeframe_expression(emission)}"
     )
     source_entry = f"source_table := '{emission.source_table}'"
-    run_entries = _struct_block(emission.run_entries, 12)
+    run_entries_hashed = _struct_block(emission.run_entries, 16)
+    guard = _anti_join(
+        "t.fact_hash_id = hashed.fact_hash_id\n"
+        "      and t.source_hash_id = hashed.source_hash_id\n"
+        "      and t.timeframe_hash_id = hashed.timeframe_hash_id\n"
+        "      and t.dim_hash_id = hashed.dim_hash_id"
+    )
     return f"""{emission.sql_header()}
+{emission.config_line()}
+
 with source as (
 
-    select * from {{{{ ref('{emission.source_model}') }}}}
+    select * from {{{{ ref('{emission.source_model}') }}}}{_SOURCE_BATCH_FILTER}
 
 ),
 
@@ -353,25 +467,43 @@ keyed as (
         ))) as dim_payload,
         lower(to_json(struct_pack(
             {timeframe_entry}
-        ))) as timeframe_payload
+        ))) as timeframe_payload,
+        captured_at
     from source
+
+),
+
+hashed as (
+
+    select
+        sha256(fact_values)         as fact_hash_id,
+        sha256(lower(to_json(struct_pack(
+                {source_entry}
+            )))) as source_hash_id,
+        sha256(timeframe_payload)   as timeframe_hash_id,
+        sha256(dim_payload)         as dim_hash_id,
+        sha256(lower(to_json(struct_pack(
+{run_entries_hashed}
+            )))) as run_hash_id,
+        '{emission.fact_col_key}' as fact_col_hash_id,
+        fact_values,
+        captured_at
+    from keyed
 
 )
 
 select
-    sha256(fact_values)         as fact_hash_id,
-    sha256(lower(to_json(struct_pack(
-            {source_entry}
-        )))) as source_hash_id,
-    sha256(timeframe_payload)   as timeframe_hash_id,
-    sha256(dim_payload)         as dim_hash_id,
-    sha256(lower(to_json(struct_pack(
-{run_entries}
-        )))) as run_hash_id,
-    '{emission.fact_col_key}' as fact_col_hash_id,
+    fact_hash_id,
+    source_hash_id,
+    timeframe_hash_id,
+    dim_hash_id,
+    run_hash_id,
+    fact_col_hash_id,
     fact_values,
-    current_localtimestamp()    as loaded_at
-from keyed
+    current_localtimestamp()    as loaded_at,
+    captured_at
+from hashed
+{guard}
 """
 
 
@@ -432,7 +564,10 @@ def registry_sql(emission: Emission, compiled: dict) -> str:
         + ")"
         for entry in compiled["entries"]
     )
+    guard = _anti_join("t.schema_key = rows.schema_key")
     return f"""{emission.sql_header()}
+{emission.config_line()}
+
 with rows as (
 
     select * from (values
@@ -449,6 +584,7 @@ select
     compiled_context,
     current_localtimestamp()    as loaded_at
 from rows
+{guard}
 """
 
 
@@ -551,11 +687,17 @@ def mart_sql(emission: Emission) -> str:
     )
     category = emission.category_name
     return f"""{_mart_sql_header(emission)}
-{{{{ config(materialized='table') }}}}
+{emission.config_line()}
 
 with f as (
 
     select * from {{{{ ref('fact_{category}_values') }}}}
+    {{% if is_incremental() %}}
+    where captured_at > (
+        select coalesce(max(captured_at), timestamp '1900-01-01')
+        from {{{{ this }}}}
+    )
+    {{% endif %}}
 
 ),
 
@@ -573,7 +715,8 @@ t as (
 
 select
 {select_lines},
-    f.fact_hash_id
+    f.fact_hash_id,
+    f.captured_at
 from f
 join d on d.dim_hash_id = f.dim_hash_id
 join t on t.timeframe_hash_id = f.timeframe_hash_id
@@ -595,7 +738,8 @@ def mart_yml(emission: Emission) -> str:
                     f" {category} category: the typed projection's SELECT"
                     " as a table, lean shape, ordered by the time column;"
                     " one row per fact row, fact_hash_id kept as the"
-                    " provenance pointer. Uncontracted by design (D-17 as"
+                    " provenance pointer and captured_at as the incremental"
+                    " watermark (D-38). Uncontracted by design (D-17 as"
                     " amended by D-36); derivative of the fact, dimension,"
                     " and timeframe payloads."
                 ),
