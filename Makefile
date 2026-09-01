@@ -65,6 +65,15 @@ demo: ingest
 .PHONY: regenerate
 regenerate: propose-silver propose-mapping
 
+# The full-table audit (Record 008 part two, D-39): run every
+# contract-generated gold test in its unscoped full-table form, exactly as
+# CI runs them. An incremental deployment batch-scopes the expensive rules
+# by passing mm_batch_floor; this target is the same tests with the var
+# unset, so the full-table guarantee stays one command away. Keyless.
+.PHONY: audit-gold
+audit-gold:
+	uv run dbt test --project-dir transform --target local --select "path:tests/datacontract_cli/gold_unified_event_star"
+
 # The describe stance (D-35): adopt an EXISTING silver table by drafting the
 # contract that would enforce it from its own profile artifact. Refuses when
 # contracts/<TABLE>.odcs.yaml already exists; ORACLE=path bypasses the
