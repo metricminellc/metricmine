@@ -135,3 +135,18 @@ splitting, and a cheaper digest were measured and parked with their
 numbers; none is built, and the register records why. There is no
 freshness monitoring, volume anomaly detection, or alerting: the
 project claims traceability and conservation, not observability.
+
+## The Mac re-measure
+
+Environment: Apple M3 Pro, 36 GB, macOS 26.6.2, mains power. Measured
+with the Arc 5 pressure bundle's generator and probes at the Arc 5b
+exit; same committed toolchain, one dbt thread.
+
+| bronze rows | dbt build | mart: revenue by country | view: revenue by country |
+|---|---|---|---|
+| 1,058,539 | 5.9 s | 2 ms | 118 ms |
+| 10,573,228 | 25.2 s | 9 ms | 1.0 s |
+
+The shapes match the sandbox curve: the build linear in rows, the mart
+answering in milliseconds where the view takes seconds. Numbers differ
+with hardware; the environment line above is part of the measurement.
