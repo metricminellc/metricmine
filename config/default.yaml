@@ -35,6 +35,14 @@ engine:
   silver_contract: contracts/silver_invoice_lines.odcs.yaml
   schema_path: docs/spec/engine/mapping-contract.schema.json
   output_dir: transform/models/gold
+  # Materialization for every engine-emitted model (Record 008 part two,
+  # D-38): `table` is the committed default and the keyless demo path;
+  # `incremental` arms the emitted is_incremental() blocks (the silver
+  # batch filter on captured_at and the insert-if-absent anti-joins), for
+  # deployments that load continuously. An unrecognized value fails closed
+  # before anything emits. Switching modes is a regeneration under D-09:
+  # the diff is one config line per model.
+  materialization: table
   # The typed surface per category (D-36): `table` emits the materialized
   # mart (mart_<category>_typed, lean shape, ordered by the time column),
   # `view` emits the projection view (vw_<category>_typed, the pre-D-36
