@@ -207,9 +207,50 @@ def test_mart_sql_is_lean_ordered_and_a_table() -> None:
     sql = mart_sql(Emission(inputs.mapping, inputs.star))
     assert "materialized='table'" in sql
     assert sql.rstrip().endswith("order by invoiced_at")
-    assert "    f.fact_hash_id\nfrom f" in sql
+    assert "    f.fact_hash_id,\n    f.captured_at\nfrom f" in sql
     assert "line_identity" not in sql
     # The group hash keys appear exactly twice each: the two sides of
     # their join condition, never as carried columns.
     assert sql.count("dim_hash_id") == 2
     assert sql.count("timeframe_hash_id") == 2
+
+
+def test_materialization_modes_flip_only_the_config_line() -> None:
+    """engine.materialization (D-38): the two modes emit the same SQL
+    except the config line; the is_incremental() blocks ride both and are
+    inert under table."""
+    from metricmine.engine.emitters import Emission, fact_values_sql
+
+    inputs = _inputs()
+    table_sql = fact_values_sql(Emission(inputs.mapping, inputs.star))
+    incr_sql = fact_values_sql(
+        Emission(inputs.mapping, inputs.star, "incremental")
+    )
+    assert "materialized='table'" in table_sql
+    assert "materialized='incremental'" in incr_sql
+    assert table_sql.replace(
+        "materialized='table'",
+        "materialized='incremental', on_schema_change='fail'",
+    ) == incr_sql
+    for sql in (table_sql, incr_sql):
+        assert "{% if is_incremental() %}" in sql
+        assert "not exists" in sql
+        assert "captured_at" in sql
+
+
+def test_unknown_materialization_fails_closed(monkeypatch) -> None:
+    """An unrecognized engine.materialization value refuses before anything
+    emits (D-38), naming the key."""
+    from metricmine.engine import emit as emit_module
+
+    monkeypatch.setattr(
+        emit_module,
+        "_config",
+        lambda repo_root: {
+            "output_dir": "transform/models/gold",
+            "marts": "both",
+            "materialization": "sideways",
+        },
+    )
+    with pytest.raises(EngineContractError, match="engine.materialization"):
+        emit_module.build_emission_set(REPO)
