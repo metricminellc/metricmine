@@ -1,5 +1,5 @@
 -- Contracted silver model: silver.silver_invoice_lines.
--- Contract: contracts/silver_invoice_lines.odcs.yaml v1.1.1 (D-06); shape
+-- Contract: contracts/silver_invoice_lines.odcs.yaml v1.2.0 (D-06); shape
 -- enforced at build time via the hand-authored properties file (rules 3, 4,
 -- 11). Dedup: one GROUP BY over every business column except the timestamp
 -- collapses exact duplicate captures (506 rows at v0001) and within-invoice
@@ -20,7 +20,8 @@ with cleaned as (
         cast(invoicedate as timestamp) as invoiced_at,
         cast(price as decimal(10, 2))  as unit_price,
         cast(customer_id as integer)   as customer_id,
-        country
+        country,
+        cast(_airbyte_extracted_at as timestamp) as captured_at
     from {{ source('bronze', 'online_retail_ii') }}
 
 )
@@ -34,7 +35,8 @@ select
     min(invoiced_at) as invoiced_at,
     unit_price,
     customer_id,
-    country
+    country,
+    min(captured_at) as captured_at
 from cleaned
 group by
     invoice_id,
