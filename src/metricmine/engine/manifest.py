@@ -1,6 +1,6 @@
 """Ownership manifest: build, serialize, read, drift-check (D-09; rule 8).
 
-Canonical JSON, deterministic content only — no timestamps, so
+Canonical JSON, deterministic content only: no timestamps, so
 regeneration is byte-reproducible. The manifest maps each emitted
 repo-relative path to sha256 over its fixed-point bytes and never lists
 itself.
@@ -60,7 +60,7 @@ def drifted_files(repo_root: Path, manifest: dict | None) -> list[str]:
     """Baseline-listed files whose current bytes diverge (human-owned now).
 
     A diverged file marks itself human-owned (rule 8): the engine refuses
-    to overwrite it and names it instead. A missing file is not drift —
+    to overwrite it and names it instead. A missing file is not drift;
     re-emitting it is the engine's job.
     """
     if manifest is None:
