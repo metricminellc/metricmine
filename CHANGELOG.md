@@ -49,6 +49,11 @@ measurements.
 - The mcp lock refreshed in range to 1.29.1 (the pin holds at
   `>=1.28,<2`).
 
+### Fixed
+
+- `make doctor` reports the uv that manages the checkout, not the venv's
+  locked `uv` package (0.8.24 on every machine).
+
 ## [0.3.0] - 2026-09-01
 
 Record 008 part two, the C5 gate, the incremental path, and the scale
