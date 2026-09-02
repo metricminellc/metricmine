@@ -253,6 +253,8 @@ contract gates, or working on the adoption scan and its helpers, read
 
 ## Conventions
 - Small, reviewed pull requests with meaningful commit messages.
+- Every commit carries the Developer Certificate of Origin sign-off
+  (`git commit -s`); the DCO check on the pull request enforces it.
 - Use plan mode for any multi-file change; show the plan before editing.
 - Prefer editing existing files over creating new ones.
 - Never read or write paths outside the repository working tree.
