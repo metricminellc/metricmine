@@ -1,0 +1,41 @@
+name: dco
+
+# The Developer Certificate of Origin gate (CONTRIBUTING.md, Sign-off).
+# Pull request commits only: main's squash history is never evaluated, so
+# this workflow has no push trigger by design. Squash merges compile their
+# message from the pull request; certification happened on the branch
+# commits this check already gated. Blocking from its first pull request
+# (Arc 4 ruling): a red DCO check does not merge.
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dco-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dco:
+    name: DCO (sign-off on pull request commits)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      # The repository's own automation, exempt by author email; this list
+      # is the single visible exemption surface. If the Claude Code
+      # action's authoring identity differs at its first observed run, it
+      # joins this list by a one-line pull request.
+      DCO_EXEMPT_AUTHORS: "41898282+github-actions[bot]@users.noreply.github.com"
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Full history so the pull request's base..head range resolves.
+          fetch-depth: 0
+
+      - name: Check sign-off trailers (scripts/check_dco.py, stdlib only)
+        run: >
+          python3 scripts/check_dco.py
+          --base "${{ github.event.pull_request.base.sha }}"
+          --head "${{ github.event.pull_request.head.sha }}"
