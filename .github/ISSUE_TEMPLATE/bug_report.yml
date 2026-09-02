@@ -1,0 +1,48 @@
+name: Bug report
+description: Something behaved differently than the repository says it should.
+title: "bug: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: >
+        State what you observed, what you expected, and the command that
+        shows the difference. A report with a measurement is worth more
+        than a description.
+  - type: textarea
+    id: observed
+    attributes:
+      label: What happened
+      description: The behavior you saw, stated plainly.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+      description: What the README, a spec, or a contract says should happen. Cite the file if you can.
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: The command that shows the difference
+      description: The exact command and its output, pasted whole.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Paste the output of `make doctor`. It carries the platform, the interpreter, and the locked toolchain.
+      render: shell
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: The tag or commit you ran (`git describe --tags` or `git rev-parse --short HEAD`).
+    validations:
+      required: true
