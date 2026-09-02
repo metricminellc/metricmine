@@ -13,6 +13,68 @@ measurements.
 
 ### Added
 
+- Issue forms for bugs, findings, and contract changes, with the blank
+  issue path kept open and the security policy linked.
+- The DCO check: a blocking workflow verifying a well-formed
+  `Signed-off-by` trailer on every pull request commit, repository
+  automation exempt by listed identity; `CONTRIBUTING.md` states the
+  enforcement.
+- The contracts provenance gate: `tests/test_contract_provenance.py`
+  enforces rule 16 and engine spec section 9 on every committed contract,
+  with negative fixtures proving each clause discriminates.
+- `make doctor`, the keyless preflight for the five-minute path, and the
+  walkthrough's pointer to it.
+- The demo-artifact gate in CI: `scripts/check_demo_digest.py` proves the
+  committed `demo/demo.duckdb` matches what the freshly built warehouse
+  serves (object sets, row counts, the D-33 ordered content digest).
+- A devcontainer, so a Codespace runs `make demo` keyless in a browser.
+
+### Changed
+
+- The two remaining pre-brand diagrams re-rendered to the published brand
+  standard as light and dark pairs with Mermaid twins and 2x PNG exports:
+  the agent proposal flow (the D-35 stances, the Amendment I provenance
+  keys, the Amendment H amend input) and the gold unified event star flow
+  (C1 to C5 at error severity, the typed mart beside the view, D-38 and
+  D-39 stated, stale toolchain literals removed). Both specs embed the
+  pairs at block level with click-through anchors.
+- The README states what the system is: the scale section becomes Local
+  by design (the specification ports, the data file is disposable, a
+  second adapter is an experiment and not a promise) and points at
+  `docs/scale.md`; the status paragraph carries v0.3.0 as the current
+  release; the toolchain section states the supported platforms; two
+  counts are corrected (five conservation tests, forty decisions); and
+  the lead states the agents' credential posture and the approval record
+  every contract carries.
+- The mcp lock refreshed in range to 1.29.1 (the pin holds at
+  `>=1.28,<2`).
+
+## [0.3.0] - 2026-09-01
+
+Record 008 part two, the C5 gate, the incremental path, and the scale
+posture, plus the documentation and community arc that landed between the
+tags.
+
+### Added
+
+- Decision Record 008 part two: D-38 (incremental materialization behind
+  `engine.materialization`, table by default, `on_schema_change: fail`,
+  F-34), D-39 (batch-scoped gates under `mm_batch_floor` with the
+  `make audit-gold` full-table target), and D-40 (`docs/scale.md` and the
+  measurement rule), with Amendments O, P, and Q and findings F-34 and
+  F-35.
+- The C5 field-level reconciliation gate at error severity: gold star
+  1.3.0 with mapping 1.1.1, then star 1.4.0 with silver 1.2.0 declaring
+  `captured_at` optional-first (F-28); compiled contexts v0005 and v0006;
+  engine 0.4.0 with the `is_incremental` blocks inert under table mode;
+  the demo content digest held at every export (D-33).
+- `docs/scale.md`: the measured curve on two stated environments (the
+  sandbox and an Apple M3 Pro), the guidance, the gotcha, the recipes,
+  and the honest remains.
+- The README overview and runtime workflow diagram pairs at the larger
+  type scale, embedded at block level with click-through anchors so the
+  dark pair serves.
+
 - Finding F-33: a working-tree guard must allow the tool's own state and
   a runner's action directory; the four false positives the Phase 8
   sitting measured, each pinned by a subprocess test.
@@ -115,6 +177,7 @@ measurements.
 - The decision register, the findings register, the layer specs, and the
   diagrams with their Mermaid twins.
 
-[Unreleased]: https://github.com/metricminellc/metricmine/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/metricminellc/metricmine/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/metricminellc/metricmine/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/metricminellc/metricmine/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/metricminellc/metricmine/releases/tag/v0.1.0

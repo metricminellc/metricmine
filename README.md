@@ -13,8 +13,12 @@
 Every design judgment in this pipeline is a versioned, machine-readable
 contract that a person approved by merging a pull request. Two narrow AI
 agents draft contracts; deterministic code and dbt execute them; a
-three-gate CI enforces them from then on. Nothing an agent produces reaches
-the warehouse unreviewed, and the reasoning is in the repository: every
+three-gate CI enforces them from then on. The agents hold no warehouse
+credentials and never write: they read committed, hashed artifacts and
+return a draft, and every approved contract records in git who proposed
+it, a person or an agent with its model and profile hash, and which
+person merged it. Nothing an agent produces reaches the warehouse
+unreviewed, and the reasoning is in the repository: every
 binding decision in the
 [decision register](docs/decisions/decision-register.md), every measured
 finding in the [findings register](docs/verification/gate_proof_findings.md),
@@ -71,7 +75,7 @@ edit somewhere in the DAG. Determinism means the same inputs emit
 byte-identical model files, verified against a committed golden fixture, so
 a change is reproducible, diffable, and reviewable; it does not mean the
 models are right. Correctness comes from separate machinery: contracts
-enforced at build time, four conservation tests in CI, and a grain check
+enforced at build time, five conservation tests in CI, and a grain check
 that measures a declared grain rather than trusting it. The pipeline offers
 traceability and conservation, not observability, and regeneration lands as
 a pull request, never as an automatic update.
@@ -113,7 +117,7 @@ Mermaid twin beside it.</sub></div>
 
 ## What this repository demonstrates
 
-**Strategy you can audit.** Thirty-seven binding decisions in a versioned
+**Strategy you can audit.** Forty binding decisions in a versioned
 [decision register](docs/decisions/decision-register.md); specifications
 written before code; explicit non-goals; and no claim without a
 reproducible command behind it. The plan is not a slide deck. It is a
@@ -168,13 +172,23 @@ module. Designs: the
 [serving spec](docs/spec/serving.md), and the
 [agent layer spec](docs/spec/agent-layer.md).
 
-## Built small, designed to scale
+## Local by design
 
-The demo runs end to end on one machine, on DuckDB by design. Portability
-is delegated to dbt profiles, with Snowflake named as the swap target, and
-the patterns that matter (contracts, symmetric gates, ownership
-manifests, human-gated agents) are the same ones that run at enterprise
-scale on any cloud. Nothing here depends on the demo staying small.
+The whole pipeline runs on one machine, on DuckDB, by design: no cluster,
+no cloud account for the demo, no warehouse credential in an agent's
+hands. What lives on the machine is a specification, not a silo. The
+contracts and the compiled context are warehouse-agnostic files in git,
+and every gold model is regenerated from them, so the data file is
+disposable and the meaning is portable. dbt profiles carry the execution
+plane; a second adapter is an experiment, not a promise. Two machines that
+pull the same commit build the same gold: the emitted models are
+byte-identical against a committed oracle, and the demo digest matched
+across a Linux sandbox and a Mac. A team shares the specification through
+git and reproduces the data locally; nobody shares a database, a
+credential, or a cluster. What scale means here is measured, never
+claimed: [docs/scale.md](docs/scale.md) carries the curve on two stated
+environments and the paths that keep large inputs from hitting a hard
+limit, each behind configuration.
 
 ## Proof, committed
 
@@ -221,17 +235,20 @@ and in findings
 
 ## Status and roadmap
 
-[v0.2.0](https://github.com/metricminellc/metricmine/releases/tag/v0.2.0)
-(August 29, 2026) is the current tagged release. v0.1.0 shipped Phases 0
+[v0.3.0](https://github.com/metricminellc/metricmine/releases/tag/v0.3.0)
+(September 1, 2026) is the current tagged release. v0.1.0 shipped Phases 0
 through 5: the scaffold and pinned toolchain, bronze ingestion, the
 profiler and contracted silver, the engine-emitted unified event star, and
 the serving layer with the committed demo artifact. v0.2.0 added the agent
 layer (the two proposers in governed stances, drafts landing only through
 reviewed pull requests, the first agent-proposed contract amendment live),
 the typed surface, the dbt 1.12 line, and the SDLC layer's working-tree
-guard, contract-review Skill, and GitHub Action. The remaining steps to a
-stable v1.0.0 are this documentation arc, incremental loading with the
-scale documentation, then the release work. The live roadmap is the
+guard, contract-review Skill, and GitHub Action. v0.3.0 added the scale
+posture: the incremental path one config flip away, the C5 field-level
+reconciliation gate, batch-scoped gates with a full-table audit, and
+[docs/scale.md](docs/scale.md) with the measured curves on two machines.
+The remaining step to a stable v1.0.0 is this release arc. The live
+roadmap is the
 [Issues tab](https://github.com/metricminellc/metricmine/issues); the
 [changelog](CHANGELOG.md) records what landed in each release.
 
@@ -243,7 +260,10 @@ contracts. DuckDB 1.4.3 is the local warehouse. PyAirbyte handles
 ingestion. The MCP server runs on the official `mcp` SDK, pinned to the
 1.x maintenance line (D-32 as amended; the register records why). The code
 is Python 3.12, managed with uv. Every pin is a register entry; none of
-them is `latest`.
+them is `latest`. Supported platforms: macOS and Linux on Python 3.12.
+CI proves the path on a clean ubuntu checkout, the Mac measurements in
+[docs/scale.md](docs/scale.md) state their environment, and `make doctor`
+checks a machine before the first build.
 
 ## Non-goals
 
