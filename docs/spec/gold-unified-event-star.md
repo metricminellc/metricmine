@@ -5,8 +5,17 @@
 > Source of truth for the gold layer. Governing decisions:
 > [D-07](../decisions/decision-register.md#d-07), [D-17](../decisions/decision-register.md#d-17),
 > [D-18](../decisions/decision-register.md#d-18), [D-19](../decisions/decision-register.md#d-19).
-> Companion diagram: `docs/diagrams/gold_unified_event_star_flow.svg` (+ `.mmd` Mermaid twin)
-> (committed rename of the delivered `MetricMine_Gold_Unified_Event_Star_Flow.svg/.mmd`, to match repo naming).
+> Companion diagram: the published pair `docs/diagrams/gold_unified_event_star_flow_light.svg` /
+> `_dark.svg` (+ `.mmd` Mermaid twin, PNG exports at 2x), embedded below.
+
+<div align="center">
+<a href="../diagrams/gold_unified_event_star_flow_light.svg">
+<picture>
+<source media="(prefers-color-scheme: dark)" srcset="../diagrams/gold_unified_event_star_flow_dark.svg">
+<img alt="The gold layer as built: the modeling plane emits the unified event star; values, columns, and typed surfaces join the fact; the context registry carries meaning; serving is read-only three layers deep" src="../diagrams/gold_unified_event_star_flow_light.svg">
+</picture>
+</a>
+</div>
 
 ## Purpose
 

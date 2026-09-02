@@ -2,8 +2,17 @@
 
 **Status:** adopted design, July 12, 2026. Implements in Phase 6.
 **Decisions:** D-21 through D-25, condensed in [the decision register](../decisions/decision-register.md).
-**Diagram:** [`docs/diagrams/agent_proposal_flow.mmd`](../diagrams/agent_proposal_flow.mmd).
+**Diagram:** the published pair below ([light](../diagrams/agent_proposal_flow_light.svg) / [dark](../diagrams/agent_proposal_flow_dark.svg), [`.mmd` twin](../diagrams/agent_proposal_flow.mmd)).
 **Source document:** Agent Layer Design 001 (July 12, 2026), of which this file is the in-repo transcription.
+
+<div align="center">
+<a href="../diagrams/agent_proposal_flow_light.svg">
+<picture>
+<source media="(prefers-color-scheme: dark)" srcset="../diagrams/agent_proposal_flow_dark.svg">
+<img alt="The proposer runtime: governed context feeds one structured API call; the validated proposal renders to the outbox; the human door approves it into contracts" src="../diagrams/agent_proposal_flow_light.svg">
+</picture>
+</a>
+</div>
 
 The pipeline has exactly two agents (D-10): the **silver cleanup proposer** (bronze profile in, ODCS cleanup contract out) and the **gold mapping proposer** (silver profile in, ODCS mapping contract out). Neither touches data, writes code, nor runs transformations. Agents propose, code executes, a human approves. This document fixes how the two proposers are built, governed, and used.
 
