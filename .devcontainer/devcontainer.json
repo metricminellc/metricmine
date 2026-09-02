@@ -1,0 +1,21 @@
+{
+  "name": "MetricMine",
+  "image": "mcr.microsoft.com/devcontainers/python:3.2.2-3.12-bookworm",
+  "containerEnv": {
+    "AIRBYTE_OFFLINE_MODE": "1"
+  },
+  "remoteEnv": {
+    "PATH": "${containerEnv:PATH}:/home/vscode/.local/bin"
+  },
+  "postCreateCommand": "bash -lc 'python3 -m pip install --user --no-cache-dir uv && export PATH=\"$HOME/.local/bin:$PATH\" && uv sync --frozen && uv tool install \"datacontract-cli[duckdb]==1.0.12\" && uv run python scripts/doctor.py'",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "python.defaultInterpreterPath": "${containerWorkspaceFolder}/.venv/bin/python"
+      },
+      "extensions": [
+        "ms-python.python"
+      ]
+    }
+  }
+}
