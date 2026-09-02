@@ -11,6 +11,12 @@ measurements.
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-09-02
+
+The stable line begins. From this tag the pipeline, the engine, the
+serving layer, the two proposers, and the gates change only through the
+decision register; a clone of `main` at any tag gets a working demo.
+
 ### Added
 
 - Issue forms for bugs, findings, and contract changes, with the blank
@@ -182,7 +188,8 @@ tags.
 - The decision register, the findings register, the layer specs, and the
   diagrams with their Mermaid twins.
 
-[Unreleased]: https://github.com/metricminellc/metricmine/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/metricminellc/metricmine/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/metricminellc/metricmine/compare/v0.3.0...v1.0.0
 [0.3.0]: https://github.com/metricminellc/metricmine/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/metricminellc/metricmine/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/metricminellc/metricmine/releases/tag/v0.1.0
