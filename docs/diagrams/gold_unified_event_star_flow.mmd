@@ -1,65 +1,62 @@
-%% MetricMine Gold Layer — The Unified Event Star (target state)
-%% Machine-readable companion to gold_unified_event_star_flow.svg
-%% and to Gold Layer Design 001 (July 11, 2026).
-%% Decisions: D-07 engine emits dbt models; D-17 star is terminal gold;
-%% D-18 canonical_key v2; D-19 context binds by schema key.
+%% MetricMine · Gold Unified Event Star Flow: machine-readable twin of the
+%% published pair docs/diagrams/gold_unified_event_star_flow_light.svg and
+%% _dark.svg (one geometry, two token sets, per the brand standard
+%% Section 6.4). The modeling plane, the star objects, and the serving
+%% posture, as built. Companion to docs/spec/gold-unified-event-star.md.
+%% Decisions (docs/decisions/decision-register.md): D-07 engine emits models,
+%% D-17 star is terminal gold (Amendment P), D-18 canonical_key v2,
+%% D-19 context registry, D-30 compiled-context staleness guard,
+%% D-36 typed mart default, D-38 incremental behind configuration,
+%% D-39 batch-scoped gates with the full-table audit, D-31 to D-33 serving.
 
 flowchart TB
 
-  subgraph UPSTREAM["Upstream — unchanged by this spec"]
-    SRC["Sources<br/>committed sample + faker"]
-    ING["PyAirbyte ingest<br/>lands raw, one-to-one, no agent"]
-    BRZ[("bronze<br/>raw schema, as landed")]
-    PRF["Profiler<br/>deterministic Python<br/>+ duplicate-row rate"]
-    CP["Cleanup proposer agent (Phase 6)<br/>proposes only; human approves (D-10)<br/>hand-written contracts in the spine"]
-    CC["Cleanup contract<br/>ODCS v3.1.0, human-approved<br/>grain + dedupe decisions"]
-    SLV[("silver<br/>contracted SQL dbt models")]
-    SRC --> ING --> BRZ --> PRF
-    PRF -- "profile artifact" --> CP -. proposes .-> CC -. governs .-> SLV
+  subgraph UPSTREAM["Upstream · unchanged by the gold spec · agents propose, humans approve, code executes"]
+    ING["PyAirbyte ingest<br/>committed retail sample lands raw,<br/>one to one, no agent, hermetic in CI"]
+    BRZ[("bronze<br/>raw schema, exactly as landed ·<br/>one local DuckDB file, three schemas")]
+    PRF["Profiler<br/>deterministic Python ·<br/>duplicate-row rate rides the profile artifact"]
+    CP["Cleanup proposer<br/>proposes only; a human approves (D-10) ·<br/>stances: cleanup, describe, amend (D-35)"]
+    CC["Cleanup contract<br/>ODCS v3.1.0, human-approved:<br/>grain and dedupe decisions"]
+    SLV[("silver<br/>contracted SQL dbt models ·<br/>the human-owned plane")]
+    ING --> BRZ --> PRF --> CP
+    CP -.-> CC -.-> SLV
     BRZ --> SLV
   end
 
-  subgraph MODELING["Modeling plane — mapping contract in, dbt models out"]
-    MP["Mapping proposer agent (Phase 6)<br/>proposes only; human approves (D-10)"]
-    MC["Mapping contract<br/>ODCS v3.1.0, human-approved<br/>declares facts, dims, entity groups,<br/>grain (aggregated or transaction),<br/>time columns, aggregation per measure"]
-    ENG["Auto-modeling engine<br/>deterministic Python<br/>consumes mapping contract,<br/>emits dbt model files per category,<br/>never DDL (D-07)<br/>canonical_key v2 (D-18)<br/>writes only via PR + ownership manifest (D-09)"]
-    EMF["Emitted model files<br/>transform/models/gold/<br/>star SQL + properties,<br/>projection view SQL,<br/>generated-by headers + checksums"]
-    BLD["dbt build<br/>dbt-core 1.11.x + dbt-duckdb 1.10.x<br/>contracts enforced at compile time,<br/>star materializes as table"]
-    MP -. proposes .-> MC
-    MC -. contract .-> ENG --> EMF -- "pull request through the three gates" --> BLD
+  subgraph MODELING["The modeling plane · mapping contract in, dbt models out, never DDL"]
+    MP["Mapping proposer<br/>proposes only; a human approves (D-10) ·<br/>stances: propose and amend (D-35)"]
+    MC["Mapping contract<br/>ODCS v3.1.0, human-approved ·<br/>declares facts, dims, entity groups, grain,<br/>time columns, aggregation per measure"]
+    ENG["Auto-modeling engine<br/>deterministic Python · consumes the mapping<br/>contract; emits dbt model files per category,<br/>never DDL (D-07) · canonical_key v2 (D-18) ·<br/>writes only via PR under the manifest (D-09)"]
+    EMF["Emitted files · transform/models/gold/<br/>star SQL + properties, typed mart + view SQL,<br/>generated-by headers and checksums"]
+    BLD["dbt build<br/>contracts enforced at compile time ·<br/>table by default; incremental sits one config<br/>flip away (D-38) · batch-scoped gates with<br/>the full-table audit (D-39)"]
+    MP -.-> MC --> ENG --> EMF --> BLD
     SLV -- "model input" --> BLD
   end
 
-  subgraph GOLD["GOLD — the unified event star (terminal layer, D-17)"]
-    DV[("Values dimensions<br/>dim_source / dim_run / dim_timeframe /<br/>dim_&lt;category&gt;_values<br/>PK record hash = canonical_key(payload)<br/>JSON payload, deduped by content")]
-    DC[("Columns dimensions (schema registry)<br/>dim_&lt;group&gt;_columns<br/>PK schema hash = canonical_key(manifest)<br/>schema-key change announces drift")]
-    FT[("fact_&lt;category&gt;_values<br/>PK = (fact, source, timeframe, dim) hashes<br/>run hash as non-key lineage attribute<br/>measure payload JSON<br/>grain per contract: aggregated (+_row_count) or transaction")]
-    CR[("context_registry (D-19)<br/>schema_key → contract name + version,<br/>entity group, compiled context<br/>meaning is one join away, never embedded")]
-    VW["vw_&lt;category&gt;_typed (views)<br/>engine-emitted json_extract + cast<br/>uncontracted, labeled derivative<br/>the 2023 deserialization ETL, now a view"]
+  subgraph GOLD["Gold · the unified event star · terminal layer (D-17) · content-addressed (D-18)"]
+    DV[("Values dimensions<br/>dim_source · dim_run · dim_timeframe ·<br/>dim_&lt;category&gt;_values · PK record hash =<br/>canonical_key(payload) · JSON payload,<br/>deduped by content")]
+    FT[("fact_&lt;category&gt;_values<br/>PK = (fact, source, timeframe, dim) hashes ·<br/>run hash rides as non-key lineage ·<br/>measure payload JSON · grain per contract:<br/>aggregated (+_row_count) or transaction")]
+    DC[("Columns dimensions · the schema registry<br/>dim_&lt;group&gt;_columns · PK schema hash =<br/>canonical_key(manifest) · a schema-key change<br/>announces drift")]
+    TS["Typed surfaces<br/>mart_&lt;category&gt;_typed, the default answer<br/>surface (D-36), beside vw_&lt;category&gt;_typed ·<br/>engine-emitted, labeled derivative"]
+    CR[("context_registry (D-19)<br/>schema_key to contract name + version, entity<br/>group, compiled context: meaning is one join<br/>away, never embedded · populated by the context<br/>compiler from both approved contracts; the engine<br/>carries the newest compiled artifact and fails<br/>closed if it is stale (D-30)")]
     FT --- DV
     FT --- DC
-    FT --- VW
+    FT --- TS
+    DC --- CR
   end
 
-  CMP["Context compiler<br/>merges profiles + both approved contracts,<br/>writes one registry row per schema key"]
-
-  subgraph SERVING["Serving — one shared query module, read-only (D-11)"]
-    QM["Shared query module<br/>payload accessors, context lookup,<br/>row-limited queries, ~5-method protocol"]
-    MCP["MCP server — primary consumer<br/>list categories / get schema / get context /<br/>row-limited query / lookup by content key"]
-    AGT["Claude + agents<br/>answers grounded in data + meaning,<br/>cites exact records by content key"]
-    HD["Hosted demo (optional)<br/>Streamlit over demo/demo.duckdb,<br/>same module"]
+  subgraph SERVING["Serving · read-only, three layers deep (D-11, D-31 to D-33)"]
+    QM["Shared query module<br/>src/metricmine/query.py: payload accessors,<br/>context lookup, row-limited queries ·<br/>both consumers import it; neither reimplements it"]
+    MCP["MCP server · five tools<br/>list_fact_categories · get_schema · get_context ·<br/>query · lookup_record · read-only in depth;<br/>answers say where the typed surface is"]
+    AGT["Claude + agents<br/>answers grounded in data plus meaning;<br/>cites exact records by their content key"]
     QM --> MCP --> AGT
-    QM -.-> HD
   end
 
   BLD -- "materializes" --> GOLD
-  CC -. context .-> CMP
-  MC -. context .-> CMP
-  CMP --> CR
   GOLD -- "read-only" --> QM
 
-  %% Conservation tests (dbt, run in CI):
-  %% C1 silver rows = fact rows (or sum _row_count)
-  %% C2 every group key resolves (relationships)
-  %% C3 every schema key exists in context_registry
-  %% C4 every payload parses as valid JSON
+  %% Gates in CI, all at error severity:
+  %% C1 conservation · C2 keys resolve · C3 context complete ·
+  %% C4 payloads parse · C5 field-level reconciliation.
+  %% Content-addressed keys · source-invariant schema ·
+  %% meaning one join away · read-only three layers deep.
