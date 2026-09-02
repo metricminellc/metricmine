@@ -147,3 +147,14 @@ jobs:
         run: |
           uv run datacontract dbt sync contracts/*.odcs.yaml --project-dir transform --target local
           uv run datacontract dbt test contracts/*.odcs.yaml --project-dir transform --target local
+
+      # The stranger-path proof (Arc 4): the committed demo artifact is what
+      # this exact tree's pipeline produces, compared at the content layer
+      # only: object sets, per-table row counts, and the D-33 ordered
+      # content digest on every gold view. Audit stamps (loaded_at,
+      # captured_at) and byte sizes are build- and machine-relative by
+      # design and never enter the gate. A gold content change that lands
+      # without its demo refresh goes red here.
+      - name: "Demo artifact matches the built warehouse (D-33)"
+        if: steps.gate.outputs.gate2 == 'true'
+        run: uv run python scripts/check_demo_digest.py
