@@ -16,6 +16,7 @@ Run through the venv so the locked environment is what gets measured:
 
 from __future__ import annotations
 
+import os
 import platform
 import re
 import shutil
@@ -64,7 +65,10 @@ def check_python() -> None:
 
 
 def check_uv() -> None:
-    exe = shutil.which("uv")
+    # Under `uv run` the project venv leads PATH and carries a locked `uv`
+    # PyPI package (an airbyte dependency), which is not the uv that manages
+    # this checkout. uv exports its own path to the child as UV; prefer it.
+    exe = os.environ.get("UV") or shutil.which("uv")
     if not exe:
         record("FAIL", "uv", "not on PATH; install uv, then rerun")
         return
