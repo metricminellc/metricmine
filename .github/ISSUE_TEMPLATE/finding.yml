@@ -1,0 +1,43 @@
+name: Finding
+description: A measured observation about toolchain or gate behavior, in the F-nn tradition.
+title: "finding: "
+labels: ["finding"]
+body:
+  - type: markdown
+    attributes:
+      value: >
+        The findings register (docs/verification/gate_proof_findings.md)
+        records toolchain behavior observed live, never inferred. A good
+        finding is reproducible from its measurement alone.
+  - type: textarea
+    id: observation
+    attributes:
+      label: The observation
+      description: What the toolchain, a gate, or an artifact did, stated in one or two sentences.
+    validations:
+      required: true
+  - type: textarea
+    id: measurement
+    attributes:
+      label: The measurement
+      description: The exact commands and output that show it. Include versions where they matter.
+      render: shell
+    validations:
+      required: true
+  - type: input
+    id: surface
+    attributes:
+      label: Where it lives
+      description: The file, gate, or lane the behavior belongs to (for example gate 3, the emitter, uv.lock).
+    validations:
+      required: true
+  - type: dropdown
+    id: disposition
+    attributes:
+      label: Proposed disposition
+      options:
+        - Record it as a finding
+        - It needs a fix pull request
+        - Discussion first
+    validations:
+      required: true

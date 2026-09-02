@@ -1,0 +1,59 @@
+name: Contract change
+description: Propose a change to a committed ODCS contract.
+title: "contract: "
+labels: ["contract-change"]
+body:
+  - type: markdown
+    attributes:
+      value: >
+        Contracts change through their own pull request with a version
+        bump; contract changes and transform changes never share a PR
+        (D-08). Amendments never weaken a contract: a narrowing change is
+        refused without the relaxation flag and a major bump. The gates
+        judge humans and agents the same way.
+  - type: dropdown
+    id: contract
+    attributes:
+      label: Which contract
+      options:
+        - silver_invoice_lines
+        - gold_invoice_lines_mapping
+        - gold_unified_event_star
+        - a new contract
+    validations:
+      required: true
+  - type: dropdown
+    id: change_class
+    attributes:
+      label: Change class
+      description: How the change moves the contract's promises.
+      options:
+        - Widening or additive (minor bump)
+        - Comment or description only (patch bump)
+        - Narrowing (major bump; requires the stated relaxation rationale)
+    validations:
+      required: true
+  - type: textarea
+    id: change
+    attributes:
+      label: What changes
+      description: The fields, rules, or descriptions that move, and the version you propose.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: The profile values, measurements, or records that ground the change.
+      render: shell
+    validations:
+      required: false
+  - type: checkboxes
+    id: discipline
+    attributes:
+      label: The discipline that gates the change
+      options:
+        - label: The contract change rides its own pull request, separate from any transform change (D-08).
+          required: true
+        - label: The version bumps, and provenance customProperties stay honest (rule 16).
+          required: true
