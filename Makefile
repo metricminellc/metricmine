@@ -30,6 +30,10 @@ regen:
 context:
 	uv run python -m metricmine.context.compile
 
+.PHONY: doctor
+doctor:
+	uv run python scripts/doctor.py
+
 .PHONY: export-demo
 export-demo:
 	uv run python -m metricmine.export_demo
