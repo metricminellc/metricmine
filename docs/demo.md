@@ -120,6 +120,10 @@ What to expect, step by step:
 
 ## Troubleshooting
 
+Start with `make doctor`: it checks the platform, the interpreter, uv,
+the locked toolchain, and the committed demo artifact, and prints the two
+environment exports the local dbt lanes need.
+
 - **`uv: command not found`**: install uv (link above) and reopen the
   terminal. Everything else flows from it.
 - **`dbt` cannot find a profile**: `DBT_PROFILES_DIR` must point at the
