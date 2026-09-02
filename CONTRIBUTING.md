@@ -86,8 +86,9 @@ Every commit carries a `Signed-off-by` line certifying the
 [Developer Certificate of Origin 1.1](https://developercertificate.org/):
 that you wrote the change or have the right to submit it under the
 project's license. `git commit -s` adds the line from your Git identity.
-A pull request whose commits lack the sign-off is asked to add it before
-review.
+The DCO check enforces it on every pull request: a commit without a
+well-formed sign-off does not merge. Commits authored by the repository's
+own automation are exempt; the workflow file carries the list.
 
 ## Provenance
 
