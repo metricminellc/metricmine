@@ -1,4 +1,4 @@
-# Contract: gold unified event star v1.4.0 (ODCS v3.1.0): the extended star.
+# Contract: gold unified event star v1.5.0 (ODCS v3.1.0): the extended star.
 # Pattern-derived: authored from docs/spec/gold-unified-event-star.md (the
 # committed gold spec) and the four-element event-packet pattern it carries
 # forward (docs/spec/current-state/data-capture-baseline.md §3.4), not from
@@ -39,6 +39,17 @@
 # deployment passes the var; make audit-gold is the unscoped
 # full-table run. With the var unset every rule's semantics are
 # unchanged from v1.3.0: nothing narrows (D-08).
+# v1.5.0 (Record 011, D-41 and Amendment R): the conformed calendar and
+# the F-28 follow-up. The timeframe group's payload is {grain,
+# period_start} under one manifest for the whole star, so equal periods
+# at equal grain are one row whichever category minted them; the
+# regeneration that carries it follows (F-13). captured_at tightens to
+# required on the three silver-derived objects: the incremental path
+# proved it populated on every row (Arc 5b). conformedKeyRules declares
+# the conformed keys and their normalization rules for the silver
+# contracts the arc lands (the K1 gate holds them to it, D-41). No
+# object joins at this bump; the categories arrive at 1.6.0 with the
+# regeneration that builds them.
 # Severity discipline (D-28): every gating rule declares severity: error;
 # primaryKey flags generate warn-severity advisory twins at 1.0.12 (F-08),
 # and each carries its error-severity enforcing twin below. Payload and
@@ -50,7 +61,7 @@ apiVersion: v3.1.0
 kind: DataContract
 id: gold_unified_event_star
 name: Gold unified event star
-version: 1.4.0
+version: 1.5.0
 status: active
 domain: retail
 dataProduct: metricmine
@@ -62,8 +73,12 @@ description:
     values/columns dimension pairs for the source, run, timeframe, and
     invoice_lines groups, plus the invoice_lines fact table and the
     context registry (D-19): the address of meaning, one row per schema
-    key. Every source lands in the same physical shape, so new sources
-    add rows, not schema.
+    key. Every source lands in the same physical shape: within a
+    category new sources add rows, not schema, and the shared groups
+    and the registry are one set for every category (D-41; F-42). The
+    timeframe group is the conformed calendar (Amendment R): one
+    manifest for the whole star, so equal periods at equal grain are
+    one row whichever category minted them.
   usage: >
     Built only by dbt from engine-emitted models (D-07, D-09); consumers
     read through the shared query module over the read-only protocol, with
@@ -299,9 +314,10 @@ schema:
     logicalType: object
     description: >
       Time group, values side: one row per distinct timeframe payload;
-      the mapping contract's declared time column truncated to its
-      declared grain (invoiced_at at minute grain for invoice_lines),
-      rendered canonically. Engine-emitted (D-09).
+      the conformed calendar (D-17 Amendment R): the declared grain plus
+      each category's declared time column truncated to that grain,
+      rendered canonically, so equal periods at equal grain are one row
+      whichever category minted them. Engine-emitted (D-09).
     properties:
       - name: timeframe_hash_id
         logicalType: string
@@ -330,13 +346,14 @@ schema:
       - name: captured_at
         logicalType: date
         physicalType: TIMESTAMP
-        required: false
+        required: true
         description: >
           Capture watermark carried from silver (D-38): first-seen
           (minimum) capture timestamp over the silver rows behind this
           timeframe payload. Outside every hashed payload (rule 13).
-          Optional under the F-28 rule; the declared follow-up tightens
-          it to required once the incremental path is proven populated.
+          Required since 1.5.0: the incremental path proved it populated on
+          every row (Arc 5b, D-38), the F-28 follow-up the 1.4.0
+          declaration promised.
     quality:
       - type: library
         metric: rowCount
@@ -450,13 +467,14 @@ schema:
       - name: captured_at
         logicalType: date
         physicalType: TIMESTAMP
-        required: false
+        required: true
         description: >
           Capture watermark carried from silver (D-38): first-seen
           (minimum) capture timestamp over the silver rows behind this
-          payload. Outside every hashed payload (rule 13). Optional under
-          the F-28 rule; the declared follow-up tightens it to required
-          once the incremental path is proven populated.
+          payload. Outside every hashed payload (rule 13).
+          Required since 1.5.0: the incremental path proved it populated on
+          every row (Arc 5b, D-38), the F-28 follow-up the 1.4.0
+          declaration promised.
     quality:
       - type: library
         metric: rowCount
@@ -604,13 +622,14 @@ schema:
       - name: captured_at
         logicalType: date
         physicalType: TIMESTAMP
-        required: false
+        required: true
         description: >
           Capture watermark carried from silver (D-38): the contributing
           silver row's capture timestamp, per fact row. Outside every
-          hashed payload (rule 13). Optional under the F-28 rule; the
-          declared follow-up tightens it to required once the incremental
-          path is proven populated.
+          hashed payload (rule 13).
+          Required since 1.5.0: the incremental path proved it populated on
+          every row (Arc 5b, D-38), the F-28 follow-up the 1.4.0
+          declaration promised.
     quality:
       - type: library
         metric: rowCount
@@ -857,6 +876,8 @@ customProperties:
     value: human
   - property: proposedAt
     value: "2026-08-09"
+  - property: conformedKeyRules
+    value: "airport_iata=VARCHAR:^[A-Z]{3}$; carrier_code=VARCHAR:^[A-Z0-9]{2,3}$; tail_number=VARCHAR:^[A-Z0-9]{2,6}$"
   - property: provenanceNote
     value: >-
       pattern-derived; authored from docs/spec/gold-unified-event-star.md,
