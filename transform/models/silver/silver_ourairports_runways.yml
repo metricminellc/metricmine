@@ -1,0 +1,128 @@
+# Hand-authored properties file (F-02, rule 11): export output is scaffold
+# only and is never committed here. Contract enforcement is declared per
+# model (rule 3); every column carries name + data_type (rule 4). Only
+# not_null is a trusted constraint; uniqueness lives in contract-generated
+# tests (rule 5). Rendered from the Arc 6 prep's table specification, then
+# refreshed in place by datacontract dbt sync and reviewed.
+version: 2
+models:
+- name: silver_ourairports_runways
+  description: 'The runway reference: one row per runway of the airports in the airports extract, OurAirports at commit d27027ba (2026), with length, width, surface, lighting, and closure. The reference table that gives silver_flights each airport''s longest runway.'
+  config:
+    contract:
+      enforced: true
+    meta:
+      datacontract_cli:
+        contract_id: silver_ourairports_runways
+  columns:
+  - name: runway_id
+    data_type: VARCHAR
+    constraints:
+    - type: not_null
+    description: OurAirports internal runway id, unique.
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_ourairports_runways__runway_id__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field runway_id has no missing values
+    - unique:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_ourairports_runways__runway_id__field_unique
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field runway_id has no duplicate values
+  - name: airport_ident
+    data_type: VARCHAR
+    constraints:
+    - type: not_null
+    description: The OurAirports identifier of the airport the runway belongs to (KJFK); joins to silver_ourairports_airports.airport_ident, and every runway in the extract resolves.
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_ourairports_runways__airport_ident__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field airport_ident has no missing values
+  - name: length_ft
+    data_type: INTEGER
+    description: 'Runway length in feet; null for 86 runways where unpublished and for the one runway published with length 0 (YROB runway 34), which silver reads as unknown, not as a measurement (decision: zero-length is missing).'
+  - name: width_ft
+    data_type: INTEGER
+    description: Runway width in feet; null for 888 runways.
+  - name: surface
+    data_type: VARCHAR
+    description: 'Surface as published (free text: ASPH, CONC, ASP, TURF, and variants); null for 247 runways; not normalized.'
+  - name: is_lighted
+    data_type: BOOLEAN
+    constraints:
+    - type: not_null
+    description: True when the runway is lighted (the published 1 or 0 as a flag).
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_ourairports_runways__is_lighted__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field is_lighted has no missing values
+  - name: is_closed
+    data_type: BOOLEAN
+    constraints:
+    - type: not_null
+    description: True when the runway is closed (the published 1 or 0 as a flag); silver_flights ignores closed runways when picking the longest.
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_ourairports_runways__is_closed__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field is_closed has no missing values
+  - name: low_end_ident
+    data_type: VARCHAR
+    description: Low-end runway designator (for example, 04L); null for 11 runways.
+  - name: high_end_ident
+    data_type: VARCHAR
+    description: High-end runway designator (for example, 22R); null where unpublished.
+  - name: captured_at
+    data_type: TIMESTAMP
+    constraints:
+    - type: not_null
+    description: 'Capture timestamp carried forward from the bronze landing (_airbyte_extracted_at): when this row''s capture entered the pipeline. The incremental watermark the gold layer builds on (D-38). Required from the first version: the model populates it on every row from its first build (F-49). Audit metadata, never a business value.'
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_ourairports_runways__captured_at__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field captured_at has no missing values
