@@ -63,11 +63,12 @@ The human decides what the data means and how sources reconcile. The
 machine decides how that meaning is structured and served. Meaning is
 declared in two places, the silver cleanup contract and the gold mapping
 contract, and everything downstream of those two declarations is a
-mechanical, byte-reproducible function of them: 12 of the 13 dbt models on
-`main` are engine-emitted and never hand-written. The one exception is
-silver, `silver_invoice_lines.sql`, which stays human-owned on purpose,
-because silver is where meaning is decided. What the agent proposes for
-silver is the contract, not the SQL.
+mechanical, byte-reproducible function of them: 22 of the 31 dbt models on
+`main` are engine-emitted and never hand-written. The nine exceptions are
+silver, the human-owned plane, because silver is where meaning is decided:
+seven cleanup tables, one per source, and two unified tables where the
+aviation sources are reconciled in hand-written SQL. What the agent
+proposes for silver is the contract, not the SQL.
 
 That split is what the design buys. A wrong number has an address: it
 traces to the silver logic or to the mapping declaration, never to a hand
@@ -92,11 +93,19 @@ content address, not a row identifier, and the name invites the wrong query
 ([F-24](docs/verification/gate_proof_findings.md#f-24)); and every served
 value is canonical lowercased text, stated at the serving surface rather
 than changed
-([Amendment M to D-18](docs/decisions/decision-register.md#d-18)). One
-source and one fact category exist today. The star's physical schema is
-fixed regardless of how many sources feed it, so a second source adds rows
-and a schema key rather than a schema migration: demonstrated at one
-source, designed for more.
+([Amendment M to D-18](docs/decisions/decision-register.md#d-18)). Two
+source families feed three fact categories today: the retail sample, and
+an aviation family of six public files (flights, weather, carriers,
+aircraft, airports, runways) unified in silver into flights and airport
+weather. The star's physical schema is fixed regardless of how many
+sources feed it: the second family added rows, schema keys, and two
+mapping contracts, and no schema migration. Conformance is settled in
+silver and declared at the contract plane (conformed keys with their
+normalization rules, a K1 gate holding the two together), the categories
+share one conformed calendar in gold, and the cross-category join the
+star declares (a flight's weather at its origin in its departure hour)
+is measured at 0.9994 completeness through the typed surfaces and gated
+in the test lane ([D-41](docs/decisions/decision-register.md#d-41)).
 
 <div align="center">
 <a href="docs/diagrams/layer_flow_overview_light.svg">
@@ -117,7 +126,7 @@ Mermaid twin beside it.</sub></div>
 
 ## What this repository demonstrates
 
-**Strategy you can audit.** Forty binding decisions in a versioned
+**Strategy you can audit.** Forty-one binding decisions in a versioned
 [decision register](docs/decisions/decision-register.md); specifications
 written before code; explicit non-goals; and no claim without a
 reproducible command behind it. The plan is not a slide deck. It is a
@@ -155,7 +164,14 @@ uv run python -c "from metricmine.query import GoldWarehouse; print(GoldWarehous
 
 `make demo-fetch` downloads the asset the manifest names and verifies
 its bytes and its content; `make demo` builds the same content from the
-committed samples when a tree has no published asset yet.
+committed samples when a tree has no published asset yet. The listing
+names three categories, each with its typed table, its subject in the
+words of the people who approved its contracts, and the registry keys
+behind it. Serving keeps two things apart by name on every registry
+entry: `data`, what the columns are, derived from the contracts' typed
+declarations; and `expert_context`, what people wrote about them (units,
+vintages, what a null means, which joins hold and how completely), so an
+agent, and the person testing it, can tell a measurement from a claim.
 
 The full walkthrough (wiring the MCP server into Claude Desktop, the
 questions to ask, the complete keyless replay from raw data to a fresh
@@ -219,6 +235,24 @@ moved, one schema key appeared, and row conservation held to the digit
 ownership-drift refusals captured live, is
 [docs/verification/signature-test.md](docs/verification/signature-test.md).
 
+The multi-source proof (D-41) is the second act. Six aviation files
+landed through the same connector type, each behind its own contract;
+two unified silver tables settled the joins in hand-written SQL, each
+join declared with the completeness measured at the profile and the
+floor the contract enforces; the star took the two new categories with
+its physical schema unchanged, sharing its calendar (every one of the
+3,439 departure hours is a weather hour) and its conformed airport code;
+and row conservation held to the digit through every plane (166,158
+flights in bronze, in silver, in the fact, in the mart). The vintage
+effect is shown, not hidden: a 2026 airport reference joined to 2013
+flights recodes one destination, and the registry says so where an
+agent reads. The claims behind the numbers are re-measured by the local
+test lane (`tests/test_declared_joins.py`,
+`tests/test_aviation_conservation.py`), and the demo question set
+(`tests/fixtures/serving_questions.json`) is proven through the serving
+path, so what the demo guide says an agent should answer is what the
+warehouse answers.
+
 One more property is documented rather than discovered: the star's hash
 keys are content addresses, not row identifiers. The counting rules, and
 the trade they record, live in the gold spec's *Reading the star* section
@@ -231,6 +265,10 @@ and in findings
 | If you want | Read |
 |---|---|
 | The demo, step by step | [docs/demo.md](docs/demo.md) |
+| The sources: seven committed extracts, pinned and licensed | [docs/sources.md](docs/sources.md) |
+| The demo sources explained: every decision, every join, and how to read them for your own data | [docs/sources-explained.md](docs/sources-explained.md) |
+| Adding your own source, the path every source here took | [docs/adding-a-source.md](docs/adding-a-source.md) |
+| Operating the pipeline: the daily commands, the procedures, the gates, the glossary | [docs/operating.md](docs/operating.md) |
 | Every architectural decision, versioned | [docs/decisions/decision-register.md](docs/decisions/decision-register.md) |
 | The layer specs, ingestion through serving | [docs/spec/](docs/spec/) |
 | The evidence: findings, the signature test, gate breaks | [docs/verification/](docs/verification/) |

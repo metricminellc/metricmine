@@ -40,8 +40,12 @@ Between tags, `main` may name no published release in its manifest; the
 fetch then says so and Path B (`make demo`) builds the same content
 keyless in a few minutes.
 
-Expected output: one category, `invoice_lines`, table
-`fact_invoice_lines_values`, 44,721 rows.
+Expected output: three categories, each with its fact table, row count,
+typed table, authored subject, and registry keys: `airport_weather`
+(13,014 rows), `flights` (166,158 rows), and `invoice_lines` (44,721
+rows). Two of them come from the same family of sources and share a
+conformed airport code and the conformed calendar; the third is the
+retail sample that shares nothing with them but the star's shape.
 
 ### Wire it into Claude Desktop
 
@@ -66,32 +70,84 @@ Quit Claude Desktop fully and reopen it. A new chat should list
 
 | Tool | What it answers |
 |---|---|
-| `list_fact_categories` | which fact categories exist, with row counts |
+| `list_fact_categories` | which fact categories exist, with row counts, the typed table to query, each category's subject in the words of the people who approved its contracts, and the registry keys `get_context` resolves |
 | `get_schema` | the declared field manifest behind a schema key |
-| `get_context` | the full compiled context: descriptions, derivations, and the contract citation |
+| `get_context` | the full compiled context behind a schema key, in two named parts: `data` (what the columns are) and `expert_context` (what people wrote about them), plus the contract citation |
 | `query` | one row-capped SELECT; anything else refuses, naming the failed check |
-| `lookup_record` | every place a content key resolves: registry, fact, dimension, or derived line identity |
+| `lookup_record` | every place a content key resolves: registry, fact, dimension, or a derived identity |
+
+### What the agent knows, and where it came from
+
+Every registry entry keeps two things apart by name, so an agent (and
+the person testing it) can tell what was measured from what was written:
+
+- `data` is derived from the contracts' typed declarations: each
+  column's type and role, the grain, the conformed keys and which other
+  categories share them, the typed surface to query, and the note that
+  string values there are lowercase.
+- `expert_context` is authored knowledge: the subject, how to read the
+  table, its limitations, its lineage and vintage, the joins it settled
+  with their measured completeness, the cross-category joins the star
+  declares with a worked example, the decisions taken, and a meaning
+  for every field. It opens with a note saying it is authored, not
+  measured, and that where a claim and the data disagree, the data is
+  the fact and the claim is what to check.
+
+That split is the point of the multi-source demo. The weather table
+says that a null gust means no gust was reported, not zero; the flights
+table says that a null arrival delay covers cancelled flights and 597
+flights that departed with no arrival record; the airport reference is
+a 2026 snapshot joined to 2013 flights, so Palm Beach flew as PBI and is
+coded DJT in the reference, and 3,471 flights carry no destination
+attributes on purpose. None of that is in the rows. All of it is in the
+registry, and an agent that reads the context before it queries answers
+correctly; one that does not, does not. Ask it to say which of the two
+an answer rests on.
 
 ### Ask it something
 
-> Using the metricmine-gold tools: what are the top three countries by
-> invoice line count, and what does the country field mean in this model?
+Start with a cross-source question the star was built to answer:
 
-The answer carries the counts from the star and the meaning from the
-context registry, cited to the mapping contract version that created it;
-data and meaning in one exchange. Two follow-ups worth trying:
+> Using the metricmine-gold tools: do flights departing New York in an
+> hour with precipitation at their origin run later than flights in a
+> dry hour, and are they cancelled more often? Say what you joined on
+> and what the context told you.
 
-- *"By gross value instead of line count, does the podium change?"*: the
-  model does analysis, not retrieval, and the answer is different in an
-  interesting way.
-- *"Take one line_identity from a dimension payload and run
+The answer joins the flights and airport_weather typed marts on the
+conformed airport code and the conformed calendar hour (the join the
+registry declares, with its measured completeness), and it should land
+on 29.44 minutes against 12.42, with 8.95 percent cancelled against
+2.41. The full set, with the SQL and the answers measured at the
+committed samples, is `tests/fixtures/serving_questions.json`; the
+local test lane proves each one through the serving path. Some worth
+asking, and what to check for:
+
+- *"Which carrier had the highest average departure delay, among
+  carriers with at least 1,000 flights?"*: ExpressJet (ev) at 23.41
+  minutes, cancellations excluded by construction; a good answer says
+  why the average excludes them, and writes the carrier code in
+  lowercase.
+- *"How many flights went to PBI, and why do they carry no destination
+  name?"*: 3,471, and the reason is in the expert context (the 2026
+  reference codes it DJT), not in the rows.
+- *"Which manufacturers' aircraft flew the most, and how old were
+  they?"*: Boeing, Embraer, Airbus; a good answer notes that about 16
+  percent of flights resolve no aircraft and says where that number
+  came from.
+- *"What are the top three countries by invoice line count, and what
+  does the country field mean?"*: the retail category, unchanged from
+  v1.0.0; the meaning cites the mapping contract version that created
+  it.
+- *"Take one flight_identity from a dimension payload and run
   lookup_record on it."*: the provenance round trip: every payload is
-  reachable by content key.
+  reachable by content key, in every category.
 
 ## Path B: replay the whole pipeline (about 8 minutes)
 
-The Online Retail II sample is committed (D-15), so the full path is
-keyless too. From the repo root:
+Every source is a committed sample (D-15 as amended by Amendment T:
+the retail extract and the six aviation extracts, each pinned to its
+publisher's commit and digest; [docs/sources.md](sources.md) lists
+them), so the full path is keyless too. From the repo root:
 
 ```bash
 export DBT_PROFILES_DIR="$PWD/transform"
@@ -110,12 +166,14 @@ invokes a proposer). Run `uv run pytest -q` after it to verify.
 What to expect, step by step:
 
 1. `make ingest` provisions a small connector environment on first run,
-   then lands **45,228 bronze rows** exactly as they appear in the raw
-   files.
-2. `dbt build` compiles the contracted models and runs every generated
-   and declared test: it ends **`PASS=108 WARN=0 ERROR=0 SKIP=0`**. Shape
-   is enforced at compile time; content rules run as tests with
-   contract-declared severity.
+   then lands **247,555 bronze rows across seven tables** exactly as
+   they appear in the committed extracts.
+2. `dbt build` compiles the 31 contracted models (nine human-owned
+   silver tables, 22 engine-emitted gold objects) and runs every
+   generated and declared test: it ends
+   **`PASS=334 WARN=0 ERROR=0 SKIP=0`**. Shape is enforced at compile
+   time; content rules run as tests with contract-declared severity,
+   the declared joins among them.
 3. `make export-demo` rebuilds `demo/demo.duckdb` from your freshly built
    warehouse, verifies it (per-table equal counts plus symmetric
    EXCEPT, and a content digest over every typed view compared across
@@ -124,8 +182,9 @@ What to expect, step by step:
    so your artifact proves equal even though its bytes may differ; the
    manifest's content section is what CI holds every build to.
 4. `pytest` runs the full suite, including the local lane that exercises
-   the query gate's 29-case refusal matrix, the serving round trip, and
-   the export verification.
+   the query gate's 29-case refusal matrix, the serving round trip, the
+   export verification, the declared-join gate, the aviation
+   conservation and business-logic checks, and the demo question set.
 
 ## Troubleshooting
 
@@ -170,6 +229,13 @@ environment exports the local dbt lanes need.
 The [README](../README.md) is the front door. The
 [gold layer spec](spec/gold-unified-event-star.md) explains the star the
 demo queries, including the *Reading the star* rules for its
-content-addressed keys. The
+content-addressed keys. [docs/sources.md](sources.md) lists every
+committed extract with its pin, its license, and the vintage effects
+the joins carry. The
+[sources, explained](sources-explained.md) page carries the reasoning
+behind every decision and join the demo sources took, and
+[docs/operating.md](operating.md) is the operator's manual. The
 [signature test](verification/signature-test.md) is the evidence behind
-the project's central claim.
+the project's central claim, and the multi-source proof (D-41) is its
+second act: two source families, one star, one calendar, and the joins
+measured rather than assumed.
