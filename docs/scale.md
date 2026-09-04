@@ -125,11 +125,71 @@ with the model's dedup grain deciding what an insert-worthy new row
 is. That edit belongs to the silver owner and lands like any silver
 model change: contract first if the shape moves, then the model.
 
+## The multi-source curve (Arc 6)
+
+Environment: a 2-CPU, 7 GB sandbox, September 3, 2026. dbt-core 1.12.3,
+dbt-duckdb 1.11.0, duckdb 1.4.3, one dbt thread. The three-category
+star (invoice_lines, flights, airport_weather) built cold from an empty
+warehouse at each size, every node green (PASS=334: 31 models, the
+contract-generated tests, the K1 and pattern gates). Replicas move the
+committed 2013 half-year one year later per copy and recompute the
+local clock columns from the moved UTC instant the way the publisher
+derives them, so every time zone rule holds in every replica; the
+reference tables and the retail sample are copied once.
+
+| flights rows | weather rows | dbt build | peak RSS | file on disk |
+|---|---|---|---|---|
+| 166,158 | 13,014 | 30.1 s | 1.39 GB | 146 MB |
+| 996,948 | 78,084 | 80.6 s | 2.74 GB | 735 MB |
+| 1,993,896 | 156,168 | 141.1 s | 4.83 GB | 1.45 GB |
+| 3,987,792 | 312,336 | 286.8 s | 5.61 GB | 2.85 GB |
+
+The shape holds with three categories: linear in rows, and the flights
+category dominates because its dimension payload is wide (29
+attributes, chosen so the whole unified row reaches the typed surface).
+At 4 million flights the three flights objects cost 145 s of the 179 s
+of model time (mart 77 s, values dimension 35 s, fact 32 s); the
+contract tests cost 99 s. The rest of the star is small at every size.
+
+Cross-category latency, same environment, best of three through the
+serving module: the worked example the star contract declares (average
+departure delay by carrier in hours with precipitation at the origin,
+flights joined to airport_weather on the conformed airport code and the
+conformed calendar hour).
+
+| flights rows | mart join | view join | mart, delay by carrier | view, delay by carrier |
+|---|---|---|---|---|
+| 166,158 | 6.7 ms | 411 ms | 2.3 ms | 255 ms |
+| 996,948 | 22 ms | 1.8 s | 5.3 ms | 1.1 s |
+| 1,993,896 | 41 ms | 3.3 s | 8.3 ms | 2.0 s |
+| 3,987,792 | 80 ms | 11.4 s | 15 ms | 7.6 s |
+
+The typed marts answer the cross-source question in milliseconds at
+every size; the projection views re-join hash keys and re-parse JSON
+for two categories at once and pay for it. The serving layer steers an
+agent to the marts and the star's declared joins name them.
+
+The incremental path with three categories (D-38), same environment,
+at the committed size: the first incremental-mode build over an empty
+warehouse is a full build (31.6 s). A new capture of 1,785 flights and
+139 weather rows then costs 20.2 s wall, of which the three flights
+objects take under 0.6 s and the weather fact 0.07 s (the rest is dbt
+overhead and the full-table tests); every fact and mart equals its
+silver table's row count afterwards, the new rows share calendar rows
+with the other category, and the fact primary key stays unique. The
+batch-scoped gate over the whole gold contract runs in 12 s.
+
+The release artifact at the committed size is 106 MB, of which the
+flights category is 88 MB (its values dimension 59 MB, its fact 16 MB,
+its mart 13 MB); the weather and retail categories together are under
+20 MB. The window is code: a quarter instead of a half-year would
+roughly halve the artifact.
+
 ## What remains, honestly
 
-One source type at one committed scale. The curve above is synthetic
-data on a small machine; the Mac re-measure lands below with its own
-environment line. Cross-version record linkage is out of scope for the
+Two source types at one committed scale, the second exercised as a
+family of six files. The curves above are synthetic data on a small
+machine; the Mac re-measure lands below with its own environment line. Cross-version record linkage is out of scope for the
 star (`line_identity` is a row fingerprint). Binary keys, entity-group
 splitting, and a cheaper digest were measured and parked with their
 numbers; none is built, and the register records why. There is no
