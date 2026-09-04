@@ -1,22 +1,28 @@
-"""Prove the committed demo artifact is what this tree's pipeline produces.
+"""Prove the published demo artifact is what this tree's pipeline produces.
 
-Governing decision: D-33 (docs/decisions/decision-register.md).
+Governing decisions: D-33 and D-03, both as amended by Amendment S (Arc 6).
 
-Compares the freshly built working warehouse against the committed
-demo/demo.duckdb at the CONTENT layer: the gold object sets match, every
-gold table matches by row count, and every gold view matches by row count
-and ordered content digest (the D-33 invariant; the typed view carries no
-run lineage or audit columns, so its digest is stable across builds and
-machines). Cell-level table equality is deliberately not asserted here:
-context_registry.loaded_at and the captured_at columns are build-time
-stamps, honest audit metadata that differs between any two builds by
-design; export-time equality of whole rows is export_demo.verify's job
-within one build. Byte sizes never enter (machine-dependent).
+Compares the freshly built working warehouse against the committed digest
+manifest `demo/demo.digest.json` at the CONTENT layer: the gold object
+sets match, every gold table matches by row count, every gold view
+matches by row count and ordered content digest (the D-33 invariant; the
+typed views carry no run lineage or audit columns, so their digests are
+stable across builds and machines), and the registry matches by row
+count and ordered digest over its five deterministic columns. Cell-level
+table equality is deliberately not asserted: context_registry.loaded_at
+and the captured_at columns are build-time stamps, honest audit metadata
+that differs between any two builds by design (F-39); export-time
+equality of whole rows is export_demo.verify's job within one build. Byte sizes and the artifact's
+own sha256 never enter (machine-dependent; the sha256 in the manifest
+pins the ONE published asset for `make demo-fetch`, never a rebuild).
 
-A gold content change that lands without its demo refresh goes red here,
-and a stranger's clone is proven to serve exactly what the pipeline
-builds. Run after a green `dbt build`; CI runs it in contract-gate after
-gate two. Locally:
+When `demo/demo.duckdb` is also present locally (fetched or exported), it
+is checked against the manifest too, so a stale local artifact is named.
+
+A gold content change that lands without its manifest refresh goes red
+here, and a stranger's fetched artifact is proven to serve exactly what
+the pipeline builds. Run after a green `dbt build`; CI runs it in
+contract-gate after gate two. Locally:
 
     uv run python scripts/check_demo_digest.py
 
@@ -28,24 +34,17 @@ from __future__ import annotations
 
 import sys
 
-# Private helpers imported deliberately: the ordering-keyed digest and the
-# gold-object census are the probed D-33 mechanics, not re-derived here.
 from metricmine.export_demo import (
     DEFAULT_DEST,
-    GOLD_SCHEMA,
-    _gold_tables,
-    _gold_views,
-    _ident,
-    _view_digest,
+    DEFAULT_MANIFEST,
+    compare_content,
+    read_manifest,
     resolve_source_path,
 )
-
-import duckdb
 
 
 def main() -> int:
     source = resolve_source_path()
-    dest = DEFAULT_DEST
     if not source.exists():
         print(
             f"working warehouse not found at {source}; run the build first "
@@ -53,57 +52,37 @@ def main() -> int:
             file=sys.stderr,
         )
         return 2
-    if not dest.exists():
-        print(f"committed demo artifact not found at {dest}", file=sys.stderr)
+    if not DEFAULT_MANIFEST.exists():
+        print(f"digest manifest not found at {DEFAULT_MANIFEST}", file=sys.stderr)
         return 2
-
-    failures = 0
-    con = duckdb.connect()
-    try:
-        con.execute(f"ATTACH '{source}' AS src (READ_ONLY)")
-        con.execute(f"ATTACH '{dest}' AS exp (READ_ONLY)")
-        src_tables, exp_tables = _gold_tables(con, "src"), _gold_tables(con, "exp")
-        src_views = [n for n, _ in _gold_views(con, "src")]
-        exp_views = [n for n, _ in _gold_views(con, "exp")]
-        if src_tables != exp_tables or src_views != exp_views:
-            print(
-                f"gold object sets differ: warehouse tables {src_tables} views "
-                f"{src_views}; demo tables {exp_tables} views {exp_views}"
-            )
-            return 1
-        for table in src_tables:
-            rel = f"{_ident(GOLD_SCHEMA)}.{_ident(table)}"
-            (src_count,) = con.execute(f"select count(*) from src.{rel}").fetchone()
-            (exp_count,) = con.execute(f"select count(*) from exp.{rel}").fetchone()
-            if src_count == exp_count:
-                print(f"table {table}: {src_count} rows equal")
-            else:
-                failures += 1
-                print(f"table {table}: FAIL (warehouse {src_count}, demo {exp_count})")
-    finally:
-        con.close()
-
-    for view in src_views:
-        src_count, src_digest = _view_digest(source, view)
-        exp_count, exp_digest = _view_digest(dest, view)
-        if (src_count, src_digest) == (exp_count, exp_digest):
-            print(f"view {view}: {src_count} rows, digest match ({src_digest})")
-        else:
-            failures += 1
-            print(
-                f"view {view}: FAIL (warehouse {src_count} rows {src_digest}, "
-                f"demo {exp_count} rows {exp_digest})"
-            )
-    if failures:
-        print(
-            f"demo artifact drift: {failures} mismatch(es). If the gold content "
-            "change is intended, refresh the artifact (make export-demo) and "
-            "commit it in this pull request (D-33)."
-        )
+    manifest = read_manifest(DEFAULT_MANIFEST)
+    content = manifest["content"]
+    problems = compare_content(source, manifest)
+    if problems:
+        for problem in problems:
+            print(f"built warehouse: FAIL {problem}")
+        print(f"demo manifest mismatch: {len(problems)} difference(s)")
         return 1
-    print("demo artifact matches the built warehouse content: PASS")
+    print(
+        f"built warehouse: {len(content['tables'])} tables and"
+        f" {len(content['views'])} views match the manifest"
+    )
+    for view, entry in content["views"].items():
+        print(f"  view {view}: {entry['rows']} rows, digest match ({entry['digest']})")
+    registry = content.get("registry")
+    if registry:
+        print(f"  registry: {registry['rows']} rows, digest match ({registry['digest']})")
+    # The local artifact is informational: absent from a fresh clone by
+    # design, and a stale one is refreshed by export or fetch, never a gate.
+    if not DEFAULT_DEST.exists():
+        print("local artifact: absent (make demo-fetch or make demo restores it)")
+    elif compare_content(DEFAULT_DEST, manifest):
+        print("local artifact: STALE against the manifest (make export-demo or make demo-fetch)")
+    else:
+        print("local artifact: matches the manifest")
+    print("demo manifest matches the built warehouse content: PASS")
     return 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    sys.exit(main())
