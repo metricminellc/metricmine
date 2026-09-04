@@ -1,0 +1,146 @@
+# Contract: silver_ourairports_runways v1.0.0 (ODCS v3.1.0), the Arc 6 aviation family (D-41).
+# Hand-authored from the bronze profile it cites (rule 16: proposedBy human,
+# profileHash present, no stance keys); the cleanup proposer's live drafts over
+# the same profile are recorded as eval-lane evidence, never as this file.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_ourairports_runways
+name: Silver ourairports runways
+version: 1.0.0
+status: active
+domain: aviation
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: 'The runway reference: one row per runway of the airports in the airports extract,
+    OurAirports at commit d27027ba (2026), with length, width, surface, lighting, and closure.
+    The reference table that gives silver_flights each airport''s longest runway.'
+  usage: Join airport_ident to silver_ourairports_airports.airport_ident (many runways to
+    one airport); length_ft is the runway length in feet, width_ft the width, surface the
+    published free-text surface (ASPH, CONC, and variants), is_lighted and is_closed flags.
+    silver_flights derives an airport's longest open runway from here.
+  limitations: 10,760 runways; length is null for 87 (86 unpublished and one published as
+    0, read as unknown), width for 888, and surface for 247 in the extract; surface is free
+    text and not normalized. A 2026 snapshot. Runway end coordinates and headings are dropped
+    in silver (the low-end and high-end detail columns) because no downstream question uses
+    them; they stay in bronze.
+schema:
+- name: silver_ourairports_runways
+  physicalName: silver_ourairports_runways
+  logicalType: object
+  physicalType: table
+  description: 'The runway reference: one row per runway of the airports in the airports extract,
+    OurAirports at commit d27027ba (2026), with length, width, surface, lighting, and closure.
+    The reference table that gives silver_flights each airport''s longest runway.'
+  dataGranularityDescription: One row per (runway_id); the grain is unique by measurement
+    at profile v0001 and enforced by the error-severity grain rule.
+  properties:
+  - name: runway_id
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: OurAirports internal runway id, unique.
+  - name: airport_ident
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: The OurAirports identifier of the airport the runway belongs to (KJFK); joins
+      to silver_ourairports_airports.airport_ident, and every runway in the extract resolves.
+  - name: length_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: 'Runway length in feet; null for 86 runways where unpublished and for the
+      one runway published with length 0 (YROB runway 34), which silver reads as unknown,
+      not as a measurement (decision: zero-length is missing).'
+    quality:
+    - type: sql
+      description: Runway length is positive where recorded.
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_ourairports_runways WHERE length_ft <= 0
+      mustBe: 0
+  - name: width_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: Runway width in feet; null for 888 runways.
+  - name: surface
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: 'Surface as published (free text: ASPH, CONC, ASP, TURF, and variants); null
+      for 247 runways; not normalized.'
+  - name: is_lighted
+    logicalType: boolean
+    physicalType: BOOLEAN
+    required: true
+    description: True when the runway is lighted (the published 1 or 0 as a flag).
+  - name: is_closed
+    logicalType: boolean
+    physicalType: BOOLEAN
+    required: true
+    description: True when the runway is closed (the published 1 or 0 as a flag); silver_flights
+      ignores closed runways when picking the longest.
+  - name: low_end_ident
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: Low-end runway designator (for example, 04L); null for 11 runways.
+  - name: high_end_ident
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: High-end runway designator (for example, 22R); null where unpublished.
+  - name: captured_at
+    logicalType: date
+    physicalType: TIMESTAMP
+    required: true
+    description: 'Capture timestamp carried forward from the bronze landing (_airbyte_extracted_at):
+      when this row''s capture entered the pipeline. The incremental watermark the gold layer
+      builds on (D-38). Required from the first version: the model populates it on every row
+      from its first build (F-49). Audit metadata, never a business value.'
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty; the committed extract lands every row.
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (runway_id) combinations. Declared at error
+      severity because the primaryKey-flag composite test generates at warn severity at datacontract-cli
+      1.0.12 (rule 5: uniqueness as a test, never a trusted constraint).'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT runway_id
+        FROM silver.silver_ourairports_runways
+        GROUP BY runway_id
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: human
+- property: profileHash
+  value: sha256:02990e96b848ac4edf287fdcca8136ca6b04008ab98d2a2f5287e450b0eecb33
+- property: proposedAt
+  value: '2026-09-02'
+- property: sourceLineage
+  value: bronze.ourairports_runways (data/samples/ourairports_runways/README.md)
+- property: vintage
+  value: 2026 snapshot; OurAirports at commit d27027ba (2026-09-02)
+- property: decisionRowsDropped
+  value: none
+- property: decisionDroppedColumns
+  value: airport_ref and the twelve runway-end coordinate, elevation, heading, and displaced-threshold
+    columns
+- property: decisionZeroLength
+  value: a published length of 0 reads as unknown (null), never as a measurement
