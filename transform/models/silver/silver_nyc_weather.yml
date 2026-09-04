@@ -1,0 +1,199 @@
+# Hand-authored properties file (F-02, rule 11): export output is scaffold
+# only and is never committed here. Contract enforcement is declared per
+# model (rule 3); every column carries name + data_type (rule 4). Only
+# not_null is a trusted constraint; uniqueness lives in contract-generated
+# tests (rule 5). Rendered from the Arc 6 prep's table specification, then
+# refreshed in place by datacontract dbt sync and reviewed.
+version: 2
+models:
+- name: silver_nyc_weather
+  description: One row per airport per hour of hourly ASOS weather observations at EWR, JFK, and LGA for January through June 2013, typed with units in the column names. The weather input to silver_airport_weather, the unified table the gold star maps.
+  config:
+    contract:
+      enforced: true
+    meta:
+      datacontract_cli:
+        contract_id: silver_nyc_weather
+  columns:
+  - name: airport_code
+    data_type: VARCHAR
+    constraints:
+    - type: not_null
+    description: 'IATA code of the observing airport (EWR, JFK, LGA). A conformed key: the same code silver_nyc_flights carries as origin_airport and silver_ourairports_airports as iata_code.'
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_nyc_weather__airport_code__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field airport_code has no missing values
+  - name: observed_hour_utc
+    data_type: TIMESTAMP
+    constraints:
+    - type: not_null
+    description: Observation hour as a UTC instant (the published time_hour parsed). The conformed calendar key at hour grain, shared with the flights category in the gold star.
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_nyc_weather__observed_hour_utc__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field observed_hour_utc has no missing values
+  - name: observed_date_local
+    data_type: DATE
+    constraints:
+    - type: not_null
+    description: Local (America/New_York) calendar date of the observation, from the published year, month, and day.
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_nyc_weather__observed_date_local__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field observed_date_local has no missing values
+  - name: observed_hour_local
+    data_type: INTEGER
+    constraints:
+    - type: not_null
+    description: Local hour of the observation (0 to 23); equals observed_hour_utc rendered in America/New_York (a contract rule checks it).
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_nyc_weather__observed_hour_local__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field observed_hour_local has no missing values
+  - name: temp_f
+    data_type: DOUBLE
+    constraints:
+    - type: not_null
+    description: Air temperature in degrees Fahrenheit.
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_nyc_weather__temp_f__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field temp_f has no missing values
+  - name: dewpoint_f
+    data_type: DOUBLE
+    constraints:
+    - type: not_null
+    description: Dew point in degrees Fahrenheit.
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_nyc_weather__dewpoint_f__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field dewpoint_f has no missing values
+  - name: humidity_pct
+    data_type: DOUBLE
+    constraints:
+    - type: not_null
+    description: Relative humidity in percent (0 to 100).
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_nyc_weather__humidity_pct__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field humidity_pct has no missing values
+  - name: wind_dir_degrees
+    data_type: INTEGER
+    description: Wind direction in degrees clockwise from north (0 to 360); null when calm or not reported.
+  - name: wind_speed_mph
+    data_type: DOUBLE
+    description: Sustained wind speed in mph (the publisher converted knots at 1.15078); null on 2 rows in the window.
+  - name: wind_gust_mph
+    data_type: DOUBLE
+    description: Wind gust speed in mph; null when no gust was reported that hour (about three quarters of rows), not zero.
+  - name: precip_inches
+    data_type: DOUBLE
+    constraints:
+    - type: not_null
+    description: Precipitation in inches accumulated in the hour (the hourly maximum before the minute-51 reset); zero on dry hours.
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_nyc_weather__precip_inches__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field precip_inches has no missing values
+  - name: pressure_mb
+    data_type: DOUBLE
+    description: Sea-level pressure in millibars; null on about 12 percent of rows.
+  - name: visibility_miles
+    data_type: DOUBLE
+    constraints:
+    - type: not_null
+    description: Visibility in statute miles (10 is the reporting maximum).
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_nyc_weather__visibility_miles__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field visibility_miles has no missing values
+  - name: captured_at
+    data_type: TIMESTAMP
+    constraints:
+    - type: not_null
+    description: 'Capture timestamp carried forward from the bronze landing (_airbyte_extracted_at): when this row''s capture entered the pipeline. The incremental watermark the gold layer builds on (D-38). Required from the first version: the model populates it on every row from its first build (F-49). Audit metadata, never a business value.'
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_nyc_weather__captured_at__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field captured_at has no missing values
