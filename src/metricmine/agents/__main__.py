@@ -56,7 +56,23 @@ def main(argv: list[str] | None = None) -> int:
         "--table",
         default=None,
         help="describe and amend: the existing silver table; the "
-        "profile directory and the target contract derive from it",
+        "profile directory and the target contract derive from it. "
+        "mapping: the silver table whose profile the propose stance "
+        "reads (profiles/silver.<table>/; default: the configured table)",
+    )
+    propose.add_argument(
+        "--source",
+        default=None,
+        help="silver only: the bronze table whose profile the cleanup "
+        "stance reads (profiles/bronze.<source>/; default: the "
+        "configured table)",
+    )
+    propose.add_argument(
+        "--target",
+        default=None,
+        help="silver and mapping: the target contract id "
+        "(contracts/<target>.odcs.yaml; default: silver_<source> or "
+        "gold_<category>_mapping, or the configured target)",
     )
     propose.add_argument(
         "--intent",
@@ -76,9 +92,10 @@ def main(argv: list[str] | None = None) -> int:
         "--oracle",
         default=None,
         metavar="PATH",
-        help="describe only: bypass the duplicate-id refusal and score "
-        "the draft against this committed contract as an n=1 agreement "
-        "study (D-25)",
+        help="describe: bypass the duplicate-id refusal and score the "
+        "draft against this committed contract as an n=1 agreement "
+        "study (D-25). silver and mapping: score the draft against this "
+        "committed contract the same way (the multi-source study, D-41)",
     )
     propose.add_argument(
         "--profile",
@@ -147,15 +164,53 @@ def main(argv: list[str] | None = None) -> int:
         return _run_describe(repo_root, args)
     if args.proposer == "amend":
         return _run_amend(repo_root, args)
-    build = (
-        silver_proposer.build_spec
-        if args.proposer == "silver"
-        else mapping_proposer.build_spec
+    oracle_path = Path(args.oracle) if args.oracle else None
+    if oracle_path is not None and not oracle_path.exists():
+        print(f"error: oracle {oracle_path} does not exist", file=sys.stderr)
+        return 1
+    if args.proposer == "silver":
+        spec = silver_proposer.build_spec(
+            repo_root, source=args.source, target=args.target
+        )
+        scorer = (agreement.score, agreement.summary_lines)
+    else:
+        spec = mapping_proposer.build_spec(
+            repo_root, table=args.table, target=args.target
+        )
+        scorer = (agreement.score_mapping, agreement.summary_lines_mapping)
+    report: dict = {}
+    code = harness.run_proposer(
+        spec,
+        repo_root,
+        profile=args.profile,
+        model_flag=args.model,
+        report=report,
     )
-    spec = build(repo_root)
-    return harness.run_proposer(
-        spec, repo_root, profile=args.profile, model_flag=args.model
+    if code == 0 and oracle_path is not None:
+        _score_against_oracle(report, oracle_path, *scorer)
+    return code
+
+
+def _score_against_oracle(report: dict, oracle_path: Path, score, lines) -> None:
+    """The recorded n=1 agreement study (D-25): score the written draft
+    against the oracle contract, print the block, and leave
+    agreement.json beside the record in the run directory."""
+    draft = yaml.safe_load(
+        Path(report["record"]["draft_path"]).read_text(encoding="utf-8")
     )
+    oracle = yaml.safe_load(oracle_path.read_text(encoding="utf-8"))
+    result = score(draft, oracle)
+    for line in lines(result):
+        print(line)
+    run_dir = Path(report["run_dir"])
+    out = run_dir / "agreement.json"
+    tmp = run_dir / "agreement.json.tmp"
+    tmp.write_text(
+        json.dumps(result, indent=2, sort_keys=True, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    tmp.replace(out)
+    print(f"agreement: {out}")
 
 
 def _run_describe(repo_root: Path, args: argparse.Namespace) -> int:
@@ -202,23 +257,9 @@ def _run_describe(repo_root: Path, args: argparse.Namespace) -> int:
         report=report,
     )
     if code == 0 and oracle_path is not None:
-        draft = yaml.safe_load(
-            Path(report["record"]["draft_path"]).read_text(encoding="utf-8")
+        _score_against_oracle(
+            report, oracle_path, agreement.score, agreement.summary_lines
         )
-        oracle = yaml.safe_load(oracle_path.read_text(encoding="utf-8"))
-        result = agreement.score(draft, oracle)
-        for line in agreement.summary_lines(result):
-            print(line)
-        run_dir = Path(report["run_dir"])
-        out = run_dir / "agreement.json"
-        tmp = run_dir / "agreement.json.tmp"
-        tmp.write_text(
-            json.dumps(result, indent=2, sort_keys=True, ensure_ascii=False)
-            + "\n",
-            encoding="utf-8",
-        )
-        tmp.replace(out)
-        print(f"agreement: {out}")
     return code
 
 
