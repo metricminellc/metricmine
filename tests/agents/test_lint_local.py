@@ -106,12 +106,15 @@ def test_rendered_recorded_proposal_lints_clean(
     # a fourth fixture joins the parametrize with no test edit.
     fixture = next(f for f in EVAL_FIXTURES if f["label"] == label)
     render, name, stance = _RECORDED_BINDINGS[fixture["proposer"]]
-    proposal = json.loads(
-        (
-            REPO_ROOT / "tests" / "agents" / "fixtures" / "recorded"
-            / f"{label}.proposal.json"
-        ).read_text(encoding="utf-8")
+    recorded = (
+        REPO_ROOT / "tests" / "agents" / "fixtures" / "recorded"
+        / f"{label}.proposal.json"
     )
+    if not recorded.exists():
+        # Skips by name until the live eval run lands the recording
+        # (the multi-source family, D-41), as test_recorded.py does.
+        pytest.skip(f"{label}: no recorded proposal yet (the live eval run lands it)")
+    proposal = json.loads(recorded.read_text(encoding="utf-8"))
     provenance = Provenance(
         proposed_by=name,
         proposer_version="0.1.0",

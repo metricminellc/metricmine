@@ -6,8 +6,8 @@ Each recorded proposal under tests/agents/fixtures/recorded/ is the
 validated proposal object from one live eval run (the outbox's
 proposal.json, copied under the fixture's label), so these tests hold
 the offline path to what the live lane actually produced. Labels come
-from config agents.eval.fixtures: a fourth fixture joins the parametrize
-with no test edit once its recorded proposal lands.
+from config agents.eval.fixtures: a new fixture joins the parametrize
+with no test edit, skipping by name until its recorded proposal lands.
 """
 
 from __future__ import annotations
@@ -57,9 +57,14 @@ def _fixture(label: str) -> dict:
 
 def _load(label: str) -> tuple[dict, dict, tuple]:
     fixture = _fixture(label)
-    proposal = json.loads(
-        (RECORDED / f"{label}.proposal.json").read_text(encoding="utf-8")
-    )
+    recorded = RECORDED / f"{label}.proposal.json"
+    if not recorded.exists():
+        # A fixture joins the eval lane before its first live run lands
+        # its recording (the multi-source family, D-41): the offline path
+        # has nothing recorded to hold to yet, and says so by name rather
+        # than failing or passing vacuously.
+        pytest.skip(f"{label}: no recorded proposal yet (the live eval run lands it)")
+    proposal = json.loads(recorded.read_text(encoding="utf-8"))
     profile = json.loads(
         (REPO_ROOT / fixture["profile"]).read_text(encoding="utf-8")
     )
