@@ -286,7 +286,10 @@ working on the agent layer (the proposers, their prompts, or the
 proposal validator), read
 `docs/spec/agent-layer.md`. Before adopting an existing model into the
 contract gates, or working on the adoption scan and its helpers, read
-`docs/adoption.md`. Decisions cited anywhere as D-0x resolve in
+`docs/adoption.md`. Before adding a source (a fetch script, a landing,
+a cleanup contract, a category), read `docs/adding-a-source.md`; the
+operator's procedures are `docs/operating.md`.
+Decisions cited anywhere as D-0x resolve in
 `docs/decisions/decision-register.md`.
 
 ## Brand standards
