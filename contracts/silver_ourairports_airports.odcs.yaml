@@ -1,0 +1,208 @@
+# Contract: silver_ourairports_airports v1.0.0 (ODCS v3.1.0), the Arc 6 aviation family (D-41).
+# Hand-authored from the bronze profile it cites (rule 16: proposedBy human,
+# profileHash present, no stance keys); the cleanup proposer's live drafts over
+# the same profile are recorded as eval-lane evidence, never as this file.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_ourairports_airports
+name: Silver ourairports airports
+version: 1.0.0
+status: active
+domain: aviation
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: 'The airport reference: one row per airport carrying an IATA code in the OurAirports
+    database at commit d27027ba (2026), with its identifier, type, name, coordinates, elevation,
+    and location codes. The reference table that gives silver_flights and silver_airport_weather
+    their airport attributes.'
+  usage: Join iata_code from any table carrying a conformed airport code (origin_airport,
+    dest_airport, airport_code). Coordinates are WGS84 decimal degrees; elevation is feet
+    above mean sea level; airport_type is the OurAirports size class (large_airport, medium_airport,
+    small_airport, and others); iso_region is the ISO 3166-2 code (US-NY), municipality the
+    served city.
+  limitations: 'A 2026 snapshot joined to 2013 flights: codes can move between airports and
+    an airport can be recoded. In this data Palm Beach International (PBI in 2013) is coded
+    DJT in the reference and keeps PBI only in its free-text keywords, so 3,471 flights to
+    PBI (2.1 percent of the window) resolve no destination attributes; the contract does not
+    apply the keywords crosswalk because keywords are free text. Elevation is null for 335
+    airports and the municipality for 360 in the extract. The continent code for North America
+    and the country code for Namibia are the text NA, kept as text (F-50).'
+schema:
+- name: silver_ourairports_airports
+  physicalName: silver_ourairports_airports
+  logicalType: object
+  physicalType: table
+  description: 'The airport reference: one row per airport carrying an IATA code in the OurAirports
+    database at commit d27027ba (2026), with its identifier, type, name, coordinates, elevation,
+    and location codes. The reference table that gives silver_flights and silver_airport_weather
+    their airport attributes.'
+  dataGranularityDescription: One row per (iata_code); the grain is unique by measurement
+    at profile v0001 and enforced by the error-severity grain rule.
+  properties:
+  - name: iata_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: Three-letter IATA code, unique in this extract (9,057 airports). A conformed
+      key across the family.
+    quality:
+    - type: sql
+      description: 'Conformed key airport_iata: every value matches ^[A-Z]{3}$ (the K1 normalization
+        rule, D-41).'
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_ourairports_airports WHERE NOT regexp_matches(iata_code, '^[A-Z]{3}$')
+      mustBe: 0
+  - name: airport_ident
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: OurAirports identifier, the ICAO code where one exists (KJFK); the key silver_ourairports_runways
+      carries as airport_ident.
+  - name: airport_type
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: 'OurAirports size class: small_airport (4,234), medium_airport (3,400), large_airport
+      (1,170), seaplane_base (153), and heliport (100) in this extract.'
+  - name: airport_name
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: Airport name as OurAirports records it in 2026 (names change; the 2013 name
+      of a renamed airport is not carried).
+  - name: latitude_deg
+    logicalType: number
+    physicalType: DOUBLE
+    required: true
+    description: Latitude in decimal degrees, WGS84.
+    quality:
+    - type: sql
+      description: Latitude stays within the WGS84 range.
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_ourairports_airports WHERE latitude_deg < -90 or latitude_deg > 90
+      mustBe: 0
+  - name: longitude_deg
+    logicalType: number
+    physicalType: DOUBLE
+    required: true
+    description: Longitude in decimal degrees, WGS84.
+    quality:
+    - type: sql
+      description: Longitude stays within the WGS84 range.
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_ourairports_airports WHERE longitude_deg < -180 or longitude_deg > 180
+      mustBe: 0
+  - name: elevation_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: Field elevation in feet above mean sea level; null for 335 airports.
+  - name: continent_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: Continent code (NA for North America, EU, AS, SA, AF, OC, AN); the text NA
+      is a code, not a missing value.
+  - name: iso_country
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: ISO 3166-1 alpha-2 country code (US, CA, and others; NA is Namibia).
+  - name: iso_region
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: ISO 3166-2 region code (US-NY for New York).
+  - name: municipality
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: The city or town the airport serves, as OurAirports records it; null where
+      unknown.
+  - name: has_scheduled_service
+    logicalType: boolean
+    physicalType: BOOLEAN
+    required: true
+    description: True when OurAirports records scheduled airline service at the airport (the
+      published yes or no as a flag).
+  - name: icao_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: Four-letter ICAO code where one exists (KJFK); null otherwise.
+  - name: gps_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: GPS code as published; null where none.
+  - name: local_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: Local (FAA or national) code as published; null where none.
+  - name: wikipedia_link
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: Wikipedia URL where OurAirports records one.
+  - name: keywords
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: Free-text search keywords as published, which is where a former code survives
+      (PBI for the airport now coded DJT); not used for joining.
+  - name: captured_at
+    logicalType: date
+    physicalType: TIMESTAMP
+    required: true
+    description: 'Capture timestamp carried forward from the bronze landing (_airbyte_extracted_at):
+      when this row''s capture entered the pipeline. The incremental watermark the gold layer
+      builds on (D-38). Required from the first version: the model populates it on every row
+      from its first build (F-49). Audit metadata, never a business value.'
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty; the committed extract lands every row.
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (iata_code) combinations. Declared at error
+      severity because the primaryKey-flag composite test generates at warn severity at datacontract-cli
+      1.0.12 (rule 5: uniqueness as a test, never a trusted constraint).'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT iata_code
+        FROM silver.silver_ourairports_airports
+        GROUP BY iata_code
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: human
+- property: profileHash
+  value: sha256:113a01272f19c485ada9b62583be7449fbfd55b60fb304b18139a17614cf0ec2
+- property: proposedAt
+  value: '2026-09-02'
+- property: sourceLineage
+  value: bronze.ourairports_airports (data/samples/ourairports_airports/README.md)
+- property: vintage
+  value: 2026 snapshot; OurAirports at commit d27027ba (2026-09-02)
+- property: conformedKeys
+  value: iata_code=airport_iata
+- property: decisionRowsDropped
+  value: 'none (the window is the fetch script''s: airports with an IATA code)'
+- property: decisionDroppedColumns
+  value: id, home_link (internal id and home page carry no analytic meaning)
