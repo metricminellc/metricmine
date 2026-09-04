@@ -1,0 +1,79 @@
+# Hand-authored properties file (F-02, rule 11): export output is scaffold
+# only and is never committed here. Contract enforcement is declared per
+# model (rule 3); every column carries name + data_type (rule 4). Only
+# not_null is a trusted constraint; uniqueness lives in contract-generated
+# tests (rule 5). Rendered from the Arc 6 prep's table specification, then
+# refreshed in place by datacontract dbt sync and reviewed.
+version: 2
+models:
+- name: silver_nyc_airlines
+  description: 'The carrier code lookup: one row per two-letter BTS carrier code that flew from New York City in 2013 with its full name. The reference table that gives silver_flights its carrier_name.'
+  config:
+    contract:
+      enforced: true
+    meta:
+      datacontract_cli:
+        contract_id: silver_nyc_airlines
+  columns:
+  - name: carrier_code
+    data_type: VARCHAR
+    constraints:
+    - type: not_null
+    description: Two-letter BTS carrier code. A conformed key across the family.
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_nyc_airlines__carrier_code__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field carrier_code has no missing values
+    - unique:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_nyc_airlines__carrier_code__field_unique
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field carrier_code has no duplicate values
+  - name: carrier_name
+    data_type: VARCHAR
+    constraints:
+    - type: not_null
+    description: Carrier name as published by BTS for 2013 (for example, 'JetBlue Airways' for B6).
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_nyc_airlines__carrier_name__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field carrier_name has no missing values
+  - name: captured_at
+    data_type: TIMESTAMP
+    constraints:
+    - type: not_null
+    description: 'Capture timestamp carried forward from the bronze landing (_airbyte_extracted_at): when this row''s capture entered the pipeline. The incremental watermark the gold layer builds on (D-38). Required from the first version: the model populates it on every row from its first build (F-49). Audit metadata, never a business value.'
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_nyc_airlines__captured_at__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field captured_at has no missing values
