@@ -26,7 +26,9 @@ Record 009 (August 28, 2026) carries Amendment N to D-05 and findings
 F-30 and F-31. Decision Record 010 (August 29, 2026) carries D-37, the
 local enforcement hooks in the SDLC layer, and finding F-32. Decision
 Record 008 part two (Arc 5b) carries D-38 through D-40 and Amendments
-O, P, and Q, completing the record part one opened.
+O, P, and Q, completing the record part one opened. Decision Record
+011 (September 2, 2026) carries D-41, the multi-source proof,
+Amendments R through W, and findings F-36 through F-53.
 
 **Status meanings.** `adopted`: in force. `proposed`: agreed in working
 session, applied by the plans below, formal adoption pending; treat as binding
@@ -76,6 +78,7 @@ unless amended.
 | [D-38](#d-38) | Incremental materialization behind engine.materialization | adopted |
 | [D-39](#d-39) | Batch-scoped gates; make audit-gold full-table audit | adopted |
 | [D-40](#d-40) | docs/scale.md and the measurement rule | adopted |
+| [D-41](#d-41) | The multi-source proof and the star trial | adopted |
 
 ## The decisions
 
@@ -111,6 +114,20 @@ alike, fails as ambiguous
 export mechanism, the D-33 content-equality claim, the gitignore
 exception, and the D-31 keyless default all follow the new path;
 everything else in this decision stands.
+Amended September 2, 2026 (Record 011, Amendment S): the demo artifact
+leaves git. `demo/demo.duckdb` is a release asset attached to each
+tagged release and gitignored; the committed artifact is its digest
+manifest, `demo/demo.digest.json` (the artifact's name, release,
+sha256, and byte count, plus the content manifest: per-table row
+counts and the D-33 ordered digest per typed view). `make demo-fetch`
+restores the instant serve path from the release the manifest names;
+`make demo` builds the same content keyless from the committed
+samples; CI proves the built warehouse against the manifest; doctor
+reports an absent artifact as a hint, never a failure. Measured at
+the Arc 6 prep ([F-44](../verification/gate_proof_findings.md#f-44)):
+three categories make the artifact 106 MB, and every refresh would
+add its gzipped size to every clone forever. The working-warehouse
+clause, the raw-data clause, and the D-31 keyless default stand.
 
 ### D-04
 **Transform execution plane.** dbt Core v1 with the dbt-duckdb adapter
@@ -233,6 +250,19 @@ Machine Learning Repository, CC BY 4.0): a deterministic, complete-invoice,
 one-month extract under 5 MB, produced by a committed fetch script; the raw
 download stays gitignored. The Kaggle mirror is acceptable with UCI cited.
 `source-faker` remains the keyless synthetic path.
+Amended September 2, 2026 (Record 011, Amendment T): committed samples,
+plural. Every source in scope is a public dataset cited in its own
+README under `data/samples/<source>/`, licensed for redistribution,
+fetched by a committed script pinned to a publisher artifact that
+does not move (a repository commit, a published month), with the raw
+download gitignored. The script records the raw download's sha256
+and refuses to extract from bytes that differ from it, printing the
+revision instead: a rerun is byte-identical while the publisher
+artifact is unchanged, and a publisher revision is a loud finding,
+never a silent re-extract. Budgets: 20 MB for the one event source,
+10 MB for every other source, 40 MB for an arc, measured at the
+fetch and enforced in the script. The retail sample, the Kaggle
+clause, and `source-faker` stand as written.
 
 ### D-16
 **Gate-three mechanism.** Gate three is
@@ -287,6 +317,18 @@ clause reads, from here, as the committed default rather than the only
 mode. [D-38](#d-38) adds `incremental` behind `engine.materialization`
 (contract enforcement permits table or incremental, as this decision
 has always noted). Every other clause stands.
+Amended September 2, 2026 (Record 011, Amendment R): the conformed
+calendar. The timeframe group's payload is `{grain, period_start}`
+under one fixed manifest for the whole star, `period_start` the
+category's declared time column truncated to its declared grain and
+rendered canonically, so equal periods at equal grain hash to one row
+whichever category minted them. Before this amendment the payload
+key was the category's own time column name, and two categories at
+the same grain minted different rows for the same day
+([F-43](../verification/gate_proof_findings.md#f-43)). The typed
+surfaces extract `period_start` into each category's time column.
+One regeneration of the existing category carries the change. Every
+other clause stands.
 
 ### D-18
 **Keying scheme v2.** All record and schema keys use
@@ -494,6 +536,17 @@ provenanceNote, extending the agent-layer Appendix B pattern). Evidence:
 [F-11](../verification/gate_proof_findings.md#f-11) through
 [F-14](../verification/gate_proof_findings.md#f-14). Ratified in Decision
 Record 004.
+Amended September 2, 2026 (Record 011, Amendment U): the multi-source
+fan-in. `engine.mapping_contracts` is a list, one mapping contract
+per fact category; the engine emits every category's set and one
+star-global set over all of them, in category-name order, and the
+shared groups union every category. Each mapping's silver contract
+resolves by convention from its `sourceTable` (`silver.<table>` reads
+`contracts/<table>.odcs.yaml`). Star-level cross-checks, fail-closed:
+unique category names, unique source tables, and `captured_at` on
+every mapped silver table. The star-global objects carry a header
+naming the star contract and every mapping; the ownership manifest
+names every mapping. Engine 0.5.0. Every other clause stands.
 
 ### D-30
 **Registry population: compiled-context artifact plus a literal-carrying
@@ -511,6 +564,39 @@ class cannot reach the registry; the demo path stays keyless and
 byte-reproducible; C3 stays a gate-capable test; and registry changes
 arrive as reviewable regeneration pull requests under the ownership
 manifest (D-09, D-19). Ratified in Decision Record 004.
+Amended September 2, 2026 (Record 011, Amendment V): compiled schema
+2.0.0. The artifact carries one dimensions entry and one measures
+entry per mapping contract, each citing its mapping, and one entry
+per shared group, each citing the star contract, because no single
+mapping owns a shared schema key. Category entries carry the category
+name, its declared time column and grain, its typed surface, and its
+conformed keys (`conformed_keys`: the mapped columns that join across
+categories and the declared key each carries, harvested from the
+silver contract's `conformedKeys`); `sources` lists the star contract
+and every mapping and silver contract. The freshness check compares
+every governing contract by id and version, so a bump to any of them
+keeps the artifact ahead of the emission. Every other clause stands.
+Amended September 3, 2026 (Record 011, Amendment W, jointly with D-31):
+every registry entry keeps two things apart by name. `data` is what the
+columns are, derived from the contracts' typed declarations (per field
+the logical type, physical type, mapping role, and required flag, never
+a description; for a dimensions entry also the grain, the derived
+identifiers, the conformed keys with the star's normalization rule and
+`shared_with`, the other categories carrying the same key; the source
+table, time column and grain, the typed surface, the served value form,
+and where to query). `expert_context` is what people wrote, carried
+from the governing contracts unchanged and opened by a note that names
+it authored knowledge, never a measurement: the silver contract's
+purpose, usage, and limitations; the mapping's purpose, usage, and
+limitations; the governing contract citations for all three planes;
+`sourceLineage` and `vintage`; the unified tables' structured `joins`
+with measured completeness and floor; the star's `crossCategoryJoins`
+the category takes part in; the `decisions` of both contracts; and per
+field a `meaning` plus a `source_meaning` where the silver column's own
+description differs. The shared groups carry the same two sections
+framed by the star contract. `role` and `manifest` stay at the top
+level where `get_schema` reads them. Compiled schema stays 2.0.0: the
+split adds keys under it and removes none the serving layer read.
 
 ### D-31
 **Serving layer: one shared query module; thin MCP server.** All gold
@@ -541,6 +627,21 @@ artifact gains the key; compiled schema_version 1.1.0), so
 Evidence: the August 23 pressure findings measured an agent exploring
 the star unaided through this server; the steer is the direct remedy.
 Full text: Decision Record 008.
+Amended September 3, 2026 (Record 011, Amendment W, jointly with D-30):
+still five tools, no sixth. `list_fact_categories` additionally
+returns, per category, `subject` (the authored subject of the
+category's dimensions entry, the words of the people who approved its
+contracts) and `context_keys` (the dimensions and measures schema keys
+`get_context` resolves), and its `query_hint` says that string values
+on the typed surface are lowercase and that `get_context` returns
+`data` and `expert_context` apart. `get_context` returns the split
+artifact as compiled (D-30 as amended). The server instructions tell
+an agent to read a category's context before answering from it, to
+say which of the two sections an answer rests on, and to use the
+declared cross-category joins on the typed surfaces as written. The
+D-41 exit measured the need: an agent that writes `origin_airport =
+'JFK'` gets no rows, and none of what a null gust, a null arrival
+delay, or a recoded airport means is in the rows.
 
 ### D-32
 **MCP SDK selection and pin.** The official `mcp` package at 2.0.x,
@@ -591,6 +692,15 @@ Amended August 14, 2026 (Record 006, Amendment E): the export target is
 claim stand unchanged; the re-anchored view and the module's two-part
 `gold.<x>` SQL both bind cleanly in the non-colliding catalog `demo`,
 verified on every serving path before this amendment bound.
+Amended September 2, 2026 (Record 011, Amendment S): the exporter
+writes the artifact and its digest manifest, `demo/demo.digest.json`,
+and the manifest is what git carries (D-03 as amended). The content
+manifest is the D-33 claim made portable: per-table row counts and
+one ordered content digest per typed view, computed over the rendered
+row text with no per-category ordering key, so the same query proves
+a fetched artifact, a fresh export, and a built warehouse against
+each other. The view digest is recomputed once at the fan-in, when
+the ordering changed. Mechanism and claim otherwise stand.
 
 ### D-34
 **Proposer model selection: pinned default, allow-listed override.** The
@@ -781,6 +891,78 @@ The August 23 sandbox curve (45 thousand to 21 million rows, 2 CPUs,
 million rows lands in the same file with its own environment line at
 the Arc 5b sitting. Full text: Decision Record 008 part two.
 
+### D-41
+**The multi-source proof and the star trial.** Arc 6 lands seven public
+extracts under contracts: the retail sample already committed plus the
+aviation family, six files from two publishers (the nycflights13
+package at commit `df98ef21`, CC0: flights, hourly weather, carriers,
+and aircraft for New York City's three airports in January through June
+2013; OurAirports at commit `d27027ba`, public domain: airports and
+runways), each cited in its README, licensed for redistribution, and
+fetched by a deterministic script pinned to a publisher artifact with
+its digest (D-15 as amended by Amendment T; `docs/sources.md` is the
+register of them). Bronze lands every source through one PyAirbyte
+connector type, many files. Silver stays the human-owned plane: one
+cleanup contract per source, hand-authored from the profile it cites
+(rule 16), with the cleanup proposer's draft over the same profile
+recorded as an eval-lane agreement study against that contract (D-25),
+never as the file; conformance settled in silver, in human-owned SQL,
+as unified tables (`silver_flights`, `silver_airport_weather`) whose
+contracts are hand-authored from the tables' own profiles, each join
+declared as structured `joins` with the completeness measured at the
+profile and the floor an error-severity rule enforces; conformed keys
+declared at the contract plane (`conformedKeys` on each silver contract
+that carries one, `conformedKeyRules` on the star contract with the
+key's physical type and normalization rule), enforced by an
+error-severity normalization rule in each carrying contract and by the
+K1 gate (`tests/test_conformed_keys.py`: every declared key typed
+identically wherever it appears, guarded by its rule, and carried by at
+least two contracts), and surfaced per category in the context registry
+(`conformed_keys` with `shared_with`, D-30 as amended by Amendments V
+and W). Gold is one star over every category (D-29 as amended by
+Amendment U) under one registry and one conformed calendar (D-17 as
+amended by Amendment R); three categories at the exit (`invoice_lines`,
+`flights`, `airport_weather`). The star contract declares the
+cross-category joins the typed surfaces support (`crossCategoryJoins`:
+the two categories, the condition aliased by category name, the
+conformed keys and calendar grain it rides on, the completeness
+measured through the typed surfaces, the floor, a note, a worked
+example), and the declared-join gate (`tests/test_declared_joins.py`)
+re-measures every silver join by its definition and every
+cross-category join through the typed surfaces and through silver,
+failing by name when a declaration drifts. The claim: co-location in
+gold, conformance in silver, service through the typed surfaces. The
+star carries no shared business-entity dimension and a mapping
+contract's `entityGroup` stays a registry label.
+
+The trial, written here before the first source landed. The star earns
+its place if, at the arc's exit, (M1) every category builds in one `dbt
+build` from an empty warehouse with C1 to C5 at error severity, `make
+audit-gold` passes full-table, and `make demo` runs keyless with the
+demo gate green; (M2) the K1 gate holds, every declared silver join
+meets the completeness floor its unified contract declares at error
+severity, and every declared cross-category join meets its floor
+through the typed surfaces; and (M3) the recorded cross-source
+questions (`tests/fixtures/serving_questions.json`, proven through the
+serving path by `tests/test_serving_questions.py`) each answer through
+the typed surfaces with one `query` statement joining on conformed keys
+the registry names, with `list_fact_categories` and `get_context` as
+the only guide; all of it with no gold object beyond the engine's
+emission and no engine change beyond the fan-in and the conformed
+calendar this record mints. The star fails the trial if a question
+needs a hand-written gold object, or a conformed entity cannot be
+joined across categories through the typed surfaces.
+
+The verdict is appended to this entry at the exit with the measured
+cost of per-category dimensions
+([F-44](../verification/gate_proof_findings.md#f-44)); a failing verdict
+makes shared entity dimensions the next register amendment, and a
+passing one records the cost as the price of the shape. The standing
+non-goal on source types reads, from this decision, as one ingestion
+connector type with many files of that type in scope. The release after
+the arc is 1.1.0: additive contract semantics, the fact primary key
+unchanged. Budgets, windows, and the ladder: Decision Record 011.
+
 ## Session-decision and finding IDs
 
 IDs of the form `A<n>` (working-session decisions, e.g. A4) and `F-0x`
@@ -808,16 +990,16 @@ authority. The mapping:
 | 6 (never weaken a contract) | D-08, D-28 |
 | 7 (no materialized views; incremental behind configuration) | D-07 (Amendment O), D-38 |
 | 8 (ownership-manifest checksums) | D-09 |
-| 9 (engine emits models, never DDL; mapping-contract placement) | D-07, D-29 |
+| 9 (engine emits models, never DDL; mapping-contract placement; one mapping per category, the fan-in) | D-07, D-29 (Amendment U), D-41 |
 | 10 (gate three under uv run; top-level `datacontract test` unused) | D-12, D-16; gate-two mechanics per D-20 |
 | 11 (properties hand-authored on the silver plane; sync-created at adoption; engine-emitted on gold; sync output reviewed) | D-16 (Amendments C, J), D-29, evidence [F-02](../verification/gate_proof_findings.md#f-02)/[F-05](../verification/gate_proof_findings.md#f-05)/[F-14](../verification/gate_proof_findings.md#f-14)/[F-27](../verification/gate_proof_findings.md#f-27) |
-| 12 (unified event star; materialization modes; the typed mart default; projections; batch-scoped gates) | D-17 (Amendment P), D-36 (Amendment Q), D-38, D-39 |
+| 12 (unified event star; the conformed calendar; conformance in silver, declared at the contract plane; the declared cross-category joins; materialization modes; the typed mart default; projections; batch-scoped gates) | D-17 (Amendments P, R), D-36 (Amendment Q), D-38, D-39, D-41 |
 | 13 (canonical_key v2, deterministic payloads) | D-18 |
 | 14 (registry binding; fact key; declared grain) | D-19 |
 | 15 (proposer runtime: one structured call; proposal schema projection; allow-listed model override; governed inputs per stance; no tools/MCP/loops; outbox-only) | D-21 (Amendment F), D-23 (Amendment H), D-34, D-35, evidence [F-26](../verification/gate_proof_findings.md#f-26) |
 | 16 (versioned prompts; contract provenance incl. proposerStance and amendsContract; pattern-derived absence rule) | D-22 (Amendment I), D-29 |
 | 17 (human-only draft-to-contract flow; no relaxation without the flag; report-and-stop on fail-closed; keyless make demo) | D-24, D-08, D-10 (Amendment G), D-35 |
-| 18 (serving boundary: shared module, three-layer read-only, capped results, the typed-surface steer) | D-31, D-32, D-33 |
+| 18 (serving boundary: shared module, three-layer read-only, capped results, the typed-surface steer; the data and expert-context split; the demo artifact as a release asset) | D-31 (Amendment W), D-32, D-33 (Amendment S), D-03 (Amendment S), D-30 (Amendment W) |
 | Conventions (never read or write outside the working tree; enforced by the working-tree guard hook) | D-37, D-13, evidence [F-32](../verification/gate_proof_findings.md#f-32) |
 
 All decisions in this register are adopted: D-01 through D-20 as of the
@@ -833,7 +1015,8 @@ as of the August 22, 2026 revision (Decision Record 007), and D-36
 August 28, 2026 revision (Decision Record 009), and D-37 as of the
 August 29, 2026 revision (Decision Record 010), and D-38 through D-40
 (with Amendments O, P, and Q) as of the Decision Record 008 part two
-revision landed with Arc 5b. D-20 has no
+revision landed with Arc 5b, and D-41 (with Amendments R through W)
+as of the September 2, 2026 revision (Decision Record 011). D-20 has no
 dedicated
 CLAUDE.md rule; its substance
 is encoded directly in
