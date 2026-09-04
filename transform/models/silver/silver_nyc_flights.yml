@@ -1,0 +1,256 @@
+# Hand-authored properties file (F-02, rule 11): export output is scaffold
+# only and is never committed here. Contract enforcement is declared per
+# model (rule 3); every column carries name + data_type (rule 4). Only
+# not_null is a trusted constraint; uniqueness lives in contract-generated
+# tests (rule 5). Rendered from the Arc 6 prep's table specification, then
+# refreshed in place by datacontract dbt sync and reviewed.
+version: 2
+models:
+- name: silver_nyc_flights
+  description: One row per scheduled departure from the three New York City airports (EWR, JFK, LGA) in January through June 2013, typed and named for analysis, cancelled flights retained and flagged. The event table of the aviation family and the sole flight input to silver_flights, the unified table the gold star maps.
+  config:
+    contract:
+      enforced: true
+    meta:
+      datacontract_cli:
+        contract_id: silver_nyc_flights
+  columns:
+  - name: flight_date
+    data_type: DATE
+    constraints:
+    - type: not_null
+    description: Local date of the scheduled departure, built from the published year, month, and day columns (America/New_York calendar date).
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_nyc_flights__flight_date__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field flight_date has no missing values
+  - name: carrier_code
+    data_type: VARCHAR
+    constraints:
+    - type: not_null
+    description: Two-letter BTS carrier code (16 distinct in the window); resolves to a name in silver_nyc_airlines. A conformed key across the family.
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_nyc_flights__carrier_code__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field carrier_code has no missing values
+  - name: flight_number
+    data_type: INTEGER
+    constraints:
+    - type: not_null
+    description: Flight number as published; unique only together with the date, carrier, origin, and scheduled time.
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_nyc_flights__flight_number__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field flight_number has no missing values
+  - name: origin_airport
+    data_type: VARCHAR
+    constraints:
+    - type: not_null
+    description: 'Origin airport IATA code: EWR, JFK, or LGA in this data. A conformed key; joins to silver_ourairports_airports.iata_code and to silver_nyc_weather.airport_code.'
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_nyc_flights__origin_airport__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field origin_airport has no missing values
+  - name: sched_dep_hhmm
+    data_type: INTEGER
+    constraints:
+    - type: not_null
+    description: Scheduled departure clock time, local, as the published HHMM integer (517 is 05:17); part of the grain because a flight number can depart twice a day.
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_nyc_flights__sched_dep_hhmm__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field sched_dep_hhmm has no missing values
+  - name: dest_airport
+    data_type: VARCHAR
+    constraints:
+    - type: not_null
+    description: Destination airport IATA code (100 distinct in the window). A conformed key; joins to silver_ourairports_airports.iata_code, where 99 of the 100 codes resolve (PBI does not; see the contract limitations).
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_nyc_flights__dest_airport__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field dest_airport has no missing values
+  - name: tail_number
+    data_type: VARCHAR
+    description: Aircraft registration as reported (FAA N-numbers, plus a handful of foreign registrations); null on 1,521 flights. A conformed key; joins to silver_nyc_planes.tail_number, which knows about 84 percent of flights' aircraft.
+  - name: is_cancelled
+    data_type: BOOLEAN
+    constraints:
+    - type: not_null
+    description: 'True when the flight has no actual departure time (4,883 flights in the window, 2.9 percent). Decision: cancellations are retained and flagged, not dropped, so the schedule stays complete and cancellation rates can be measured; delay columns are null on these rows.'
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_nyc_flights__is_cancelled__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field is_cancelled has no missing values
+  - name: dep_hhmm
+    data_type: INTEGER
+    description: Actual departure clock time, local, HHMM integer; null when cancelled.
+  - name: dep_delay_minutes
+    data_type: INTEGER
+    description: Departure delay in minutes (actual minus scheduled); negative means the flight left early; null when cancelled. The headline on-time measure.
+  - name: arr_hhmm
+    data_type: INTEGER
+    description: Actual arrival clock time, local at the destination, HHMM integer; null when cancelled or unreported.
+  - name: sched_arr_hhmm
+    data_type: INTEGER
+    constraints:
+    - type: not_null
+    description: Scheduled arrival clock time, local at the destination, HHMM integer.
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_nyc_flights__sched_arr_hhmm__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field sched_arr_hhmm has no missing values
+  - name: arr_delay_minutes
+    data_type: INTEGER
+    description: Arrival delay in minutes; negative means early; null when cancelled, diverted, or unreported (5,480 flights in the window, 597 more than the cancellations).
+  - name: air_time_minutes
+    data_type: INTEGER
+    description: Minutes in the air, wheels up to wheels down; null wherever arr_delay_minutes is null.
+  - name: distance_miles
+    data_type: INTEGER
+    constraints:
+    - type: not_null
+    description: Great-circle route distance in statute miles as published by BTS; constant per origin and destination pair.
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_nyc_flights__distance_miles__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field distance_miles has no missing values
+  - name: sched_dep_hour_local
+    data_type: INTEGER
+    constraints:
+    - type: not_null
+    description: Scheduled departure hour, local (0 to 23), the published hour column; equals departure_hour_utc rendered in America/New_York on every row (a contract rule checks it).
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_nyc_flights__sched_dep_hour_local__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field sched_dep_hour_local has no missing values
+  - name: sched_dep_minute_local
+    data_type: INTEGER
+    constraints:
+    - type: not_null
+    description: Scheduled departure minute, local (0 to 59).
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_nyc_flights__sched_dep_minute_local__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field sched_dep_minute_local has no missing values
+  - name: departure_hour_utc
+    data_type: TIMESTAMP
+    constraints:
+    - type: not_null
+    description: 'Scheduled departure hour as a UTC instant (the published time_hour, ISO with a Z suffix, parsed). The conformed calendar key at hour grain: it joins to silver_nyc_weather.observed_hour_utc at the same origin, and the gold star''s timeframe group shares one row per hour across the flights and airport_weather categories.'
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_nyc_flights__departure_hour_utc__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field departure_hour_utc has no missing values
+  - name: captured_at
+    data_type: TIMESTAMP
+    constraints:
+    - type: not_null
+    description: 'Capture timestamp carried forward from the bronze landing (_airbyte_extracted_at): when this row''s capture entered the pipeline. The incremental watermark the gold layer builds on (D-38). Required from the first version: the model populates it on every row from its first build (F-49). Audit metadata, never a business value.'
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_nyc_flights__captured_at__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field captured_at has no missing values

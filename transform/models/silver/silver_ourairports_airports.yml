@@ -1,0 +1,236 @@
+# Hand-authored properties file (F-02, rule 11): export output is scaffold
+# only and is never committed here. Contract enforcement is declared per
+# model (rule 3); every column carries name + data_type (rule 4). Only
+# not_null is a trusted constraint; uniqueness lives in contract-generated
+# tests (rule 5). Rendered from the Arc 6 prep's table specification, then
+# refreshed in place by datacontract dbt sync and reviewed.
+version: 2
+models:
+- name: silver_ourairports_airports
+  description: 'The airport reference: one row per airport carrying an IATA code in the OurAirports database at commit d27027ba (2026), with its identifier, type, name, coordinates, elevation, and location codes. The reference table that gives silver_flights and silver_airport_weather their airport attributes.'
+  config:
+    contract:
+      enforced: true
+    meta:
+      datacontract_cli:
+        contract_id: silver_ourairports_airports
+  columns:
+  - name: iata_code
+    data_type: VARCHAR
+    constraints:
+    - type: not_null
+    description: Three-letter IATA code, unique in this extract (9,057 airports). A conformed key across the family.
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_ourairports_airports__iata_code__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field iata_code has no missing values
+    - unique:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_ourairports_airports__iata_code__field_unique
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field iata_code has no duplicate values
+  - name: airport_ident
+    data_type: VARCHAR
+    constraints:
+    - type: not_null
+    description: OurAirports identifier, the ICAO code where one exists (KJFK); the key silver_ourairports_runways carries as airport_ident.
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_ourairports_airports__airport_ident__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field airport_ident has no missing values
+  - name: airport_type
+    data_type: VARCHAR
+    constraints:
+    - type: not_null
+    description: 'OurAirports size class: small_airport (4,234), medium_airport (3,400), large_airport (1,170), seaplane_base (153), and heliport (100) in this extract.'
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_ourairports_airports__airport_type__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field airport_type has no missing values
+  - name: airport_name
+    data_type: VARCHAR
+    constraints:
+    - type: not_null
+    description: Airport name as OurAirports records it in 2026 (names change; the 2013 name of a renamed airport is not carried).
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_ourairports_airports__airport_name__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field airport_name has no missing values
+  - name: latitude_deg
+    data_type: DOUBLE
+    constraints:
+    - type: not_null
+    description: Latitude in decimal degrees, WGS84.
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_ourairports_airports__latitude_deg__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field latitude_deg has no missing values
+  - name: longitude_deg
+    data_type: DOUBLE
+    constraints:
+    - type: not_null
+    description: Longitude in decimal degrees, WGS84.
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_ourairports_airports__longitude_deg__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field longitude_deg has no missing values
+  - name: elevation_ft
+    data_type: INTEGER
+    description: Field elevation in feet above mean sea level; null for 335 airports.
+  - name: continent_code
+    data_type: VARCHAR
+    constraints:
+    - type: not_null
+    description: Continent code (NA for North America, EU, AS, SA, AF, OC, AN); the text NA is a code, not a missing value.
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_ourairports_airports__continent_code__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field continent_code has no missing values
+  - name: iso_country
+    data_type: VARCHAR
+    constraints:
+    - type: not_null
+    description: ISO 3166-1 alpha-2 country code (US, CA, and others; NA is Namibia).
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_ourairports_airports__iso_country__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field iso_country has no missing values
+  - name: iso_region
+    data_type: VARCHAR
+    constraints:
+    - type: not_null
+    description: ISO 3166-2 region code (US-NY for New York).
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_ourairports_airports__iso_region__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field iso_region has no missing values
+  - name: municipality
+    data_type: VARCHAR
+    description: The city or town the airport serves, as OurAirports records it; null where unknown.
+  - name: has_scheduled_service
+    data_type: BOOLEAN
+    constraints:
+    - type: not_null
+    description: True when OurAirports records scheduled airline service at the airport (the published yes or no as a flag).
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_ourairports_airports__has_scheduled_service__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field has_scheduled_service has no missing values
+  - name: icao_code
+    data_type: VARCHAR
+    description: Four-letter ICAO code where one exists (KJFK); null otherwise.
+  - name: gps_code
+    data_type: VARCHAR
+    description: GPS code as published; null where none.
+  - name: local_code
+    data_type: VARCHAR
+    description: Local (FAA or national) code as published; null where none.
+  - name: wikipedia_link
+    data_type: VARCHAR
+    description: Wikipedia URL where OurAirports records one.
+  - name: keywords
+    data_type: VARCHAR
+    description: Free-text search keywords as published, which is where a former code survives (PBI for the airport now coded DJT); not used for joining.
+  - name: captured_at
+    data_type: TIMESTAMP
+    constraints:
+    - type: not_null
+    description: 'Capture timestamp carried forward from the bronze landing (_airbyte_extracted_at): when this row''s capture entered the pipeline. The incremental watermark the gold layer builds on (D-38). Required from the first version: the model populates it on every row from its first build (F-49). Audit metadata, never a business value.'
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_ourairports_airports__captured_at__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field captured_at has no missing values

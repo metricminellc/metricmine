@@ -1,0 +1,82 @@
+{
+  "caps": {
+    "max_distinct_values": 20,
+    "max_sample_values": 10,
+    "max_string_chars": 120
+  },
+  "content_hash": "sha256:1fd8acd73281ec110348b899012957fc95522c32f702b1a0d1d27c7561418dd5",
+  "dataset": {
+    "columns": [
+      {
+        "distinct_count": 16,
+        "distinct_values": [
+          "9E",
+          "AA",
+          "AS",
+          "B6",
+          "DL",
+          "EV",
+          "F9",
+          "FL",
+          "HA",
+          "MQ",
+          "OO",
+          "UA",
+          "US",
+          "VX",
+          "WN",
+          "YV"
+        ],
+        "is_airbyte_metadata": false,
+        "name": "carrier_code",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "VARCHAR"
+      },
+      {
+        "distinct_count": 16,
+        "distinct_values": [
+          "AirTran Airways Corporation",
+          "Alaska Airlines Inc.",
+          "American Airlines Inc.",
+          "Delta Air Lines Inc.",
+          "Endeavor Air Inc.",
+          "Envoy Air",
+          "ExpressJet Airlines Inc.",
+          "Frontier Airlines Inc.",
+          "Hawaiian Airlines Inc.",
+          "JetBlue Airways",
+          "Mesa Airlines Inc.",
+          "SkyWest Airlines Inc.",
+          "Southwest Airlines Co.",
+          "US Airways Inc.",
+          "United Air Lines Inc.",
+          "Virgin America"
+        ],
+        "is_airbyte_metadata": false,
+        "name": "carrier_name",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "VARCHAR"
+      },
+      {
+        "distinct_count": 1,
+        "distinct_values": [
+          "2026-09-02T23:26:17"
+        ],
+        "is_airbyte_metadata": false,
+        "max": "2026-09-02T23:26:17",
+        "min": "2026-09-02T23:26:17",
+        "name": "captured_at",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "TIMESTAMP"
+      }
+    ],
+    "duplicate_row_rate": 0.0,
+    "row_count": 16,
+    "schema": "silver",
+    "table": "silver_nyc_airlines"
+  },
+  "schema_version": "1.0.0"
+}
