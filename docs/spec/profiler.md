@@ -400,14 +400,15 @@ profiling methods below are that surface, not the whole of D-11.
 
 Scope, in full:
 
-- Profiles `bronze.online_retail_ii` and, from the gold phase,
-  `silver.silver_invoice_lines`, the silver pass the runtime workflow
-  diagram records, run by the same code over the silver schema. The
-  `profiling` config block becomes a list of targets, one artifact
-  directory per table (`profiles/silver.silver_invoice_lines/v0001.json`
-  at first mint). The silver profile is the evidence sheet for the
-  mapping contract and the artifact its `profileHash` cites, and in
-  Phase 6 it is the exact input the gold mapping proposer consumes.
+- Profiles every bronze table `ingestion.sources` lands and every silver
+  table under contract, the silver pass the runtime workflow diagram
+  records, run by the same code over each schema. The `profiling`
+  config block is a list of targets, one artifact directory per table
+  (`profiles/silver.silver_invoice_lines/v0001.json` at first mint). A
+  silver profile is the evidence sheet for its mapping contract and the
+  artifact its `profileHash` cites, and the exact input the gold
+  mapping proposer consumes; a bronze profile is the cleanup proposer's
+  input.
 - Skips PyAirbyte's internal tables: any `_airbyte_*`-prefixed table
   (`_airbyte_streams` today; state tables appear under other sync
   modes): they are connector bookkeeping, not data streams.
@@ -419,9 +420,16 @@ Scope, in full:
   schema may ever be profiled.
 
 Interface: `make profile` wraps a config-driven entry point that reads a
-`profiling:` block in `config/default.yaml`. No CLI arguments, the same
-posture as ingestion's `land_sample` entry point.
+`profiling:` block in `config/default.yaml`. One optional selector,
+`--only SCHEMA.TABLE` (repeatable; `make profile ONLY="bronze.x
+silver.y"`), restricts a run to the named targets, which must be in
+the list. The selector exists because an artifact embeds capture-time
+values by rule 5 (audit-stamp bounds, `_airbyte_raw_id` samples), so a
+full run after any re-landing re-mints every artifact (F-45); an
+artifact mints once, at the sitting where its source lands, and
+travels from there.
 
-Failure modes: a missing warehouse file or a missing bronze table fails
-with a message naming `make ingest` as the remedy. No partial artifacts
+Failure modes: a missing warehouse file or a missing table fails
+with a message naming `make ingest` as the remedy; a selector naming a
+target outside the configured list fails before anything is read. No partial artifacts
 are written on failure.
