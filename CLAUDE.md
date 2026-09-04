@@ -175,6 +175,11 @@ approves every contract.
     never add a sixth without amending the register. Server code never prints to
     stdout (stdio carries JSON-RPC); diagnostics go to stderr. Spec:
     docs/spec/serving.md.
+19. The stable line began at v1.0.0 (September 2, 2026). The pipeline, the
+    engine, the serving layer, the two proposers, and the gates change
+    only through the decision register; experiments live on branches or
+    under docs/experiments/ and end in written findings; a clone of main
+    at any tag gets a working demo (make doctor, then make demo, keyless).
 
 ## Architecture boundaries
 - Exactly two agents exist in the pipeline: a silver cleanup proposer and a

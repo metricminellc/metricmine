@@ -235,8 +235,9 @@ and in findings
 
 ## Status and roadmap
 
-[v0.3.0](https://github.com/metricminellc/metricmine/releases/tag/v0.3.0)
-(September 1, 2026) is the current tagged release. v0.1.0 shipped Phases 0
+[v1.0.0](https://github.com/metricminellc/metricmine/releases/tag/v1.0.0)
+(September 2, 2026) is the current tagged release and the start of the
+stable line. v0.1.0 shipped Phases 0
 through 5: the scaffold and pinned toolchain, bronze ingestion, the
 profiler and contracted silver, the engine-emitted unified event star, and
 the serving layer with the committed demo artifact. v0.2.0 added the agent
@@ -247,8 +248,9 @@ guard, contract-review Skill, and GitHub Action. v0.3.0 added the scale
 posture: the incremental path one config flip away, the C5 field-level
 reconciliation gate, batch-scoped gates with a full-table audit, and
 [docs/scale.md](docs/scale.md) with the measured curves on two machines.
-The remaining step to a stable v1.0.0 is this release arc. The live
-roadmap is the
+v1.0.0 closed the release arc: issue forms, the DCO check, the contracts
+provenance gate, `make doctor`, the demo-artifact gate in CI, the
+devcontainer, and the front door as it reads now. The live roadmap is the
 [Issues tab](https://github.com/metricminellc/metricmine/issues); the
 [changelog](CHANGELOG.md) records what landed in each release.
 
