@@ -1,0 +1,432 @@
+{
+  "caps": {
+    "max_distinct_values": 20,
+    "max_sample_values": 10,
+    "max_string_chars": 120
+  },
+  "content_hash": "sha256:113a01272f19c485ada9b62583be7449fbfd55b60fb304b18139a17614cf0ec2",
+  "dataset": {
+    "columns": [
+      {
+        "distinct_count": 9057,
+        "is_airbyte_metadata": false,
+        "name": "id",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "VARCHAR",
+        "sample_values": [
+          "10309",
+          "10366",
+          "10532",
+          "1058",
+          "10784",
+          "10856",
+          "1088",
+          "10905",
+          "1092",
+          "111"
+        ]
+      },
+      {
+        "distinct_count": 9057,
+        "is_airbyte_metadata": false,
+        "name": "ident",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "VARCHAR",
+        "sample_values": [
+          "03N",
+          "07FA",
+          "0CO2",
+          "0NM0",
+          "0TE7",
+          "13Z",
+          "16A",
+          "16K",
+          "19AK",
+          "19P"
+        ]
+      },
+      {
+        "distinct_count": 5,
+        "distinct_values": [
+          "heliport",
+          "large_airport",
+          "medium_airport",
+          "seaplane_base",
+          "small_airport"
+        ],
+        "is_airbyte_metadata": false,
+        "name": "type",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "VARCHAR"
+      },
+      {
+        "distinct_count": 9006,
+        "is_airbyte_metadata": false,
+        "name": "name",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "VARCHAR",
+        "sample_values": [
+          "28 de Noviembre Airport",
+          "9 de Maio - Teixeira de Freitas Airport",
+          "A Coruña Airport",
+          "A L Mangham Jr. Regional Airport",
+          "A.N.R. Robinson International Airport",
+          "AA Bere Tallo (Haliwen) Airport",
+          "AJ Eisenberg Airport",
+          "Aachen-Merzbrück Airport",
+          "Aalborg Airport",
+          "Aappilattoq Heliport"
+        ]
+      },
+      {
+        "distinct_count": 9047,
+        "is_airbyte_metadata": false,
+        "max": 82.517263,
+        "min": -79.777778,
+        "name": "latitude_deg",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "DECIMAL(38,9)",
+        "sample_values": [
+          -79.777778,
+          -62.191026,
+          -54.931099,
+          -54.8433,
+          -54.049977,
+          -53.7777,
+          -53.2537,
+          -53.002602,
+          -52.736698,
+          -51.822642
+        ]
+      },
+      {
+        "distinct_count": 9050,
+        "is_airbyte_metadata": false,
+        "max": 179.9757,
+        "min": -179.876999,
+        "name": "longitude_deg",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "DECIMAL(38,9)",
+        "sample_values": [
+          -179.876999,
+          -179.667007,
+          -179.341995,
+          -178.975998,
+          -178.817001,
+          -178.7411,
+          -178.066492,
+          -177.380997,
+          -176.642783,
+          -176.46514
+        ]
+      },
+      {
+        "distinct_count": 2863,
+        "is_airbyte_metadata": false,
+        "max": 14472.0,
+        "min": -1266.0,
+        "name": "elevation_ft",
+        "null_count": 335,
+        "null_rate": 0.036988,
+        "physical_type": "DECIMAL(38,9)",
+        "sample_values": [
+          -1266.0,
+          -210.0,
+          -182.0,
+          -164.0,
+          -128.0,
+          -115.0,
+          -84.0,
+          -79.0,
+          -72.0,
+          -70.0
+        ]
+      },
+      {
+        "distinct_count": 7,
+        "distinct_values": [
+          "AF",
+          "AN",
+          "AS",
+          "EU",
+          "NA",
+          "OC",
+          "SA"
+        ],
+        "is_airbyte_metadata": false,
+        "name": "continent",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "VARCHAR"
+      },
+      {
+        "distinct_count": 239,
+        "is_airbyte_metadata": false,
+        "name": "iso_country",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "VARCHAR",
+        "sample_values": [
+          "AD",
+          "AE",
+          "AF",
+          "AG",
+          "AI",
+          "AL",
+          "AM",
+          "AO",
+          "AQ",
+          "AR"
+        ]
+      },
+      {
+        "distinct_count": 2169,
+        "is_airbyte_metadata": false,
+        "name": "iso_region",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "VARCHAR",
+        "sample_values": [
+          "AD-08",
+          "AE-AZ",
+          "AE-DU",
+          "AE-FU",
+          "AE-RK",
+          "AE-SH",
+          "AF-BAL",
+          "AF-BAM",
+          "AF-BDG",
+          "AF-BDS"
+        ]
+      },
+      {
+        "distinct_count": 8049,
+        "is_airbyte_metadata": false,
+        "name": "municipality",
+        "null_count": 360,
+        "null_rate": 0.039748,
+        "physical_type": "VARCHAR",
+        "sample_values": [
+          "108 Mile",
+          "Aachen",
+          "Aalborg",
+          "Aappilattoq",
+          "Aarhus",
+          "Aasiaat",
+          "Abadan",
+          "Abaiang",
+          "Abakan",
+          "Abariringa"
+        ]
+      },
+      {
+        "distinct_count": 2,
+        "distinct_values": [
+          "no",
+          "yes"
+        ],
+        "is_airbyte_metadata": false,
+        "name": "scheduled_service",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "VARCHAR"
+      },
+      {
+        "distinct_count": 7820,
+        "is_airbyte_metadata": false,
+        "name": "icao_code",
+        "null_count": 1237,
+        "null_rate": 0.136579,
+        "physical_type": "VARCHAR",
+        "sample_values": [
+          "AGAF",
+          "AGAR",
+          "AGAT",
+          "AGBA",
+          "AGBT",
+          "AGEV",
+          "AGGA",
+          "AGGB",
+          "AGGC",
+          "AGGE"
+        ]
+      },
+      {
+        "distinct_count": 9057,
+        "is_airbyte_metadata": false,
+        "name": "iata_code",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "VARCHAR",
+        "sample_values": [
+          "AAA",
+          "AAB",
+          "AAC",
+          "AAD",
+          "AAE",
+          "AAF",
+          "AAH",
+          "AAI",
+          "AAJ",
+          "AAK"
+        ]
+      },
+      {
+        "distinct_count": 8569,
+        "is_airbyte_metadata": false,
+        "name": "gps_code",
+        "null_count": 488,
+        "null_rate": 0.053881,
+        "physical_type": "VARCHAR",
+        "sample_values": [
+          "03N",
+          "05AA",
+          "05U",
+          "06U",
+          "07FA",
+          "0AK",
+          "0CO2",
+          "0NM0",
+          "0S9",
+          "0TE7"
+        ]
+      },
+      {
+        "distinct_count": 3193,
+        "is_airbyte_metadata": false,
+        "name": "local_code",
+        "null_count": 5766,
+        "null_rate": 0.636635,
+        "physical_type": "VARCHAR",
+        "sample_values": [
+          "00C",
+          "00F",
+          "03N",
+          "05AA",
+          "05U",
+          "06U",
+          "07FA",
+          "0AA1",
+          "0AA4",
+          "0AK"
+        ]
+      },
+      {
+        "distinct_count": 2272,
+        "is_airbyte_metadata": false,
+        "name": "home_link",
+        "null_count": 6784,
+        "null_rate": 0.749034,
+        "physical_type": "VARCHAR",
+        "sample_values": [
+          "http://GillespieField.com/",
+          "http://aai.aero/allAirports/aurangabad_generalinfo.jsp",
+          "http://aai.aero/allAirports/bagdogra_generalinfo.jsp",
+          "http://aai.aero/allAirports/bhavnagar.jsp",
+          "http://aai.aero/allAirports/bhopal_generalinfo.jsp",
+          "http://aai.aero/allAirports/bhubaneshwar_generalinfo.jsp",
+          "http://aai.aero/allAirports/bhuj_generalinfo.jsp",
+          "http://aai.aero/allAirports/dehradun_generalinfo.jsp",
+          "http://aai.aero/allAirports/diu_airpo_gi.jsp",
+          "http://aai.aero/allAirports/indore_technicalinfo.jsp"
+        ]
+      },
+      {
+        "distinct_count": 7870,
+        "is_airbyte_metadata": false,
+        "name": "wikipedia_link",
+        "null_count": 1185,
+        "null_rate": 0.130838,
+        "physical_type": "VARCHAR",
+        "sample_values": [
+          "http://de.wikipedia.org/wiki/Albertus_Airport",
+          "http://de.wikipedia.org/wiki/Flugplatz_Bielefeld",
+          "http://de.wikipedia.org/wiki/Flugplatz_Burg_Feuerstein",
+          "http://de.wikipedia.org/wiki/Flugplatz_Eisenach-Kindel",
+          "http://de.wikipedia.org/wiki/Flugplatz_Hohenems-Dornbirn",
+          "http://de.wikipedia.org/wiki/Flugplatz_K%C3%B6then",
+          "http://en.wikipedia.org/wiki/Khasab_Airport",
+          "http://fr.wikipedia.org/wiki/A%C3%A9roport_de_Mecheria",
+          "http://id.wikipedia.org/wiki/Bandar_Udara_Bersujud",
+          "http://id.wikipedia.org/wiki/Bandar_Udara_Lunyuk"
+        ]
+      },
+      {
+        "distinct_count": 2883,
+        "is_airbyte_metadata": false,
+        "name": "keywords",
+        "null_count": 6155,
+        "null_rate": 0.679585,
+        "physical_type": "VARCHAR",
+        "sample_values": [
+          "\"El Ciprés\" Military Airbase Number 3, Gral. Alberto L. Salinas Carranza, Aeropuerto Internacional de Ensenada",
+          "06AZ",
+          "08AK",
+          "09AK",
+          "0Z0",
+          "10AK",
+          "119th Wing, Happy Hooligans",
+          "17Z",
+          "1V5",
+          "1XA2, Naval Air Station Chase Field, Beeville Municipal Airport"
+        ]
+      },
+      {
+        "distinct_count": 9057,
+        "is_airbyte_metadata": true,
+        "name": "_airbyte_raw_id",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "VARCHAR",
+        "sample_values": [
+          "06a98b0a-33e2-7dc4-8000-96375614faa1",
+          "06a98b0a-33e4-714a-8000-0bae642658af",
+          "06a98b0a-33e4-7771-8000-8ed48dc9d28b",
+          "06a98b0a-33e4-7a7e-8000-af69fa4d4041",
+          "06a98b0a-33e4-7c70-8000-053284f67050",
+          "06a98b0a-33e4-7dfe-8000-f4f25d08d696",
+          "06a98b0a-33e4-7ff0-8000-83cd7b0e68d1",
+          "06a98b0a-33e5-7219-8000-518a9c1aa6eb",
+          "06a98b0a-33e5-73af-8000-c7f06371a638",
+          "06a98b0a-33e5-7524-8000-de100d42774a"
+        ]
+      },
+      {
+        "distinct_count": 2,
+        "distinct_values": [
+          "2026-09-02T23:26:27",
+          "2026-09-02T23:26:28"
+        ],
+        "is_airbyte_metadata": true,
+        "max": "2026-09-02T23:26:28",
+        "min": "2026-09-02T23:26:27",
+        "name": "_airbyte_extracted_at",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "TIMESTAMP"
+      },
+      {
+        "distinct_count": 1,
+        "distinct_values": [
+          "{}"
+        ],
+        "is_airbyte_metadata": true,
+        "name": "_airbyte_meta",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "JSON"
+      }
+    ],
+    "duplicate_row_rate": 0.0,
+    "row_count": 9057,
+    "schema": "bronze",
+    "table": "ourairports_airports"
+  },
+  "schema_version": "1.0.0"
+}

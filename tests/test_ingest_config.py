@@ -38,9 +38,14 @@ def test_config_ingestion_block_shape():
     assert cfg["schema"] == "bronze"
     sources = ingestion_sources(cfg)
     assert sources[0]["dataset_name"] == "online_retail_ii"
+    # The D-15 budgets (Amendment T): 20 MB for the one event source, 10 MB
+    # for every other; tests/test_committed_samples.py holds the READMEs
+    # and the fetch scripts to the same caps.
+    event_sources = {"nyc_flights"}
     for entry in sources:
         assert (_REPO_ROOT / entry["sample_csv"]).is_file(), entry["dataset_name"]
-        assert (_REPO_ROOT / entry["sample_csv"]).stat().st_size <= 10 * 1024 * 1024
+        cap = (20 if entry["dataset_name"] in event_sources else 10) * 1024 * 1024
+        assert (_REPO_ROOT / entry["sample_csv"]).stat().st_size <= cap, entry["dataset_name"]
 
 
 def test_every_source_lands_from_its_own_sample_directory():

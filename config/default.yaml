@@ -15,6 +15,33 @@ ingestion:
       # Invoice carries C-prefixed cancellation ids; pin it to string at
       # the reader so inference and records agree.
       reader_options: '{"dtype": {"Invoice": "str"}}'
+    # The aviation family (D-41): the nycflights13 tables at a pinned
+    # commit and the two OurAirports reference tables. Code columns pin
+    # to text so leading zeros and codes survive inference; a source
+    # whose codes collide with pandas' default missing markers sets
+    # keep_default_na false (F-50); the nycflights13 tables write "NA"
+    # for genuinely missing values, so they keep the default.
+    - dataset_name: nyc_flights
+      sample_csv: data/samples/nyc_flights/nyc_flights_2013-01_2013-06.csv
+      reader_options: '{"dtype": {"carrier": "str", "tailnum": "str", "origin": "str", "dest": "str", "time_hour": "str"}}'
+    - dataset_name: nyc_weather
+      sample_csv: data/samples/nyc_weather/nyc_weather_2013-01_2013-06.csv
+      reader_options: '{"dtype": {"origin": "str", "time_hour": "str"}}'
+    - dataset_name: nyc_airlines
+      sample_csv: data/samples/nyc_airlines/nyc_airlines_df98ef215aa8.csv
+      reader_options: '{"dtype": {"carrier": "str", "name": "str"}}'
+    - dataset_name: nyc_planes
+      sample_csv: data/samples/nyc_planes/nyc_planes_df98ef215aa8.csv
+      reader_options: '{"dtype": {"tailnum": "str", "type": "str", "manufacturer": "str", "model": "str", "engine": "str"}}'
+    - dataset_name: ourairports_airports
+      sample_csv: data/samples/ourairports_airports/ourairports_airports_d27027ba4414.csv
+      # The continent code for North America and the country code for
+      # Namibia are the text "NA", which pandas reads as missing by
+      # default; only the empty string is missing here (F-50).
+      reader_options: '{"dtype": {"id": "str", "ident": "str", "iata_code": "str", "icao_code": "str", "gps_code": "str", "local_code": "str"}, "keep_default_na": false, "na_values": [""]}'
+    - dataset_name: ourairports_runways
+      sample_csv: data/samples/ourairports_runways/ourairports_runways_d27027ba4414.csv
+      reader_options: '{"dtype": {"id": "str", "airport_ref": "str", "airport_ident": "str", "le_ident": "str", "he_ident": "str", "surface": "str"}, "keep_default_na": false, "na_values": [""]}'
 
 # Profiling per docs/spec/profiler.md: the deterministic profiler reads the
 # working warehouse read-only (D-11) and writes committed artifacts under
@@ -28,6 +55,18 @@ profiling:
   targets:
     - schema: bronze
       table: online_retail_ii
+    - schema: bronze
+      table: nyc_flights
+    - schema: bronze
+      table: nyc_weather
+    - schema: bronze
+      table: nyc_airlines
+    - schema: bronze
+      table: nyc_planes
+    - schema: bronze
+      table: ourairports_airports
+    - schema: bronze
+      table: ourairports_runways
     - schema: silver
       table: silver_invoice_lines
 

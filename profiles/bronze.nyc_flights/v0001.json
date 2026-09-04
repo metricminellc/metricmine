@@ -1,0 +1,479 @@
+{
+  "caps": {
+    "max_distinct_values": 20,
+    "max_sample_values": 10,
+    "max_string_chars": 120
+  },
+  "content_hash": "sha256:49b479ac0612017571579cc02b0b7e592474551a14d3adff6e06c01139bdadce",
+  "dataset": {
+    "columns": [
+      {
+        "distinct_count": 1,
+        "distinct_values": [
+          2013.0
+        ],
+        "is_airbyte_metadata": false,
+        "max": 2013.0,
+        "min": 2013.0,
+        "name": "year",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "DECIMAL(38,9)"
+      },
+      {
+        "distinct_count": 6,
+        "distinct_values": [
+          1.0,
+          2.0,
+          3.0,
+          4.0,
+          5.0,
+          6.0
+        ],
+        "is_airbyte_metadata": false,
+        "max": 6.0,
+        "min": 1.0,
+        "name": "month",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "DECIMAL(38,9)"
+      },
+      {
+        "distinct_count": 31,
+        "is_airbyte_metadata": false,
+        "max": 31.0,
+        "min": 1.0,
+        "name": "day",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "DECIMAL(38,9)",
+        "sample_values": [
+          1.0,
+          2.0,
+          3.0,
+          4.0,
+          5.0,
+          6.0,
+          7.0,
+          8.0,
+          9.0,
+          10.0
+        ]
+      },
+      {
+        "distinct_count": 1291,
+        "is_airbyte_metadata": false,
+        "max": 2400.0,
+        "min": 1.0,
+        "name": "dep_time",
+        "null_count": 4883,
+        "null_rate": 0.029388,
+        "physical_type": "DECIMAL(38,9)",
+        "sample_values": [
+          1.0,
+          2.0,
+          3.0,
+          4.0,
+          5.0,
+          6.0,
+          7.0,
+          8.0,
+          9.0,
+          10.0
+        ]
+      },
+      {
+        "distinct_count": 969,
+        "is_airbyte_metadata": false,
+        "max": 2359.0,
+        "min": 500.0,
+        "name": "sched_dep_time",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "DECIMAL(38,9)",
+        "sample_values": [
+          500.0,
+          501.0,
+          505.0,
+          510.0,
+          515.0,
+          520.0,
+          525.0,
+          527.0,
+          529.0,
+          530.0
+        ]
+      },
+      {
+        "distinct_count": 469,
+        "is_airbyte_metadata": false,
+        "max": 1301.0,
+        "min": -33.0,
+        "name": "dep_delay",
+        "null_count": 4883,
+        "null_rate": 0.029388,
+        "physical_type": "DECIMAL(38,9)",
+        "sample_values": [
+          -33.0,
+          -30.0,
+          -27.0,
+          -25.0,
+          -24.0,
+          -23.0,
+          -22.0,
+          -21.0,
+          -20.0,
+          -19.0
+        ]
+      },
+      {
+        "distinct_count": 1392,
+        "is_airbyte_metadata": false,
+        "max": 2400.0,
+        "min": 1.0,
+        "name": "arr_time",
+        "null_count": 5101,
+        "null_rate": 0.0307,
+        "physical_type": "DECIMAL(38,9)",
+        "sample_values": [
+          1.0,
+          2.0,
+          3.0,
+          4.0,
+          5.0,
+          6.0,
+          7.0,
+          8.0,
+          9.0,
+          10.0
+        ]
+      },
+      {
+        "distinct_count": 1134,
+        "is_airbyte_metadata": false,
+        "max": 2359.0,
+        "min": 1.0,
+        "name": "sched_arr_time",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "DECIMAL(38,9)",
+        "sample_values": [
+          1.0,
+          2.0,
+          3.0,
+          4.0,
+          5.0,
+          6.0,
+          7.0,
+          8.0,
+          9.0,
+          10.0
+        ]
+      },
+      {
+        "distinct_count": 526,
+        "is_airbyte_metadata": false,
+        "max": 1272.0,
+        "min": -86.0,
+        "name": "arr_delay",
+        "null_count": 5480,
+        "null_rate": 0.032981,
+        "physical_type": "DECIMAL(38,9)",
+        "sample_values": [
+          -86.0,
+          -79.0,
+          -75.0,
+          -74.0,
+          -73.0,
+          -71.0,
+          -70.0,
+          -69.0,
+          -68.0,
+          -67.0
+        ]
+      },
+      {
+        "distinct_count": 16,
+        "distinct_values": [
+          "9E",
+          "AA",
+          "AS",
+          "B6",
+          "DL",
+          "EV",
+          "F9",
+          "FL",
+          "HA",
+          "MQ",
+          "OO",
+          "UA",
+          "US",
+          "VX",
+          "WN",
+          "YV"
+        ],
+        "is_airbyte_metadata": false,
+        "name": "carrier",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "VARCHAR"
+      },
+      {
+        "distinct_count": 2994,
+        "is_airbyte_metadata": false,
+        "max": 8500.0,
+        "min": 1.0,
+        "name": "flight",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "DECIMAL(38,9)",
+        "sample_values": [
+          1.0,
+          2.0,
+          3.0,
+          4.0,
+          5.0,
+          6.0,
+          7.0,
+          8.0,
+          9.0,
+          10.0
+        ]
+      },
+      {
+        "distinct_count": 3825,
+        "is_airbyte_metadata": false,
+        "name": "tailnum",
+        "null_count": 1521,
+        "null_rate": 0.009154,
+        "physical_type": "VARCHAR",
+        "sample_values": [
+          "D942DN",
+          "N0EGMQ",
+          "N10156",
+          "N102UW",
+          "N103US",
+          "N104UW",
+          "N10575",
+          "N105UW",
+          "N107US",
+          "N108UW"
+        ]
+      },
+      {
+        "distinct_count": 3,
+        "distinct_values": [
+          "EWR",
+          "JFK",
+          "LGA"
+        ],
+        "is_airbyte_metadata": false,
+        "name": "origin",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "VARCHAR"
+      },
+      {
+        "distinct_count": 100,
+        "is_airbyte_metadata": false,
+        "name": "dest",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "VARCHAR",
+        "sample_values": [
+          "ABQ",
+          "ACK",
+          "ALB",
+          "ATL",
+          "AUS",
+          "AVL",
+          "BDL",
+          "BGR",
+          "BHM",
+          "BNA"
+        ]
+      },
+      {
+        "distinct_count": 484,
+        "is_airbyte_metadata": false,
+        "max": 695.0,
+        "min": 20.0,
+        "name": "air_time",
+        "null_count": 5480,
+        "null_rate": 0.032981,
+        "physical_type": "DECIMAL(38,9)",
+        "sample_values": [
+          20.0,
+          21.0,
+          22.0,
+          23.0,
+          24.0,
+          25.0,
+          26.0,
+          27.0,
+          28.0,
+          29.0
+        ]
+      },
+      {
+        "distinct_count": 203,
+        "is_airbyte_metadata": false,
+        "max": 4983.0,
+        "min": 80.0,
+        "name": "distance",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "DECIMAL(38,9)",
+        "sample_values": [
+          80.0,
+          94.0,
+          96.0,
+          116.0,
+          143.0,
+          160.0,
+          169.0,
+          173.0,
+          184.0,
+          185.0
+        ]
+      },
+      {
+        "distinct_count": 19,
+        "distinct_values": [
+          5.0,
+          6.0,
+          7.0,
+          8.0,
+          9.0,
+          10.0,
+          11.0,
+          12.0,
+          13.0,
+          14.0,
+          15.0,
+          16.0,
+          17.0,
+          18.0,
+          19.0,
+          20.0,
+          21.0,
+          22.0,
+          23.0
+        ],
+        "is_airbyte_metadata": false,
+        "max": 23.0,
+        "min": 5.0,
+        "name": "hour",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "DECIMAL(38,9)"
+      },
+      {
+        "distinct_count": 60,
+        "is_airbyte_metadata": false,
+        "max": 59.0,
+        "min": 0.0,
+        "name": "minute",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "DECIMAL(38,9)",
+        "sample_values": [
+          0.0,
+          1.0,
+          2.0,
+          3.0,
+          4.0,
+          5.0,
+          6.0,
+          7.0,
+          8.0,
+          9.0
+        ]
+      },
+      {
+        "distinct_count": 3439,
+        "is_airbyte_metadata": false,
+        "name": "time_hour",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "VARCHAR",
+        "sample_values": [
+          "2013-01-01T10:00:00Z",
+          "2013-01-01T11:00:00Z",
+          "2013-01-01T12:00:00Z",
+          "2013-01-01T13:00:00Z",
+          "2013-01-01T14:00:00Z",
+          "2013-01-01T15:00:00Z",
+          "2013-01-01T16:00:00Z",
+          "2013-01-01T17:00:00Z",
+          "2013-01-01T18:00:00Z",
+          "2013-01-01T19:00:00Z"
+        ]
+      },
+      {
+        "distinct_count": 166158,
+        "is_airbyte_metadata": true,
+        "name": "_airbyte_raw_id",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "VARCHAR",
+        "sample_values": [
+          "06a98b07-fd85-7f17-8000-1ece27d2e110",
+          "06a98b07-fd87-73c6-8000-5f794f4f3edd",
+          "06a98b07-fd87-769c-8000-dff88bb58387",
+          "06a98b07-fd87-7900-8000-c8d97fe0f97a",
+          "06a98b07-fd87-7e63-8000-1696347fd845",
+          "06a98b07-fd88-70a0-8000-81109da75014",
+          "06a98b07-fd88-725c-8000-332b1326316a",
+          "06a98b07-fd88-73e6-8000-291e61b24e98",
+          "06a98b07-fd88-7555-8000-5583b8e4a236",
+          "06a98b07-fd88-76b8-8000-2bccce163bda"
+        ]
+      },
+      {
+        "distinct_count": 16,
+        "distinct_values": [
+          "2026-09-02T23:25:51",
+          "2026-09-02T23:25:52",
+          "2026-09-02T23:25:53",
+          "2026-09-02T23:25:54",
+          "2026-09-02T23:25:55",
+          "2026-09-02T23:25:56",
+          "2026-09-02T23:25:57",
+          "2026-09-02T23:25:58",
+          "2026-09-02T23:25:59",
+          "2026-09-02T23:26:00",
+          "2026-09-02T23:26:01",
+          "2026-09-02T23:26:02",
+          "2026-09-02T23:26:03",
+          "2026-09-02T23:26:04",
+          "2026-09-02T23:26:05",
+          "2026-09-02T23:26:06"
+        ],
+        "is_airbyte_metadata": true,
+        "max": "2026-09-02T23:26:06",
+        "min": "2026-09-02T23:25:51",
+        "name": "_airbyte_extracted_at",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "TIMESTAMP"
+      },
+      {
+        "distinct_count": 1,
+        "distinct_values": [
+          "{}"
+        ],
+        "is_airbyte_metadata": true,
+        "name": "_airbyte_meta",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "JSON"
+      }
+    ],
+    "duplicate_row_rate": 0.0,
+    "row_count": 166158,
+    "schema": "bronze",
+    "table": "nyc_flights"
+  },
+  "schema_version": "1.0.0"
+}
