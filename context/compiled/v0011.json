@@ -1,0 +1,420 @@
+{
+  "entries": [
+    {
+      "compiled_context": {
+        "data": {
+          "fields": {
+            "source_table": {
+              "logicalType": "string",
+              "physicalType": "VARCHAR",
+              "required": true
+            }
+          },
+          "source_tables": [
+            "silver.silver_invoice_lines"
+          ]
+        },
+        "expert_context": {
+          "fields": {
+            "source_table": {
+              "meaning": "The silver table the fact row was built from, as schema.table; its subject and governing contracts are listed under sources."
+            }
+          },
+          "governing_contracts": {
+            "star": "gold_unified_event_star v1.6.0"
+          },
+          "how_to_read": "Resolve a fact's source_hash_id here to learn which silver table minted it, then read that table's subject below; the category's own registry entries carry the full expert context.",
+          "note": "Authored knowledge, not a measurement: what the people who approved the governing contracts wrote about this data (the silver contract that settled the table, the mapping contract that declared the category, the star contract that governs the container). Units, vintages, what a null means, which joins hold and how completely, and the decisions taken in silver live here. The data section beside it is derived from the contracts' typed declarations; the rows in the warehouse are the measurement. Where a claim here and the data disagree, the data is the fact and this is the claim to check.",
+          "sources": {
+            "silver.silver_invoice_lines": {
+              "category": "invoice_lines",
+              "governing_contracts": {
+                "mapping": "gold_invoice_lines_mapping v1.1.1",
+                "silver": "silver_invoice_lines v1.3.0"
+              },
+              "subject": "The cleaned, typed, one-row-per-invoice-line view of the Online Retail II sample: the first contracted silver table and the sole silver input to the gold unified event star."
+            }
+          },
+          "star_limitations": "Typed projections are uncontracted views by design (D-17): vw_invoice_lines_typed is emitted and manifest-listed but never a schema object here. Payloads are canonical JSON text; consumers needing typed columns use the projection. compiled_context is addressed content, never a hashed payload, so it keeps its case.",
+          "star_purpose": "The source-invariant, self-describing, content-addressed star schema: values/columns dimension pairs for the source, run, and timeframe groups and for the three fact categories (invoice_lines, airport_weather, flights), the three fact tables, and the context registry (D-19): the address of meaning, one row per schema key. Every source lands in the same physical shape: within a category new sources add rows, not schema, and the shared groups and the registry are one set for every category (D-41; F-42). The timeframe group is the conformed calendar (Amendment R): one manifest for the whole star, so equal periods at equal grain are one row whichever category minted them.",
+          "star_usage": "Built only by dbt from engine-emitted models (D-07, D-09); consumers read through the shared query module over the read-only protocol, with the MCP server primary (Phase 5). Every *_values row carries the four-element pattern: value payload, manifest reference (schema key), record key, schema key. Cancellation lines flow through retained-and-flagged per the mapping contract; exclusion is a consumer decision. Cross-category questions are answered on the typed surfaces through the joins crossCategoryJoins declares, each on conformed keys and the conformed calendar with its measured completeness and its floor; the registry carries them into every participating category's expert context. invoice_lines shares no conformed key with the aviation categories and its window (December 2009, minute grain) never meets theirs (2013, hour grain): the calendar aligns them in shape, not in time.",
+          "subject": "The source group: one row per silver table the star is built from, named as schema.table. Every fact row carries the source hash of the table it came from."
+        },
+        "manifest": [
+          "source_table"
+        ],
+        "role": "source"
+      },
+      "contract_name": "gold_unified_event_star",
+      "contract_version": "1.6.0",
+      "entity_group": "source",
+      "schema_key": "61e74223d961799a0f8b12bf9045b422b5cad4fc9273e1ce3f65eb07966a2e1f"
+    },
+    {
+      "compiled_context": {
+        "data": {
+          "fields": {
+            "engine_version": {
+              "logicalType": "string",
+              "physicalType": "VARCHAR",
+              "required": true
+            },
+            "mapping_contract_name": {
+              "logicalType": "string",
+              "physicalType": "VARCHAR",
+              "required": true
+            },
+            "mapping_contract_version": {
+              "logicalType": "string",
+              "physicalType": "VARCHAR",
+              "required": true
+            }
+          }
+        },
+        "expert_context": {
+          "fields": {
+            "engine_version": {
+              "meaning": "The auto-modeling engine version that emitted the models (D-07)."
+            },
+            "mapping_contract_name": {
+              "meaning": "The id of the mapping contract whose approval created the category's keys."
+            },
+            "mapping_contract_version": {
+              "meaning": "That mapping contract's version at build time."
+            }
+          },
+          "governing_contracts": {
+            "star": "gold_unified_event_star v1.6.0"
+          },
+          "how_to_read": "run_hash_id on a fact row is a non-key attribute (rule 14): resolve it here to see which mapping contract version and engine version built the row. Equal facts rebuilt under a new engine keep their keys and change only this attribute.",
+          "note": "Authored knowledge, not a measurement: what the people who approved the governing contracts wrote about this data (the silver contract that settled the table, the mapping contract that declared the category, the star contract that governs the container). Units, vintages, what a null means, which joins hold and how completely, and the decisions taken in silver live here. The data section beside it is derived from the contracts' typed declarations; the rows in the warehouse are the measurement. Where a claim here and the data disagree, the data is the fact and this is the claim to check.",
+          "star_limitations": "Typed projections are uncontracted views by design (D-17): vw_invoice_lines_typed is emitted and manifest-listed but never a schema object here. Payloads are canonical JSON text; consumers needing typed columns use the projection. compiled_context is addressed content, never a hashed payload, so it keeps its case.",
+          "star_purpose": "The source-invariant, self-describing, content-addressed star schema: values/columns dimension pairs for the source, run, and timeframe groups and for the three fact categories (invoice_lines, airport_weather, flights), the three fact tables, and the context registry (D-19): the address of meaning, one row per schema key. Every source lands in the same physical shape: within a category new sources add rows, not schema, and the shared groups and the registry are one set for every category (D-41; F-42). The timeframe group is the conformed calendar (Amendment R): one manifest for the whole star, so equal periods at equal grain are one row whichever category minted them.",
+          "star_usage": "Built only by dbt from engine-emitted models (D-07, D-09); consumers read through the shared query module over the read-only protocol, with the MCP server primary (Phase 5). Every *_values row carries the four-element pattern: value payload, manifest reference (schema key), record key, schema key. Cancellation lines flow through retained-and-flagged per the mapping contract; exclusion is a consumer decision. Cross-category questions are answered on the typed surfaces through the joins crossCategoryJoins declares, each on conformed keys and the conformed calendar with its measured completeness and its floor; the registry carries them into every participating category's expert context. invoice_lines shares no conformed key with the aviation categories and its window (December 2009, minute grain) never meets theirs (2013, hour grain): the calendar aligns them in shape, not in time.",
+          "subject": "The run group: build lineage, one row per mapping contract version and engine version that minted fact rows. An audit attribute, never an analytical one."
+        },
+        "manifest": [
+          "mapping_contract_name",
+          "mapping_contract_version",
+          "engine_version"
+        ],
+        "role": "run"
+      },
+      "contract_name": "gold_unified_event_star",
+      "contract_version": "1.6.0",
+      "entity_group": "run",
+      "schema_key": "dacafb1855b6ce1628eb3be9b6c8eeeedc3d4f45454a6fd87093deda9d0cc848"
+    },
+    {
+      "compiled_context": {
+        "data": {
+          "categories": {
+            "invoice_lines": {
+              "field": {
+                "logicalType": "date",
+                "mappingRole": "time",
+                "physicalType": "TIMESTAMP",
+                "required": true
+              },
+              "time_column": "invoiced_at",
+              "time_grain": "minute"
+            }
+          },
+          "fields": {
+            "grain": {
+              "logicalType": "string",
+              "physicalType": "VARCHAR",
+              "required": true
+            },
+            "period_start": {
+              "logicalType": "date",
+              "physicalType": "TIMESTAMP",
+              "required": true
+            }
+          }
+        },
+        "expert_context": {
+          "categories": {
+            "invoice_lines": {
+              "time_column_meaning": "Invoice timestamp; the declared time column.",
+              "vintage": ""
+            }
+          },
+          "cross_category_joins": [
+            {
+              "calendar_grain": "hour",
+              "conformed_keys": [
+                "airport_iata"
+              ],
+              "example_sql": "SELECT flights.carrier_code, avg(flights.dep_delay_minutes) AS avg_dep_delay_minutes FROM gold.mart_flights_typed AS flights JOIN gold.mart_airport_weather_typed AS airport_weather ON flights.origin_airport = airport_weather.airport_code AND flights.departure_hour_utc = airport_weather.observed_hour_utc WHERE airport_weather.precip_inches > 0 GROUP BY flights.carrier_code ORDER BY avg_dep_delay_minutes DESC",
+              "floor": 0.99,
+              "join_condition": "flights.origin_airport = airport_weather.airport_code AND flights.departure_hour_utc = airport_weather.observed_hour_utc",
+              "left": "flights",
+              "measured_completeness": 0.9994,
+              "name": "flights_to_origin_weather",
+              "note": "Every flight's weather at its origin airport in its departure hour, both sides on the conformed calendar (UTC hours) and the conformed airport code. Measured 0.9994 over the typed surfaces at the Arc 6 build: 97 of 166,158 flights fall in the six airport-hours the nycflights13 weather feed has no observation for. The floor is declared below the measurement so a weather refresh that adds coverage passes and one that loses it fails (the M2 discipline, D-41). Destination weather is out of reach by construction: the weather feed covers the three New York City airports only.",
+              "right": "airport_weather"
+            }
+          ],
+          "fields": {
+            "grain": {
+              "meaning": "The declared time grain of the category the period belongs to (minute, hour, day, week, month, quarter, year)."
+            },
+            "period_start": {
+              "meaning": "The category's declared time column truncated to its grain and rendered canonically; equal periods at equal grain hash to one row whichever category minted them (the conformed calendar, D-17 Amendment R)."
+            }
+          },
+          "governing_contracts": {
+            "star": "gold_unified_event_star v1.6.0"
+          },
+          "how_to_read": "Two categories share a calendar row only at the same grain: an hour-grain category and a minute-grain category never share rows, and their windows may not overlap at all. Compare windows and grains per category below before joining on timeframe_hash_id; for analytical joins prefer the typed surfaces and the cross-category joins the star declares.",
+          "note": "Authored knowledge, not a measurement: what the people who approved the governing contracts wrote about this data (the silver contract that settled the table, the mapping contract that declared the category, the star contract that governs the container). Units, vintages, what a null means, which joins hold and how completely, and the decisions taken in silver live here. The data section beside it is derived from the contracts' typed declarations; the rows in the warehouse are the measurement. Where a claim here and the data disagree, the data is the fact and this is the claim to check.",
+          "star_limitations": "Typed projections are uncontracted views by design (D-17): vw_invoice_lines_typed is emitted and manifest-listed but never a schema object here. Payloads are canonical JSON text; consumers needing typed columns use the projection. compiled_context is addressed content, never a hashed payload, so it keeps its case.",
+          "star_purpose": "The source-invariant, self-describing, content-addressed star schema: values/columns dimension pairs for the source, run, and timeframe groups and for the three fact categories (invoice_lines, airport_weather, flights), the three fact tables, and the context registry (D-19): the address of meaning, one row per schema key. Every source lands in the same physical shape: within a category new sources add rows, not schema, and the shared groups and the registry are one set for every category (D-41; F-42). The timeframe group is the conformed calendar (Amendment R): one manifest for the whole star, so equal periods at equal grain are one row whichever category minted them.",
+          "star_usage": "Built only by dbt from engine-emitted models (D-07, D-09); consumers read through the shared query module over the read-only protocol, with the MCP server primary (Phase 5). Every *_values row carries the four-element pattern: value payload, manifest reference (schema key), record key, schema key. Cancellation lines flow through retained-and-flagged per the mapping contract; exclusion is a consumer decision. Cross-category questions are answered on the typed surfaces through the joins crossCategoryJoins declares, each on conformed keys and the conformed calendar with its measured completeness and its floor; the registry carries them into every participating category's expert context. invoice_lines shares no conformed key with the aviation categories and its window (December 2009, minute grain) never meets theirs (2013, hour grain): the calendar aligns them in shape, not in time.",
+          "subject": "The conformed calendar (D-17 Amendment R): one timeframe manifest for the whole star, so equal periods at equal grain are one row whichever category minted them."
+        },
+        "manifest": [
+          "grain",
+          "period_start"
+        ],
+        "role": "timeframe"
+      },
+      "contract_name": "gold_unified_event_star",
+      "contract_version": "1.6.0",
+      "entity_group": "timeframe",
+      "schema_key": "882bb5e70283711a0c90460b64b632f83786eaf265e1e044bfbe288e6144ae98"
+    },
+    {
+      "compiled_context": {
+        "category": "invoice_lines",
+        "data": {
+          "conformed_keys": {},
+          "derived_identifiers": {
+            "line_identity": {
+              "derivation": "canonical-key-v2",
+              "of": [
+                "invoice_id",
+                "stock_code",
+                "quantity",
+                "unit_price"
+              ],
+              "source": "derived"
+            }
+          },
+          "fields": {
+            "country": {
+              "logicalType": "string",
+              "mappingRole": "dimension",
+              "physicalType": "VARCHAR",
+              "required": true
+            },
+            "customer_id": {
+              "logicalType": "integer",
+              "mappingRole": "dimension",
+              "physicalType": "INTEGER",
+              "required": false
+            },
+            "invoice_id": {
+              "logicalType": "string",
+              "mappingRole": "dimension",
+              "physicalType": "VARCHAR",
+              "required": true
+            },
+            "is_cancellation": {
+              "logicalType": "boolean",
+              "mappingRole": "dimension",
+              "physicalType": "BOOLEAN",
+              "required": true
+            },
+            "product_description": {
+              "logicalType": "string",
+              "mappingRole": "dimension",
+              "physicalType": "VARCHAR",
+              "required": false
+            },
+            "stock_code": {
+              "logicalType": "string",
+              "mappingRole": "dimension",
+              "physicalType": "VARCHAR",
+              "required": true
+            }
+          },
+          "grain": {
+            "keys": [
+              "invoice_id",
+              "stock_code",
+              "quantity",
+              "unit_price"
+            ],
+            "type": "transaction"
+          },
+          "source_table": "silver.silver_invoice_lines",
+          "time_column": "invoiced_at",
+          "time_grain": "minute",
+          "typed_surface": "mart_invoice_lines_typed",
+          "value_form": "String columns on the typed surface carry canonical lowercase text (D-18 as amended): write string literals in lowercase (carrier_code = 'ev', origin_airport = 'jfk'), or compare with lower(). Numbers, dates, and timestamps are typed and unaffected.",
+          "where_to_query": "gold.mart_invoice_lines_typed: one typed row per invoice_lines event, the served surface for this category. The silver table the expert context names (silver.silver_invoice_lines) is its source and is not served; the star tables are the provenance layer."
+        },
+        "expert_context": {
+          "category_limitations": "Cancellation lines flow through retained-and-flagged; excluding them is a consumer decision, made at query time, never here. v1.0.0 deliberately reserved country; this version maps it, executing the signature test the reservation existed for.",
+          "category_purpose": "Declares how silver.silver_invoice_lines maps into the unified event star as the invoice_lines fact category. Consumed by the auto-modeling engine (D-07), which emits the gold dbt models; no physical table ever carries this contract's name.",
+          "category_usage": "Engine input only. Gate 1 lints it; gate 3 skips it by design (F-12); the engine validates it against mapping-contract.schema.json and cross-checks every field against the silver contract.",
+          "decisions": {
+            "decisionCancellations": "flow-through-retained-and-flagged",
+            "decisionClockDriftDuplicates": "collapsed-earliest-timestamp-retained",
+            "decisionExactDuplicates": "excluded-as-capture-artifacts",
+            "decisionGrainForm": "derived-line-identity-over-declared-silver-grain-tuple",
+            "decisionInvoicedateCast": "strict-timestamp-cast",
+            "decisionNegativeQuantityCause": "cancellation-or-zero-price-adjustment",
+            "decisionNullCustomerId": "retained-nullable",
+            "decisionReservedColumn": "country-mapped-at-v1.1.0-reservation-discharged",
+            "decisionZeroPriceLines": "retained"
+          },
+          "fields": {
+            "country": {
+              "meaning": "Customer country as landed; the signature-test dimension, mapped at v1.1.0.",
+              "source_meaning": "Customer country as landed (24 distinct at v0001)."
+            },
+            "customer_id": {
+              "meaning": "Customer identifier; null on guest checkouts.",
+              "source_meaning": "Customer identifier, cast DECIMAL(38,9) to INTEGER (integral min, max, and samples, 12346 to 18287 at v0001). Decision: the 0.29778 bronze null rate is retained as null (guest or unregistered checkouts), not dropped and not imputed."
+            },
+            "invoice_id": {
+              "meaning": "Invoice number; C prefix marks a cancellation.",
+              "source_meaning": "Invoice number, kept as text (identifiers are text; Session D rule). A leading C marks a cancellation invoice; see is_cancellation."
+            },
+            "invoiced_at": {
+              "meaning": "Invoice timestamp; the declared time column.",
+              "source_meaning": "Invoice timestamp. Decision: strict cast from the VARCHAR landing (\"YYYY-MM-DD HH:MM:SS\"); an unparseable value fails the build loudly rather than becoming a silent null. On within-invoice clock-drift duplicates the earliest scan tick wins (min)."
+            },
+            "is_cancellation": {
+              "meaning": "Cancellation flag; exclusion is a consumer decision.",
+              "source_meaning": "True when invoice_id carries the C cancellation prefix. Decision: cancellations are retained and flagged, not dropped, so conservation arithmetic against bronze stays auditable; exclusion is a consumer decision made at the mapping contract, not silently here."
+            },
+            "product_description": {
+              "meaning": "Product description; nulls retained.",
+              "source_meaning": "Product description, whitespace-trimmed. Null rate 0.005041 at profile v0001; nulls retained rather than imputed."
+            },
+            "stock_code": {
+              "meaning": "Product code as landed.",
+              "source_meaning": "Product code as landed, kept as text; alphanumeric suffixes and non-product adjustment codes (for example POST, M) occur."
+            }
+          },
+          "governing_contracts": {
+            "mapping": "gold_invoice_lines_mapping v1.1.1",
+            "silver": "silver_invoice_lines v1.3.0",
+            "star": "gold_unified_event_star v1.6.0"
+          },
+          "how_to_read": "Read silver.silver_invoice_lines for line-level retail sales analysis. Cancellation lines are RETAINED and flagged (is_cancellation); consumers aggregating revenue must filter or net them deliberately. Zero-price lines are retained.",
+          "limitations": "Exact duplicate bronze rows (rate 0.011188 at profile v0001) are treated as capture artifacts and excluded, so identical legitimate re-scans are indistinguishable and also excluded; the residual grain is the distinct line. Rows identical in every business column except invoicedate are the same capture artifact seen across a register clock tick (one pair at v0001, invoice 492807, one minute apart); they collapse to one line and the earliest timestamp is retained. customer_id is null on 29.778% of bronze rows at v0001 (guest or unregistered checkouts); those rows are retained with customer_id null.",
+          "note": "Authored knowledge, not a measurement: what the people who approved the governing contracts wrote about this data (the silver contract that settled the table, the mapping contract that declared the category, the star contract that governs the container). Units, vintages, what a null means, which joins hold and how completely, and the decisions taken in silver live here. The data section beside it is derived from the contracts' typed declarations; the rows in the warehouse are the measurement. Where a claim here and the data disagree, the data is the fact and this is the claim to check.",
+          "subject": "The cleaned, typed, one-row-per-invoice-line view of the Online Retail II sample: the first contracted silver table and the sole silver input to the gold unified event star."
+        },
+        "manifest": [
+          "invoice_id",
+          "is_cancellation",
+          "stock_code",
+          "product_description",
+          "customer_id",
+          "country",
+          "line_identity"
+        ],
+        "role": "dimensions"
+      },
+      "contract_name": "gold_invoice_lines_mapping",
+      "contract_version": "1.1.1",
+      "entity_group": "invoice_lines",
+      "schema_key": "2d27bd360b5092ff22047c65407ff05699afad98f455de2409665a5950a05e82"
+    },
+    {
+      "compiled_context": {
+        "category": "invoice_lines",
+        "data": {
+          "fields": {
+            "quantity": {
+              "logicalType": "integer",
+              "mappingRole": "measure",
+              "physicalType": "INTEGER",
+              "required": true
+            },
+            "unit_price": {
+              "logicalType": "number",
+              "mappingRole": "measure",
+              "physicalType": "DECIMAL(10,2)",
+              "required": true
+            }
+          },
+          "source_table": "silver.silver_invoice_lines",
+          "typed_surface": "mart_invoice_lines_typed",
+          "value_form": "String columns on the typed surface carry canonical lowercase text (D-18 as amended): write string literals in lowercase (carrier_code = 'ev', origin_airport = 'jfk'), or compare with lower(). Numbers, dates, and timestamps are typed and unaffected.",
+          "where_to_query": "gold.mart_invoice_lines_typed: one typed row per invoice_lines event, the served surface for this category. The silver table the expert context names (silver.silver_invoice_lines) is its source and is not served; the star tables are the provenance layer."
+        },
+        "expert_context": {
+          "category_limitations": "Cancellation lines flow through retained-and-flagged; excluding them is a consumer decision, made at query time, never here. v1.0.0 deliberately reserved country; this version maps it, executing the signature test the reservation existed for.",
+          "category_purpose": "Declares how silver.silver_invoice_lines maps into the unified event star as the invoice_lines fact category. Consumed by the auto-modeling engine (D-07), which emits the gold dbt models; no physical table ever carries this contract's name.",
+          "category_usage": "Engine input only. Gate 1 lints it; gate 3 skips it by design (F-12); the engine validates it against mapping-contract.schema.json and cross-checks every field against the silver contract.",
+          "decisions": {
+            "decisionCancellations": "flow-through-retained-and-flagged",
+            "decisionClockDriftDuplicates": "collapsed-earliest-timestamp-retained",
+            "decisionExactDuplicates": "excluded-as-capture-artifacts",
+            "decisionGrainForm": "derived-line-identity-over-declared-silver-grain-tuple",
+            "decisionInvoicedateCast": "strict-timestamp-cast",
+            "decisionNegativeQuantityCause": "cancellation-or-zero-price-adjustment",
+            "decisionNullCustomerId": "retained-nullable",
+            "decisionReservedColumn": "country-mapped-at-v1.1.0-reservation-discharged",
+            "decisionZeroPriceLines": "retained"
+          },
+          "fields": {
+            "quantity": {
+              "meaning": "Units on the line; negative only on cancellations.",
+              "source_meaning": "Units on the line, cast from DECIMAL(38,9) to INTEGER. Negative values occur both on cancellation-invoice lines and on zero-unit-price stock-adjustment lines; consumers must not infer cancellation from negative quantity alone."
+            },
+            "unit_price": {
+              "meaning": "Unit price in sterling; zero-price lines retained.",
+              "source_meaning": "Unit price in sterling, cast from DECIMAL(38,9). Observed range 0.00 to 1998.49 at v0001. Decision: zero-price lines (freebies and adjustments) are retained; negative prices are contract-invalid."
+            }
+          },
+          "governing_contracts": {
+            "mapping": "gold_invoice_lines_mapping v1.1.1",
+            "silver": "silver_invoice_lines v1.3.0",
+            "star": "gold_unified_event_star v1.6.0"
+          },
+          "how_to_read": "Read silver.silver_invoice_lines for line-level retail sales analysis. Cancellation lines are RETAINED and flagged (is_cancellation); consumers aggregating revenue must filter or net them deliberately. Zero-price lines are retained.",
+          "limitations": "Exact duplicate bronze rows (rate 0.011188 at profile v0001) are treated as capture artifacts and excluded, so identical legitimate re-scans are indistinguishable and also excluded; the residual grain is the distinct line. Rows identical in every business column except invoicedate are the same capture artifact seen across a register clock tick (one pair at v0001, invoice 492807, one minute apart); they collapse to one line and the earliest timestamp is retained. customer_id is null on 29.778% of bronze rows at v0001 (guest or unregistered checkouts); those rows are retained with customer_id null.",
+          "note": "Authored knowledge, not a measurement: what the people who approved the governing contracts wrote about this data (the silver contract that settled the table, the mapping contract that declared the category, the star contract that governs the container). Units, vintages, what a null means, which joins hold and how completely, and the decisions taken in silver live here. The data section beside it is derived from the contracts' typed declarations; the rows in the warehouse are the measurement. Where a claim here and the data disagree, the data is the fact and this is the claim to check.",
+          "subject": "The cleaned, typed, one-row-per-invoice-line view of the Online Retail II sample: the first contracted silver table and the sole silver input to the gold unified event star."
+        },
+        "manifest": [
+          "quantity",
+          "unit_price"
+        ],
+        "role": "measures"
+      },
+      "contract_name": "gold_invoice_lines_mapping",
+      "contract_version": "1.1.1",
+      "entity_group": "invoice_lines",
+      "schema_key": "9dbc23cabca765eeaed72eb8161c90b5ae7857f81031656002f03e5bd9d99319"
+    }
+  ],
+  "schema_version": "2.0.0",
+  "sources": {
+    "gold_contract": {
+      "id": "gold_unified_event_star",
+      "version": "1.6.0"
+    },
+    "mapping_contracts": [
+      {
+        "id": "gold_invoice_lines_mapping",
+        "profileHash": "sha256:e65bee8117b65958b8c4741b43509ece19a581dd1d6bad9a7e1da9b67b0b5fcd",
+        "version": "1.1.1"
+      }
+    ],
+    "silver_contracts": [
+      {
+        "id": "silver_invoice_lines",
+        "version": "1.3.0"
+      }
+    ]
+  }
+}
