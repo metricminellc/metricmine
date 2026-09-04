@@ -11,26 +11,134 @@ measurements.
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-09-XX
+
+The multi-source proof (D-41): a second family of sources through the
+same pipeline, one star, one calendar, and the joins measured rather
+than assumed. Additive contract semantics; the fact primary key is
+unchanged.
+
 ### Added
 
 - Decision Record 011: D-41, the multi-source proof and the star trial,
   with its claim (co-location in gold, conformance in silver, service
-  through the typed surfaces) and its exit criterion written before the
-  first source lands; Amendments R (the conformed calendar, D-17), S
-  (the demo artifact as a release asset with a committed digest
-  manifest, D-03 and D-33), T (committed samples plural with pinned,
-  digest-checked fetch scripts, D-15), U (the engine fan-in, D-29), and
-  V (compiled schema 2.0.0 with conformed keys, D-30), and W (the data
-  and expert-context split in the registry, the subject and context
-  keys on the category listing, D-30 and D-31); findings F-36 through
-  F-53. The specs (engine, gold, ingestion, serving, agent layer,
-  profiler) and CLAUDE.md rules 9, 12, and 18 carry the amended text;
-  the non-goal on source types reads as one ingestion connector type.
+  through the typed surfaces), its exit criterion written before the
+  first source landed, and its verdict appended at the exit; Amendments
+  R (the conformed calendar, D-17), S (the demo artifact as a release
+  asset with a committed digest manifest, D-03 and D-33), T (committed
+  samples plural with pinned, digest-checked fetch scripts, D-15), U
+  (the engine fan-in, D-29), V (compiled schema 2.0.0 with conformed
+  keys, D-30), and W (the data and expert-context split in the
+  registry, the subject and context keys on the category listing, D-30
+  and D-31); findings F-36 through F-53. The specs (engine, gold,
+  ingestion, serving, agent layer, profiler) and CLAUDE.md rules 9,
+  12, and 18 carry the amended text; the non-goal on source types
+  reads as one ingestion connector type.
+- The aviation family: six committed extracts (nycflights13 flights,
+  weather, carriers, and aircraft at a pinned commit, January through
+  June 2013; OurAirports airports and runways at a pinned commit),
+  each with its README, its digest-checked fetch script, and its
+  bronze landing through the one file connector; `docs/sources.md`
+  as the register of every extract; the reader options that keep
+  code columns as text (F-50).
+- Seven silver contracts and models hand-authored from the profiles
+  they cite: six cleanup tables (no rows dropped, every clock and
+  calendar column typed, the conformed keys declared with their K1
+  rules) and two unified tables (`silver_flights`,
+  `silver_airport_weather`) settling the joins in human-owned SQL,
+  each join declared as structured `joins` with the completeness
+  measured at the profile and the floor an error-severity rule
+  enforces; their quality rules name the table through `ref()` so the
+  sync-generated tests inherit the dependency edge (F-51).
+- The engine fan-in: `engine.mapping_contracts` as a list, one
+  `Emission` per mapping and a `StarEmission` over them, the shared
+  groups and the registry as unions in category-name order, the
+  star-global headers, engine 0.5.0; the conformed calendar (the
+  timeframe payload `{grain, period_start}` for the whole star); the
+  star objects rendered per category by `scripts/render_star_objects.py`
+  and held to the render by a pattern gate.
+- Gold star 1.5.0 and 1.6.0: `captured_at` required on the
+  silver-derived objects, `conformedKeyRules` for `airport_iata`,
+  `carrier_code`, and `tail_number`, the `flights` and
+  `airport_weather` categories with their fifteen contracted objects,
+  and `crossCategoryJoins` declaring the join the typed surfaces
+  support (a flight's weather at its origin in its departure hour,
+  measured 0.9994, floor 0.99, with a worked example).
+- Three gates over the claims: the K1 conformed-key gate
+  (`tests/test_conformed_keys.py`), the declared-join gate
+  (`tests/test_declared_joins.py`, every silver and cross-category
+  join re-measured through the paths their consumers take), and the
+  aviation conservation and business-logic gate
+  (`tests/test_aviation_conservation.py`: row conservation through
+  every plane, the clock arithmetic, the local calendar against the
+  UTC hour under DST, the null patterns the contracts explain, the
+  vintage effect by name).
+- The registry split (Amendment W): every entry carries `data` (the
+  typed declarations, derived) and `expert_context` (what the
+  contracts' authors wrote, carried unchanged and labeled authored:
+  subject, how to read it, limitations, lineage, vintage, joins with
+  measured completeness, cross-category joins, decisions, a meaning
+  per field), compiled context v0010; `list_fact_categories` names
+  each category's subject and its registry keys; the server
+  instructions tell an agent to read the context first and to write
+  string literals in lowercase.
+- The demo question set: seven questions (three join the two categories
+  on the typed surfaces, three lean on joins settled in silver, one is
+  the retail control), with the SQL that answers each on the typed
+  surfaces and the answers measured at the committed samples
+  (`tests/fixtures/serving_questions.json`), proven through the serving
+  path by `tests/test_serving_questions.py`; the demo guide's "What the
+  agent knows" section and the questions to ask.
+- The multi-source scale curve in `docs/scale.md`: cold builds of the
+  three-category star at 166 thousand to 4 million flights, the
+  cross-category latency on marts against views, the incremental path
+  with three categories, and the artifact's size by category.
+- The family selectors for the proposers: `make propose-silver
+  SOURCE=<bronze table>` and `make propose-mapping TABLE=<silver
+  table>` (with `TARGET=` and `ORACLE=`), the mapping agreement scorer,
+  and eight eval fixtures for the family, each scored against its
+  human-authored contract as an n=1 agreement study; the recorded
+  render tests skip a fixture by name until its live run lands.
+- The demo artifact as a release asset (`make demo-fetch`, the
+  committed digest manifest, the CI gate holding the built warehouse
+  to it); silver 1.3.0 for the retail table (`captured_at` required,
+  F-46 and F-49).
+- `docs/adding-a-source.md`: the path every source took, as a
+  walkthrough validated by adding a source that is not in the demo
+  (the World Bank GDP series) to a fresh clone of v1.1.0: eight files
+  by hand, the rest generated and reviewed, a four-category star green
+  at every gate; the fetch scripts' unpinned message names the value
+  to copy. `docs/sources-explained.md`: what each demo source is, why
+  it is here, every decision and every join with its justification,
+  and how to read them for your own data. `docs/operating.md`: the
+  operator's manual (the daily commands, the procedures, every gate
+  and what its failure means, a glossary).
 
 ### Changed
 
-- The README names v1.0.0 as the current release and the start of the
-  stable line; CLAUDE.md states the stability rule as hard rule 19.
+- The README states the two source families and three categories, the
+  multi-source proof as the second act of the signature test, the data
+  and expert-context split at the serving edge, 22 of 31 models
+  engine-emitted, and forty-one decisions; the demo guide walks the
+  three-category star.
+- The serving spec (section 2.1) and the agent-layer spec (sections 4
+  and 5) carry Amendment W and the family selectors; the gold spec
+  carries `crossCategoryJoins`.
+- The compiled context advanced from v0006 to v0012 across the arc's
+  contract changes (the star at 1.5.0 and 1.6.0, silver 1.3.0, the
+  registry split, the regeneration); the golden fixtures and the
+  emitted models follow every mint.
+
+### Fixed
+
+- The local pytest lane at v1.0.0 (F-47): the scan test, two query
+  tests, and the server round trip, generalized to any category count.
+- Contract prose corrected by measurement before it reached the
+  registry: arrival delay and air time are null on 597 flights that
+  departed with no arrival record, not only on cancellations; 12
+  airport-hours (not 18) have no weather observation; about 84 percent
+  of flights resolve an aircraft and about 12 percent of weather rows
+  carry no pressure.
 
 ## [1.0.0] - 2026-09-02
 
@@ -209,7 +317,8 @@ tags.
 - The decision register, the findings register, the layer specs, and the
   diagrams with their Mermaid twins.
 
-[Unreleased]: https://github.com/metricminellc/metricmine/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/metricminellc/metricmine/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/metricminellc/metricmine/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/metricminellc/metricmine/compare/v0.3.0...v1.0.0
 [0.3.0]: https://github.com/metricminellc/metricmine/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/metricminellc/metricmine/compare/v0.1.0...v0.2.0
