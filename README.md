@@ -141,15 +141,21 @@ right-sized for the project and documented like everything else.
 
 ## See it run
 
-The repository ships `demo/demo.duckdb`, a verified ~11 MB gold-only
-export, so serving works from a fresh clone with no build step and no
-credentials:
+Every tagged release ships `demo/demo.duckdb`, a verified gold-only
+export, as a release asset pinned by the committed digest manifest
+(`demo/demo.digest.json`), so serving works from a fresh clone with no
+build step and no credentials:
 
 ```bash
 git clone https://github.com/metricminellc/metricmine.git && cd metricmine
 uv sync
+make demo-fetch
 uv run python -c "from metricmine.query import GoldWarehouse; print(GoldWarehouse().list_fact_categories())"
 ```
+
+`make demo-fetch` downloads the asset the manifest names and verifies
+its bytes and its content; `make demo` builds the same content from the
+committed samples when a tree has no published asset yet.
 
 The full walkthrough (wiring the MCP server into Claude Desktop, the
 questions to ask, the complete keyless replay from raw data to a fresh
