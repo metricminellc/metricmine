@@ -29,11 +29,11 @@ map one-to-one onto module methods.
 
 | Tool | Arguments | Returns | Truth source |
 |---|---|---|---|
-| `list_fact_categories` | none | categories with fact table name, row count, and the typed surface: `typed_table`, `typed_columns`, `query_hint` (D-31/D-32 as amended) | `information_schema` (physical tables `fact_<category>_values` in schema `gold`), cross-checkable against the registry |
+| `list_fact_categories` | none | categories with fact table name, row count, the typed surface (`typed_table`, `typed_columns`, `query_hint`; D-31/D-32 as amended), and since Amendment W the category's authored `subject` and its `context_keys` (the dimensions and measures schema keys `get_context` resolves) | `information_schema` (physical tables `fact_<category>_values` in schema `gold`) for the tables and counts; `gold.context_registry` for the subject and keys |
 | `get_schema` | `schema_key` | entity group, contract name and version, role, manifest (the declared field list) | `gold.context_registry` |
-| `get_context` | `schema_key` | the full compiled context (fields, descriptions, derivations) plus its contract citation | `gold.context_registry` |
+| `get_context` | `schema_key` | the full compiled context plus its contract citation: `role` and `manifest`, then `data` (what the columns are: typed declarations, grain, derived identifiers, conformed keys with who shares them, the typed surface) and `expert_context` (what people wrote: subject, how to read it, limitations, lineage, vintage, joins with measured completeness, cross-category joins, decisions, a meaning per field), kept apart by name (Amendment W) | `gold.context_registry` |
 | `query` | `sql`, optional `row_cap` | columns, rows, `row_count`, `truncated`, `row_cap` | the statement-gated, row-capped read path (§3, §4) |
-| `lookup_record` | `content_key` | every place the key resolves: registry row, fact row(s), dimension row(s), or a derived `line_identity` hit, each labeled with where it was found | all star tables plus the registry (the provenance tool) |
+| `lookup_record` | `content_key` | every place the key resolves: registry row, fact row(s), dimension row(s), or a derived-identity hit (each category's declared degenerate identifier, `line_identity` for the retail category, found through the registry's dimensions entries), each labeled with where it was found | all star tables plus the registry (the provenance tool) |
 
 Not-found is a clean empty result with `found: false`, never an error:
 an unknown key is a legitimate answer about content-addressed storage.
@@ -43,6 +43,59 @@ emitted, else the projection view (D-36). Values read through the
 typed surface and the payloads are the canonical lowercased text
 (D-18 as amended by Amendment M): case-insensitive by design, and
 stated here so no consumer mistakes it for a defect.
+
+### 2.1 Data and expert context, kept apart (Amendment W)
+
+An agent reading the registry must be able to tell what the columns
+ARE from what people WROTE about them, and the split is by name on
+every registry entry, never by inference. `get_context` returns, under
+`compiled_context`:
+
+- `role` and `manifest`, the entry's identity (the schema key is the
+  hash of the manifest), where `get_schema` has always read them.
+- `data`: derived from the contracts' typed declarations by the context
+  compiler (D-30). Per field its logical type, physical type, mapping
+  role, and required flag, never a description. For a dimensions entry
+  also the grain, the derived identifiers, the conformed keys (each with
+  the star's normalization rule, its nullability, and `shared_with`: the
+  other categories that carry the same key and under which columns), the
+  source table, the time column and grain, and the typed surface.
+- `expert_context`: authored knowledge from the human-owned silver
+  contract, the mapping contract, and the star contract, opened by a
+  `note` that says so and closes with the rule that where a claim here
+  and the data disagree, the data is the fact and this is the claim to
+  check. It carries the silver contract's `subject`, `how_to_read`, and
+  `limitations`; the mapping's `category_purpose`, `category_usage`, and
+  `category_limitations`; `governing_contracts` for all three planes;
+  `lineage` and `vintage` where the silver contract declares them; the
+  unified tables' `joins` as a structured list, each with its measured
+  completeness and the floor the contract enforces; the
+  `cross_category_joins` the star declares that this category takes part
+  in (the join condition aliased by category name, the conformed keys
+  and calendar grain it rides on, a measured completeness, a floor, a
+  note, and a worked `example_sql`); the `decisions` recorded on both
+  contracts; and per field a `meaning` (the mapping's description within
+  the category) plus a `source_meaning` where the silver column's own
+  description says something different.
+
+The shared groups carry the same two sections, framed by the star
+contract: the source group lists every silver table with its subject
+and governing contracts, the run group explains its lineage fields, and
+the timeframe group (the conformed calendar) lists each category's time
+column meaning and vintage, warns that categories share calendar rows
+only at the same grain, and repeats every cross-category join.
+
+The measured numbers in the expert context are claims about the
+committed samples at their pinned commits. The declared-join gate
+(`tests/test_declared_joins.py`, local lane) re-measures every silver
+join by its definition and every cross-category join through the typed
+surfaces and through silver, and fails by name when a declaration
+drifts from the warehouse, so the registry never carries a stale
+number under the word measured.
+
+`list_fact_categories` opens the same door: each category carries its
+authored `subject` and the two `context_keys` its registry entries
+resolve under, and the query hint says where the expert context lives.
 
 ## 3. Read-only, three layers deep
 
@@ -124,9 +177,10 @@ The module resolves its database in this order:
 1. `MM_SERVE_DB` (environment variable), if set; absolute path
    recommended; the MCP server is launched by a desktop client whose
    working directory is not the repo root.
-2. `demo/demo.duckdb`, the committed demo artifact (D-03 as amended,
-   Amendment E), the default surface. The keyless posture holds: no
-   credentials, no network, one file. The stem is deliberately not
+2. `demo/demo.duckdb`, the demo artifact (D-03 as amended, Amendments E
+   and S): a release asset restored by `make demo-fetch` or built by
+   `make demo`, the default surface. The keyless posture holds: no
+   credentials, no key, one file. The stem is deliberately not
    `gold`: a directly opened DuckDB file takes its catalog name from its
    stem, and a catalog named for the schema inside it makes every
    two-part `gold.<x>` reference ambiguous at 1.4.3
@@ -162,11 +216,14 @@ class GoldWarehouse:
 ```
 
 `lookup_record` search order, probed against the live star: the registry
-by `schema_key`; the fact table by `fact_hash_id` (and each of its
+by `schema_key`; every fact table by `fact_hash_id` (and each of its
 `*_hash_id` foreign columns); each values dimension by its hash-id
-column; then derived identities inside dimension payloads
-(`json_extract_string(dim_values, '$.line_identity')`). Each hit is
-labeled with table and column; the probe round-tripped a real
+column; then derived identities inside dimension payloads, one path per
+category read from the registry's dimensions entries
+(`derived_identifiers`): `json_extract_string(dim_values,
+'$.line_identity')` for the retail category, and each further
+category's own identifier with no code change (Amendment V). Each hit
+is labeled with table and column; the probe round-tripped a real
 `line_identity` to its one dimension row and one fact row.
 
 ## 7. The MCP server (`src/metricmine/server/`)
@@ -229,21 +286,24 @@ Claude Desktop wiring (documented shape, verified live at P1):
 }
 ```
 
-(The `env` entry disappears once `demo/demo.duckdb` exists and becomes
-the default.)
+(The `env` entry disappears once `demo/demo.duckdb` is present, fetched
+or built, and becomes the default.)
 
 ## 8. The demo export (`make export-demo`)
 
 D-03 named the target and the artifact; D-33 fixes the mechanism and the
-claim. `make export-demo` runs the keyless replay tail: with the working
-warehouse built (ingest, build, gates green), a Python exporter
-(`src/metricmine/export_demo.py`) creates `demo/demo.duckdb` fresh:
+claim; Amendment S moves the artifact out of git and commits its digest
+manifest instead. `make export-demo` runs the keyless replay tail: with
+the working warehouse built (ingest, build, gates green), a Python
+exporter (`src/metricmine/export_demo.py`) creates `demo/demo.duckdb`
+fresh and writes `demo/demo.digest.json` beside it:
 
 1. connect to the new file; `ATTACH` the working warehouse `READ_ONLY`;
 2. `CREATE SCHEMA gold`; copy each gold table with
    `CREATE TABLE gold.<t> AS SELECT * FROM wh.gold.<t>`, in sorted-name
    order;
-3. `DETACH`, then recreate `vw_invoice_lines_typed` from the working
+3. `DETACH`, then recreate every typed view (`vw_<category>_typed`, one
+   per category) from the working
    catalog's stored SQL (`duckdb_views()`), re-anchoring the database
    qualifier (`metricmine.gold.` → `gold.`) so the view resolves inside
    its own file (probed: the stored SQL is db-qualified and fails
@@ -253,7 +313,8 @@ warehouse built (ingest, build, gates green), a Python exporter
    cleanly. Until the detach, schema `gold` exists in two catalogs,
    which is why the step-2 copy statements carry the destination
    catalog qualifier explicitly;
-4. `CHECKPOINT`; verify; report size.
+4. `CHECKPOINT`; verify; write the digest manifest; report size and the
+   artifact's sha256.
 
 **The claim is content equality, proven by query, never byte equality**:
 a DuckDB file embeds storage details that make byte determinism a claim
@@ -266,6 +327,19 @@ per-file connections** (probed: a view's stored refs resolve against its
 own catalog; comparing views through cross-attachment is where `gold.`
 could bind ambiguously, so the exporter never does).
 
+The digest manifest (`demo/demo.digest.json`, schema 1.0.0) carries the
+artifact block (`name`, `release`, `sha256`, `bytes`) and the content
+block (per-table row counts; per typed view its row count and the
+ordered content digest, computed over the rendered row text with no
+per-category ordering key). It is the committed twin of the artifact:
+`make demo-fetch` (`scripts/fetch_demo.py`) downloads the release asset
+the manifest names and verifies its sha256; the CI gate
+(`scripts/check_demo_digest.py`) compares the built warehouse's content
+against the manifest and reports a local artifact as absent, stale, or
+matching without failing on it; doctor reports an absent artifact as a
+hint naming both commands. `make export-demo RELEASE=vX.Y.Z` stamps the
+release the artifact will be attached to.
+
 Probed measurements at the current sample: export 11,022,336 bytes
 (11.02 MB) against a 14.95 MB working warehouse; schemas in the export:
 `gold` only (bronze and silver absent; the committed artifact carries
@@ -273,10 +347,11 @@ no raw data, D-03/D-15 posture); read-only open works; the typed view
 answers the top-countries question with the same rows as the working
 warehouse.
 
-Refresh policy (D-33): the artifact is rebuilt only when gold content
-changes, at regeneration merges and at tags, never on a schedule. Each
-refresh travels in a PR whose body carries the size and the verification
-line.
+Refresh policy (D-33 as amended): the artifact is rebuilt only when gold
+content changes, at regeneration merges and at tags, never on a
+schedule. Each refresh travels in a PR whose body carries the size, the
+artifact's sha256, and the verification line, with the manifest as the
+diff; the artifact itself is uploaded to the release the manifest names.
 
 ## 9. Testing
 
@@ -285,10 +360,13 @@ line.
   warehouse required.
 - **Local lane (`@pytest.mark.local`, the established marker):** every
   lookup against the built warehouse (registry keys, schema/context
-  round trips, `line_identity` provenance round trip); row-cap and
-  truncation behavior over the 44,721-row fact; the in-process stdio
+  round trips, derived-identity provenance round trips); row-cap and
+  truncation behavior over each category's fact; the in-process stdio
   round trip against the real server with `MM_SERVE_DB` set; export
-  content-equality on a freshly built export.
+  content-equality on a freshly built export against its manifest. The
+  lane is category-agnostic: it reads the categories, the typed columns,
+  and the contract versions from the registry and the contracts, never
+  from literals (F-47).
 - The server's tool registration (five tools, expected names) is
   asserted in the CI lane by importing the app and listing tools
   in-process: no subprocess, no warehouse.
