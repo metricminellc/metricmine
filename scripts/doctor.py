@@ -124,11 +124,27 @@ def check_datacontract() -> None:
 
 
 def check_demo_artifact() -> None:
+    import json
+
     import duckdb
 
     demo = REPO / "demo" / "demo.duckdb"
+    manifest_path = REPO / "demo" / "demo.digest.json"
+    if not manifest_path.exists():
+        record("FAIL", "demo artifact", "demo/demo.digest.json missing; this is not a full checkout")
+        return
     if not demo.exists():
-        record("FAIL", "demo artifact", "demo/demo.duckdb missing; this is not a full checkout")
+        # The artifact is a release asset (D-03 Amendment S): absent from a
+        # fresh clone by design; the manifest says whether one is published.
+        release = json.loads(manifest_path.read_text(encoding="utf-8"))["artifact"].get("release")
+        if release:
+            record(
+                "WARN",
+                "demo artifact",
+                f"not fetched; make demo-fetch restores the {release} asset, or make demo builds it",
+            )
+        else:
+            record("WARN", "demo artifact", "no published artifact for this tree; make demo builds it")
         return
     try:
         con = duckdb.connect(str(demo), read_only=True)

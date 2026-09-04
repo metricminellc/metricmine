@@ -19,8 +19,9 @@ transform/.user.yml
 *.duckdb
 *.duckdb.wal
 
-# ---- except the demo artifact the hosted app reads (Decision D-03) ----
-!demo/demo.duckdb
+# The demo artifact demo/demo.duckdb is a release asset, never committed
+# (D-03 Amendment S); demo/demo.digest.json, the committed manifest, is
+# what pins it. *.duckdb above already ignores the artifact itself.
 
 # ---- raw source downloads: never committed (Decision D-15) ----
 data/raw/

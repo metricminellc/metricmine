@@ -9,14 +9,25 @@ catalog, then verify. The claim is content equality proven by query, never
 byte equality: a DuckDB file embeds storage details that make byte
 determinism a claim this project does not need and will not make.
 
-The source is only ever ATTACHed READ_ONLY; the one write surface is the
-destination file this module creates. Printing is fine here: this is a
-build tool, not the server; the stdio discipline of CLAUDE.md rule 18
-governs `src/metricmine/server/`.
+The source is only ever ATTACHed READ_ONLY; the two write surfaces are
+the destination file this module creates and, since D-03 Amendment S
+(Arc 6), the digest manifest beside it: `demo/demo.digest.json`, the
+committed statement of what the published artifact contains (every gold
+table's row count, every gold view's row count and ordered content
+digest, and the registry's row count and ordered digest over its
+deterministic columns) and, when MM_DEMO_RELEASE names the release the artifact ships
+with, the artifact's own sha256 and size. The artifact itself is a
+release asset, never committed; `make demo-fetch` restores it from the
+release named in the manifest and verifies it against the manifest; CI
+proves a fresh build against the manifest (scripts/check_demo_digest.py).
+Printing is fine here: this is a build tool, not the server; the stdio
+discipline of CLAUDE.md rule 18 governs `src/metricmine/server/`.
 """
 
 from __future__ import annotations
 
+import hashlib
+import json
 import os
 from pathlib import Path
 from typing import Any
@@ -24,16 +35,33 @@ from typing import Any
 import duckdb
 
 ENV_VAR = "MM_WAREHOUSE_PATH"
+RELEASE_ENV_VAR = "MM_DEMO_RELEASE"
+MANIFEST_SCHEMA_VERSION = "1.0.0"
 # Both defaults anchor from this module's own location, never the process
 # CWD, the same resolution posture as metricmine.query (spec §5).
 _REPO = Path(__file__).resolve().parents[2]
 DEFAULT_SOURCE = _REPO / "warehouse" / "metricmine.duckdb"
 DEFAULT_DEST = _REPO / "demo" / "demo.duckdb"
+DEFAULT_MANIFEST = _REPO / "demo" / "demo.digest.json"
 
 GOLD_SCHEMA = "gold"
-# The typed view's ordering key for the content digest: total order over
-# the sample, so the digest is deterministic (spec §8, probed August 13).
-ORDER_COLUMN = "line_identity"
+REGISTRY_TABLE = "context_registry"
+# The registry's deterministic columns (D-30): everything but loaded_at,
+# the build stamp F-39 keeps out of every content comparison. The digest
+# over these, ordered by schema_key, makes a registry change visible to
+# the manifest gate even though row counts stay put.
+REGISTRY_COLUMNS = (
+    "schema_key",
+    "entity_group",
+    "contract_name",
+    "contract_version",
+    "compiled_context",
+)
+# The content digest orders each view's rendered rows by the rendered row
+# text itself: a total order over the content that needs no per-category
+# key, so one digest rule covers every typed view the star serves (spec §8
+# as amended at the multi-source fan-in, D-41). Before the fan-in the
+# order key was the invoice_lines derived identity, a one-category name.
 
 
 def _ident(name: str) -> str:
@@ -140,8 +168,8 @@ def _view_digest(path: Path, view: str) -> tuple[int, str]:
         rel = f"{_ident(GOLD_SCHEMA)}.{_ident(view)}"
         count, digest = con.execute(
             f"select count(*),"
-            f" md5(string_agg({line}, chr(10) order by {_ident(ORDER_COLUMN)}))"
-            f" from {rel}"
+            f" md5(string_agg(line, chr(10) order by line))"
+            f" from (select {line} as line from {rel})"
         ).fetchone()
         return int(count), digest
     finally:
@@ -209,9 +237,160 @@ def verify(source: Path, dest: Path) -> dict[str, Any]:
     return report
 
 
-def main() -> None:
-    source = resolve_source_path()
+def _registry_digest(con: duckdb.DuckDBPyConnection) -> tuple[int, str]:
+    """Row count and ordered digest over the registry's deterministic
+    columns (never loaded_at, F-39), so a registry content change is
+    visible to the manifest gate at equal row counts."""
+    rendered = ", ".join(
+        f"coalesce(cast({_ident(c)} as varchar), '')" for c in REGISTRY_COLUMNS
+    )
+    line = f"concat_ws(chr(31), {rendered})"
+    rel = f"{_ident(GOLD_SCHEMA)}.{_ident(REGISTRY_TABLE)}"
+    count, digest = con.execute(
+        f"select count(*), md5(string_agg(line, chr(10) order by line))"
+        f" from (select {line} as line from {rel})"
+    ).fetchone()
+    return int(count), digest
+
+
+def content_manifest(path: Path) -> dict[str, Any]:
+    """The content section of the digest manifest, measured on one file:
+    every gold table's row count, every gold view's row count and ordered
+    content digest, and the registry's row count and ordered digest over
+    its deterministic columns (the D-33 claim, in a committed form)."""
+    con = duckdb.connect(str(path), read_only=True)
+    try:
+        con.execute("SET timezone = 'UTC'")
+        tables = _gold_tables(con, path.stem)
+        views = [name for name, _sql in _gold_views(con, path.stem)]
+        counts = {}
+        for table in tables:
+            rel = f"{_ident(GOLD_SCHEMA)}.{_ident(table)}"
+            (count,) = con.execute(f"select count(*) from {rel}").fetchone()
+            counts[table] = {"rows": int(count)}
+        registry = None
+        if REGISTRY_TABLE in tables:
+            rows, digest = _registry_digest(con)
+            registry = {"rows": rows, "digest": digest}
+    finally:
+        con.close()
+    digests = {}
+    for view in views:
+        count, digest = _view_digest(path, view)
+        digests[view] = {"rows": count, "digest": digest}
+    return {"registry": registry, "tables": counts, "views": digests}
+
+
+def file_sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with open(path, "rb") as handle:
+        for chunk in iter(lambda: handle.read(1 << 20), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def build_manifest(dest: Path, release: str | None) -> dict[str, Any]:
+    """The digest manifest for an exported artifact.
+
+    ``release`` names the GitHub release the artifact ships with (the exit
+    sitting exports with MM_DEMO_RELEASE set); None means the tree has no
+    published artifact yet, and `make demo-fetch` says so.
+    """
+    return {
+        "artifact": {
+            "name": dest.name,
+            "release": release,
+            "sha256": file_sha256(dest),
+            "bytes": dest.stat().st_size,
+        },
+        "content": content_manifest(dest),
+        "schema_version": MANIFEST_SCHEMA_VERSION,
+    }
+
+
+def write_manifest(manifest: dict[str, Any], path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(manifest, indent=2, sort_keys=True, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+
+
+def read_manifest(path: Path = DEFAULT_MANIFEST) -> dict[str, Any]:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def compare_content(path: Path, manifest: dict[str, Any]) -> list[str]:
+    """Differences between a file's gold content and a manifest's content
+    section, as human-readable lines; empty means the file serves exactly
+    what the manifest states."""
+    measured = content_manifest(path)
+    expected = manifest["content"]
+    problems: list[str] = []
+    if set(measured["tables"]) != set(expected["tables"]):
+        problems.append(
+            f"gold table sets differ: file {sorted(measured['tables'])},"
+            f" manifest {sorted(expected['tables'])}"
+        )
+    if set(measured["views"]) != set(expected["views"]):
+        problems.append(
+            f"gold view sets differ: file {sorted(measured['views'])},"
+            f" manifest {sorted(expected['views'])}"
+        )
+    for table, entry in expected["tables"].items():
+        got = measured["tables"].get(table)
+        if got and got["rows"] != entry["rows"]:
+            problems.append(
+                f"table {table}: {got['rows']} rows, manifest {entry['rows']}"
+            )
+    for view, entry in expected["views"].items():
+        got = measured["views"].get(view)
+        if got and (got["rows"], got["digest"]) != (entry["rows"], entry["digest"]):
+            problems.append(
+                f"view {view}: {got['rows']} rows digest {got['digest']},"
+                f" manifest {entry['rows']} rows digest {entry['digest']}"
+            )
+    if measured.get("registry") != expected.get("registry"):
+        problems.append(
+            f"registry: file {measured.get('registry')},"
+            f" manifest {expected.get('registry')}"
+        )
+    return problems
+
+
+def write_manifest_for(dest: Path, release: str | None) -> dict[str, Any]:
+    """Measure an existing artifact and write its manifest: the path
+    `--manifest-only` takes when the artifact to pin already exists (the
+    bytes a release ships, never a fresh export)."""
+    if not dest.is_file():
+        raise FileNotFoundError(f"no demo artifact at {dest} to write a manifest for")
+    manifest = build_manifest(dest, release)
+    write_manifest(manifest, DEFAULT_MANIFEST)
+    print(
+        f"manifest: {DEFAULT_MANIFEST} (release {release or 'unpublished'},"
+        f" artifact sha256 {manifest['artifact']['sha256']})"
+    )
+    return manifest
+
+
+def main(argv: list[str] | None = None) -> None:
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="Export the demo artifact and write its digest manifest (D-33, Amendment S)."
+    )
+    parser.add_argument(
+        "--manifest-only",
+        action="store_true",
+        help="write demo/demo.digest.json for the existing demo/demo.duckdb without exporting",
+    )
+    args = parser.parse_args(argv)
+    release = os.environ.get(RELEASE_ENV_VAR) or None
     dest = DEFAULT_DEST
+    if args.manifest_only:
+        write_manifest_for(dest, release)
+        return
+    source = resolve_source_path()
     export(source, dest)
     report = verify(source, dest)
     print(f"exported {source} -> {dest}")
@@ -224,6 +403,7 @@ def main() -> None:
             f"digest match ({entry['digest']})"
         )
     print(f"artifact size: {dest.stat().st_size} bytes")
+    write_manifest_for(dest, release)
 
 
 if __name__ == "__main__":

@@ -148,13 +148,15 @@ jobs:
           uv run datacontract dbt sync contracts/*.odcs.yaml --project-dir transform --target local
           uv run datacontract dbt test contracts/*.odcs.yaml --project-dir transform --target local
 
-      # The stranger-path proof (Arc 4): the committed demo artifact is what
-      # this exact tree's pipeline produces, compared at the content layer
-      # only: object sets, per-table row counts, and the D-33 ordered
-      # content digest on every gold view. Audit stamps (loaded_at,
+      # The stranger-path proof (Arc 4; Amendment S at Arc 6): the committed
+      # digest manifest states what the released demo artifact contains,
+      # and this tree's pipeline must produce exactly that, compared at
+      # the content layer only: object sets, per-table row counts, the
+      # D-33 ordered content digest on every gold view, and the registry's
+      # digest over its deterministic columns. Audit stamps (loaded_at,
       # captured_at) and byte sizes are build- and machine-relative by
       # design and never enter the gate. A gold content change that lands
-      # without its demo refresh goes red here.
-      - name: "Demo artifact matches the built warehouse (D-33)"
+      # without its manifest refresh goes red here.
+      - name: "Demo manifest matches the built warehouse (D-33)"
         if: steps.gate.outputs.gate2 == 'true'
         run: uv run python scripts/check_demo_digest.py

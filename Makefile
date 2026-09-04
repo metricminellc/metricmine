@@ -34,9 +34,27 @@ context:
 doctor:
 	uv run python scripts/doctor.py
 
+# The demo artifact is a release asset with a committed digest manifest
+# (D-03 and D-33 as amended by Amendment S): export-demo rebuilds the
+# artifact from the built warehouse and refreshes demo/demo.digest.json
+# (RELEASE=vX.Y.Z stamps the release it will ship with; unset means
+# unpublished); demo-fetch restores the published artifact keylessly and
+# verifies it against the manifest.
+RELEASE ?=
+
 .PHONY: export-demo
 export-demo:
-	uv run python -m metricmine.export_demo
+	MM_DEMO_RELEASE="$(RELEASE)" uv run python -m metricmine.export_demo
+
+# demo-manifest pins the demo/demo.duckdb already on disk (the bytes a
+# release ships) without exporting; export-demo is the refresh path.
+.PHONY: demo-manifest
+demo-manifest:
+	MM_DEMO_RELEASE="$(RELEASE)" uv run python -m metricmine.export_demo --manifest-only
+
+.PHONY: demo-fetch
+demo-fetch:
+	uv run python scripts/fetch_demo.py
 
 # Proposer agents per docs/spec/agent-layer.md §4 (D-24, D-34, D-35): one
 # structured call per target, writing a draft contract plus its record to

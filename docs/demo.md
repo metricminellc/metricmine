@@ -2,7 +2,7 @@
 
 > Repo path: `docs/demo.md`
 > The full walkthrough behind the README's *See it run* section. Two
-> paths: serve the committed gold artifact immediately (no build, no
+> paths: serve the released gold artifact immediately (no build, no
 > keys), then optionally replay the entire pipeline from raw data. A
 > recording of this walkthrough is attached to the
 > [latest release](https://github.com/metricminellc/metricmine/releases/latest).
@@ -18,19 +18,27 @@
 - No API keys, no accounts, no cloud resources. Everything below is
   keyless by design (D-24).
 
-## Path A: serve the committed gold star (2 minutes)
+## Path A: serve the released gold star (2 minutes)
 
-The repository commits `demo/demo.duckdb`: a ~11 MB export carrying the
-gold schema only, verified content-equal by query to the built warehouse
-(D-33). The MCP server reads it by default, so serving works from a fresh
-clone:
+Every tagged release ships `demo/demo.duckdb` as a release asset: an
+export carrying the gold schema only, verified content-equal by query
+to the built warehouse (D-33). The repository commits its digest
+manifest, `demo/demo.digest.json`, which names the release and pins the
+asset's sha256, size, and content (D-03 as amended by Amendment S).
+`make demo-fetch` downloads and verifies it, and the MCP server reads
+it by default, so serving works from a fresh clone:
 
 ```bash
 git clone https://github.com/metricminellc/metricmine.git
 cd metricmine
 uv sync
+make demo-fetch
 uv run python -c "from metricmine.query import GoldWarehouse; print(GoldWarehouse().list_fact_categories())"
 ```
+
+Between tags, `main` may name no published release in its manifest; the
+fetch then says so and Path B (`make demo`) builds the same content
+keyless in a few minutes.
 
 Expected output: one category, `invoice_lines`, table
 `fact_invoice_lines_values`, 44,721 rows.
@@ -109,11 +117,12 @@ What to expect, step by step:
    is enforced at compile time; content rules run as tests with
    contract-declared severity.
 3. `make export-demo` rebuilds `demo/demo.duckdb` from your freshly built
-   warehouse and verifies it: per-table equal counts plus symmetric
-   EXCEPT, and a content digest over the typed view compared across
-   per-file connections. The claim is content equality by query, never
-   byte equality (D-33), so your artifact proves equal even though its
-   bytes may differ.
+   warehouse, verifies it (per-table equal counts plus symmetric
+   EXCEPT, and a content digest over every typed view compared across
+   per-file connections), and writes `demo/demo.digest.json` beside it.
+   The claim is content equality by query, never byte equality (D-33),
+   so your artifact proves equal even though its bytes may differ; the
+   manifest's content section is what CI holds every build to.
 4. `pytest` runs the full suite, including the local lane that exercises
    the query gate's 29-case refusal matrix, the serving round trip, and
    the export verification.
@@ -121,7 +130,8 @@ What to expect, step by step:
 ## Troubleshooting
 
 Start with `make doctor`: it checks the platform, the interpreter, uv,
-the locked toolchain, and the committed demo artifact, and prints the two
+the locked toolchain, and the demo artifact (a hint, not a failure, when
+it has not been fetched or built yet), and prints the two
 environment exports the local dbt lanes need.
 
 - **`uv: command not found`**: install uv (link above) and reopen the
@@ -138,8 +148,8 @@ environment exports the local dbt lanes need.
   tool-search step**: both are normal Desktop behavior on a newly added
   server; approve and continue.
 - **macOS asks whether Claude may access your Documents folder**: approve
-  it if the clone lives there; the server reads the committed database
-  from the repo.
+  it if the clone lives there; the server reads the fetched or built
+  database from the repo.
 - **A query returns `truncated: true`**: by design. Results are
   row-capped (default 100, hard cap 500) and a truncated result announces
   itself; aggregate or narrow the query instead of raising the cap.
