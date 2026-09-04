@@ -1,18 +1,30 @@
 {
   "artifact": {
-    "bytes": 12595200,
+    "bytes": 107491328,
     "name": "demo.duckdb",
     "release": null,
-    "sha256": "c5703100979eb9dabde2b93a30b712c36f832dbf1b692c91135ae8f097ac5f11"
+    "sha256": "5675c11487f2dea0b76812d096f5454ac9554a0259f110c3c0fc0e1bf50a232b"
   },
   "content": {
     "registry": {
-      "digest": "c0a7acb70e685fd6f416c5e100e5e2d5",
-      "rows": 5
+      "digest": "d431a853c6b499c86a00c6cdf3113de7",
+      "rows": 9
     },
     "tables": {
       "context_registry": {
-        "rows": 5
+        "rows": 9
+      },
+      "dim_airport_weather_columns": {
+        "rows": 2
+      },
+      "dim_airport_weather_values": {
+        "rows": 13014
+      },
+      "dim_flights_columns": {
+        "rows": 2
+      },
+      "dim_flights_values": {
+        "rows": 166158
       },
       "dim_invoice_lines_columns": {
         "rows": 2
@@ -24,28 +36,48 @@
         "rows": 1
       },
       "dim_run_values": {
-        "rows": 1
+        "rows": 3
       },
       "dim_source_columns": {
         "rows": 1
       },
       "dim_source_values": {
-        "rows": 1
+        "rows": 3
       },
       "dim_timeframe_columns": {
         "rows": 1
       },
       "dim_timeframe_values": {
-        "rows": 2004
+        "rows": 6345
+      },
+      "fact_airport_weather_values": {
+        "rows": 13014
+      },
+      "fact_flights_values": {
+        "rows": 166158
       },
       "fact_invoice_lines_values": {
         "rows": 44721
+      },
+      "mart_airport_weather_typed": {
+        "rows": 13014
+      },
+      "mart_flights_typed": {
+        "rows": 166158
       },
       "mart_invoice_lines_typed": {
         "rows": 44721
       }
     },
     "views": {
+      "vw_airport_weather_typed": {
+        "digest": "96735c804affd37387e7c298c578b498",
+        "rows": 13014
+      },
+      "vw_flights_typed": {
+        "digest": "1da851618de572a7d45f822620c34b40",
+        "rows": 166158
+      },
       "vw_invoice_lines_typed": {
         "digest": "2d0c334534b55a6b5caa0a8b6b0beadb",
         "rows": 44721
