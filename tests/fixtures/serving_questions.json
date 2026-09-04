@@ -1,0 +1,84 @@
+{
+  "note": "The demo question set (docs/demo.md, Arc 6): each question an agent is expected to answer from the served gold layer, the SQL that answers it on the typed surfaces, and the answer measured at the committed samples. tests/test_serving_questions.py runs every SQL through the serving module's gate and holds the result to the expected rows; the expert_context entries name the registry knowledge the answer also depends on.",
+  "questions": [
+    {
+      "id": "Q1",
+      "question": "Which carrier had the highest average departure delay from New York City in the first half of 2013, among carriers with at least 1,000 flights, cancellations excluded?",
+      "categories": ["flights"],
+      "sql": "SELECT carrier_code, carrier_name, round(avg(dep_delay_minutes), 2) AS avg_dep_delay_minutes, count(*) AS flights FROM gold.mart_flights_typed WHERE NOT is_cancelled GROUP BY carrier_code, carrier_name HAVING count(*) >= 1000 ORDER BY avg_dep_delay_minutes DESC LIMIT 3",
+      "expected_rows": [
+        ["ev", "expressjet airlines inc.", 23.41, 24971],
+        ["9e", "endeavor air inc.", 18.42, 8436],
+        ["wn", "southwest airlines co.", 17.16, 5773]
+      ],
+      "expert_context": "flights.how_to_read: dep_delay_minutes is null exactly when the flight is cancelled, so the average excludes cancellations by construction; count cancellations from is_cancelled. Values are lowercase on the typed surface."
+    },
+    {
+      "id": "Q2",
+      "question": "Do flights departing in an hour with precipitation at their origin airport run later than flights departing in a dry hour, and are they cancelled more often?",
+      "categories": ["flights", "airport_weather"],
+      "sql": "SELECT CASE WHEN airport_weather.precip_inches > 0 THEN 'wet' ELSE 'dry' END AS hour_kind, round(avg(flights.dep_delay_minutes), 2) AS avg_dep_delay_minutes, count(*) AS flights, round(avg(CASE WHEN flights.is_cancelled THEN 1 ELSE 0 END) * 100, 2) AS cancelled_pct FROM gold.mart_flights_typed AS flights JOIN gold.mart_airport_weather_typed AS airport_weather ON flights.origin_airport = airport_weather.airport_code AND flights.departure_hour_utc = airport_weather.observed_hour_utc GROUP BY hour_kind ORDER BY hour_kind",
+      "expected_rows": [
+        ["dry", 12.42, 152569, 2.41],
+        ["wet", 29.44, 13492, 8.95]
+      ],
+      "expert_context": "The star's crossCategoryJoins (flights_to_origin_weather): join on the conformed airport code and the conformed calendar hour; measured completeness 0.9994, so 97 flights fall outside this join. airport_weather.fields.precip_inches: precipitation in inches for the hour."
+    },
+    {
+      "id": "Q3",
+      "question": "At each origin airport, how much later do flights depart in hours with visibility under one mile than in hours with ten-mile visibility?",
+      "categories": ["flights", "airport_weather"],
+      "sql": "SELECT flights.origin_airport, round(avg(CASE WHEN airport_weather.visibility_miles < 1 THEN flights.dep_delay_minutes END), 2) AS low_visibility_delay, sum(CASE WHEN airport_weather.visibility_miles < 1 THEN 1 ELSE 0 END) AS low_visibility_flights, round(avg(CASE WHEN airport_weather.visibility_miles >= 10 THEN flights.dep_delay_minutes END), 2) AS clear_delay FROM gold.mart_flights_typed AS flights JOIN gold.mart_airport_weather_typed AS airport_weather ON flights.origin_airport = airport_weather.airport_code AND flights.departure_hour_utc = airport_weather.observed_hour_utc GROUP BY flights.origin_airport ORDER BY flights.origin_airport",
+      "expected_rows": [
+        ["ewr", 33.01, 881, 15.57],
+        ["jfk", 37.64, 1397, 10.51],
+        ["lga", 14.94, 457, 9.3]
+      ],
+      "expert_context": "airport_weather.fields.visibility_miles: visibility in statute miles, 10 is the reporting maximum. The averages exclude cancelled flights by construction (dep_delay_minutes null)."
+    },
+    {
+      "id": "Q4",
+      "question": "How many flights went to Palm Beach (PBI), and why do they carry no destination airport name?",
+      "categories": ["flights"],
+      "sql": "SELECT count(*) AS flights, count(dest_airport_name) AS with_destination_name FROM gold.mart_flights_typed WHERE dest_airport = 'pbi'",
+      "expected_rows": [
+        [3471, 0]
+      ],
+      "expert_context": "flights.limitations and vintage: the airport reference is a 2026 snapshot in which Palm Beach International is coded DJT, so PBI resolves no destination attributes; the flights are kept with null attributes (decisionUnresolvedReferences). The data section says the value is lowercase on the typed surface."
+    },
+    {
+      "id": "Q5",
+      "question": "Which three countries have the most invoice lines in the retail sample?",
+      "categories": ["invoice_lines"],
+      "sql": "SELECT country, count(*) AS invoice_lines FROM gold.mart_invoice_lines_typed GROUP BY country ORDER BY invoice_lines DESC, country LIMIT 3",
+      "expected_rows": [
+        ["united kingdom", 42354],
+        ["eire", 596],
+        ["germany", 417]
+      ],
+      "expert_context": "invoice_lines.how_to_read: cancellation lines are retained and flagged (is_cancellation); the count here includes them, which the question allows. The retail category shares no conformed key with the aviation categories and its window never meets theirs."
+    },
+    {
+      "id": "Q6",
+      "question": "Which manufacturers' aircraft flew the most, and how old were they on average in 2013?",
+      "categories": ["flights"],
+      "sql": "SELECT aircraft_manufacturer, count(*) AS flights, round(avg(2013 - aircraft_manufacture_year), 1) AS avg_age_years FROM gold.mart_flights_typed WHERE aircraft_manufacture_year IS NOT NULL GROUP BY aircraft_manufacturer ORDER BY flights DESC LIMIT 3",
+      "expected_rows": [
+        ["boeing", 40571, 13.6],
+        ["embraer", 32357, 9.3],
+        ["airbus", 22654, 7.0]
+      ],
+      "expert_context": "flights.joins.aircraft: measured completeness 0.8396 (floor 0.80); about 16 percent of flights resolve no aircraft (fleet numbers, missing tail numbers), and the FAA registry is missing the year of manufacture for 70 aircraft, so this excludes those flights."
+    },
+    {
+      "id": "Q7",
+      "question": "How many flights find no weather observation at their origin in their departure hour?",
+      "categories": ["flights", "airport_weather"],
+      "sql": "SELECT count(*) AS flights_without_weather FROM gold.mart_flights_typed AS flights LEFT JOIN gold.mart_airport_weather_typed AS airport_weather ON flights.origin_airport = airport_weather.airport_code AND flights.departure_hour_utc = airport_weather.observed_hour_utc WHERE airport_weather.airport_code IS NULL",
+      "expected_rows": [
+        [97]
+      ],
+      "expert_context": "airport_weather.limitations: 12 airport-hours between the first and last observation have no row, so 97 flights find no weather; the star's crossCategoryJoins measured completeness 0.9994 says the same number as a rate."
+    }
+  ]
+}
