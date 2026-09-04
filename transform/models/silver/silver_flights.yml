@@ -1,0 +1,371 @@
+# Hand-authored properties file (F-02, rule 11): export output is scaffold
+# only and is never committed here. Contract enforcement is declared per
+# model (rule 3); every column carries name + data_type (rule 4). Only
+# not_null is a trusted constraint; uniqueness lives in contract-generated
+# tests (rule 5). Rendered from the Arc 6 prep's table specification, then
+# refreshed in place by datacontract dbt sync and reviewed.
+version: 2
+models:
+- name: silver_flights
+  description: 'The unified flight table: one row per scheduled departure from New York City in January through June 2013 with its carrier name, its aircraft, and its origin and destination airports joined in, conformance settled here in human-owned SQL so the gold star maps one category. This is the table the flights category of the star is built from and the one to read for any question about flights.'
+  config:
+    contract:
+      enforced: true
+    meta:
+      datacontract_cli:
+        contract_id: silver_flights
+  columns:
+  - name: flight_date
+    data_type: DATE
+    constraints:
+    - type: not_null
+    description: Local date of the scheduled departure (America/New_York).
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_flights__flight_date__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field flight_date has no missing values
+  - name: carrier_code
+    data_type: VARCHAR
+    constraints:
+    - type: not_null
+    description: Two-letter BTS carrier code; a conformed key.
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_flights__carrier_code__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field carrier_code has no missing values
+  - name: flight_number
+    data_type: INTEGER
+    constraints:
+    - type: not_null
+    description: Flight number as published.
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_flights__flight_number__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field flight_number has no missing values
+  - name: origin_airport
+    data_type: VARCHAR
+    constraints:
+    - type: not_null
+    description: Origin airport IATA code (EWR, JFK, LGA); a conformed key shared with the airport_weather category.
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_flights__origin_airport__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field origin_airport has no missing values
+  - name: sched_dep_hhmm
+    data_type: INTEGER
+    constraints:
+    - type: not_null
+    description: Scheduled departure clock time, local, HHMM integer (517 is 05:17).
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_flights__sched_dep_hhmm__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field sched_dep_hhmm has no missing values
+  - name: dest_airport
+    data_type: VARCHAR
+    constraints:
+    - type: not_null
+    description: Destination airport IATA code; a conformed key; dest_* attributes are null for PBI.
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_flights__dest_airport__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field dest_airport has no missing values
+  - name: tail_number
+    data_type: VARCHAR
+    description: Aircraft registration as reported; null on 1,521 flights; a conformed key to silver_nyc_planes.
+  - name: is_cancelled
+    data_type: BOOLEAN
+    constraints:
+    - type: not_null
+    description: True when the flight has no actual departure time (2.9 percent of the window); delays are null on these rows.
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_flights__is_cancelled__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field is_cancelled has no missing values
+  - name: dep_hhmm
+    data_type: INTEGER
+    description: Actual departure clock time, local, HHMM; null when cancelled.
+  - name: dep_delay_minutes
+    data_type: INTEGER
+    description: Departure delay in minutes; negative is early; null when cancelled. The headline on-time measure.
+  - name: arr_hhmm
+    data_type: INTEGER
+    description: Actual arrival clock time, local at the destination, HHMM; null when cancelled or unreported.
+  - name: sched_arr_hhmm
+    data_type: INTEGER
+    constraints:
+    - type: not_null
+    description: Scheduled arrival clock time, local at the destination, HHMM.
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_flights__sched_arr_hhmm__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field sched_arr_hhmm has no missing values
+  - name: arr_delay_minutes
+    data_type: INTEGER
+    description: Arrival delay in minutes; negative is early; null when cancelled, diverted, or unreported.
+  - name: air_time_minutes
+    data_type: INTEGER
+    description: Minutes in the air; null wherever arr_delay_minutes is null.
+  - name: distance_miles
+    data_type: INTEGER
+    constraints:
+    - type: not_null
+    description: Great-circle route distance in statute miles.
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_flights__distance_miles__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field distance_miles has no missing values
+  - name: sched_dep_hour_local
+    data_type: INTEGER
+    constraints:
+    - type: not_null
+    description: Scheduled departure hour, local (0 to 23).
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_flights__sched_dep_hour_local__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field sched_dep_hour_local has no missing values
+  - name: sched_dep_minute_local
+    data_type: INTEGER
+    constraints:
+    - type: not_null
+    description: Scheduled departure minute, local.
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_flights__sched_dep_minute_local__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field sched_dep_minute_local has no missing values
+  - name: departure_hour_utc
+    data_type: TIMESTAMP
+    constraints:
+    - type: not_null
+    description: Scheduled departure hour as a UTC instant; the conformed calendar key at hour grain (joins weather at the origin on the same hour).
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_flights__departure_hour_utc__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field departure_hour_utc has no missing values
+  - name: carrier_name
+    data_type: VARCHAR
+    constraints:
+    - type: not_null
+    description: Carrier name from silver_nyc_airlines (2013 names); resolves for every flight.
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_flights__carrier_name__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field carrier_name has no missing values
+  - name: aircraft_manufacturer
+    data_type: VARCHAR
+    description: Manufacturer from the FAA registry via silver_nyc_planes; null when the aircraft is unknown (about 16 percent of flights).
+  - name: aircraft_model
+    data_type: VARCHAR
+    description: Model designation from the FAA registry; null when the aircraft is unknown.
+  - name: aircraft_manufacture_year
+    data_type: INTEGER
+    description: Year of manufacture from the FAA registry; aircraft age in 2013 is 2013 minus this; null when unknown.
+  - name: aircraft_seat_count
+    data_type: INTEGER
+    description: Registry seat count; null when the aircraft is unknown.
+  - name: aircraft_engine_type
+    data_type: VARCHAR
+    description: Registry engine type (Turbo-fan, Turbo-jet, and others); null when unknown.
+  - name: origin_airport_name
+    data_type: VARCHAR
+    constraints:
+    - type: not_null
+    description: Origin airport name from the 2026 OurAirports reference.
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_flights__origin_airport_name__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field origin_airport_name has no missing values
+  - name: origin_municipality
+    data_type: VARCHAR
+    constraints:
+    - type: not_null
+    description: Origin airport's served city from the 2026 reference.
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_flights__origin_municipality__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field origin_municipality has no missing values
+  - name: origin_elevation_ft
+    data_type: INTEGER
+    constraints:
+    - type: not_null
+    description: Origin field elevation in feet.
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_flights__origin_elevation_ft__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field origin_elevation_ft has no missing values
+  - name: origin_longest_runway_ft
+    data_type: INTEGER
+    constraints:
+    - type: not_null
+    description: Length in feet of the origin's longest open runway with a published length (2026 reference).
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_flights__origin_longest_runway_ft__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field origin_longest_runway_ft has no missing values
+  - name: dest_airport_name
+    data_type: VARCHAR
+    description: Destination airport name from the 2026 reference; null for PBI (recoded DJT).
+  - name: dest_municipality
+    data_type: VARCHAR
+    description: Destination airport's served city; null where the reference does not know the code or the city.
+  - name: dest_iso_region
+    data_type: VARCHAR
+    description: Destination ISO 3166-2 region (US-FL); null for PBI.
+  - name: dest_elevation_ft
+    data_type: INTEGER
+    description: Destination field elevation in feet; null where unpublished or unresolved.
+  - name: dest_longest_runway_ft
+    data_type: INTEGER
+    description: Length in feet of the destination's longest open runway; null where unresolved or unpublished.
+  - name: captured_at
+    data_type: TIMESTAMP
+    constraints:
+    - type: not_null
+    description: 'Capture timestamp carried forward from the bronze landing (_airbyte_extracted_at): when this row''s capture entered the pipeline. The incremental watermark the gold layer builds on (D-38). Required from the first version: the model populates it on every row from its first build (F-49). Audit metadata, never a business value.'
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_flights__captured_at__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field captured_at has no missing values
