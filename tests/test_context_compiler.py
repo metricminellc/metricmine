@@ -126,14 +126,19 @@ def test_timeframe_entry_is_the_conformed_calendar() -> None:
         if e["compiled_context"]["role"] == "timeframe"
     )
     assert timeframe["manifest"] == ["grain", "period_start"]
-    assert sorted(timeframe["fields"]) == ["grain", "period_start"]
-    assert sorted(timeframe["categories"]) == [
+    assert sorted(timeframe["data"]["fields"]) == ["grain", "period_start"]
+    assert sorted(timeframe["data"]["categories"]) == [
         emission.category_name for emission in star.categories
     ]
     for emission in star.categories:
-        listed = timeframe["categories"][emission.category_name]
+        listed = timeframe["data"]["categories"][emission.category_name]
         assert listed["time_column"] == emission.time_column
         assert listed["time_grain"] == emission.time_grain
+        assert "description" not in listed["field"], "typed shape only under data"
+        authored = timeframe["expert_context"]["categories"][emission.category_name]
+        assert authored["time_column_meaning"], (
+            f"{emission.category_name}: the time column's meaning is authored in the mapping"
+        )
 
 
 def test_write_if_changed_is_a_no_op_on_unchanged_bytes(tmp_path) -> None:
@@ -246,13 +251,98 @@ def test_category_entries_carry_the_typed_surface_pointer() -> None:
     for entry in artifact["entries"]:
         compiled = entry["compiled_context"]
         if compiled["role"] in ("dimensions", "measures"):
-            assert compiled["typed_surface"] == f"mart_{compiled['category']}_typed"
+            assert compiled["data"]["typed_surface"] == f"mart_{compiled['category']}_typed"
         else:
             assert compiled["role"] in SHARED_GROUPS
-            assert "typed_surface" not in compiled
+            assert "typed_surface" not in compiled["data"]
     categories = {
         e["compiled_context"]["category"]
         for e in artifact["entries"]
         if e["compiled_context"]["role"] == "dimensions"
     }
     assert categories == {emission.category_name for emission in star.categories}
+
+
+# ---------------------------------------------------------------- Amendment W
+# The data and expert-context split (D-31 as amended by Amendment W): an
+# agent reading the registry must be able to tell what the columns ARE
+# (typed declarations, derived) from what people WROTE about them
+# (authored knowledge), by name, on every entry.
+
+EXPERT_REQUIRED = ("note", "subject", "how_to_read", "governing_contracts", "fields")
+
+
+def _entries_by_role() -> dict[str, list[dict]]:
+    out: dict[str, list[dict]] = {}
+    for entry in build_compiled_context(REPO)["entries"]:
+        out.setdefault(entry["compiled_context"]["role"], []).append(entry)
+    return out
+
+
+def test_every_entry_keeps_data_and_expert_context_apart() -> None:
+    """Both sections on every entry, the note labeling the expert
+    context as authored knowledge, and no prose inside data: a field's
+    typed declaration never carries a description, so the two sections
+    cannot be confused for one another."""
+    for role, entries in _entries_by_role().items():
+        for entry in entries:
+            compiled = entry["compiled_context"]
+            assert set(compiled) >= {"role", "manifest", "data", "expert_context"}, role
+            expert = compiled["expert_context"]
+            for key in EXPERT_REQUIRED:
+                assert expert.get(key), f"{role}: expert_context.{key} is empty"
+            assert expert["note"].startswith("Authored knowledge, not a measurement")
+            for name, field in compiled["data"].get("fields", {}).items():
+                assert "description" not in field, f"{role}.{name}: prose inside data"
+                assert {"logicalType", "physicalType", "required"} <= set(field)
+
+
+def test_category_expert_context_is_rich() -> None:
+    """Every category carries the silver contract's subject, usage, and
+    limitations, the mapping's purpose and usage, the governing contract
+    citations for all three planes, a decision record, and a meaning for
+    every field in the manifest (the time column included on the
+    dimensions side)."""
+    star = _star()
+    by_category = {}
+    for role in ("dimensions", "measures"):
+        for entry in _entries_by_role()[role]:
+            compiled = entry["compiled_context"]
+            by_category.setdefault(compiled["category"], {})[role] = compiled
+    assert set(by_category) == {e.category_name for e in star.categories}
+    for emission in star.categories:
+        dims = by_category[emission.category_name]["dimensions"]
+        measures = by_category[emission.category_name]["measures"]
+        for compiled in (dims, measures):
+            expert = compiled["expert_context"]
+            for key in ("subject", "how_to_read", "limitations", "category_purpose", "category_usage"):
+                assert len(expert[key]) > 40, f"{emission.category_name}: {key} is thin"
+            assert set(expert["governing_contracts"]) == {"silver", "mapping", "star"}
+            assert expert["decisions"], f"{emission.category_name}: no decision record"
+            for name in compiled["manifest"]:
+                if name in compiled["data"]["fields"]:
+                    assert expert["fields"][name]["meaning"], (
+                        f"{emission.category_name}.{name}: no authored meaning"
+                    )
+        assert emission.time_column in dims["expert_context"]["fields"]
+        assert dims["data"]["grain"]["type"] == emission.category["grain"]["type"]
+
+
+def test_shared_entries_describe_every_source() -> None:
+    """The source group's expert context names every silver table the
+    star is built from with its subject and governing contracts; the run
+    group explains its lineage fields; the timeframe group warns that
+    grains and windows differ per category."""
+    star = _star()
+    by_role = _entries_by_role()
+    source = by_role["source"][0]["compiled_context"]
+    assert source["data"]["source_tables"] == [e.source_table for e in star.categories]
+    for emission in star.categories:
+        described = source["expert_context"]["sources"][emission.source_table]
+        assert described["category"] == emission.category_name
+        assert len(described["subject"]) > 40
+        assert set(described["governing_contracts"]) == {"silver", "mapping"}
+    run = by_role["run"][0]["compiled_context"]
+    assert set(run["expert_context"]["fields"]) == set(run["manifest"])
+    timeframe = by_role["timeframe"][0]["compiled_context"]
+    assert "grain" in timeframe["expert_context"]["how_to_read"]
