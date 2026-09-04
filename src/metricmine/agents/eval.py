@@ -30,17 +30,57 @@ from typing import Any
 
 import anthropic
 
+import yaml
+
 from metricmine.agents import (
+    agreement,
     harness,
     mapping_proposer,
     models,
     silver_proposer,
 )
 
-BUILDERS = {
-    "silver": silver_proposer.build_spec,
-    "mapping": mapping_proposer.build_spec,
+
+def _build(repo_root: Path, fixture: dict):
+    """The fixture's spec: the configured table by default; with
+    ``source`` (silver) or ``table`` (mapping) and an optional
+    ``target``, one of the multi-source family (D-41)."""
+    if fixture["proposer"] == "silver":
+        return silver_proposer.build_spec(
+            repo_root, source=fixture.get("source"), target=fixture.get("target")
+        )
+    return mapping_proposer.build_spec(
+        repo_root, table=fixture.get("table"), target=fixture.get("target")
+    )
+
+
+SCORERS = {
+    "silver": agreement.score,
+    "mapping": agreement.score_mapping,
 }
+
+
+def _agreement(repo_root: Path, fixture: dict, report: dict) -> dict | None:
+    """When the fixture names an oracle, the n=1 agreement study of its
+    draft against that committed contract, written beside the record."""
+    oracle_path = fixture.get("oracle")
+    if not oracle_path:
+        return None
+    draft = yaml.safe_load(
+        Path(report["record"]["draft_path"]).read_text(encoding="utf-8")
+    )
+    oracle = yaml.safe_load((repo_root / oracle_path).read_text(encoding="utf-8"))
+    result = SCORERS[fixture["proposer"]](draft, oracle)
+    harness._replace_bytes(
+        Path(report["run_dir"]) / "agreement.json",
+        (json.dumps(result, indent=2, sort_keys=True, ensure_ascii=False) + "\n").encode("utf-8"),
+    )
+    first = result["first_class_checks"]
+    return {
+        "oracle": oracle_path,
+        "first_class": f"{first['agree']}/{first['checked']}",
+        "mismatches": len(result["mismatches"]),
+    }
 
 
 def load_fixtures(repo_root: Path) -> list[dict]:
@@ -87,7 +127,7 @@ def run_eval(
     rows: list[dict] = []
     worst = 0
     for fixture in fixtures:
-        spec = BUILDERS[fixture["proposer"]](repo_root)
+        spec = _build(repo_root, fixture)
         report: dict = {}
         code = harness.run_proposer(
             spec,
@@ -115,25 +155,28 @@ def run_eval(
             )
             continue
         lint_first, grounded_first = _first_attempt(record)
-        rows.append(
-            {
-                "label": fixture["label"],
-                "proposer": spec.name,
-                "stance": spec.stance,
-                "profile": fixture["profile"],
-                "profile_hash": record["profile_hash"],
-                "exit": code,
-                "disposition": record["disposition"],
-                "attempts": record["validation"]["attempts"],
-                "first_attempt_lint_pass": lint_first,
-                "first_attempt_groundedness_pass": grounded_first,
-                "input_tokens": record["usage"]["input_tokens"],
-                "output_tokens": record["usage"]["output_tokens"],
-                "cost_usd_estimate": record["cost_usd_estimate"],
-                "prompt_version": record["prompt_version"],
-                "run_dir": str(report["run_dir"].relative_to(repo_root)),
-            }
-        )
+        row = {
+            "label": fixture["label"],
+            "proposer": spec.name,
+            "stance": spec.stance,
+            "profile": fixture["profile"],
+            "profile_hash": record["profile_hash"],
+            "exit": code,
+            "disposition": record["disposition"],
+            "attempts": record["validation"]["attempts"],
+            "first_attempt_lint_pass": lint_first,
+            "first_attempt_groundedness_pass": grounded_first,
+            "input_tokens": record["usage"]["input_tokens"],
+            "output_tokens": record["usage"]["output_tokens"],
+            "cost_usd_estimate": record["cost_usd_estimate"],
+            "prompt_version": record["prompt_version"],
+            "run_dir": str(report["run_dir"].relative_to(repo_root)),
+        }
+        if code == 0:
+            study = _agreement(repo_root, fixture, report)
+            if study is not None:
+                row["agreement"] = study
+        rows.append(row)
 
     total = len(rows)
     lint_n = sum(1 for r in rows if r.get("first_attempt_lint_pass"))
@@ -201,21 +244,28 @@ def render_markdown(summary: dict) -> str:
         f"cost ~${summary['cost_usd_estimate']:.4f}",
         "",
         "| label | proposer | stance | disposition | attempts | lint@1 "
-        "| grounded@1 | in | out | cost |",
-        "|---|---|---|---|---|---|---|---|---|---|",
+        "| grounded@1 | agreement | in | out | cost |",
+        "|---|---|---|---|---|---|---|---|---|---|---|",
     ]
     for r in summary["rows"]:
         if "attempts" not in r:
             lines.append(
                 f"| {r['label']} | {r['proposer']} | {r['stance']} "
-                f"| {r['disposition']} | - | - | - | - | - | - |"
+                f"| {r['disposition']} | - | - | - | - | - | - | - |"
             )
             continue
+        study = r.get("agreement")
+        agreement_cell = (
+            f"{study['first_class']} ({study['mismatches']} mismatches)"
+            if study
+            else "-"
+        )
         lines.append(
             f"| {r['label']} | {r['proposer']} | {r['stance']} "
             f"| {r['disposition']} | {r['attempts']} "
             f"| {'yes' if r['first_attempt_lint_pass'] else 'no'} "
             f"| {'yes' if r['first_attempt_groundedness_pass'] else 'no'} "
+            f"| {agreement_cell} "
             f"| {r['input_tokens']} | {r['output_tokens']} "
             f"| ${r['cost_usd_estimate']:.4f} |"
         )
