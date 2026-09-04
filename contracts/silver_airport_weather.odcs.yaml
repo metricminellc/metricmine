@@ -1,0 +1,215 @@
+# Contract: silver_airport_weather v1.0.0 (ODCS v3.1.0), a unified silver table (D-41).
+# Conformance settled in human-owned SQL; hand-authored from the table's own
+# profile (rule 16: proposedBy human, profileHash present, no stance keys); the
+# describe stance's live draft over the same profile is eval-lane evidence.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_airport_weather
+name: Silver airport weather
+version: 1.0.0
+status: active
+domain: aviation
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: 'The unified airport weather table: one row per New York City airport per hour
+    in January through June 2013 with the observation and the airport''s reference attributes
+    joined in on the conformed airport code. This is the table the airport_weather category
+    of the star is built from and the one to read for conditions at an airport in an hour.'
+  usage: 'Read silver.silver_airport_weather for conditions at EWR, JFK, or LGA in a given
+    hour: temperatures in Fahrenheit, wind in mph, precipitation in inches for the hour, pressure
+    in millibars, visibility in miles. observed_hour_utc is the conformed calendar key at
+    hour grain shared with the flights category: a flight''s departure_hour_utc at the same
+    airport is the same hour, so weather at departure joins on airport_code equals origin_airport
+    and the hour.'
+  limitations: '13,014 of the 13,026 airport-hours between the first observation (01:00 local
+    on January 1) and the last (23:00 local on June 30) are present; 12 airport-hours (4 per
+    airport) have no observation, so 97 flights find no weather row at their origin in their
+    departure hour. The series has no hour 0 on January 1, and March 10 has 23 local hours
+    (the spring-forward day). Gust is null on three quarters of rows (no gust reported), pressure
+    on about 12 percent, wind direction on 2 percent. The airport join resolves all three
+    airports (100 percent). Vintage: 2013, as packaged by tidyverse/nycflights13 at commit
+    df98ef21 (CC0); the reference tables from OurAirports are a 2026 snapshot, so an airport
+    code can have changed between the flight and the reference (Palm Beach International flew
+    as PBI in 2013 and is coded DJT in the 2026 reference).'
+schema:
+- name: silver_airport_weather
+  physicalName: silver_airport_weather
+  logicalType: object
+  physicalType: table
+  description: 'The unified airport weather table: one row per New York City airport per hour
+    in January through June 2013 with the observation and the airport''s reference attributes
+    joined in on the conformed airport code. This is the table the airport_weather category
+    of the star is built from and the one to read for conditions at an airport in an hour.'
+  dataGranularityDescription: One row per (airport_code, observed_hour_utc); the grain is
+    unique by measurement at profile v0001 and enforced by the error-severity grain rule.
+  properties:
+  - name: airport_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: IATA code of the observing airport (EWR, JFK, LGA); a conformed key shared
+      with the flights category.
+    quality:
+    - type: sql
+      description: 'Conformed key airport_iata: every value matches ^[A-Z]{3}$ (the K1 normalization
+        rule, D-41).'
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM {{ ref('silver_airport_weather') }} WHERE NOT regexp_matches(airport_code, '^[A-Z]{3}$')
+      mustBe: 0
+  - name: observed_hour_utc
+    logicalType: date
+    physicalType: TIMESTAMP
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 2
+    description: Observation hour as a UTC instant; the conformed calendar key at hour grain.
+  - name: observed_date_local
+    logicalType: date
+    physicalType: DATE
+    required: true
+    description: Local (America/New_York) calendar date of the observation.
+  - name: observed_hour_local
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: Local hour of the observation (0 to 23).
+  - name: temp_f
+    logicalType: number
+    physicalType: DOUBLE
+    required: true
+    description: Air temperature in degrees Fahrenheit.
+  - name: dewpoint_f
+    logicalType: number
+    physicalType: DOUBLE
+    required: true
+    description: Dew point in degrees Fahrenheit.
+  - name: humidity_pct
+    logicalType: number
+    physicalType: DOUBLE
+    required: true
+    description: Relative humidity in percent.
+  - name: wind_dir_degrees
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: Wind direction in degrees; null when calm or missing.
+  - name: wind_speed_mph
+    logicalType: number
+    physicalType: DOUBLE
+    required: false
+    description: Sustained wind speed in mph.
+  - name: wind_gust_mph
+    logicalType: number
+    physicalType: DOUBLE
+    required: false
+    description: Wind gust in mph; null when no gust was reported (not zero).
+  - name: precip_inches
+    logicalType: number
+    physicalType: DOUBLE
+    required: true
+    description: Precipitation in inches for the hour.
+  - name: pressure_mb
+    logicalType: number
+    physicalType: DOUBLE
+    required: false
+    description: Sea-level pressure in millibars; null on about 12 percent of rows.
+  - name: visibility_miles
+    logicalType: number
+    physicalType: DOUBLE
+    required: true
+    description: Visibility in statute miles (10 is the reporting maximum).
+  - name: airport_name
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: Airport name from the 2026 OurAirports reference.
+  - name: airport_municipality
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: The airport's served city from the 2026 reference.
+  - name: airport_elevation_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: Field elevation in feet.
+  - name: airport_longest_runway_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: Length in feet of the longest open runway with a published length (2026 reference).
+  - name: captured_at
+    logicalType: date
+    physicalType: TIMESTAMP
+    required: true
+    description: 'Capture timestamp carried forward from the bronze landing (_airbyte_extracted_at):
+      when this row''s capture entered the pipeline. The incremental watermark the gold layer
+      builds on (D-38). Required from the first version: the model populates it on every row
+      from its first build (F-49). Audit metadata, never a business value.'
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty; the committed extract lands every row.
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (airport_code, observed_hour_utc) combinations.
+      Declared at error severity because the primaryKey-flag composite test generates at warn
+      severity at datacontract-cli 1.0.12 (rule 5: uniqueness as a test, never a trusted constraint).'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT airport_code, observed_hour_utc
+        FROM {{ ref('silver_airport_weather') }}
+        GROUP BY airport_code, observed_hour_utc
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+  - type: sql
+    description: 'Join completeness, airport: at least 1.00 of rows resolve airport_code in
+      silver_ourairports_airports.iata_code (measured 1.0000 at profile v0001; the three NYC
+      airports all resolve). The M2 floor of D-41, declared below the measured value so a
+      reference refresh that adds coverage passes and one that loses it fails.'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT 1 FROM {{ ref('silver_airport_weather') }}
+        HAVING SUM(CASE WHEN airport_name IS NOT NULL THEN 1 ELSE 0 END) * 1.0 / COUNT(*) < 1.0
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: human
+- property: profileHash
+  value: sha256:70cb304edcaa97a18aa7411d2ed8b68a860627c53342343a78b87fa306345567
+- property: proposedAt
+  value: '2026-09-02'
+- property: sourceLineage
+  value: silver_nyc_weather (the observation rows) + silver_ourairports_airports (airport
+    attributes) + silver_ourairports_runways (the longest open runway)
+- property: vintage
+  value: weather 2013 (nycflights13 at df98ef21); airports and runways 2026 (OurAirports at
+    d27027ba)
+- property: conformedKeys
+  value: airport_code=airport_iata
+- property: joins
+  value:
+  - name: airport
+    left_column: airport_code
+    right_table: silver_ourairports_airports
+    right_column: iata_code
+    measured_completeness: 1.0
+    floor: 1.0
+    note: the three NYC airports all resolve
+- property: decisionConformance
+  value: settled here in human-owned SQL; the gold star maps this table as the airport_weather
+    category (D-41)
