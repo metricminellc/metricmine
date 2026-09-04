@@ -1,4 +1,4 @@
-# Contract: gold unified event star v1.5.0 (ODCS v3.1.0): the extended star.
+# Contract: gold unified event star v1.6.0 (ODCS v3.1.0): the extended star.
 # Pattern-derived: authored from docs/spec/gold-unified-event-star.md (the
 # committed gold spec) and the four-element event-packet pattern it carries
 # forward (docs/spec/current-state/data-capture-baseline.md §3.4), not from
@@ -50,6 +50,12 @@
 # contracts the arc lands (the K1 gate holds them to it, D-41). No
 # object joins at this bump; the categories arrive at 1.6.0 with the
 # regeneration that builds them.
+# v1.6.0 (Record 011, D-41): the multi-source proof lands its two categories.
+# airport_weather and flights join the star, each with the three contracted
+# objects rendered from its mapping contract by scripts/render_star_objects.py
+# and reviewed (the pattern gate holds them to the render), C3 unions their
+# columns dimensions, and conformedKeyRules gains tail_number. The shared
+# groups and the registry are one set for all three categories (F-42).
 # Severity discipline (D-28): every gating rule declares severity: error;
 # primaryKey flags generate warn-severity advisory twins at 1.0.12 (F-08),
 # and each carries its error-severity enforcing twin below. Payload and
@@ -61,19 +67,19 @@ apiVersion: v3.1.0
 kind: DataContract
 id: gold_unified_event_star
 name: Gold unified event star
-version: 1.5.0
+version: 1.6.0
 status: active
-domain: retail
+domain: multi-source
 dataProduct: metricmine
 tenant: metricmine
 
 description:
   purpose: >
     The source-invariant, self-describing, content-addressed star schema:
-    values/columns dimension pairs for the source, run, timeframe, and
-    invoice_lines groups, plus the invoice_lines fact table and the
-    context registry (D-19): the address of meaning, one row per schema
-    key. Every source lands in the same physical shape: within a
+    values/columns dimension pairs for the source, run, and timeframe
+    groups and for the three fact categories (invoice_lines,
+    airport_weather, flights), the three fact tables, and the context
+    registry (D-19): the address of meaning, one row per schema key. Every source lands in the same physical shape: within a
     category new sources add rows, not schema, and the shared groups
     and the registry are one set for every category (D-41; F-42). The
     timeframe group is the conformed calendar (Amendment R): one
@@ -86,7 +92,14 @@ description:
     four-element pattern: value payload, manifest reference (schema key),
     record key, schema key. Cancellation lines flow through
     retained-and-flagged per the mapping contract; exclusion is a consumer
-    decision.
+    decision. Cross-category questions are answered on the typed surfaces
+    through the joins crossCategoryJoins declares, each on conformed keys
+    and the conformed calendar with its measured completeness and its
+    floor; the registry carries them into every participating category's
+    expert context. invoice_lines shares no conformed key with the
+    aviation categories and its window (December 2009, minute grain)
+    never meets theirs (2013, hour grain): the calendar aligns them in
+    shape, not in time.
   limitations: >
     Typed projections are uncontracted views by design (D-17):
     vw_invoice_lines_typed is emitted and manifest-listed but never a
@@ -762,6 +775,697 @@ schema:
           {% if var('mm_batch_floor', none) is not none %} AND captured_at >= TIMESTAMP '{{ var("mm_batch_floor") }}' {% endif %}
         mustBe: 0
 
+  - name: dim_airport_weather_values
+    physicalName: dim_airport_weather_values
+    logicalType: object
+    physicalType: table
+    description: >
+      airport_weather category group, values side: the dimension-attribute payload
+      per the mapping contract (the dimension-role fields airport_code, observed_date_local, observed_hour_local, airport_name, airport_municipality, airport_elevation_ft, airport_longest_runway_ft
+      plus the derived observation_identity degenerate identifier), deduplicated
+      by content key, row-unique at transaction grain because
+      observation_identity carries the declared silver grain tuple as one
+      canonical_key v2 digest. Generic column names (dim_*) keep the
+      physical shape source-invariant; the category lives in the table
+      name. Engine-emitted (D-09).
+    properties:
+      - name: dim_hash_id
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        description: "Record key over the dimension payload (D-18)."
+      - name: dim_col_hash_id
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        description: >
+          Schema key of the dimension manifest; resolves in
+          dim_airport_weather_columns. A new mapping dimension mints a NEW schema
+          key here (D-17).
+      - name: dim_values
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        description: "Dimension payload: canonical JSON text (C4-gated)."
+      - name: loaded_at
+        logicalType: date
+        physicalType: TIMESTAMP
+        required: true
+        description: Audit stamp; outside every hashed payload (rule 13).
+      - name: captured_at
+        logicalType: date
+        physicalType: TIMESTAMP
+        required: true
+        description: >
+          Capture watermark carried from silver (D-38): first-seen
+          (minimum) capture timestamp over the silver rows behind this
+          payload. Outside every hashed payload (rule 13). Required from
+          the first version: the model populates it on every row from
+          its first build (F-49).
+    quality:
+      - type: library
+        metric: rowCount
+        description: The dimension is never empty once the star builds.
+        severity: error
+        mustBeGreaterThan: 0
+      - type: sql
+        description: >
+          Content-key uniqueness: the error-severity twin of the
+          primaryKey flag.
+        severity: error
+        query: |
+          SELECT COUNT(*) FROM (
+            SELECT dim_hash_id FROM {{ ref('dim_airport_weather_values') }}
+            {% if var('mm_batch_floor', none) is not none %} WHERE captured_at >= TIMESTAMP '{{ var("mm_batch_floor") }}' {% endif %}
+            GROUP BY dim_hash_id HAVING COUNT(*) > 1
+          )
+        mustBe: 0
+      - type: sql
+        description: "C4: every dimension payload parses as valid JSON."
+        severity: error
+        query: |
+          SELECT COUNT(*) FROM {{ ref('dim_airport_weather_values') }}
+          WHERE NOT json_valid(dim_values)
+          {% if var('mm_batch_floor', none) is not none %} AND captured_at >= TIMESTAMP '{{ var("mm_batch_floor") }}' {% endif %}
+        mustBe: 0
+
+  - name: dim_airport_weather_columns
+    physicalName: dim_airport_weather_columns
+    logicalType: object
+    physicalType: table
+    description: >
+      airport_weather category group, columns side: one row per distinct category
+      manifest: the dimension-payload field set and the measure-payload
+      field set both live here, keyed by schema key. A new mapping
+      dimension announces itself as a new row here plus a registry row
+      (D-17).
+    properties:
+      - name: dim_col_hash_id
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        description: >
+          Schema key over a category manifest in declared order (D-18).
+      - name: dim_columns
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        description: "Category manifest: compact JSON array in declared order."
+      - name: loaded_at
+        logicalType: date
+        physicalType: TIMESTAMP
+        required: true
+        description: Audit stamp; outside every hashed payload (rule 13).
+    quality:
+      - type: library
+        metric: rowCount
+        description: The dimension is never empty once the star builds.
+        severity: error
+        mustBeGreaterThan: 0
+      - type: sql
+        description: >
+          Schema-key uniqueness: the error-severity twin of the primaryKey
+          flag.
+        severity: error
+        query: |
+          SELECT COUNT(*) FROM (
+            SELECT dim_col_hash_id FROM {{ ref('dim_airport_weather_columns') }}
+            GROUP BY dim_col_hash_id HAVING COUNT(*) > 1
+          )
+        mustBe: 0
+
+  - name: fact_airport_weather_values
+    physicalName: fact_airport_weather_values
+    logicalType: object
+    physicalType: table
+    description: >
+      The airport_weather fact: measure payload (temp_f, dewpoint_f, humidity_pct, wind_dir_degrees, wind_speed_mph, wind_gust_mph, precip_inches, pressure_mb, visibility_miles per the mapping
+      contract), manifest reference, and group-key references. One row
+      per declared transaction grain: one row per silver.silver_airport_weather row (the
+      C1 conservation arithmetic). Composite primary key (fact, source,
+      timeframe, dim) hashes; run_hash_id is deliberately NON-key so a
+      contract version bump never mints duplicate facts (D-17).
+      Engine-emitted (D-09).
+    dataGranularityDescription: >
+      Transaction grain per the mapping contract: one row per
+      silver.silver_airport_weather row, made row-unique by the derived observation_identity
+      carried in the dimension payload.
+    properties:
+      - name: fact_hash_id
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        description: "Record key over the measure payload (D-18)."
+      - name: source_hash_id
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 2
+        description: "Group key: resolves in gold.dim_source_values (C2)."
+      - name: timeframe_hash_id
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 3
+        description: "Group key: resolves in gold.dim_timeframe_values (C2)."
+      - name: dim_hash_id
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 4
+        description: "Group key: resolves in gold.dim_airport_weather_values (C2)."
+      - name: run_hash_id
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        description: >
+          Non-key lineage reference: resolves in gold.dim_run_values (C2)
+          but never participates in the fact grain (D-17).
+      - name: fact_col_hash_id
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        description: >
+          Schema key of the measure manifest: resolves in
+          gold.dim_airport_weather_columns (C2).
+      - name: fact_values
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        description: "Measure payload: canonical JSON text (C4-gated)."
+      - name: loaded_at
+        logicalType: date
+        physicalType: TIMESTAMP
+        required: true
+        description: Audit stamp; outside every hashed payload (rule 13).
+      - name: captured_at
+        logicalType: date
+        physicalType: TIMESTAMP
+        required: true
+        description: >
+          Capture watermark carried from silver (D-38): the contributing
+          silver row's capture timestamp, per fact row. Outside every
+          hashed payload (rule 13). Required from the first version: the
+          model populates it on every row from its first build (F-49).
+    quality:
+      - type: library
+        metric: rowCount
+        description: The fact is never empty once the star builds.
+        severity: error
+        mustBeGreaterThan: 0
+      - type: sql
+        description: >
+          C1 conservation: silver rows in scope equal fact rows at
+          transaction grain. Schema-qualified silver reference by design:
+          a missing referenced table catalog-errors loudly rather than
+          skipping (F-08).
+        severity: error
+        query: |
+          SELECT (SELECT COUNT(*) FROM silver.silver_airport_weather)
+               - (SELECT COUNT(*) FROM {{ ref('fact_airport_weather_values') }})
+        mustBe: 0
+      - type: sql
+        description: >
+          C5 field-level reconciliation: every silver row joins the typed
+          surface on the derived observation_identity and every mapped field
+          matches its served value (text fields lowercased per D-18;
+          observed_hour_utc at the declared hour grain; null-safe
+          compare). Zero rows may disagree.
+        severity: error
+        query: |
+          SELECT COUNT(*) FROM (
+            SELECT *, sha256(lower(to_json(struct_pack(
+              airport_code := cast(airport_code as varchar),
+              observed_hour_utc := cast(observed_hour_utc as varchar)
+            )))) AS observation_identity
+            FROM silver.silver_airport_weather
+            {% if var('mm_batch_floor', none) is not none %} WHERE captured_at >= TIMESTAMP '{{ var("mm_batch_floor") }}' {% endif %}
+          ) s
+          LEFT JOIN {{ ref('vw_airport_weather_typed') }} v USING (observation_identity)
+          WHERE v.airport_code IS DISTINCT FROM lower(s.airport_code)
+             OR v.observed_date_local IS DISTINCT FROM s.observed_date_local
+             OR v.observed_hour_local IS DISTINCT FROM s.observed_hour_local
+             OR v.airport_name IS DISTINCT FROM lower(s.airport_name)
+             OR v.airport_municipality IS DISTINCT FROM lower(s.airport_municipality)
+             OR v.airport_elevation_ft IS DISTINCT FROM s.airport_elevation_ft
+             OR v.airport_longest_runway_ft IS DISTINCT FROM s.airport_longest_runway_ft
+             OR v.observed_hour_utc IS DISTINCT FROM date_trunc('hour', s.observed_hour_utc)
+             OR v.temp_f IS DISTINCT FROM s.temp_f
+             OR v.dewpoint_f IS DISTINCT FROM s.dewpoint_f
+             OR v.humidity_pct IS DISTINCT FROM s.humidity_pct
+             OR v.wind_dir_degrees IS DISTINCT FROM s.wind_dir_degrees
+             OR v.wind_speed_mph IS DISTINCT FROM s.wind_speed_mph
+             OR v.wind_gust_mph IS DISTINCT FROM s.wind_gust_mph
+             OR v.precip_inches IS DISTINCT FROM s.precip_inches
+             OR v.pressure_mb IS DISTINCT FROM s.pressure_mb
+             OR v.visibility_miles IS DISTINCT FROM s.visibility_miles
+        mustBe: 0
+      - type: sql
+        description: "C2: every source_hash_id resolves in dim_source_values."
+        severity: error
+        query: |
+          SELECT COUNT(*) FROM {{ ref('fact_airport_weather_values') }} f
+          WHERE NOT EXISTS (
+            SELECT 1 FROM {{ ref('dim_source_values') }} d
+            WHERE d.source_hash_id = f.source_hash_id
+          )
+          {% if var('mm_batch_floor', none) is not none %} AND f.captured_at >= TIMESTAMP '{{ var("mm_batch_floor") }}' {% endif %}
+        mustBe: 0
+      - type: sql
+        description: "C2: every timeframe_hash_id resolves in dim_timeframe_values."
+        severity: error
+        query: |
+          SELECT COUNT(*) FROM {{ ref('fact_airport_weather_values') }} f
+          WHERE NOT EXISTS (
+            SELECT 1 FROM {{ ref('dim_timeframe_values') }} d
+            WHERE d.timeframe_hash_id = f.timeframe_hash_id
+          )
+          {% if var('mm_batch_floor', none) is not none %} AND f.captured_at >= TIMESTAMP '{{ var("mm_batch_floor") }}' {% endif %}
+        mustBe: 0
+      - type: sql
+        description: "C2: every dim_hash_id resolves in dim_airport_weather_values."
+        severity: error
+        query: |
+          SELECT COUNT(*) FROM {{ ref('fact_airport_weather_values') }} f
+          WHERE NOT EXISTS (
+            SELECT 1 FROM {{ ref('dim_airport_weather_values') }} d
+            WHERE d.dim_hash_id = f.dim_hash_id
+          )
+          {% if var('mm_batch_floor', none) is not none %} AND f.captured_at >= TIMESTAMP '{{ var("mm_batch_floor") }}' {% endif %}
+        mustBe: 0
+      - type: sql
+        description: >
+          C2: every run_hash_id (non-key) resolves in dim_run_values.
+        severity: error
+        query: |
+          SELECT COUNT(*) FROM {{ ref('fact_airport_weather_values') }} f
+          WHERE NOT EXISTS (
+            SELECT 1 FROM {{ ref('dim_run_values') }} d
+            WHERE d.run_hash_id = f.run_hash_id
+          )
+          {% if var('mm_batch_floor', none) is not none %} AND f.captured_at >= TIMESTAMP '{{ var("mm_batch_floor") }}' {% endif %}
+        mustBe: 0
+      - type: sql
+        description: >
+          C2: every fact_col_hash_id (measure manifest) resolves in
+          dim_airport_weather_columns.
+        severity: error
+        query: |
+          SELECT COUNT(*) FROM {{ ref('fact_airport_weather_values') }} f
+          WHERE NOT EXISTS (
+            SELECT 1 FROM {{ ref('dim_airport_weather_columns') }} d
+            WHERE d.dim_col_hash_id = f.fact_col_hash_id
+          )
+          {% if var('mm_batch_floor', none) is not none %} AND f.captured_at >= TIMESTAMP '{{ var("mm_batch_floor") }}' {% endif %}
+        mustBe: 0
+      - type: sql
+        description: >
+          Grain enforcement: zero duplicate (fact, source, timeframe, dim)
+          key tuples, the error-severity twin of the composite primaryKey
+          flag, whose generated test is warn-hardcoded (F-08).
+        severity: error
+        query: |
+          SELECT COUNT(*) FROM (
+            SELECT fact_hash_id, source_hash_id, timeframe_hash_id, dim_hash_id
+            FROM {{ ref('fact_airport_weather_values') }}
+            {% if var('mm_batch_floor', none) is not none %} WHERE captured_at >= TIMESTAMP '{{ var("mm_batch_floor") }}' {% endif %}
+            GROUP BY fact_hash_id, source_hash_id, timeframe_hash_id, dim_hash_id
+            HAVING COUNT(*) > 1
+          )
+        mustBe: 0
+      - type: sql
+        description: "C4: every measure payload parses as valid JSON."
+        severity: error
+        query: |
+          SELECT COUNT(*) FROM {{ ref('fact_airport_weather_values') }}
+          WHERE NOT json_valid(fact_values)
+          {% if var('mm_batch_floor', none) is not none %} AND captured_at >= TIMESTAMP '{{ var("mm_batch_floor") }}' {% endif %}
+        mustBe: 0
+
+  - name: dim_flights_values
+    physicalName: dim_flights_values
+    logicalType: object
+    physicalType: table
+    description: >
+      flights category group, values side: the dimension-attribute payload
+      per the mapping contract (the dimension-role fields flight_date, carrier_code, flight_number, origin_airport, sched_dep_hhmm, dest_airport, tail_number, is_cancelled, dep_hhmm, arr_hhmm, sched_arr_hhmm, sched_dep_hour_local, sched_dep_minute_local, carrier_name, aircraft_manufacturer, aircraft_model, aircraft_manufacture_year, aircraft_seat_count, aircraft_engine_type, origin_airport_name, origin_municipality, origin_elevation_ft, origin_longest_runway_ft, dest_airport_name, dest_municipality, dest_iso_region, dest_elevation_ft, dest_longest_runway_ft
+      plus the derived flight_identity degenerate identifier), deduplicated
+      by content key, row-unique at transaction grain because
+      flight_identity carries the declared silver grain tuple as one
+      canonical_key v2 digest. Generic column names (dim_*) keep the
+      physical shape source-invariant; the category lives in the table
+      name. Engine-emitted (D-09).
+    properties:
+      - name: dim_hash_id
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        description: "Record key over the dimension payload (D-18)."
+      - name: dim_col_hash_id
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        description: >
+          Schema key of the dimension manifest; resolves in
+          dim_flights_columns. A new mapping dimension mints a NEW schema
+          key here (D-17).
+      - name: dim_values
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        description: "Dimension payload: canonical JSON text (C4-gated)."
+      - name: loaded_at
+        logicalType: date
+        physicalType: TIMESTAMP
+        required: true
+        description: Audit stamp; outside every hashed payload (rule 13).
+      - name: captured_at
+        logicalType: date
+        physicalType: TIMESTAMP
+        required: true
+        description: >
+          Capture watermark carried from silver (D-38): first-seen
+          (minimum) capture timestamp over the silver rows behind this
+          payload. Outside every hashed payload (rule 13). Required from
+          the first version: the model populates it on every row from
+          its first build (F-49).
+    quality:
+      - type: library
+        metric: rowCount
+        description: The dimension is never empty once the star builds.
+        severity: error
+        mustBeGreaterThan: 0
+      - type: sql
+        description: >
+          Content-key uniqueness: the error-severity twin of the
+          primaryKey flag.
+        severity: error
+        query: |
+          SELECT COUNT(*) FROM (
+            SELECT dim_hash_id FROM {{ ref('dim_flights_values') }}
+            {% if var('mm_batch_floor', none) is not none %} WHERE captured_at >= TIMESTAMP '{{ var("mm_batch_floor") }}' {% endif %}
+            GROUP BY dim_hash_id HAVING COUNT(*) > 1
+          )
+        mustBe: 0
+      - type: sql
+        description: "C4: every dimension payload parses as valid JSON."
+        severity: error
+        query: |
+          SELECT COUNT(*) FROM {{ ref('dim_flights_values') }}
+          WHERE NOT json_valid(dim_values)
+          {% if var('mm_batch_floor', none) is not none %} AND captured_at >= TIMESTAMP '{{ var("mm_batch_floor") }}' {% endif %}
+        mustBe: 0
+
+  - name: dim_flights_columns
+    physicalName: dim_flights_columns
+    logicalType: object
+    physicalType: table
+    description: >
+      flights category group, columns side: one row per distinct category
+      manifest: the dimension-payload field set and the measure-payload
+      field set both live here, keyed by schema key. A new mapping
+      dimension announces itself as a new row here plus a registry row
+      (D-17).
+    properties:
+      - name: dim_col_hash_id
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        description: >
+          Schema key over a category manifest in declared order (D-18).
+      - name: dim_columns
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        description: "Category manifest: compact JSON array in declared order."
+      - name: loaded_at
+        logicalType: date
+        physicalType: TIMESTAMP
+        required: true
+        description: Audit stamp; outside every hashed payload (rule 13).
+    quality:
+      - type: library
+        metric: rowCount
+        description: The dimension is never empty once the star builds.
+        severity: error
+        mustBeGreaterThan: 0
+      - type: sql
+        description: >
+          Schema-key uniqueness: the error-severity twin of the primaryKey
+          flag.
+        severity: error
+        query: |
+          SELECT COUNT(*) FROM (
+            SELECT dim_col_hash_id FROM {{ ref('dim_flights_columns') }}
+            GROUP BY dim_col_hash_id HAVING COUNT(*) > 1
+          )
+        mustBe: 0
+
+  - name: fact_flights_values
+    physicalName: fact_flights_values
+    logicalType: object
+    physicalType: table
+    description: >
+      The flights fact: measure payload (dep_delay_minutes, arr_delay_minutes, air_time_minutes, distance_miles per the mapping
+      contract), manifest reference, and group-key references. One row
+      per declared transaction grain: one row per silver.silver_flights row (the
+      C1 conservation arithmetic). Composite primary key (fact, source,
+      timeframe, dim) hashes; run_hash_id is deliberately NON-key so a
+      contract version bump never mints duplicate facts (D-17).
+      Engine-emitted (D-09).
+    dataGranularityDescription: >
+      Transaction grain per the mapping contract: one row per
+      silver.silver_flights row, made row-unique by the derived flight_identity
+      carried in the dimension payload.
+    properties:
+      - name: fact_hash_id
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        description: "Record key over the measure payload (D-18)."
+      - name: source_hash_id
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 2
+        description: "Group key: resolves in gold.dim_source_values (C2)."
+      - name: timeframe_hash_id
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 3
+        description: "Group key: resolves in gold.dim_timeframe_values (C2)."
+      - name: dim_hash_id
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 4
+        description: "Group key: resolves in gold.dim_flights_values (C2)."
+      - name: run_hash_id
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        description: >
+          Non-key lineage reference: resolves in gold.dim_run_values (C2)
+          but never participates in the fact grain (D-17).
+      - name: fact_col_hash_id
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        description: >
+          Schema key of the measure manifest: resolves in
+          gold.dim_flights_columns (C2).
+      - name: fact_values
+        logicalType: string
+        physicalType: VARCHAR
+        required: true
+        description: "Measure payload: canonical JSON text (C4-gated)."
+      - name: loaded_at
+        logicalType: date
+        physicalType: TIMESTAMP
+        required: true
+        description: Audit stamp; outside every hashed payload (rule 13).
+      - name: captured_at
+        logicalType: date
+        physicalType: TIMESTAMP
+        required: true
+        description: >
+          Capture watermark carried from silver (D-38): the contributing
+          silver row's capture timestamp, per fact row. Outside every
+          hashed payload (rule 13). Required from the first version: the
+          model populates it on every row from its first build (F-49).
+    quality:
+      - type: library
+        metric: rowCount
+        description: The fact is never empty once the star builds.
+        severity: error
+        mustBeGreaterThan: 0
+      - type: sql
+        description: >
+          C1 conservation: silver rows in scope equal fact rows at
+          transaction grain. Schema-qualified silver reference by design:
+          a missing referenced table catalog-errors loudly rather than
+          skipping (F-08).
+        severity: error
+        query: |
+          SELECT (SELECT COUNT(*) FROM silver.silver_flights)
+               - (SELECT COUNT(*) FROM {{ ref('fact_flights_values') }})
+        mustBe: 0
+      - type: sql
+        description: >
+          C5 field-level reconciliation: every silver row joins the typed
+          surface on the derived flight_identity and every mapped field
+          matches its served value (text fields lowercased per D-18;
+          departure_hour_utc at the declared hour grain; null-safe
+          compare). Zero rows may disagree.
+        severity: error
+        query: |
+          SELECT COUNT(*) FROM (
+            SELECT *, sha256(lower(to_json(struct_pack(
+              carrier_code := cast(carrier_code as varchar),
+              flight_date := cast(flight_date as varchar),
+              flight_number := cast(flight_number as varchar),
+              origin_airport := cast(origin_airport as varchar),
+              sched_dep_hhmm := cast(sched_dep_hhmm as varchar)
+            )))) AS flight_identity
+            FROM silver.silver_flights
+            {% if var('mm_batch_floor', none) is not none %} WHERE captured_at >= TIMESTAMP '{{ var("mm_batch_floor") }}' {% endif %}
+          ) s
+          LEFT JOIN {{ ref('vw_flights_typed') }} v USING (flight_identity)
+          WHERE v.flight_date IS DISTINCT FROM s.flight_date
+             OR v.carrier_code IS DISTINCT FROM lower(s.carrier_code)
+             OR v.flight_number IS DISTINCT FROM s.flight_number
+             OR v.origin_airport IS DISTINCT FROM lower(s.origin_airport)
+             OR v.sched_dep_hhmm IS DISTINCT FROM s.sched_dep_hhmm
+             OR v.dest_airport IS DISTINCT FROM lower(s.dest_airport)
+             OR v.tail_number IS DISTINCT FROM lower(s.tail_number)
+             OR v.is_cancelled IS DISTINCT FROM s.is_cancelled
+             OR v.dep_hhmm IS DISTINCT FROM s.dep_hhmm
+             OR v.arr_hhmm IS DISTINCT FROM s.arr_hhmm
+             OR v.sched_arr_hhmm IS DISTINCT FROM s.sched_arr_hhmm
+             OR v.sched_dep_hour_local IS DISTINCT FROM s.sched_dep_hour_local
+             OR v.sched_dep_minute_local IS DISTINCT FROM s.sched_dep_minute_local
+             OR v.carrier_name IS DISTINCT FROM lower(s.carrier_name)
+             OR v.aircraft_manufacturer IS DISTINCT FROM lower(s.aircraft_manufacturer)
+             OR v.aircraft_model IS DISTINCT FROM lower(s.aircraft_model)
+             OR v.aircraft_manufacture_year IS DISTINCT FROM s.aircraft_manufacture_year
+             OR v.aircraft_seat_count IS DISTINCT FROM s.aircraft_seat_count
+             OR v.aircraft_engine_type IS DISTINCT FROM lower(s.aircraft_engine_type)
+             OR v.origin_airport_name IS DISTINCT FROM lower(s.origin_airport_name)
+             OR v.origin_municipality IS DISTINCT FROM lower(s.origin_municipality)
+             OR v.origin_elevation_ft IS DISTINCT FROM s.origin_elevation_ft
+             OR v.origin_longest_runway_ft IS DISTINCT FROM s.origin_longest_runway_ft
+             OR v.dest_airport_name IS DISTINCT FROM lower(s.dest_airport_name)
+             OR v.dest_municipality IS DISTINCT FROM lower(s.dest_municipality)
+             OR v.dest_iso_region IS DISTINCT FROM lower(s.dest_iso_region)
+             OR v.dest_elevation_ft IS DISTINCT FROM s.dest_elevation_ft
+             OR v.dest_longest_runway_ft IS DISTINCT FROM s.dest_longest_runway_ft
+             OR v.departure_hour_utc IS DISTINCT FROM date_trunc('hour', s.departure_hour_utc)
+             OR v.dep_delay_minutes IS DISTINCT FROM s.dep_delay_minutes
+             OR v.arr_delay_minutes IS DISTINCT FROM s.arr_delay_minutes
+             OR v.air_time_minutes IS DISTINCT FROM s.air_time_minutes
+             OR v.distance_miles IS DISTINCT FROM s.distance_miles
+        mustBe: 0
+      - type: sql
+        description: "C2: every source_hash_id resolves in dim_source_values."
+        severity: error
+        query: |
+          SELECT COUNT(*) FROM {{ ref('fact_flights_values') }} f
+          WHERE NOT EXISTS (
+            SELECT 1 FROM {{ ref('dim_source_values') }} d
+            WHERE d.source_hash_id = f.source_hash_id
+          )
+          {% if var('mm_batch_floor', none) is not none %} AND f.captured_at >= TIMESTAMP '{{ var("mm_batch_floor") }}' {% endif %}
+        mustBe: 0
+      - type: sql
+        description: "C2: every timeframe_hash_id resolves in dim_timeframe_values."
+        severity: error
+        query: |
+          SELECT COUNT(*) FROM {{ ref('fact_flights_values') }} f
+          WHERE NOT EXISTS (
+            SELECT 1 FROM {{ ref('dim_timeframe_values') }} d
+            WHERE d.timeframe_hash_id = f.timeframe_hash_id
+          )
+          {% if var('mm_batch_floor', none) is not none %} AND f.captured_at >= TIMESTAMP '{{ var("mm_batch_floor") }}' {% endif %}
+        mustBe: 0
+      - type: sql
+        description: "C2: every dim_hash_id resolves in dim_flights_values."
+        severity: error
+        query: |
+          SELECT COUNT(*) FROM {{ ref('fact_flights_values') }} f
+          WHERE NOT EXISTS (
+            SELECT 1 FROM {{ ref('dim_flights_values') }} d
+            WHERE d.dim_hash_id = f.dim_hash_id
+          )
+          {% if var('mm_batch_floor', none) is not none %} AND f.captured_at >= TIMESTAMP '{{ var("mm_batch_floor") }}' {% endif %}
+        mustBe: 0
+      - type: sql
+        description: >
+          C2: every run_hash_id (non-key) resolves in dim_run_values.
+        severity: error
+        query: |
+          SELECT COUNT(*) FROM {{ ref('fact_flights_values') }} f
+          WHERE NOT EXISTS (
+            SELECT 1 FROM {{ ref('dim_run_values') }} d
+            WHERE d.run_hash_id = f.run_hash_id
+          )
+          {% if var('mm_batch_floor', none) is not none %} AND f.captured_at >= TIMESTAMP '{{ var("mm_batch_floor") }}' {% endif %}
+        mustBe: 0
+      - type: sql
+        description: >
+          C2: every fact_col_hash_id (measure manifest) resolves in
+          dim_flights_columns.
+        severity: error
+        query: |
+          SELECT COUNT(*) FROM {{ ref('fact_flights_values') }} f
+          WHERE NOT EXISTS (
+            SELECT 1 FROM {{ ref('dim_flights_columns') }} d
+            WHERE d.dim_col_hash_id = f.fact_col_hash_id
+          )
+          {% if var('mm_batch_floor', none) is not none %} AND f.captured_at >= TIMESTAMP '{{ var("mm_batch_floor") }}' {% endif %}
+        mustBe: 0
+      - type: sql
+        description: >
+          Grain enforcement: zero duplicate (fact, source, timeframe, dim)
+          key tuples, the error-severity twin of the composite primaryKey
+          flag, whose generated test is warn-hardcoded (F-08).
+        severity: error
+        query: |
+          SELECT COUNT(*) FROM (
+            SELECT fact_hash_id, source_hash_id, timeframe_hash_id, dim_hash_id
+            FROM {{ ref('fact_flights_values') }}
+            {% if var('mm_batch_floor', none) is not none %} WHERE captured_at >= TIMESTAMP '{{ var("mm_batch_floor") }}' {% endif %}
+            GROUP BY fact_hash_id, source_hash_id, timeframe_hash_id, dim_hash_id
+            HAVING COUNT(*) > 1
+          )
+        mustBe: 0
+      - type: sql
+        description: "C4: every measure payload parses as valid JSON."
+        severity: error
+        query: |
+          SELECT COUNT(*) FROM {{ ref('fact_flights_values') }}
+          WHERE NOT json_valid(fact_values)
+          {% if var('mm_batch_floor', none) is not none %} AND captured_at >= TIMESTAMP '{{ var("mm_batch_floor") }}' {% endif %}
+        mustBe: 0
+
   - name: context_registry
     physicalName: context_registry
     logicalType: object
@@ -844,6 +1548,10 @@ schema:
           SELECT COUNT(*) FROM (
             SELECT dim_col_hash_id AS schema_key FROM {{ ref('dim_invoice_lines_columns') }}
             UNION
+            SELECT dim_col_hash_id FROM {{ ref('dim_airport_weather_columns') }}
+            UNION
+            SELECT dim_col_hash_id FROM {{ ref('dim_flights_columns') }}
+            UNION
             SELECT source_col_hash_id FROM {{ ref('dim_source_columns') }}
             UNION
             SELECT run_col_hash_id FROM {{ ref('dim_run_columns') }}
@@ -878,6 +1586,35 @@ customProperties:
     value: "2026-08-09"
   - property: conformedKeyRules
     value: "airport_iata=VARCHAR:^[A-Z]{3}$; carrier_code=VARCHAR:^[A-Z0-9]{2,3}$; tail_number=VARCHAR:^[A-Z0-9]{2,6}$"
+  - property: crossCategoryJoins
+    value:
+      - name: flights_to_origin_weather
+        left: flights
+        right: airport_weather
+        join_condition: "flights.origin_airport = airport_weather.airport_code AND flights.departure_hour_utc = airport_weather.observed_hour_utc"
+        example_sql: >-
+          SELECT flights.carrier_code, avg(flights.dep_delay_minutes) AS avg_dep_delay_minutes
+          FROM gold.mart_flights_typed AS flights
+          JOIN gold.mart_airport_weather_typed AS airport_weather
+          ON flights.origin_airport = airport_weather.airport_code
+          AND flights.departure_hour_utc = airport_weather.observed_hour_utc
+          WHERE airport_weather.precip_inches > 0
+          GROUP BY flights.carrier_code ORDER BY avg_dep_delay_minutes DESC
+        conformed_keys:
+          - airport_iata
+        calendar_grain: hour
+        measured_completeness: 0.9994
+        floor: 0.99
+        note: >-
+          Every flight's weather at its origin airport in its departure hour,
+          both sides on the conformed calendar (UTC hours) and the conformed
+          airport code. Measured 0.9994 over the typed surfaces at the Arc 6
+          build: 97 of 166,158 flights fall in the six airport-hours the
+          nycflights13 weather feed has no observation for. The floor is
+          declared below the measurement so a weather refresh that adds
+          coverage passes and one that loses it fails (the M2 discipline,
+          D-41). Destination weather is out of reach by construction: the
+          weather feed covers the three New York City airports only.
   - property: provenanceNote
     value: >-
       pattern-derived; authored from docs/spec/gold-unified-event-star.md,
