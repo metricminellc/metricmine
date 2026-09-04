@@ -1,0 +1,267 @@
+# Hand-authored properties file (F-02, rule 11): export output is scaffold
+# only and is never committed here. Contract enforcement is declared per
+# model (rule 3); every column carries name + data_type (rule 4). Only
+# not_null is a trusted constraint; uniqueness lives in contract-generated
+# tests (rule 5). Rendered from the Arc 6 prep's table specification, then
+# refreshed in place by datacontract dbt sync and reviewed.
+version: 2
+models:
+- name: silver_airport_weather
+  description: 'The unified airport weather table: one row per New York City airport per hour in January through June 2013 with the observation and the airport''s reference attributes joined in on the conformed airport code. This is the table the airport_weather category of the star is built from and the one to read for conditions at an airport in an hour.'
+  config:
+    contract:
+      enforced: true
+    meta:
+      datacontract_cli:
+        contract_id: silver_airport_weather
+  columns:
+  - name: airport_code
+    data_type: VARCHAR
+    constraints:
+    - type: not_null
+    description: IATA code of the observing airport (EWR, JFK, LGA); a conformed key shared with the flights category.
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_airport_weather__airport_code__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field airport_code has no missing values
+  - name: observed_hour_utc
+    data_type: TIMESTAMP
+    constraints:
+    - type: not_null
+    description: Observation hour as a UTC instant; the conformed calendar key at hour grain.
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_airport_weather__observed_hour_utc__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field observed_hour_utc has no missing values
+  - name: observed_date_local
+    data_type: DATE
+    constraints:
+    - type: not_null
+    description: Local (America/New_York) calendar date of the observation.
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_airport_weather__observed_date_local__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field observed_date_local has no missing values
+  - name: observed_hour_local
+    data_type: INTEGER
+    constraints:
+    - type: not_null
+    description: Local hour of the observation (0 to 23).
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_airport_weather__observed_hour_local__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field observed_hour_local has no missing values
+  - name: temp_f
+    data_type: DOUBLE
+    constraints:
+    - type: not_null
+    description: Air temperature in degrees Fahrenheit.
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_airport_weather__temp_f__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field temp_f has no missing values
+  - name: dewpoint_f
+    data_type: DOUBLE
+    constraints:
+    - type: not_null
+    description: Dew point in degrees Fahrenheit.
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_airport_weather__dewpoint_f__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field dewpoint_f has no missing values
+  - name: humidity_pct
+    data_type: DOUBLE
+    constraints:
+    - type: not_null
+    description: Relative humidity in percent.
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_airport_weather__humidity_pct__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field humidity_pct has no missing values
+  - name: wind_dir_degrees
+    data_type: INTEGER
+    description: Wind direction in degrees; null when calm or missing.
+  - name: wind_speed_mph
+    data_type: DOUBLE
+    description: Sustained wind speed in mph.
+  - name: wind_gust_mph
+    data_type: DOUBLE
+    description: Wind gust in mph; null when no gust was reported (not zero).
+  - name: precip_inches
+    data_type: DOUBLE
+    constraints:
+    - type: not_null
+    description: Precipitation in inches for the hour.
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_airport_weather__precip_inches__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field precip_inches has no missing values
+  - name: pressure_mb
+    data_type: DOUBLE
+    description: Sea-level pressure in millibars; null on about 12 percent of rows.
+  - name: visibility_miles
+    data_type: DOUBLE
+    constraints:
+    - type: not_null
+    description: Visibility in statute miles (10 is the reporting maximum).
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_airport_weather__visibility_miles__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field visibility_miles has no missing values
+  - name: airport_name
+    data_type: VARCHAR
+    constraints:
+    - type: not_null
+    description: Airport name from the 2026 OurAirports reference.
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_airport_weather__airport_name__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field airport_name has no missing values
+  - name: airport_municipality
+    data_type: VARCHAR
+    constraints:
+    - type: not_null
+    description: The airport's served city from the 2026 reference.
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_airport_weather__airport_municipality__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field airport_municipality has no missing values
+  - name: airport_elevation_ft
+    data_type: INTEGER
+    constraints:
+    - type: not_null
+    description: Field elevation in feet.
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_airport_weather__airport_elevation_ft__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field airport_elevation_ft has no missing values
+  - name: airport_longest_runway_ft
+    data_type: INTEGER
+    constraints:
+    - type: not_null
+    description: Length in feet of the longest open runway with a published length (2026 reference).
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_airport_weather__airport_longest_runway_ft__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field airport_longest_runway_ft has no missing values
+  - name: captured_at
+    data_type: TIMESTAMP
+    constraints:
+    - type: not_null
+    description: 'Capture timestamp carried forward from the bronze landing (_airbyte_extracted_at): when this row''s capture entered the pipeline. The incremental watermark the gold layer builds on (D-38). Required from the first version: the model populates it on every row from its first build (F-49). Audit metadata, never a business value.'
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_airport_weather__captured_at__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field captured_at has no missing values
