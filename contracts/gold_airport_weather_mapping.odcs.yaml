@@ -1,0 +1,183 @@
+# Mapping contract: airport_weather category, v1.0.0 (ODCS v3.1.0).
+# Engine input, never a table: physicalType: mapping is the machine
+# discriminator (CLAUDE.md rule 9); gate 1 lints this file, gate 3 skips it
+# by design (F-12), and the auto-modeling engine validates it against
+# docs/spec/engine/mapping-contract.schema.json before emitting the gold
+# star models (docs/spec/engine.md §2, D-29 as amended by Amendment U).
+# Hand-authored from the unified silver table's profile v0001 plus judgment
+# (Arc 6, D-41); profileHash below is that artifact's content_hash.
+apiVersion: v3.1.0
+kind: DataContract
+id: gold_airport_weather_mapping
+name: Gold mapping, airport_weather category
+version: 1.0.0
+status: active
+domain: aviation
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: >-
+    Declares how silver.silver_airport_weather maps into the unified event star as the airport_weather
+    fact category: one fact row per airport per hour in January through June 2013 at hour
+    grain on the conformed calendar (observed_hour_utc), the airport attributes as dimensions
+    and the nine observation quantities as measures. Consumed by the auto-modeling engine
+    (D-07); no physical table carries this name.
+  usage: >-
+    Engine input only. The typed surface mart_airport_weather_typed (D-36) answers questions
+    about conditions at an airport in an hour; a flight's weather at departure joins on airport_code
+    equals origin_airport and observed_hour_utc equals departure_hour_utc, the hour both categories
+    share in the timeframe group (Amendment R).
+  limitations: >-
+    Twelve airport-hours of the window have no observation; gust is null when no gust was
+    reported; wind direction is a direction in degrees and never additive. The vintage mix
+    (2013 observations, 2026 airport attributes) carries through from silver.
+schema:
+- name: airport_weather
+  logicalType: object
+  physicalType: mapping
+  description: >-
+    One fact category: hourly weather at the three New York City airports, 2013 H1. Transaction
+    grain per the silver contract's two-column grain, carried as one derived degenerate identifier
+    (observation_identity, canonical-key-v2 over airport_code and observed_hour_utc).
+  entityGroup: airport_weather
+  sourceTable: silver.silver_airport_weather
+  timeColumn: observed_hour_utc
+  timeGrain: hour
+  grain:
+    type: transaction
+    degenerateIdentifiers:
+    - source: derived
+      name: observation_identity
+      derivation: canonical-key-v2
+      of:
+      - airport_code
+      - observed_hour_utc
+  properties:
+  - name: airport_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    mappingRole: dimension
+    description: >-
+      IATA code of the observing airport (EWR, JFK, LGA); a conformed key shared with the
+      flights category.
+  - name: observed_hour_utc
+    logicalType: date
+    physicalType: TIMESTAMP
+    required: true
+    mappingRole: time
+    description: Observation hour as a UTC instant; the conformed calendar key at hour grain.
+  - name: observed_date_local
+    logicalType: date
+    physicalType: DATE
+    required: true
+    mappingRole: dimension
+    description: Local (America/New_York) calendar date of the observation.
+  - name: observed_hour_local
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    mappingRole: dimension
+    description: Local hour of the observation (0 to 23).
+  - name: temp_f
+    logicalType: number
+    physicalType: DOUBLE
+    required: true
+    mappingRole: measure
+    description: Air temperature in degrees Fahrenheit.
+  - name: dewpoint_f
+    logicalType: number
+    physicalType: DOUBLE
+    required: true
+    mappingRole: measure
+    description: Dew point in degrees Fahrenheit.
+  - name: humidity_pct
+    logicalType: number
+    physicalType: DOUBLE
+    required: true
+    mappingRole: measure
+    description: Relative humidity in percent.
+  - name: wind_dir_degrees
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    mappingRole: measure
+    description: Wind direction in degrees; null when calm or missing.
+  - name: wind_speed_mph
+    logicalType: number
+    physicalType: DOUBLE
+    required: false
+    mappingRole: measure
+    description: Sustained wind speed in mph.
+  - name: wind_gust_mph
+    logicalType: number
+    physicalType: DOUBLE
+    required: false
+    mappingRole: measure
+    description: Wind gust in mph; null when no gust was reported (not zero).
+  - name: precip_inches
+    logicalType: number
+    physicalType: DOUBLE
+    required: true
+    mappingRole: measure
+    description: Precipitation in inches for the hour.
+  - name: pressure_mb
+    logicalType: number
+    physicalType: DOUBLE
+    required: false
+    mappingRole: measure
+    description: Sea-level pressure in millibars; null on about 12 percent of rows.
+  - name: visibility_miles
+    logicalType: number
+    physicalType: DOUBLE
+    required: true
+    mappingRole: measure
+    description: Visibility in statute miles (10 is the reporting maximum).
+  - name: airport_name
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    mappingRole: dimension
+    description: Airport name from the 2026 OurAirports reference.
+  - name: airport_municipality
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    mappingRole: dimension
+    description: The airport's served city from the 2026 reference.
+  - name: airport_elevation_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    mappingRole: dimension
+    description: Field elevation in feet.
+  - name: airport_longest_runway_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    mappingRole: dimension
+    description: Length in feet of the longest open runway with a published length (2026 reference).
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: gold
+customProperties:
+- property: proposedBy
+  value: human
+- property: profileHash
+  value: sha256:70cb304edcaa97a18aa7411d2ed8b68a860627c53342343a78b87fa306345567
+- property: proposedAt
+  value: '2026-09-02'
+- property: decisionGrainForm
+  value: derived-observation-identity-over-declared-silver-grain-tuple
+- property: decisionTimeGrain
+  value: hour, on the conformed calendar shared with flights
+- property: decisionWindDirection
+  value: a measure column by type, not additive by meaning; the registry says so
+- property: provenanceNote
+  value: >-
+    Authored from profiles/silver.silver_airport_weather/v0001.json (the profileHash artifact)
+    against silver contract silver_airport_weather v1.0.0; roles and grain decided at the
+    Arc 6 prep. The gold mapping proposer's live draft over the same profile is eval-lane
+    evidence, never this file.
