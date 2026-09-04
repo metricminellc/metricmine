@@ -1,14 +1,20 @@
 # MetricMine default configuration.
-# Ingestion per docs/spec/ingestion.md: the committed Online Retail II sample
-# (D-15) lands into the bronze schema of the working warehouse (D-03).
+# Ingestion per docs/spec/ingestion.md: the committed samples (D-15 as
+# amended by Amendment T) land into the bronze schema of the working
+# warehouse (D-03).
 ingestion:
-  dataset_name: online_retail_ii
-  sample_csv: data/samples/online_retail_ii/online_retail_ii_2009-12.csv
   warehouse_path: warehouse/metricmine.duckdb
   schema: bronze
-  # Invoice carries C-prefixed cancellation ids; pin it to string at the
-  # reader so inference and records agree.
-  reader_options: '{"dtype": {"Invoice": "str"}}'
+  # One entry per committed extract (D-41): the same source-file
+  # connector lands each CSV as its own bronze stream, one connector
+  # type, many files. Each entry names its dataset (the bronze table),
+  # its committed CSV, and any reader options its landing needs.
+  sources:
+    - dataset_name: online_retail_ii
+      sample_csv: data/samples/online_retail_ii/online_retail_ii_2009-12.csv
+      # Invoice carries C-prefixed cancellation ids; pin it to string at
+      # the reader so inference and records agree.
+      reader_options: '{"dtype": {"Invoice": "str"}}'
 
 # Profiling per docs/spec/profiler.md: the deterministic profiler reads the
 # working warehouse read-only (D-11) and writes committed artifacts under
