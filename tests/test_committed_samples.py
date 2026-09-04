@@ -25,7 +25,7 @@ SCRIPTS = REPO / "scripts"
 
 EVENT_SOURCE_CAP = 20 * 1024 * 1024
 OTHER_SOURCE_CAP = 10 * 1024 * 1024
-EVENT_SOURCES = {"bts_ontime"}
+EVENT_SOURCES = {"nyc_flights"}
 PRE_AMENDMENT = {"online_retail_ii"}
 
 SHA256_LINE = re.compile(r"sha256\s+([0-9a-f]{64})")
@@ -62,7 +62,7 @@ def test_every_sample_has_a_readme_that_cites_and_pins(sample_dir: Path) -> None
 
 
 def _source_scripts() -> list[Path]:
-    exempt = {"fetch_common.py", "fetch_demo.py", "fetch_sample.py"}
+    exempt = {"fetch_common.py", "fetch_nyc_common.py", "fetch_demo.py", "fetch_sample.py"}
     return sorted(p for p in SCRIPTS.glob("fetch_*.py") if p.name not in exempt)
 
 
@@ -73,5 +73,5 @@ def test_every_fetch_script_pins_its_raw_bytes_and_its_budget(script: Path) -> N
     assert pinned, f"{script.name}: RAW_SHA256 is not pinned (Amendment T)"
     budget = BUDGET.findall(text)
     assert budget, f"{script.name}: declare MAX_BYTES as <n> * 1024 * 1024"
-    cap = EVENT_SOURCE_CAP if "ontime" in script.name else OTHER_SOURCE_CAP
+    cap = EVENT_SOURCE_CAP if script.stem.removeprefix("fetch_") in EVENT_SOURCES else OTHER_SOURCE_CAP
     assert int(budget[0]) * 1024 * 1024 <= cap, f"{script.name}: budget over the D-15 cap"
