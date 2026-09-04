@@ -1,0 +1,147 @@
+# Contract: silver_nyc_planes v1.0.0 (ODCS v3.1.0), the Arc 6 aviation family (D-41).
+# Hand-authored from the bronze profile it cites (rule 16: proposedBy human,
+# profileHash present, no stance keys); the cleanup proposer's live drafts over
+# the same profile are recorded as eval-lane evidence, never as this file.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_nyc_planes
+name: Silver nyc planes
+version: 1.0.0
+status: active
+domain: aviation
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: 'Aircraft metadata from the FAA registry for the tail numbers seen in the 2013
+    New York flights: one row per tail number with manufacturer, model, year of manufacture,
+    engines, seats, and engine type. The reference table that gives silver_flights its aircraft
+    attributes.'
+  usage: Join tail_number from silver_nyc_flights to read the aircraft; about 84 percent of
+    flights resolve. Use manufacture_year for aircraft age (2013 minus the year), seat_count
+    for capacity, engine_type for the propulsion class.
+  limitations: '3,322 aircraft. American Airlines and Envoy Air reported fleet numbers rather
+    than registrations in 2013, so their aircraft are absent; the year of manufacture is missing
+    for 70 aircraft and cruise speed for almost all (3,299), so speed is not a usable measure.
+    The registry snapshot is the 2014 FAA releasable download. Vintage: 2013, as packaged
+    by tidyverse/nycflights13 at commit df98ef21 (CC0); the reference tables from OurAirports
+    are a 2026 snapshot, so an airport code can have changed between the flight and the reference
+    (Palm Beach International flew as PBI in 2013 and is coded DJT in the 2026 reference).'
+schema:
+- name: silver_nyc_planes
+  physicalName: silver_nyc_planes
+  logicalType: object
+  physicalType: table
+  description: 'Aircraft metadata from the FAA registry for the tail numbers seen in the 2013
+    New York flights: one row per tail number with manufacturer, model, year of manufacture,
+    engines, seats, and engine type. The reference table that gives silver_flights its aircraft
+    attributes.'
+  dataGranularityDescription: One row per (tail_number); the grain is unique by measurement
+    at profile v0001 and enforced by the error-severity grain rule.
+  properties:
+  - name: tail_number
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: FAA registration (N-number). A conformed key; silver_nyc_flights.tail_number
+      joins here.
+    quality:
+    - type: sql
+      description: 'Conformed key tail_number: every value matches ^[A-Z0-9]{2,6}$ (the K1
+        normalization rule, D-41).'
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_nyc_planes WHERE NOT regexp_matches(tail_number, '^[A-Z0-9]{2,6}$')
+      mustBe: 0
+  - name: manufacture_year
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: Year the aircraft was manufactured; null for 70 aircraft.
+  - name: aircraft_type
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: FAA aircraft type classification (for example, 'Fixed wing multi engine').
+  - name: manufacturer
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: Manufacturer as the registry spells it (BOEING, AIRBUS INDUSTRIE, EMBRAER,
+      BOMBARDIER INC, and others; spellings vary by registration and are not normalized here).
+  - name: model
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: Model designation as the registry spells it (for example, '737-824').
+  - name: engine_count
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: Number of engines.
+  - name: seat_count
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: Number of seats per the registry (a capacity indicator, not the airline's
+      configured cabin).
+  - name: cruise_speed_mph
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: Average cruising speed in mph where the registry records it; null for 3,299
+      of 3,322 aircraft, so not a usable measure.
+  - name: engine_type
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: 'Engine type as the registry classifies it: Turbo-fan (2,750), Turbo-jet
+      (535), Reciprocating (28), and a few Turbo-shaft, 4 Cycle, and Turbo-prop.'
+  - name: captured_at
+    logicalType: date
+    physicalType: TIMESTAMP
+    required: true
+    description: 'Capture timestamp carried forward from the bronze landing (_airbyte_extracted_at):
+      when this row''s capture entered the pipeline. The incremental watermark the gold layer
+      builds on (D-38). Required from the first version: the model populates it on every row
+      from its first build (F-49). Audit metadata, never a business value.'
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty; the committed extract lands every row.
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (tail_number) combinations. Declared at
+      error severity because the primaryKey-flag composite test generates at warn severity
+      at datacontract-cli 1.0.12 (rule 5: uniqueness as a test, never a trusted constraint).'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT tail_number
+        FROM silver.silver_nyc_planes
+        GROUP BY tail_number
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: human
+- property: profileHash
+  value: sha256:d775f9080fcb9731f1489bfc4933efc20b764c7dff57f90224131c77ea50b3f5
+- property: proposedAt
+  value: '2026-09-02'
+- property: sourceLineage
+  value: bronze.nyc_planes (data/samples/nyc_planes/README.md)
+- property: vintage
+  value: FAA registry, 2014 releasable download; tidyverse/nycflights13 at commit df98ef21
+- property: conformedKeys
+  value: tail_number=tail_number
+- property: decisionRowsDropped
+  value: none
