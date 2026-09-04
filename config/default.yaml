@@ -98,6 +98,8 @@ engine:
   # (silver.<table> reads contracts/<table>.odcs.yaml).
   mapping_contracts:
     - contracts/gold_invoice_lines_mapping.odcs.yaml
+    - contracts/gold_flights_mapping.odcs.yaml
+    - contracts/gold_airport_weather_mapping.odcs.yaml
   gold_contract: contracts/gold_unified_event_star.odcs.yaml
   schema_path: docs/spec/engine/mapping-contract.schema.json
   output_dir: transform/models/gold

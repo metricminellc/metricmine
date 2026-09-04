@@ -328,6 +328,68 @@ def test_category_expert_context_is_rich() -> None:
         assert dims["data"]["grain"]["type"] == emission.category["grain"]["type"]
 
 
+def test_conformed_keys_name_who_shares_them() -> None:
+    """A conformed key under data says which other categories carry it,
+    under which columns, with the star's normalization rule; the K1 gate
+    holds the declarations, this holds the compilation. Every declared
+    cross-category join names a conformed key both sides carry."""
+    dims = {
+        e["compiled_context"]["category"]: e["compiled_context"]
+        for e in _entries_by_role()["dimensions"]
+    }
+    inputs = load_inputs(REPO)
+    star_custom = {
+        p["property"]: p["value"] for p in inputs.star.get("customProperties", [])
+    }
+    seen_shared = False
+    for category, compiled in dims.items():
+        for column, spec in compiled["data"]["conformed_keys"].items():
+            assert spec["rule"] and spec["physicalType"], f"{category}.{column}: rule missing"
+            for other, columns in spec["shared_with"].items():
+                assert other != category
+                other_keys = dims[other]["data"]["conformed_keys"]
+                assert all(other_keys[c]["key"] == spec["key"] for c in columns)
+                seen_shared = True
+    assert seen_shared, "the multi-source proof needs one key shared by two categories"
+    joins = star_custom.get("crossCategoryJoins") or []
+    assert joins, "the star declares at least one cross-category join (Amendment W)"
+    for join in joins:
+        assert {"name", "left", "right", "join_condition", "conformed_keys",
+                "calendar_grain", "measured_completeness", "floor", "note"} <= set(join)
+        for side in (join["left"], join["right"]):
+            assert f"{side}." in join["join_condition"], (
+                f"{join['name']}: the condition aliases both categories by name"
+            )
+        assert join["floor"] <= join["measured_completeness"], join["name"]
+        for side in ("left", "right"):
+            side_keys = {s["key"] for s in dims[join[side]]["data"]["conformed_keys"].values()}
+            assert set(join["conformed_keys"]) <= side_keys, f"{join['name']}: {side}"
+            assert join in dims[join[side]]["expert_context"]["cross_category_joins"]
+            assert dims[join[side]]["data"]["time_grain"] == join["calendar_grain"]
+    timeframe = _entries_by_role()["timeframe"][0]["compiled_context"]
+    assert timeframe["expert_context"]["cross_category_joins"] == joins
+
+
+def test_structured_joins_carry_measured_completeness() -> None:
+    """A unified silver table's joins arrive as written: a list, each
+    with its measured completeness and the floor the contract enforces,
+    so an agent reads the number, not a sentence about it."""
+    unified = [
+        e["compiled_context"]
+        for e in _entries_by_role()["dimensions"]
+        if "joins" in e["compiled_context"]["expert_context"]
+    ]
+    assert unified, "the unified tables declare their joins"
+    for compiled in unified:
+        joins = compiled["expert_context"]["joins"]
+        assert isinstance(joins, list) and joins
+        for join in joins:
+            assert {"name", "left_column", "right_table", "right_column",
+                    "measured_completeness", "floor", "note"} <= set(join)
+            assert 0 < join["floor"] <= join["measured_completeness"] <= 1
+            assert join["left_column"] in compiled["data"]["fields"]
+
+
 def test_shared_entries_describe_every_source() -> None:
     """The source group's expert context names every silver table the
     star is built from with its subject and governing contracts; the run

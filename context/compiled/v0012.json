@@ -1,0 +1,1412 @@
+{
+  "entries": [
+    {
+      "compiled_context": {
+        "data": {
+          "fields": {
+            "source_table": {
+              "logicalType": "string",
+              "physicalType": "VARCHAR",
+              "required": true
+            }
+          },
+          "source_tables": [
+            "silver.silver_airport_weather",
+            "silver.silver_flights",
+            "silver.silver_invoice_lines"
+          ]
+        },
+        "expert_context": {
+          "fields": {
+            "source_table": {
+              "meaning": "The silver table the fact row was built from, as schema.table; its subject and governing contracts are listed under sources."
+            }
+          },
+          "governing_contracts": {
+            "star": "gold_unified_event_star v1.6.0"
+          },
+          "how_to_read": "Resolve a fact's source_hash_id here to learn which silver table minted it, then read that table's subject below; the category's own registry entries carry the full expert context.",
+          "note": "Authored knowledge, not a measurement: what the people who approved the governing contracts wrote about this data (the silver contract that settled the table, the mapping contract that declared the category, the star contract that governs the container). Units, vintages, what a null means, which joins hold and how completely, and the decisions taken in silver live here. The data section beside it is derived from the contracts' typed declarations; the rows in the warehouse are the measurement. Where a claim here and the data disagree, the data is the fact and this is the claim to check.",
+          "sources": {
+            "silver.silver_airport_weather": {
+              "category": "airport_weather",
+              "governing_contracts": {
+                "mapping": "gold_airport_weather_mapping v1.0.0",
+                "silver": "silver_airport_weather v1.0.0"
+              },
+              "lineage": "silver_nyc_weather (the observation rows) + silver_ourairports_airports (airport attributes) + silver_ourairports_runways (the longest open runway)",
+              "subject": "The unified airport weather table: one row per New York City airport per hour in January through June 2013 with the observation and the airport's reference attributes joined in on the conformed airport code. This is the table the airport_weather category of the star is built from and the one to read for conditions at an airport in an hour.",
+              "vintage": "weather 2013 (nycflights13 at df98ef21); airports and runways 2026 (OurAirports at d27027ba)"
+            },
+            "silver.silver_flights": {
+              "category": "flights",
+              "governing_contracts": {
+                "mapping": "gold_flights_mapping v1.0.0",
+                "silver": "silver_flights v1.0.0"
+              },
+              "lineage": "silver_nyc_flights (the event rows) + silver_nyc_airlines (carrier_name) + silver_nyc_planes (aircraft_*) + silver_ourairports_airports (origin_* and dest_* attributes) + silver_ourairports_runways (the longest open runway per airport)",
+              "subject": "The unified flight table: one row per scheduled departure from New York City in January through June 2013 with its carrier name, its aircraft, and its origin and destination airports joined in, conformance settled here in human-owned SQL so the gold star maps one category. This is the table the flights category of the star is built from and the one to read for any question about flights.",
+              "vintage": "flights, airlines, and planes 2013 to 2014 (nycflights13 at df98ef21); airports and runways 2026 (OurAirports at d27027ba)"
+            },
+            "silver.silver_invoice_lines": {
+              "category": "invoice_lines",
+              "governing_contracts": {
+                "mapping": "gold_invoice_lines_mapping v1.1.1",
+                "silver": "silver_invoice_lines v1.3.0"
+              },
+              "subject": "The cleaned, typed, one-row-per-invoice-line view of the Online Retail II sample: the first contracted silver table and the sole silver input to the gold unified event star."
+            }
+          },
+          "star_limitations": "Typed projections are uncontracted views by design (D-17): vw_invoice_lines_typed is emitted and manifest-listed but never a schema object here. Payloads are canonical JSON text; consumers needing typed columns use the projection. compiled_context is addressed content, never a hashed payload, so it keeps its case.",
+          "star_purpose": "The source-invariant, self-describing, content-addressed star schema: values/columns dimension pairs for the source, run, and timeframe groups and for the three fact categories (invoice_lines, airport_weather, flights), the three fact tables, and the context registry (D-19): the address of meaning, one row per schema key. Every source lands in the same physical shape: within a category new sources add rows, not schema, and the shared groups and the registry are one set for every category (D-41; F-42). The timeframe group is the conformed calendar (Amendment R): one manifest for the whole star, so equal periods at equal grain are one row whichever category minted them.",
+          "star_usage": "Built only by dbt from engine-emitted models (D-07, D-09); consumers read through the shared query module over the read-only protocol, with the MCP server primary (Phase 5). Every *_values row carries the four-element pattern: value payload, manifest reference (schema key), record key, schema key. Cancellation lines flow through retained-and-flagged per the mapping contract; exclusion is a consumer decision. Cross-category questions are answered on the typed surfaces through the joins crossCategoryJoins declares, each on conformed keys and the conformed calendar with its measured completeness and its floor; the registry carries them into every participating category's expert context. invoice_lines shares no conformed key with the aviation categories and its window (December 2009, minute grain) never meets theirs (2013, hour grain): the calendar aligns them in shape, not in time.",
+          "subject": "The source group: one row per silver table the star is built from, named as schema.table. Every fact row carries the source hash of the table it came from."
+        },
+        "manifest": [
+          "source_table"
+        ],
+        "role": "source"
+      },
+      "contract_name": "gold_unified_event_star",
+      "contract_version": "1.6.0",
+      "entity_group": "source",
+      "schema_key": "61e74223d961799a0f8b12bf9045b422b5cad4fc9273e1ce3f65eb07966a2e1f"
+    },
+    {
+      "compiled_context": {
+        "data": {
+          "fields": {
+            "engine_version": {
+              "logicalType": "string",
+              "physicalType": "VARCHAR",
+              "required": true
+            },
+            "mapping_contract_name": {
+              "logicalType": "string",
+              "physicalType": "VARCHAR",
+              "required": true
+            },
+            "mapping_contract_version": {
+              "logicalType": "string",
+              "physicalType": "VARCHAR",
+              "required": true
+            }
+          }
+        },
+        "expert_context": {
+          "fields": {
+            "engine_version": {
+              "meaning": "The auto-modeling engine version that emitted the models (D-07)."
+            },
+            "mapping_contract_name": {
+              "meaning": "The id of the mapping contract whose approval created the category's keys."
+            },
+            "mapping_contract_version": {
+              "meaning": "That mapping contract's version at build time."
+            }
+          },
+          "governing_contracts": {
+            "star": "gold_unified_event_star v1.6.0"
+          },
+          "how_to_read": "run_hash_id on a fact row is a non-key attribute (rule 14): resolve it here to see which mapping contract version and engine version built the row. Equal facts rebuilt under a new engine keep their keys and change only this attribute.",
+          "note": "Authored knowledge, not a measurement: what the people who approved the governing contracts wrote about this data (the silver contract that settled the table, the mapping contract that declared the category, the star contract that governs the container). Units, vintages, what a null means, which joins hold and how completely, and the decisions taken in silver live here. The data section beside it is derived from the contracts' typed declarations; the rows in the warehouse are the measurement. Where a claim here and the data disagree, the data is the fact and this is the claim to check.",
+          "star_limitations": "Typed projections are uncontracted views by design (D-17): vw_invoice_lines_typed is emitted and manifest-listed but never a schema object here. Payloads are canonical JSON text; consumers needing typed columns use the projection. compiled_context is addressed content, never a hashed payload, so it keeps its case.",
+          "star_purpose": "The source-invariant, self-describing, content-addressed star schema: values/columns dimension pairs for the source, run, and timeframe groups and for the three fact categories (invoice_lines, airport_weather, flights), the three fact tables, and the context registry (D-19): the address of meaning, one row per schema key. Every source lands in the same physical shape: within a category new sources add rows, not schema, and the shared groups and the registry are one set for every category (D-41; F-42). The timeframe group is the conformed calendar (Amendment R): one manifest for the whole star, so equal periods at equal grain are one row whichever category minted them.",
+          "star_usage": "Built only by dbt from engine-emitted models (D-07, D-09); consumers read through the shared query module over the read-only protocol, with the MCP server primary (Phase 5). Every *_values row carries the four-element pattern: value payload, manifest reference (schema key), record key, schema key. Cancellation lines flow through retained-and-flagged per the mapping contract; exclusion is a consumer decision. Cross-category questions are answered on the typed surfaces through the joins crossCategoryJoins declares, each on conformed keys and the conformed calendar with its measured completeness and its floor; the registry carries them into every participating category's expert context. invoice_lines shares no conformed key with the aviation categories and its window (December 2009, minute grain) never meets theirs (2013, hour grain): the calendar aligns them in shape, not in time.",
+          "subject": "The run group: build lineage, one row per mapping contract version and engine version that minted fact rows. An audit attribute, never an analytical one."
+        },
+        "manifest": [
+          "mapping_contract_name",
+          "mapping_contract_version",
+          "engine_version"
+        ],
+        "role": "run"
+      },
+      "contract_name": "gold_unified_event_star",
+      "contract_version": "1.6.0",
+      "entity_group": "run",
+      "schema_key": "dacafb1855b6ce1628eb3be9b6c8eeeedc3d4f45454a6fd87093deda9d0cc848"
+    },
+    {
+      "compiled_context": {
+        "data": {
+          "categories": {
+            "airport_weather": {
+              "field": {
+                "logicalType": "date",
+                "mappingRole": "time",
+                "physicalType": "TIMESTAMP",
+                "required": true
+              },
+              "time_column": "observed_hour_utc",
+              "time_grain": "hour"
+            },
+            "flights": {
+              "field": {
+                "logicalType": "date",
+                "mappingRole": "time",
+                "physicalType": "TIMESTAMP",
+                "required": true
+              },
+              "time_column": "departure_hour_utc",
+              "time_grain": "hour"
+            },
+            "invoice_lines": {
+              "field": {
+                "logicalType": "date",
+                "mappingRole": "time",
+                "physicalType": "TIMESTAMP",
+                "required": true
+              },
+              "time_column": "invoiced_at",
+              "time_grain": "minute"
+            }
+          },
+          "fields": {
+            "grain": {
+              "logicalType": "string",
+              "physicalType": "VARCHAR",
+              "required": true
+            },
+            "period_start": {
+              "logicalType": "date",
+              "physicalType": "TIMESTAMP",
+              "required": true
+            }
+          }
+        },
+        "expert_context": {
+          "categories": {
+            "airport_weather": {
+              "time_column_meaning": "Observation hour as a UTC instant; the conformed calendar key at hour grain.",
+              "vintage": "weather 2013 (nycflights13 at df98ef21); airports and runways 2026 (OurAirports at d27027ba)"
+            },
+            "flights": {
+              "time_column_meaning": "Scheduled departure hour as a UTC instant; the conformed calendar key at hour grain (joins weather at the origin on the same hour).",
+              "vintage": "flights, airlines, and planes 2013 to 2014 (nycflights13 at df98ef21); airports and runways 2026 (OurAirports at d27027ba)"
+            },
+            "invoice_lines": {
+              "time_column_meaning": "Invoice timestamp; the declared time column.",
+              "vintage": ""
+            }
+          },
+          "cross_category_joins": [
+            {
+              "calendar_grain": "hour",
+              "conformed_keys": [
+                "airport_iata"
+              ],
+              "example_sql": "SELECT flights.carrier_code, avg(flights.dep_delay_minutes) AS avg_dep_delay_minutes FROM gold.mart_flights_typed AS flights JOIN gold.mart_airport_weather_typed AS airport_weather ON flights.origin_airport = airport_weather.airport_code AND flights.departure_hour_utc = airport_weather.observed_hour_utc WHERE airport_weather.precip_inches > 0 GROUP BY flights.carrier_code ORDER BY avg_dep_delay_minutes DESC",
+              "floor": 0.99,
+              "join_condition": "flights.origin_airport = airport_weather.airport_code AND flights.departure_hour_utc = airport_weather.observed_hour_utc",
+              "left": "flights",
+              "measured_completeness": 0.9994,
+              "name": "flights_to_origin_weather",
+              "note": "Every flight's weather at its origin airport in its departure hour, both sides on the conformed calendar (UTC hours) and the conformed airport code. Measured 0.9994 over the typed surfaces at the Arc 6 build: 97 of 166,158 flights fall in the six airport-hours the nycflights13 weather feed has no observation for. The floor is declared below the measurement so a weather refresh that adds coverage passes and one that loses it fails (the M2 discipline, D-41). Destination weather is out of reach by construction: the weather feed covers the three New York City airports only.",
+              "right": "airport_weather"
+            }
+          ],
+          "fields": {
+            "grain": {
+              "meaning": "The declared time grain of the category the period belongs to (minute, hour, day, week, month, quarter, year)."
+            },
+            "period_start": {
+              "meaning": "The category's declared time column truncated to its grain and rendered canonically; equal periods at equal grain hash to one row whichever category minted them (the conformed calendar, D-17 Amendment R)."
+            }
+          },
+          "governing_contracts": {
+            "star": "gold_unified_event_star v1.6.0"
+          },
+          "how_to_read": "Two categories share a calendar row only at the same grain: an hour-grain category and a minute-grain category never share rows, and their windows may not overlap at all. Compare windows and grains per category below before joining on timeframe_hash_id; for analytical joins prefer the typed surfaces and the cross-category joins the star declares.",
+          "note": "Authored knowledge, not a measurement: what the people who approved the governing contracts wrote about this data (the silver contract that settled the table, the mapping contract that declared the category, the star contract that governs the container). Units, vintages, what a null means, which joins hold and how completely, and the decisions taken in silver live here. The data section beside it is derived from the contracts' typed declarations; the rows in the warehouse are the measurement. Where a claim here and the data disagree, the data is the fact and this is the claim to check.",
+          "star_limitations": "Typed projections are uncontracted views by design (D-17): vw_invoice_lines_typed is emitted and manifest-listed but never a schema object here. Payloads are canonical JSON text; consumers needing typed columns use the projection. compiled_context is addressed content, never a hashed payload, so it keeps its case.",
+          "star_purpose": "The source-invariant, self-describing, content-addressed star schema: values/columns dimension pairs for the source, run, and timeframe groups and for the three fact categories (invoice_lines, airport_weather, flights), the three fact tables, and the context registry (D-19): the address of meaning, one row per schema key. Every source lands in the same physical shape: within a category new sources add rows, not schema, and the shared groups and the registry are one set for every category (D-41; F-42). The timeframe group is the conformed calendar (Amendment R): one manifest for the whole star, so equal periods at equal grain are one row whichever category minted them.",
+          "star_usage": "Built only by dbt from engine-emitted models (D-07, D-09); consumers read through the shared query module over the read-only protocol, with the MCP server primary (Phase 5). Every *_values row carries the four-element pattern: value payload, manifest reference (schema key), record key, schema key. Cancellation lines flow through retained-and-flagged per the mapping contract; exclusion is a consumer decision. Cross-category questions are answered on the typed surfaces through the joins crossCategoryJoins declares, each on conformed keys and the conformed calendar with its measured completeness and its floor; the registry carries them into every participating category's expert context. invoice_lines shares no conformed key with the aviation categories and its window (December 2009, minute grain) never meets theirs (2013, hour grain): the calendar aligns them in shape, not in time.",
+          "subject": "The conformed calendar (D-17 Amendment R): one timeframe manifest for the whole star, so equal periods at equal grain are one row whichever category minted them."
+        },
+        "manifest": [
+          "grain",
+          "period_start"
+        ],
+        "role": "timeframe"
+      },
+      "contract_name": "gold_unified_event_star",
+      "contract_version": "1.6.0",
+      "entity_group": "timeframe",
+      "schema_key": "882bb5e70283711a0c90460b64b632f83786eaf265e1e044bfbe288e6144ae98"
+    },
+    {
+      "compiled_context": {
+        "category": "airport_weather",
+        "data": {
+          "conformed_keys": {
+            "airport_code": {
+              "key": "airport_iata",
+              "nullable": false,
+              "physicalType": "VARCHAR",
+              "rule": "^[A-Z]{3}$",
+              "shared_with": {
+                "flights": [
+                  "origin_airport",
+                  "dest_airport"
+                ]
+              }
+            }
+          },
+          "derived_identifiers": {
+            "observation_identity": {
+              "derivation": "canonical-key-v2",
+              "of": [
+                "airport_code",
+                "observed_hour_utc"
+              ],
+              "source": "derived"
+            }
+          },
+          "fields": {
+            "airport_code": {
+              "logicalType": "string",
+              "mappingRole": "dimension",
+              "physicalType": "VARCHAR",
+              "required": true
+            },
+            "airport_elevation_ft": {
+              "logicalType": "integer",
+              "mappingRole": "dimension",
+              "physicalType": "INTEGER",
+              "required": true
+            },
+            "airport_longest_runway_ft": {
+              "logicalType": "integer",
+              "mappingRole": "dimension",
+              "physicalType": "INTEGER",
+              "required": true
+            },
+            "airport_municipality": {
+              "logicalType": "string",
+              "mappingRole": "dimension",
+              "physicalType": "VARCHAR",
+              "required": true
+            },
+            "airport_name": {
+              "logicalType": "string",
+              "mappingRole": "dimension",
+              "physicalType": "VARCHAR",
+              "required": true
+            },
+            "observed_date_local": {
+              "logicalType": "date",
+              "mappingRole": "dimension",
+              "physicalType": "DATE",
+              "required": true
+            },
+            "observed_hour_local": {
+              "logicalType": "integer",
+              "mappingRole": "dimension",
+              "physicalType": "INTEGER",
+              "required": true
+            }
+          },
+          "grain": {
+            "keys": [
+              "airport_code",
+              "observed_hour_utc"
+            ],
+            "type": "transaction"
+          },
+          "source_table": "silver.silver_airport_weather",
+          "time_column": "observed_hour_utc",
+          "time_grain": "hour",
+          "typed_surface": "mart_airport_weather_typed",
+          "value_form": "String columns on the typed surface carry canonical lowercase text (D-18 as amended): write string literals in lowercase (carrier_code = 'ev', origin_airport = 'jfk'), or compare with lower(). Numbers, dates, and timestamps are typed and unaffected.",
+          "where_to_query": "gold.mart_airport_weather_typed: one typed row per airport_weather event, the served surface for this category. The silver table the expert context names (silver.silver_airport_weather) is its source and is not served; the star tables are the provenance layer."
+        },
+        "expert_context": {
+          "category_limitations": "Twelve airport-hours of the window have no observation; gust is null when no gust was reported; wind direction is a direction in degrees and never additive. The vintage mix (2013 observations, 2026 airport attributes) carries through from silver.",
+          "category_purpose": "Declares how silver.silver_airport_weather maps into the unified event star as the airport_weather fact category: one fact row per airport per hour in January through June 2013 at hour grain on the conformed calendar (observed_hour_utc), the airport attributes as dimensions and the nine observation quantities as measures. Consumed by the auto-modeling engine (D-07); no physical table carries this name.",
+          "category_usage": "Engine input only. The typed surface mart_airport_weather_typed (D-36) answers questions about conditions at an airport in an hour; a flight's weather at departure joins on airport_code equals origin_airport and observed_hour_utc equals departure_hour_utc, the hour both categories share in the timeframe group (Amendment R).",
+          "cross_category_joins": [
+            {
+              "calendar_grain": "hour",
+              "conformed_keys": [
+                "airport_iata"
+              ],
+              "example_sql": "SELECT flights.carrier_code, avg(flights.dep_delay_minutes) AS avg_dep_delay_minutes FROM gold.mart_flights_typed AS flights JOIN gold.mart_airport_weather_typed AS airport_weather ON flights.origin_airport = airport_weather.airport_code AND flights.departure_hour_utc = airport_weather.observed_hour_utc WHERE airport_weather.precip_inches > 0 GROUP BY flights.carrier_code ORDER BY avg_dep_delay_minutes DESC",
+              "floor": 0.99,
+              "join_condition": "flights.origin_airport = airport_weather.airport_code AND flights.departure_hour_utc = airport_weather.observed_hour_utc",
+              "left": "flights",
+              "measured_completeness": 0.9994,
+              "name": "flights_to_origin_weather",
+              "note": "Every flight's weather at its origin airport in its departure hour, both sides on the conformed calendar (UTC hours) and the conformed airport code. Measured 0.9994 over the typed surfaces at the Arc 6 build: 97 of 166,158 flights fall in the six airport-hours the nycflights13 weather feed has no observation for. The floor is declared below the measurement so a weather refresh that adds coverage passes and one that loses it fails (the M2 discipline, D-41). Destination weather is out of reach by construction: the weather feed covers the three New York City airports only.",
+              "right": "airport_weather"
+            }
+          ],
+          "decisions": {
+            "decisionConformance": "settled here in human-owned SQL; the gold star maps this table as the airport_weather category (D-41)",
+            "decisionGrainForm": "derived-observation-identity-over-declared-silver-grain-tuple",
+            "decisionTimeGrain": "hour, on the conformed calendar shared with flights",
+            "decisionWindDirection": "a measure column by type, not additive by meaning; the registry says so"
+          },
+          "fields": {
+            "airport_code": {
+              "meaning": "IATA code of the observing airport (EWR, JFK, LGA); a conformed key shared with the flights category."
+            },
+            "airport_elevation_ft": {
+              "meaning": "Field elevation in feet."
+            },
+            "airport_longest_runway_ft": {
+              "meaning": "Length in feet of the longest open runway with a published length (2026 reference)."
+            },
+            "airport_municipality": {
+              "meaning": "The airport's served city from the 2026 reference."
+            },
+            "airport_name": {
+              "meaning": "Airport name from the 2026 OurAirports reference."
+            },
+            "observed_date_local": {
+              "meaning": "Local (America/New_York) calendar date of the observation."
+            },
+            "observed_hour_local": {
+              "meaning": "Local hour of the observation (0 to 23)."
+            },
+            "observed_hour_utc": {
+              "meaning": "Observation hour as a UTC instant; the conformed calendar key at hour grain."
+            }
+          },
+          "governing_contracts": {
+            "mapping": "gold_airport_weather_mapping v1.0.0",
+            "silver": "silver_airport_weather v1.0.0",
+            "star": "gold_unified_event_star v1.6.0"
+          },
+          "how_to_read": "Read silver.silver_airport_weather for conditions at EWR, JFK, or LGA in a given hour: temperatures in Fahrenheit, wind in mph, precipitation in inches for the hour, pressure in millibars, visibility in miles. observed_hour_utc is the conformed calendar key at hour grain shared with the flights category: a flight's departure_hour_utc at the same airport is the same hour, so weather at departure joins on airport_code equals origin_airport and the hour.",
+          "joins": [
+            {
+              "floor": 1.0,
+              "left_column": "airport_code",
+              "measured_completeness": 1.0,
+              "name": "airport",
+              "note": "the three NYC airports all resolve",
+              "right_column": "iata_code",
+              "right_table": "silver_ourairports_airports"
+            }
+          ],
+          "limitations": "13,014 of the 13,026 airport-hours between the first observation (01:00 local on January 1) and the last (23:00 local on June 30) are present; 12 airport-hours (4 per airport) have no observation, so 97 flights find no weather row at their origin in their departure hour. The series has no hour 0 on January 1, and March 10 has 23 local hours (the spring-forward day). Gust is null on three quarters of rows (no gust reported), pressure on about 12 percent, wind direction on 2 percent. The airport join resolves all three airports (100 percent). Vintage: 2013, as packaged by tidyverse/nycflights13 at commit df98ef21 (CC0); the reference tables from OurAirports are a 2026 snapshot, so an airport code can have changed between the flight and the reference (Palm Beach International flew as PBI in 2013 and is coded DJT in the 2026 reference).",
+          "lineage": "silver_nyc_weather (the observation rows) + silver_ourairports_airports (airport attributes) + silver_ourairports_runways (the longest open runway)",
+          "note": "Authored knowledge, not a measurement: what the people who approved the governing contracts wrote about this data (the silver contract that settled the table, the mapping contract that declared the category, the star contract that governs the container). Units, vintages, what a null means, which joins hold and how completely, and the decisions taken in silver live here. The data section beside it is derived from the contracts' typed declarations; the rows in the warehouse are the measurement. Where a claim here and the data disagree, the data is the fact and this is the claim to check.",
+          "subject": "The unified airport weather table: one row per New York City airport per hour in January through June 2013 with the observation and the airport's reference attributes joined in on the conformed airport code. This is the table the airport_weather category of the star is built from and the one to read for conditions at an airport in an hour.",
+          "vintage": "weather 2013 (nycflights13 at df98ef21); airports and runways 2026 (OurAirports at d27027ba)"
+        },
+        "manifest": [
+          "airport_code",
+          "observed_date_local",
+          "observed_hour_local",
+          "airport_name",
+          "airport_municipality",
+          "airport_elevation_ft",
+          "airport_longest_runway_ft",
+          "observation_identity"
+        ],
+        "role": "dimensions"
+      },
+      "contract_name": "gold_airport_weather_mapping",
+      "contract_version": "1.0.0",
+      "entity_group": "airport_weather",
+      "schema_key": "bd757e61f7e3a9e49d069ca74dc21ad28e2c598d588d486bf4cda0d088385161"
+    },
+    {
+      "compiled_context": {
+        "category": "airport_weather",
+        "data": {
+          "fields": {
+            "dewpoint_f": {
+              "logicalType": "number",
+              "mappingRole": "measure",
+              "physicalType": "DOUBLE",
+              "required": true
+            },
+            "humidity_pct": {
+              "logicalType": "number",
+              "mappingRole": "measure",
+              "physicalType": "DOUBLE",
+              "required": true
+            },
+            "precip_inches": {
+              "logicalType": "number",
+              "mappingRole": "measure",
+              "physicalType": "DOUBLE",
+              "required": true
+            },
+            "pressure_mb": {
+              "logicalType": "number",
+              "mappingRole": "measure",
+              "physicalType": "DOUBLE",
+              "required": false
+            },
+            "temp_f": {
+              "logicalType": "number",
+              "mappingRole": "measure",
+              "physicalType": "DOUBLE",
+              "required": true
+            },
+            "visibility_miles": {
+              "logicalType": "number",
+              "mappingRole": "measure",
+              "physicalType": "DOUBLE",
+              "required": true
+            },
+            "wind_dir_degrees": {
+              "logicalType": "integer",
+              "mappingRole": "measure",
+              "physicalType": "INTEGER",
+              "required": false
+            },
+            "wind_gust_mph": {
+              "logicalType": "number",
+              "mappingRole": "measure",
+              "physicalType": "DOUBLE",
+              "required": false
+            },
+            "wind_speed_mph": {
+              "logicalType": "number",
+              "mappingRole": "measure",
+              "physicalType": "DOUBLE",
+              "required": false
+            }
+          },
+          "source_table": "silver.silver_airport_weather",
+          "typed_surface": "mart_airport_weather_typed",
+          "value_form": "String columns on the typed surface carry canonical lowercase text (D-18 as amended): write string literals in lowercase (carrier_code = 'ev', origin_airport = 'jfk'), or compare with lower(). Numbers, dates, and timestamps are typed and unaffected.",
+          "where_to_query": "gold.mart_airport_weather_typed: one typed row per airport_weather event, the served surface for this category. The silver table the expert context names (silver.silver_airport_weather) is its source and is not served; the star tables are the provenance layer."
+        },
+        "expert_context": {
+          "category_limitations": "Twelve airport-hours of the window have no observation; gust is null when no gust was reported; wind direction is a direction in degrees and never additive. The vintage mix (2013 observations, 2026 airport attributes) carries through from silver.",
+          "category_purpose": "Declares how silver.silver_airport_weather maps into the unified event star as the airport_weather fact category: one fact row per airport per hour in January through June 2013 at hour grain on the conformed calendar (observed_hour_utc), the airport attributes as dimensions and the nine observation quantities as measures. Consumed by the auto-modeling engine (D-07); no physical table carries this name.",
+          "category_usage": "Engine input only. The typed surface mart_airport_weather_typed (D-36) answers questions about conditions at an airport in an hour; a flight's weather at departure joins on airport_code equals origin_airport and observed_hour_utc equals departure_hour_utc, the hour both categories share in the timeframe group (Amendment R).",
+          "cross_category_joins": [
+            {
+              "calendar_grain": "hour",
+              "conformed_keys": [
+                "airport_iata"
+              ],
+              "example_sql": "SELECT flights.carrier_code, avg(flights.dep_delay_minutes) AS avg_dep_delay_minutes FROM gold.mart_flights_typed AS flights JOIN gold.mart_airport_weather_typed AS airport_weather ON flights.origin_airport = airport_weather.airport_code AND flights.departure_hour_utc = airport_weather.observed_hour_utc WHERE airport_weather.precip_inches > 0 GROUP BY flights.carrier_code ORDER BY avg_dep_delay_minutes DESC",
+              "floor": 0.99,
+              "join_condition": "flights.origin_airport = airport_weather.airport_code AND flights.departure_hour_utc = airport_weather.observed_hour_utc",
+              "left": "flights",
+              "measured_completeness": 0.9994,
+              "name": "flights_to_origin_weather",
+              "note": "Every flight's weather at its origin airport in its departure hour, both sides on the conformed calendar (UTC hours) and the conformed airport code. Measured 0.9994 over the typed surfaces at the Arc 6 build: 97 of 166,158 flights fall in the six airport-hours the nycflights13 weather feed has no observation for. The floor is declared below the measurement so a weather refresh that adds coverage passes and one that loses it fails (the M2 discipline, D-41). Destination weather is out of reach by construction: the weather feed covers the three New York City airports only.",
+              "right": "airport_weather"
+            }
+          ],
+          "decisions": {
+            "decisionConformance": "settled here in human-owned SQL; the gold star maps this table as the airport_weather category (D-41)",
+            "decisionGrainForm": "derived-observation-identity-over-declared-silver-grain-tuple",
+            "decisionTimeGrain": "hour, on the conformed calendar shared with flights",
+            "decisionWindDirection": "a measure column by type, not additive by meaning; the registry says so"
+          },
+          "fields": {
+            "dewpoint_f": {
+              "meaning": "Dew point in degrees Fahrenheit."
+            },
+            "humidity_pct": {
+              "meaning": "Relative humidity in percent."
+            },
+            "precip_inches": {
+              "meaning": "Precipitation in inches for the hour."
+            },
+            "pressure_mb": {
+              "meaning": "Sea-level pressure in millibars; null on about 12 percent of rows."
+            },
+            "temp_f": {
+              "meaning": "Air temperature in degrees Fahrenheit."
+            },
+            "visibility_miles": {
+              "meaning": "Visibility in statute miles (10 is the reporting maximum)."
+            },
+            "wind_dir_degrees": {
+              "meaning": "Wind direction in degrees; null when calm or missing."
+            },
+            "wind_gust_mph": {
+              "meaning": "Wind gust in mph; null when no gust was reported (not zero)."
+            },
+            "wind_speed_mph": {
+              "meaning": "Sustained wind speed in mph."
+            }
+          },
+          "governing_contracts": {
+            "mapping": "gold_airport_weather_mapping v1.0.0",
+            "silver": "silver_airport_weather v1.0.0",
+            "star": "gold_unified_event_star v1.6.0"
+          },
+          "how_to_read": "Read silver.silver_airport_weather for conditions at EWR, JFK, or LGA in a given hour: temperatures in Fahrenheit, wind in mph, precipitation in inches for the hour, pressure in millibars, visibility in miles. observed_hour_utc is the conformed calendar key at hour grain shared with the flights category: a flight's departure_hour_utc at the same airport is the same hour, so weather at departure joins on airport_code equals origin_airport and the hour.",
+          "joins": [
+            {
+              "floor": 1.0,
+              "left_column": "airport_code",
+              "measured_completeness": 1.0,
+              "name": "airport",
+              "note": "the three NYC airports all resolve",
+              "right_column": "iata_code",
+              "right_table": "silver_ourairports_airports"
+            }
+          ],
+          "limitations": "13,014 of the 13,026 airport-hours between the first observation (01:00 local on January 1) and the last (23:00 local on June 30) are present; 12 airport-hours (4 per airport) have no observation, so 97 flights find no weather row at their origin in their departure hour. The series has no hour 0 on January 1, and March 10 has 23 local hours (the spring-forward day). Gust is null on three quarters of rows (no gust reported), pressure on about 12 percent, wind direction on 2 percent. The airport join resolves all three airports (100 percent). Vintage: 2013, as packaged by tidyverse/nycflights13 at commit df98ef21 (CC0); the reference tables from OurAirports are a 2026 snapshot, so an airport code can have changed between the flight and the reference (Palm Beach International flew as PBI in 2013 and is coded DJT in the 2026 reference).",
+          "lineage": "silver_nyc_weather (the observation rows) + silver_ourairports_airports (airport attributes) + silver_ourairports_runways (the longest open runway)",
+          "note": "Authored knowledge, not a measurement: what the people who approved the governing contracts wrote about this data (the silver contract that settled the table, the mapping contract that declared the category, the star contract that governs the container). Units, vintages, what a null means, which joins hold and how completely, and the decisions taken in silver live here. The data section beside it is derived from the contracts' typed declarations; the rows in the warehouse are the measurement. Where a claim here and the data disagree, the data is the fact and this is the claim to check.",
+          "subject": "The unified airport weather table: one row per New York City airport per hour in January through June 2013 with the observation and the airport's reference attributes joined in on the conformed airport code. This is the table the airport_weather category of the star is built from and the one to read for conditions at an airport in an hour.",
+          "vintage": "weather 2013 (nycflights13 at df98ef21); airports and runways 2026 (OurAirports at d27027ba)"
+        },
+        "manifest": [
+          "temp_f",
+          "dewpoint_f",
+          "humidity_pct",
+          "wind_dir_degrees",
+          "wind_speed_mph",
+          "wind_gust_mph",
+          "precip_inches",
+          "pressure_mb",
+          "visibility_miles"
+        ],
+        "role": "measures"
+      },
+      "contract_name": "gold_airport_weather_mapping",
+      "contract_version": "1.0.0",
+      "entity_group": "airport_weather",
+      "schema_key": "504053d805b31eaecbcfa7e015ebb22595650ece5997237ad14fa1a8aa15fe3d"
+    },
+    {
+      "compiled_context": {
+        "category": "flights",
+        "data": {
+          "conformed_keys": {
+            "carrier_code": {
+              "key": "carrier_code",
+              "nullable": false,
+              "physicalType": "VARCHAR",
+              "rule": "^[A-Z0-9]{2,3}$",
+              "shared_with": {}
+            },
+            "dest_airport": {
+              "key": "airport_iata",
+              "nullable": false,
+              "physicalType": "VARCHAR",
+              "rule": "^[A-Z]{3}$",
+              "shared_with": {
+                "airport_weather": [
+                  "airport_code"
+                ]
+              }
+            },
+            "origin_airport": {
+              "key": "airport_iata",
+              "nullable": false,
+              "physicalType": "VARCHAR",
+              "rule": "^[A-Z]{3}$",
+              "shared_with": {
+                "airport_weather": [
+                  "airport_code"
+                ]
+              }
+            },
+            "tail_number": {
+              "key": "tail_number",
+              "nullable": true,
+              "physicalType": "VARCHAR",
+              "rule": "^[A-Z0-9]{2,6}$",
+              "shared_with": {}
+            }
+          },
+          "derived_identifiers": {
+            "flight_identity": {
+              "derivation": "canonical-key-v2",
+              "of": [
+                "flight_date",
+                "carrier_code",
+                "flight_number",
+                "origin_airport",
+                "sched_dep_hhmm"
+              ],
+              "source": "derived"
+            }
+          },
+          "fields": {
+            "aircraft_engine_type": {
+              "logicalType": "string",
+              "mappingRole": "dimension",
+              "physicalType": "VARCHAR",
+              "required": false
+            },
+            "aircraft_manufacture_year": {
+              "logicalType": "integer",
+              "mappingRole": "dimension",
+              "physicalType": "INTEGER",
+              "required": false
+            },
+            "aircraft_manufacturer": {
+              "logicalType": "string",
+              "mappingRole": "dimension",
+              "physicalType": "VARCHAR",
+              "required": false
+            },
+            "aircraft_model": {
+              "logicalType": "string",
+              "mappingRole": "dimension",
+              "physicalType": "VARCHAR",
+              "required": false
+            },
+            "aircraft_seat_count": {
+              "logicalType": "integer",
+              "mappingRole": "dimension",
+              "physicalType": "INTEGER",
+              "required": false
+            },
+            "arr_hhmm": {
+              "logicalType": "integer",
+              "mappingRole": "dimension",
+              "physicalType": "INTEGER",
+              "required": false
+            },
+            "carrier_code": {
+              "logicalType": "string",
+              "mappingRole": "dimension",
+              "physicalType": "VARCHAR",
+              "required": true
+            },
+            "carrier_name": {
+              "logicalType": "string",
+              "mappingRole": "dimension",
+              "physicalType": "VARCHAR",
+              "required": true
+            },
+            "dep_hhmm": {
+              "logicalType": "integer",
+              "mappingRole": "dimension",
+              "physicalType": "INTEGER",
+              "required": false
+            },
+            "dest_airport": {
+              "logicalType": "string",
+              "mappingRole": "dimension",
+              "physicalType": "VARCHAR",
+              "required": true
+            },
+            "dest_airport_name": {
+              "logicalType": "string",
+              "mappingRole": "dimension",
+              "physicalType": "VARCHAR",
+              "required": false
+            },
+            "dest_elevation_ft": {
+              "logicalType": "integer",
+              "mappingRole": "dimension",
+              "physicalType": "INTEGER",
+              "required": false
+            },
+            "dest_iso_region": {
+              "logicalType": "string",
+              "mappingRole": "dimension",
+              "physicalType": "VARCHAR",
+              "required": false
+            },
+            "dest_longest_runway_ft": {
+              "logicalType": "integer",
+              "mappingRole": "dimension",
+              "physicalType": "INTEGER",
+              "required": false
+            },
+            "dest_municipality": {
+              "logicalType": "string",
+              "mappingRole": "dimension",
+              "physicalType": "VARCHAR",
+              "required": false
+            },
+            "flight_date": {
+              "logicalType": "date",
+              "mappingRole": "dimension",
+              "physicalType": "DATE",
+              "required": true
+            },
+            "flight_number": {
+              "logicalType": "integer",
+              "mappingRole": "dimension",
+              "physicalType": "INTEGER",
+              "required": true
+            },
+            "is_cancelled": {
+              "logicalType": "boolean",
+              "mappingRole": "dimension",
+              "physicalType": "BOOLEAN",
+              "required": true
+            },
+            "origin_airport": {
+              "logicalType": "string",
+              "mappingRole": "dimension",
+              "physicalType": "VARCHAR",
+              "required": true
+            },
+            "origin_airport_name": {
+              "logicalType": "string",
+              "mappingRole": "dimension",
+              "physicalType": "VARCHAR",
+              "required": true
+            },
+            "origin_elevation_ft": {
+              "logicalType": "integer",
+              "mappingRole": "dimension",
+              "physicalType": "INTEGER",
+              "required": true
+            },
+            "origin_longest_runway_ft": {
+              "logicalType": "integer",
+              "mappingRole": "dimension",
+              "physicalType": "INTEGER",
+              "required": true
+            },
+            "origin_municipality": {
+              "logicalType": "string",
+              "mappingRole": "dimension",
+              "physicalType": "VARCHAR",
+              "required": true
+            },
+            "sched_arr_hhmm": {
+              "logicalType": "integer",
+              "mappingRole": "dimension",
+              "physicalType": "INTEGER",
+              "required": true
+            },
+            "sched_dep_hhmm": {
+              "logicalType": "integer",
+              "mappingRole": "dimension",
+              "physicalType": "INTEGER",
+              "required": true
+            },
+            "sched_dep_hour_local": {
+              "logicalType": "integer",
+              "mappingRole": "dimension",
+              "physicalType": "INTEGER",
+              "required": true
+            },
+            "sched_dep_minute_local": {
+              "logicalType": "integer",
+              "mappingRole": "dimension",
+              "physicalType": "INTEGER",
+              "required": true
+            },
+            "tail_number": {
+              "logicalType": "string",
+              "mappingRole": "dimension",
+              "physicalType": "VARCHAR",
+              "required": false
+            }
+          },
+          "grain": {
+            "keys": [
+              "flight_date",
+              "carrier_code",
+              "flight_number",
+              "origin_airport",
+              "sched_dep_hhmm"
+            ],
+            "type": "transaction"
+          },
+          "source_table": "silver.silver_flights",
+          "time_column": "departure_hour_utc",
+          "time_grain": "hour",
+          "typed_surface": "mart_flights_typed",
+          "value_form": "String columns on the typed surface carry canonical lowercase text (D-18 as amended): write string literals in lowercase (carrier_code = 'ev', origin_airport = 'jfk'), or compare with lower(). Numbers, dates, and timestamps are typed and unaffected.",
+          "where_to_query": "gold.mart_flights_typed: one typed row per flights event, the served surface for this category. The silver table the expert context names (silver.silver_flights) is its source and is not served; the star tables are the provenance layer."
+        },
+        "expert_context": {
+          "category_limitations": "Every silver limitation carries through: attributes are null where the 2026 airport reference or the FAA registry does not know the entity (PBI, fleet numbers), and the window is half of 2013. The dimension payload is wide (29 attributes) by choice, to put the whole unified row on the typed surface; the cost is measured in docs/scale.md.",
+          "category_purpose": "Declares how silver.silver_flights maps into the unified event star as the flights fact category: one fact row per scheduled departure from New York City in January through June 2013, at hour grain on the conformed calendar (departure_hour_utc), with the carrier, aircraft, and airport attributes the unified silver table settled as dimensions and the four on-time quantities as measures. Consumed by the auto-modeling engine (D-07); no physical table carries this name.",
+          "category_usage": "Engine input only. The typed surface mart_flights_typed (D-36) is where questions about flights are answered: delays in minutes with negative early and null cancelled, is_cancelled for cancellation rates, carrier and aircraft and airport attributes as columns. Cross-category questions join airport_weather on origin_airport equals airport_code and the same departure hour (the conformed calendar, Amendment R), and never need a gold object beyond what the engine emits (D-41).",
+          "cross_category_joins": [
+            {
+              "calendar_grain": "hour",
+              "conformed_keys": [
+                "airport_iata"
+              ],
+              "example_sql": "SELECT flights.carrier_code, avg(flights.dep_delay_minutes) AS avg_dep_delay_minutes FROM gold.mart_flights_typed AS flights JOIN gold.mart_airport_weather_typed AS airport_weather ON flights.origin_airport = airport_weather.airport_code AND flights.departure_hour_utc = airport_weather.observed_hour_utc WHERE airport_weather.precip_inches > 0 GROUP BY flights.carrier_code ORDER BY avg_dep_delay_minutes DESC",
+              "floor": 0.99,
+              "join_condition": "flights.origin_airport = airport_weather.airport_code AND flights.departure_hour_utc = airport_weather.observed_hour_utc",
+              "left": "flights",
+              "measured_completeness": 0.9994,
+              "name": "flights_to_origin_weather",
+              "note": "Every flight's weather at its origin airport in its departure hour, both sides on the conformed calendar (UTC hours) and the conformed airport code. Measured 0.9994 over the typed surfaces at the Arc 6 build: 97 of 166,158 flights fall in the six airport-hours the nycflights13 weather feed has no observation for. The floor is declared below the measurement so a weather refresh that adds coverage passes and one that loses it fails (the M2 discipline, D-41). Destination weather is out of reach by construction: the weather feed covers the three New York City airports only.",
+              "right": "airport_weather"
+            }
+          ],
+          "decisions": {
+            "decisionCancellations": "flow-through-retained-and-flagged",
+            "decisionConformance": "settled here in human-owned SQL; the gold star maps this table as the flights category and carries no shared entity dimension (D-41)",
+            "decisionGrainForm": "derived-flight-identity-over-declared-silver-grain-tuple",
+            "decisionTimeGrain": "hour, on the conformed calendar shared with airport_weather",
+            "decisionUnresolvedReferences": "kept as null attributes on the flight row, never dropped rows"
+          },
+          "fields": {
+            "aircraft_engine_type": {
+              "meaning": "Registry engine type (Turbo-fan, Turbo-jet, and others); null when unknown."
+            },
+            "aircraft_manufacture_year": {
+              "meaning": "Year of manufacture from the FAA registry; aircraft age in 2013 is 2013 minus this; null when unknown."
+            },
+            "aircraft_manufacturer": {
+              "meaning": "Manufacturer from the FAA registry via silver_nyc_planes; null when the aircraft is unknown (about 16 percent of flights)."
+            },
+            "aircraft_model": {
+              "meaning": "Model designation from the FAA registry; null when the aircraft is unknown."
+            },
+            "aircraft_seat_count": {
+              "meaning": "Registry seat count; null when the aircraft is unknown."
+            },
+            "arr_hhmm": {
+              "meaning": "Actual arrival clock time, local at the destination, HHMM; null when cancelled or unreported."
+            },
+            "carrier_code": {
+              "meaning": "Two-letter BTS carrier code; a conformed key."
+            },
+            "carrier_name": {
+              "meaning": "Carrier name from silver_nyc_airlines (2013 names); resolves for every flight."
+            },
+            "dep_hhmm": {
+              "meaning": "Actual departure clock time, local, HHMM; null when cancelled."
+            },
+            "departure_hour_utc": {
+              "meaning": "Scheduled departure hour as a UTC instant; the conformed calendar key at hour grain (joins weather at the origin on the same hour)."
+            },
+            "dest_airport": {
+              "meaning": "Destination airport IATA code; a conformed key; dest_* attributes are null for PBI."
+            },
+            "dest_airport_name": {
+              "meaning": "Destination airport name from the 2026 reference; null for PBI (recoded DJT)."
+            },
+            "dest_elevation_ft": {
+              "meaning": "Destination field elevation in feet; null where unpublished or unresolved."
+            },
+            "dest_iso_region": {
+              "meaning": "Destination ISO 3166-2 region (US-FL); null for PBI."
+            },
+            "dest_longest_runway_ft": {
+              "meaning": "Length in feet of the destination's longest open runway; null where unresolved or unpublished."
+            },
+            "dest_municipality": {
+              "meaning": "Destination airport's served city; null where the reference does not know the code or the city."
+            },
+            "flight_date": {
+              "meaning": "Local date of the scheduled departure (America/New_York)."
+            },
+            "flight_number": {
+              "meaning": "Flight number as published."
+            },
+            "is_cancelled": {
+              "meaning": "True when the flight has no actual departure time (2.9 percent of the window); delays are null on these rows."
+            },
+            "origin_airport": {
+              "meaning": "Origin airport IATA code (EWR, JFK, LGA); a conformed key shared with the airport_weather category."
+            },
+            "origin_airport_name": {
+              "meaning": "Origin airport name from the 2026 OurAirports reference."
+            },
+            "origin_elevation_ft": {
+              "meaning": "Origin field elevation in feet."
+            },
+            "origin_longest_runway_ft": {
+              "meaning": "Length in feet of the origin's longest open runway with a published length (2026 reference)."
+            },
+            "origin_municipality": {
+              "meaning": "Origin airport's served city from the 2026 reference."
+            },
+            "sched_arr_hhmm": {
+              "meaning": "Scheduled arrival clock time, local at the destination, HHMM."
+            },
+            "sched_dep_hhmm": {
+              "meaning": "Scheduled departure clock time, local, HHMM integer (517 is 05:17)."
+            },
+            "sched_dep_hour_local": {
+              "meaning": "Scheduled departure hour, local (0 to 23)."
+            },
+            "sched_dep_minute_local": {
+              "meaning": "Scheduled departure minute, local."
+            },
+            "tail_number": {
+              "meaning": "Aircraft registration as reported; null on 1,521 flights; a conformed key to silver_nyc_planes."
+            }
+          },
+          "governing_contracts": {
+            "mapping": "gold_flights_mapping v1.0.0",
+            "silver": "silver_flights v1.0.0",
+            "star": "gold_unified_event_star v1.6.0"
+          },
+          "how_to_read": "Read silver.silver_flights for on-time analysis by carrier, aircraft, route, or airport attribute. Delay columns are minutes and negative means early. dep_delay_minutes is null exactly when the flight is cancelled (is_cancelled true, 4,883 flights), so departure averages exclude cancellations by construction; arr_delay_minutes and air_time_minutes are also null on 597 flights that departed but have no arrival record (diverted or unreported), so arrival averages exclude those too. Count cancellations from the flag, never from a null. Reference attributes are null where the reference does not know the entity: aircraft columns for the 15 percent of flights whose tail number is not in the registry extract (American and Envoy reported fleet numbers; a few hundred other tail numbers are simply absent) and for the 1,521 flights with no tail number, destination attributes for the 2.1 percent of flights to Palm Beach (PBI in 2013, DJT in the 2026 reference). departure_hour_utc is the conformed calendar key: the airport_weather category shares its timeframe rows at hour grain, so weather at the origin joins on origin_airport and the hour.",
+          "joins": [
+            {
+              "floor": 1.0,
+              "left_column": "carrier_code",
+              "measured_completeness": 1.0,
+              "name": "carrier",
+              "note": "every carrier code resolves",
+              "right_column": "carrier_code",
+              "right_table": "silver_nyc_airlines"
+            },
+            {
+              "floor": 0.8,
+              "left_column": "tail_number",
+              "measured_completeness": 0.8396,
+              "name": "aircraft",
+              "note": "fleet numbers and missing tail numbers leave 16 percent unresolved",
+              "right_column": "tail_number",
+              "right_table": "silver_nyc_planes"
+            },
+            {
+              "floor": 1.0,
+              "left_column": "origin_airport",
+              "measured_completeness": 1.0,
+              "name": "origin",
+              "note": "the three NYC airports all resolve",
+              "right_column": "iata_code",
+              "right_table": "silver_ourairports_airports"
+            },
+            {
+              "floor": 0.97,
+              "left_column": "dest_airport",
+              "measured_completeness": 0.9791,
+              "name": "dest",
+              "note": "PBI does not resolve in the 2026 reference",
+              "right_column": "iata_code",
+              "right_table": "silver_ourairports_airports"
+            }
+          ],
+          "limitations": "Joins: carrier to silver_nyc_airlines on carrier_code (100 percent of flights resolve); aircraft to silver_nyc_planes on tail_number (84.0 percent of flights, 139,502 of 166,158; 1,521 flights carry no tail number and American and Envoy reported fleet numbers); origin to silver_ourairports_airports on origin_airport (100 percent); destination on dest_airport (97.9 percent, 162,687 of 166,158; every unresolved flight is a PBI flight). The longest runway is the longest open runway with a published length in the 2026 reference. The floors the contract enforces are below the measured values so a reference refresh that adds coverage passes and one that loses it fails. Vintage: 2013, as packaged by tidyverse/nycflights13 at commit df98ef21 (CC0); the reference tables from OurAirports are a 2026 snapshot, so an airport code can have changed between the flight and the reference (Palm Beach International flew as PBI in 2013 and is coded DJT in the 2026 reference).",
+          "lineage": "silver_nyc_flights (the event rows) + silver_nyc_airlines (carrier_name) + silver_nyc_planes (aircraft_*) + silver_ourairports_airports (origin_* and dest_* attributes) + silver_ourairports_runways (the longest open runway per airport)",
+          "note": "Authored knowledge, not a measurement: what the people who approved the governing contracts wrote about this data (the silver contract that settled the table, the mapping contract that declared the category, the star contract that governs the container). Units, vintages, what a null means, which joins hold and how completely, and the decisions taken in silver live here. The data section beside it is derived from the contracts' typed declarations; the rows in the warehouse are the measurement. Where a claim here and the data disagree, the data is the fact and this is the claim to check.",
+          "subject": "The unified flight table: one row per scheduled departure from New York City in January through June 2013 with its carrier name, its aircraft, and its origin and destination airports joined in, conformance settled here in human-owned SQL so the gold star maps one category. This is the table the flights category of the star is built from and the one to read for any question about flights.",
+          "vintage": "flights, airlines, and planes 2013 to 2014 (nycflights13 at df98ef21); airports and runways 2026 (OurAirports at d27027ba)"
+        },
+        "manifest": [
+          "flight_date",
+          "carrier_code",
+          "flight_number",
+          "origin_airport",
+          "sched_dep_hhmm",
+          "dest_airport",
+          "tail_number",
+          "is_cancelled",
+          "dep_hhmm",
+          "arr_hhmm",
+          "sched_arr_hhmm",
+          "sched_dep_hour_local",
+          "sched_dep_minute_local",
+          "carrier_name",
+          "aircraft_manufacturer",
+          "aircraft_model",
+          "aircraft_manufacture_year",
+          "aircraft_seat_count",
+          "aircraft_engine_type",
+          "origin_airport_name",
+          "origin_municipality",
+          "origin_elevation_ft",
+          "origin_longest_runway_ft",
+          "dest_airport_name",
+          "dest_municipality",
+          "dest_iso_region",
+          "dest_elevation_ft",
+          "dest_longest_runway_ft",
+          "flight_identity"
+        ],
+        "role": "dimensions"
+      },
+      "contract_name": "gold_flights_mapping",
+      "contract_version": "1.0.0",
+      "entity_group": "flights",
+      "schema_key": "5849da18299cc930cecf084f9bc784819669d8fed49b8e560abb62c17b21c8e6"
+    },
+    {
+      "compiled_context": {
+        "category": "flights",
+        "data": {
+          "fields": {
+            "air_time_minutes": {
+              "logicalType": "integer",
+              "mappingRole": "measure",
+              "physicalType": "INTEGER",
+              "required": false
+            },
+            "arr_delay_minutes": {
+              "logicalType": "integer",
+              "mappingRole": "measure",
+              "physicalType": "INTEGER",
+              "required": false
+            },
+            "dep_delay_minutes": {
+              "logicalType": "integer",
+              "mappingRole": "measure",
+              "physicalType": "INTEGER",
+              "required": false
+            },
+            "distance_miles": {
+              "logicalType": "integer",
+              "mappingRole": "measure",
+              "physicalType": "INTEGER",
+              "required": true
+            }
+          },
+          "source_table": "silver.silver_flights",
+          "typed_surface": "mart_flights_typed",
+          "value_form": "String columns on the typed surface carry canonical lowercase text (D-18 as amended): write string literals in lowercase (carrier_code = 'ev', origin_airport = 'jfk'), or compare with lower(). Numbers, dates, and timestamps are typed and unaffected.",
+          "where_to_query": "gold.mart_flights_typed: one typed row per flights event, the served surface for this category. The silver table the expert context names (silver.silver_flights) is its source and is not served; the star tables are the provenance layer."
+        },
+        "expert_context": {
+          "category_limitations": "Every silver limitation carries through: attributes are null where the 2026 airport reference or the FAA registry does not know the entity (PBI, fleet numbers), and the window is half of 2013. The dimension payload is wide (29 attributes) by choice, to put the whole unified row on the typed surface; the cost is measured in docs/scale.md.",
+          "category_purpose": "Declares how silver.silver_flights maps into the unified event star as the flights fact category: one fact row per scheduled departure from New York City in January through June 2013, at hour grain on the conformed calendar (departure_hour_utc), with the carrier, aircraft, and airport attributes the unified silver table settled as dimensions and the four on-time quantities as measures. Consumed by the auto-modeling engine (D-07); no physical table carries this name.",
+          "category_usage": "Engine input only. The typed surface mart_flights_typed (D-36) is where questions about flights are answered: delays in minutes with negative early and null cancelled, is_cancelled for cancellation rates, carrier and aircraft and airport attributes as columns. Cross-category questions join airport_weather on origin_airport equals airport_code and the same departure hour (the conformed calendar, Amendment R), and never need a gold object beyond what the engine emits (D-41).",
+          "cross_category_joins": [
+            {
+              "calendar_grain": "hour",
+              "conformed_keys": [
+                "airport_iata"
+              ],
+              "example_sql": "SELECT flights.carrier_code, avg(flights.dep_delay_minutes) AS avg_dep_delay_minutes FROM gold.mart_flights_typed AS flights JOIN gold.mart_airport_weather_typed AS airport_weather ON flights.origin_airport = airport_weather.airport_code AND flights.departure_hour_utc = airport_weather.observed_hour_utc WHERE airport_weather.precip_inches > 0 GROUP BY flights.carrier_code ORDER BY avg_dep_delay_minutes DESC",
+              "floor": 0.99,
+              "join_condition": "flights.origin_airport = airport_weather.airport_code AND flights.departure_hour_utc = airport_weather.observed_hour_utc",
+              "left": "flights",
+              "measured_completeness": 0.9994,
+              "name": "flights_to_origin_weather",
+              "note": "Every flight's weather at its origin airport in its departure hour, both sides on the conformed calendar (UTC hours) and the conformed airport code. Measured 0.9994 over the typed surfaces at the Arc 6 build: 97 of 166,158 flights fall in the six airport-hours the nycflights13 weather feed has no observation for. The floor is declared below the measurement so a weather refresh that adds coverage passes and one that loses it fails (the M2 discipline, D-41). Destination weather is out of reach by construction: the weather feed covers the three New York City airports only.",
+              "right": "airport_weather"
+            }
+          ],
+          "decisions": {
+            "decisionCancellations": "flow-through-retained-and-flagged",
+            "decisionConformance": "settled here in human-owned SQL; the gold star maps this table as the flights category and carries no shared entity dimension (D-41)",
+            "decisionGrainForm": "derived-flight-identity-over-declared-silver-grain-tuple",
+            "decisionTimeGrain": "hour, on the conformed calendar shared with airport_weather",
+            "decisionUnresolvedReferences": "kept as null attributes on the flight row, never dropped rows"
+          },
+          "fields": {
+            "air_time_minutes": {
+              "meaning": "Minutes in the air; null wherever arr_delay_minutes is null."
+            },
+            "arr_delay_minutes": {
+              "meaning": "Arrival delay in minutes; negative is early; null when cancelled, diverted, or unreported."
+            },
+            "dep_delay_minutes": {
+              "meaning": "Departure delay in minutes; negative is early; null when cancelled. The headline on-time measure."
+            },
+            "distance_miles": {
+              "meaning": "Great-circle route distance in statute miles."
+            }
+          },
+          "governing_contracts": {
+            "mapping": "gold_flights_mapping v1.0.0",
+            "silver": "silver_flights v1.0.0",
+            "star": "gold_unified_event_star v1.6.0"
+          },
+          "how_to_read": "Read silver.silver_flights for on-time analysis by carrier, aircraft, route, or airport attribute. Delay columns are minutes and negative means early. dep_delay_minutes is null exactly when the flight is cancelled (is_cancelled true, 4,883 flights), so departure averages exclude cancellations by construction; arr_delay_minutes and air_time_minutes are also null on 597 flights that departed but have no arrival record (diverted or unreported), so arrival averages exclude those too. Count cancellations from the flag, never from a null. Reference attributes are null where the reference does not know the entity: aircraft columns for the 15 percent of flights whose tail number is not in the registry extract (American and Envoy reported fleet numbers; a few hundred other tail numbers are simply absent) and for the 1,521 flights with no tail number, destination attributes for the 2.1 percent of flights to Palm Beach (PBI in 2013, DJT in the 2026 reference). departure_hour_utc is the conformed calendar key: the airport_weather category shares its timeframe rows at hour grain, so weather at the origin joins on origin_airport and the hour.",
+          "joins": [
+            {
+              "floor": 1.0,
+              "left_column": "carrier_code",
+              "measured_completeness": 1.0,
+              "name": "carrier",
+              "note": "every carrier code resolves",
+              "right_column": "carrier_code",
+              "right_table": "silver_nyc_airlines"
+            },
+            {
+              "floor": 0.8,
+              "left_column": "tail_number",
+              "measured_completeness": 0.8396,
+              "name": "aircraft",
+              "note": "fleet numbers and missing tail numbers leave 16 percent unresolved",
+              "right_column": "tail_number",
+              "right_table": "silver_nyc_planes"
+            },
+            {
+              "floor": 1.0,
+              "left_column": "origin_airport",
+              "measured_completeness": 1.0,
+              "name": "origin",
+              "note": "the three NYC airports all resolve",
+              "right_column": "iata_code",
+              "right_table": "silver_ourairports_airports"
+            },
+            {
+              "floor": 0.97,
+              "left_column": "dest_airport",
+              "measured_completeness": 0.9791,
+              "name": "dest",
+              "note": "PBI does not resolve in the 2026 reference",
+              "right_column": "iata_code",
+              "right_table": "silver_ourairports_airports"
+            }
+          ],
+          "limitations": "Joins: carrier to silver_nyc_airlines on carrier_code (100 percent of flights resolve); aircraft to silver_nyc_planes on tail_number (84.0 percent of flights, 139,502 of 166,158; 1,521 flights carry no tail number and American and Envoy reported fleet numbers); origin to silver_ourairports_airports on origin_airport (100 percent); destination on dest_airport (97.9 percent, 162,687 of 166,158; every unresolved flight is a PBI flight). The longest runway is the longest open runway with a published length in the 2026 reference. The floors the contract enforces are below the measured values so a reference refresh that adds coverage passes and one that loses it fails. Vintage: 2013, as packaged by tidyverse/nycflights13 at commit df98ef21 (CC0); the reference tables from OurAirports are a 2026 snapshot, so an airport code can have changed between the flight and the reference (Palm Beach International flew as PBI in 2013 and is coded DJT in the 2026 reference).",
+          "lineage": "silver_nyc_flights (the event rows) + silver_nyc_airlines (carrier_name) + silver_nyc_planes (aircraft_*) + silver_ourairports_airports (origin_* and dest_* attributes) + silver_ourairports_runways (the longest open runway per airport)",
+          "note": "Authored knowledge, not a measurement: what the people who approved the governing contracts wrote about this data (the silver contract that settled the table, the mapping contract that declared the category, the star contract that governs the container). Units, vintages, what a null means, which joins hold and how completely, and the decisions taken in silver live here. The data section beside it is derived from the contracts' typed declarations; the rows in the warehouse are the measurement. Where a claim here and the data disagree, the data is the fact and this is the claim to check.",
+          "subject": "The unified flight table: one row per scheduled departure from New York City in January through June 2013 with its carrier name, its aircraft, and its origin and destination airports joined in, conformance settled here in human-owned SQL so the gold star maps one category. This is the table the flights category of the star is built from and the one to read for any question about flights.",
+          "vintage": "flights, airlines, and planes 2013 to 2014 (nycflights13 at df98ef21); airports and runways 2026 (OurAirports at d27027ba)"
+        },
+        "manifest": [
+          "dep_delay_minutes",
+          "arr_delay_minutes",
+          "air_time_minutes",
+          "distance_miles"
+        ],
+        "role": "measures"
+      },
+      "contract_name": "gold_flights_mapping",
+      "contract_version": "1.0.0",
+      "entity_group": "flights",
+      "schema_key": "bbcae4efb6f4db6e756283463eb71e7052195caf2586f795317836b644bc7ddf"
+    },
+    {
+      "compiled_context": {
+        "category": "invoice_lines",
+        "data": {
+          "conformed_keys": {},
+          "derived_identifiers": {
+            "line_identity": {
+              "derivation": "canonical-key-v2",
+              "of": [
+                "invoice_id",
+                "stock_code",
+                "quantity",
+                "unit_price"
+              ],
+              "source": "derived"
+            }
+          },
+          "fields": {
+            "country": {
+              "logicalType": "string",
+              "mappingRole": "dimension",
+              "physicalType": "VARCHAR",
+              "required": true
+            },
+            "customer_id": {
+              "logicalType": "integer",
+              "mappingRole": "dimension",
+              "physicalType": "INTEGER",
+              "required": false
+            },
+            "invoice_id": {
+              "logicalType": "string",
+              "mappingRole": "dimension",
+              "physicalType": "VARCHAR",
+              "required": true
+            },
+            "is_cancellation": {
+              "logicalType": "boolean",
+              "mappingRole": "dimension",
+              "physicalType": "BOOLEAN",
+              "required": true
+            },
+            "product_description": {
+              "logicalType": "string",
+              "mappingRole": "dimension",
+              "physicalType": "VARCHAR",
+              "required": false
+            },
+            "stock_code": {
+              "logicalType": "string",
+              "mappingRole": "dimension",
+              "physicalType": "VARCHAR",
+              "required": true
+            }
+          },
+          "grain": {
+            "keys": [
+              "invoice_id",
+              "stock_code",
+              "quantity",
+              "unit_price"
+            ],
+            "type": "transaction"
+          },
+          "source_table": "silver.silver_invoice_lines",
+          "time_column": "invoiced_at",
+          "time_grain": "minute",
+          "typed_surface": "mart_invoice_lines_typed",
+          "value_form": "String columns on the typed surface carry canonical lowercase text (D-18 as amended): write string literals in lowercase (carrier_code = 'ev', origin_airport = 'jfk'), or compare with lower(). Numbers, dates, and timestamps are typed and unaffected.",
+          "where_to_query": "gold.mart_invoice_lines_typed: one typed row per invoice_lines event, the served surface for this category. The silver table the expert context names (silver.silver_invoice_lines) is its source and is not served; the star tables are the provenance layer."
+        },
+        "expert_context": {
+          "category_limitations": "Cancellation lines flow through retained-and-flagged; excluding them is a consumer decision, made at query time, never here. v1.0.0 deliberately reserved country; this version maps it, executing the signature test the reservation existed for.",
+          "category_purpose": "Declares how silver.silver_invoice_lines maps into the unified event star as the invoice_lines fact category. Consumed by the auto-modeling engine (D-07), which emits the gold dbt models; no physical table ever carries this contract's name.",
+          "category_usage": "Engine input only. Gate 1 lints it; gate 3 skips it by design (F-12); the engine validates it against mapping-contract.schema.json and cross-checks every field against the silver contract.",
+          "decisions": {
+            "decisionCancellations": "flow-through-retained-and-flagged",
+            "decisionClockDriftDuplicates": "collapsed-earliest-timestamp-retained",
+            "decisionExactDuplicates": "excluded-as-capture-artifacts",
+            "decisionGrainForm": "derived-line-identity-over-declared-silver-grain-tuple",
+            "decisionInvoicedateCast": "strict-timestamp-cast",
+            "decisionNegativeQuantityCause": "cancellation-or-zero-price-adjustment",
+            "decisionNullCustomerId": "retained-nullable",
+            "decisionReservedColumn": "country-mapped-at-v1.1.0-reservation-discharged",
+            "decisionZeroPriceLines": "retained"
+          },
+          "fields": {
+            "country": {
+              "meaning": "Customer country as landed; the signature-test dimension, mapped at v1.1.0.",
+              "source_meaning": "Customer country as landed (24 distinct at v0001)."
+            },
+            "customer_id": {
+              "meaning": "Customer identifier; null on guest checkouts.",
+              "source_meaning": "Customer identifier, cast DECIMAL(38,9) to INTEGER (integral min, max, and samples, 12346 to 18287 at v0001). Decision: the 0.29778 bronze null rate is retained as null (guest or unregistered checkouts), not dropped and not imputed."
+            },
+            "invoice_id": {
+              "meaning": "Invoice number; C prefix marks a cancellation.",
+              "source_meaning": "Invoice number, kept as text (identifiers are text; Session D rule). A leading C marks a cancellation invoice; see is_cancellation."
+            },
+            "invoiced_at": {
+              "meaning": "Invoice timestamp; the declared time column.",
+              "source_meaning": "Invoice timestamp. Decision: strict cast from the VARCHAR landing (\"YYYY-MM-DD HH:MM:SS\"); an unparseable value fails the build loudly rather than becoming a silent null. On within-invoice clock-drift duplicates the earliest scan tick wins (min)."
+            },
+            "is_cancellation": {
+              "meaning": "Cancellation flag; exclusion is a consumer decision.",
+              "source_meaning": "True when invoice_id carries the C cancellation prefix. Decision: cancellations are retained and flagged, not dropped, so conservation arithmetic against bronze stays auditable; exclusion is a consumer decision made at the mapping contract, not silently here."
+            },
+            "product_description": {
+              "meaning": "Product description; nulls retained.",
+              "source_meaning": "Product description, whitespace-trimmed. Null rate 0.005041 at profile v0001; nulls retained rather than imputed."
+            },
+            "stock_code": {
+              "meaning": "Product code as landed.",
+              "source_meaning": "Product code as landed, kept as text; alphanumeric suffixes and non-product adjustment codes (for example POST, M) occur."
+            }
+          },
+          "governing_contracts": {
+            "mapping": "gold_invoice_lines_mapping v1.1.1",
+            "silver": "silver_invoice_lines v1.3.0",
+            "star": "gold_unified_event_star v1.6.0"
+          },
+          "how_to_read": "Read silver.silver_invoice_lines for line-level retail sales analysis. Cancellation lines are RETAINED and flagged (is_cancellation); consumers aggregating revenue must filter or net them deliberately. Zero-price lines are retained.",
+          "limitations": "Exact duplicate bronze rows (rate 0.011188 at profile v0001) are treated as capture artifacts and excluded, so identical legitimate re-scans are indistinguishable and also excluded; the residual grain is the distinct line. Rows identical in every business column except invoicedate are the same capture artifact seen across a register clock tick (one pair at v0001, invoice 492807, one minute apart); they collapse to one line and the earliest timestamp is retained. customer_id is null on 29.778% of bronze rows at v0001 (guest or unregistered checkouts); those rows are retained with customer_id null.",
+          "note": "Authored knowledge, not a measurement: what the people who approved the governing contracts wrote about this data (the silver contract that settled the table, the mapping contract that declared the category, the star contract that governs the container). Units, vintages, what a null means, which joins hold and how completely, and the decisions taken in silver live here. The data section beside it is derived from the contracts' typed declarations; the rows in the warehouse are the measurement. Where a claim here and the data disagree, the data is the fact and this is the claim to check.",
+          "subject": "The cleaned, typed, one-row-per-invoice-line view of the Online Retail II sample: the first contracted silver table and the sole silver input to the gold unified event star."
+        },
+        "manifest": [
+          "invoice_id",
+          "is_cancellation",
+          "stock_code",
+          "product_description",
+          "customer_id",
+          "country",
+          "line_identity"
+        ],
+        "role": "dimensions"
+      },
+      "contract_name": "gold_invoice_lines_mapping",
+      "contract_version": "1.1.1",
+      "entity_group": "invoice_lines",
+      "schema_key": "2d27bd360b5092ff22047c65407ff05699afad98f455de2409665a5950a05e82"
+    },
+    {
+      "compiled_context": {
+        "category": "invoice_lines",
+        "data": {
+          "fields": {
+            "quantity": {
+              "logicalType": "integer",
+              "mappingRole": "measure",
+              "physicalType": "INTEGER",
+              "required": true
+            },
+            "unit_price": {
+              "logicalType": "number",
+              "mappingRole": "measure",
+              "physicalType": "DECIMAL(10,2)",
+              "required": true
+            }
+          },
+          "source_table": "silver.silver_invoice_lines",
+          "typed_surface": "mart_invoice_lines_typed",
+          "value_form": "String columns on the typed surface carry canonical lowercase text (D-18 as amended): write string literals in lowercase (carrier_code = 'ev', origin_airport = 'jfk'), or compare with lower(). Numbers, dates, and timestamps are typed and unaffected.",
+          "where_to_query": "gold.mart_invoice_lines_typed: one typed row per invoice_lines event, the served surface for this category. The silver table the expert context names (silver.silver_invoice_lines) is its source and is not served; the star tables are the provenance layer."
+        },
+        "expert_context": {
+          "category_limitations": "Cancellation lines flow through retained-and-flagged; excluding them is a consumer decision, made at query time, never here. v1.0.0 deliberately reserved country; this version maps it, executing the signature test the reservation existed for.",
+          "category_purpose": "Declares how silver.silver_invoice_lines maps into the unified event star as the invoice_lines fact category. Consumed by the auto-modeling engine (D-07), which emits the gold dbt models; no physical table ever carries this contract's name.",
+          "category_usage": "Engine input only. Gate 1 lints it; gate 3 skips it by design (F-12); the engine validates it against mapping-contract.schema.json and cross-checks every field against the silver contract.",
+          "decisions": {
+            "decisionCancellations": "flow-through-retained-and-flagged",
+            "decisionClockDriftDuplicates": "collapsed-earliest-timestamp-retained",
+            "decisionExactDuplicates": "excluded-as-capture-artifacts",
+            "decisionGrainForm": "derived-line-identity-over-declared-silver-grain-tuple",
+            "decisionInvoicedateCast": "strict-timestamp-cast",
+            "decisionNegativeQuantityCause": "cancellation-or-zero-price-adjustment",
+            "decisionNullCustomerId": "retained-nullable",
+            "decisionReservedColumn": "country-mapped-at-v1.1.0-reservation-discharged",
+            "decisionZeroPriceLines": "retained"
+          },
+          "fields": {
+            "quantity": {
+              "meaning": "Units on the line; negative only on cancellations.",
+              "source_meaning": "Units on the line, cast from DECIMAL(38,9) to INTEGER. Negative values occur both on cancellation-invoice lines and on zero-unit-price stock-adjustment lines; consumers must not infer cancellation from negative quantity alone."
+            },
+            "unit_price": {
+              "meaning": "Unit price in sterling; zero-price lines retained.",
+              "source_meaning": "Unit price in sterling, cast from DECIMAL(38,9). Observed range 0.00 to 1998.49 at v0001. Decision: zero-price lines (freebies and adjustments) are retained; negative prices are contract-invalid."
+            }
+          },
+          "governing_contracts": {
+            "mapping": "gold_invoice_lines_mapping v1.1.1",
+            "silver": "silver_invoice_lines v1.3.0",
+            "star": "gold_unified_event_star v1.6.0"
+          },
+          "how_to_read": "Read silver.silver_invoice_lines for line-level retail sales analysis. Cancellation lines are RETAINED and flagged (is_cancellation); consumers aggregating revenue must filter or net them deliberately. Zero-price lines are retained.",
+          "limitations": "Exact duplicate bronze rows (rate 0.011188 at profile v0001) are treated as capture artifacts and excluded, so identical legitimate re-scans are indistinguishable and also excluded; the residual grain is the distinct line. Rows identical in every business column except invoicedate are the same capture artifact seen across a register clock tick (one pair at v0001, invoice 492807, one minute apart); they collapse to one line and the earliest timestamp is retained. customer_id is null on 29.778% of bronze rows at v0001 (guest or unregistered checkouts); those rows are retained with customer_id null.",
+          "note": "Authored knowledge, not a measurement: what the people who approved the governing contracts wrote about this data (the silver contract that settled the table, the mapping contract that declared the category, the star contract that governs the container). Units, vintages, what a null means, which joins hold and how completely, and the decisions taken in silver live here. The data section beside it is derived from the contracts' typed declarations; the rows in the warehouse are the measurement. Where a claim here and the data disagree, the data is the fact and this is the claim to check.",
+          "subject": "The cleaned, typed, one-row-per-invoice-line view of the Online Retail II sample: the first contracted silver table and the sole silver input to the gold unified event star."
+        },
+        "manifest": [
+          "quantity",
+          "unit_price"
+        ],
+        "role": "measures"
+      },
+      "contract_name": "gold_invoice_lines_mapping",
+      "contract_version": "1.1.1",
+      "entity_group": "invoice_lines",
+      "schema_key": "9dbc23cabca765eeaed72eb8161c90b5ae7857f81031656002f03e5bd9d99319"
+    }
+  ],
+  "schema_version": "2.0.0",
+  "sources": {
+    "gold_contract": {
+      "id": "gold_unified_event_star",
+      "version": "1.6.0"
+    },
+    "mapping_contracts": [
+      {
+        "id": "gold_airport_weather_mapping",
+        "profileHash": "sha256:70cb304edcaa97a18aa7411d2ed8b68a860627c53342343a78b87fa306345567",
+        "version": "1.0.0"
+      },
+      {
+        "id": "gold_flights_mapping",
+        "profileHash": "sha256:2d19b75b44c2aa680549789ba634ee35b281fe90233870346553b2b1fc571e8b",
+        "version": "1.0.0"
+      },
+      {
+        "id": "gold_invoice_lines_mapping",
+        "profileHash": "sha256:e65bee8117b65958b8c4741b43509ece19a581dd1d6bad9a7e1da9b67b0b5fcd",
+        "version": "1.1.1"
+      }
+    ],
+    "silver_contracts": [
+      {
+        "id": "silver_airport_weather",
+        "version": "1.0.0"
+      },
+      {
+        "id": "silver_flights",
+        "version": "1.0.0"
+      },
+      {
+        "id": "silver_invoice_lines",
+        "version": "1.3.0"
+      }
+    ]
+  }
+}

@@ -1,40 +1,68 @@
 {
   "engine_version": "0.5.0",
   "files": {
-    "transform/models/gold/context_registry.sql": "sha256:8b308fb4a3051b5cc784993756699290599c1ac3f61b71eaf99e0e574396d03c",
-    "transform/models/gold/context_registry.yml": "sha256:4cc7744726496dc5f846265fe3bf36c84a0360297091f7a29de54abfda04f213",
-    "transform/models/gold/dim_invoice_lines_columns.sql": "sha256:59a6875fbcadf054b354bd5aa70c1df1c601c621eec42519efd9420c54a59563",
-    "transform/models/gold/dim_invoice_lines_columns.yml": "sha256:8e5da889fd3eba5ce2db892387d7555b828f451d71e2108ac1059a293906990a",
-    "transform/models/gold/dim_invoice_lines_values.sql": "sha256:d1bb77b0d761c0f4eae680087b325b84d7c6bfdb92c44a042d61b7b7274c8895",
-    "transform/models/gold/dim_invoice_lines_values.yml": "sha256:a327f3ee610086a045dca12faafd35d45e36ef7e3e5c379b251b4afea57d2f86",
-    "transform/models/gold/dim_run_columns.sql": "sha256:9417e357f62279814420d3a642fd89f4e7c70945196cf8c604390a6cfd8663e4",
-    "transform/models/gold/dim_run_columns.yml": "sha256:82920fd76d9e5174fdaebc5ae09bb4de1c3481fa67b7f40c7f9a5557a4cb9340",
-    "transform/models/gold/dim_run_values.sql": "sha256:d4e9f378ce8a5002e16e5828947f159dfd95baad267bebda06d3bf78e65276cf",
-    "transform/models/gold/dim_run_values.yml": "sha256:ff3a5c1f3fe2a91247f0c3bdfe80a74710d9ba8ea3e3b69a6da5853d42418197",
-    "transform/models/gold/dim_source_columns.sql": "sha256:e149b025f94cf0eb0bc8a0959b748966febea31df8eb8c144d2db9b724233d1b",
-    "transform/models/gold/dim_source_columns.yml": "sha256:f6ff72e5886a691217a96308aa9a0c09c0a6af77fea5628015437fd9d1bd6636",
-    "transform/models/gold/dim_source_values.sql": "sha256:5f144b9798cd7a0cbb3a052528707d33b8de8a6825c637f560c1a16bcda08ca0",
-    "transform/models/gold/dim_source_values.yml": "sha256:0bd8724f512af5025d61dcdae122b98d36e1df36ccd48308b42424fec2500dc5",
-    "transform/models/gold/dim_timeframe_columns.sql": "sha256:97d5ae4216d23507121d51ff98447fef17c295b6ea613b1f71c9b2a0580adda1",
-    "transform/models/gold/dim_timeframe_columns.yml": "sha256:2af68c1ce5bd453fd01d87a63fbcd477b4849136c6b25c5249fc6a0e98ad06bc",
-    "transform/models/gold/dim_timeframe_values.sql": "sha256:470d3da710d47089875d4ab9a510527124606ce801c3e001c71add77d67ee79b",
-    "transform/models/gold/dim_timeframe_values.yml": "sha256:fecbc4085bfb68c2065d3c3f2a5a18d87afcb4bc5008a4431b8defe224196d72",
-    "transform/models/gold/fact_invoice_lines_values.sql": "sha256:68181eed07481d54e07b6ebeb83ac2358efc736c8164b3543ffea590bff8f518",
-    "transform/models/gold/fact_invoice_lines_values.yml": "sha256:4b99c0303ed62e41bb1a0cd6e11140575d12a07de34e1b51bcdfdd0de72f97b7",
-    "transform/models/gold/mart_invoice_lines_typed.sql": "sha256:024f1e38c063b72bb14978cc4f4ece3dbfee1400663d12245e3501deec9eec99",
-    "transform/models/gold/mart_invoice_lines_typed.yml": "sha256:8b44281e6b45c5112a73cccdd21a332ad8bae7d3bcdaca7e488be32d5fa17f1b",
-    "transform/models/gold/vw_invoice_lines_typed.sql": "sha256:97b04efde40bd84e78ecad69adf7e8323134a2b1e2ac115979f3c61eabbefcf0",
-    "transform/models/gold/vw_invoice_lines_typed.yml": "sha256:dda9916943e34c919ae53c87c5b4c7cf8e77c52f27421694fdd62782e9a1c1b9"
+    "transform/models/gold/context_registry.sql": "sha256:04445b20c5712d2660879ed3845b33dd9c943bff8bbaa5873eb331fe843757f4",
+    "transform/models/gold/context_registry.yml": "sha256:b8ed86c61afa7c79eec39c0c2930959014a4c644076e300171f12cbd57bea763",
+    "transform/models/gold/dim_airport_weather_columns.sql": "sha256:9242426d03183eb3a0e37e1b64a34644f1bb2c6060718852b02baae12ee0f205",
+    "transform/models/gold/dim_airport_weather_columns.yml": "sha256:4741add997b5175e1690698a1a23a69ae065336f96b3a30fb859217cb6b65150",
+    "transform/models/gold/dim_airport_weather_values.sql": "sha256:034a21450347eab492b1ce98864e2b46e3e8517437c0ae29009d2b19ff89d06c",
+    "transform/models/gold/dim_airport_weather_values.yml": "sha256:0143245a6d206d0e4918625ea1145db55b54b414ba83643e21cca0ed0c2c43cb",
+    "transform/models/gold/dim_flights_columns.sql": "sha256:cb79c5659ef8258a81f14f6c7cb1b636e91d38cd38aee894d0c8b59776573e82",
+    "transform/models/gold/dim_flights_columns.yml": "sha256:ad6afdb6c3084a731d49f03d0570155f3fda2a367d8ce536692d39cabd94ccf7",
+    "transform/models/gold/dim_flights_values.sql": "sha256:2c50aeaaf2037c6322f5d715245768151622d0ff89303c91dcbe8968a4d6ef47",
+    "transform/models/gold/dim_flights_values.yml": "sha256:a7597c77a8b067d0f3a7673922e38dcfedfa7a97a08f7f4d9c9f97e0f3b4453c",
+    "transform/models/gold/dim_invoice_lines_columns.sql": "sha256:996ae2319099deaa8aa872dd753e0e21e3f552fcb0521ca7056b33b0ba6fea63",
+    "transform/models/gold/dim_invoice_lines_columns.yml": "sha256:c8c364e05d8c9529f094567bbc06fa0e5a4ca9e25417375002a042499c3865b9",
+    "transform/models/gold/dim_invoice_lines_values.sql": "sha256:89b084a4f40e84c3a38c3a18f4ae6ee626feec06764ec525dc84a53a5572e8e1",
+    "transform/models/gold/dim_invoice_lines_values.yml": "sha256:541e44d434c9dc52cc9dcf7be5da5b99ba619ce1374186e8fd0bf8b70288822a",
+    "transform/models/gold/dim_run_columns.sql": "sha256:7180753fc490033a52233b8104ed611e9907cc99dd3eb56c98ae866143c4a83d",
+    "transform/models/gold/dim_run_columns.yml": "sha256:d49a07b9c0d7c0e1df4a494d6068cea17dab1a67b72c26d29689cb7bd99cca83",
+    "transform/models/gold/dim_run_values.sql": "sha256:8903aa0a7b5817fc0a03b060bf193b8a972790449cb8972e9b6f7e5171b4a2e3",
+    "transform/models/gold/dim_run_values.yml": "sha256:6cda3ab9eac07d10837cc16e5f970b36035d70b3714d1351e7e5a48635ee86e2",
+    "transform/models/gold/dim_source_columns.sql": "sha256:d30d941d9ec040fc4b80a6e5e4c5e9079b672abfa85a974b3a3ea00fff7cd821",
+    "transform/models/gold/dim_source_columns.yml": "sha256:dd5b6b4e503c847a856f90571e87aa92f5b58f912cced59c50d16c9dad6227cb",
+    "transform/models/gold/dim_source_values.sql": "sha256:b85f18690764bbb854efa3e885e9431dd8fd1691ac22c355b87050e150408d6e",
+    "transform/models/gold/dim_source_values.yml": "sha256:c601c07e46a7ab3dbf5fa90fb1a5bc77e8fff2d9a34ddaf3e932e49abb99c9a1",
+    "transform/models/gold/dim_timeframe_columns.sql": "sha256:fafaefd9f0d3f0ec195894bc57f56843aa7b67380396512612917d0c97d61459",
+    "transform/models/gold/dim_timeframe_columns.yml": "sha256:aaa72ff17be21df965765a957e8b8d5d35955ed68815ed402a13104f95b7f386",
+    "transform/models/gold/dim_timeframe_values.sql": "sha256:2b042a81c73f68ec414b8ab46e67ef48fe73d7f529bb9e34a75f079e51d48522",
+    "transform/models/gold/dim_timeframe_values.yml": "sha256:6e2a10bacee569eeb18a92364d207ac453480607c9aa80c5b1aabc04e3b34d71",
+    "transform/models/gold/fact_airport_weather_values.sql": "sha256:c90e2db8ec614531da9a6c13b6bc13b157bce03ded0e0e8bc56df69bdf468d16",
+    "transform/models/gold/fact_airport_weather_values.yml": "sha256:3f52ae5dce8e6afe149787a87bd00cbd14761c1ba43e210d9b2f77503dca0185",
+    "transform/models/gold/fact_flights_values.sql": "sha256:3f6b01decad2f0b5327e4b988be6a745dc5a5e67fc0de1a11449b06b2034f14c",
+    "transform/models/gold/fact_flights_values.yml": "sha256:b4fb0c27d9490dcdca07ac0af6917e0742d93de3d67f606b50cf8728ca6a0bab",
+    "transform/models/gold/fact_invoice_lines_values.sql": "sha256:860fa3a19f6391dd1cb80381994e478a1e57563fb125890b6482f52c4bbee9ee",
+    "transform/models/gold/fact_invoice_lines_values.yml": "sha256:8630fb8f6992062cf1aad47cae8647d0234f6527ff6872bfa552f35e7f1258db",
+    "transform/models/gold/mart_airport_weather_typed.sql": "sha256:969e3eeb7532bbaf9dec197a3723ccd41b59d7760c3ee78343cf7d98ee6d819a",
+    "transform/models/gold/mart_airport_weather_typed.yml": "sha256:38eedf95a2dc76976300849fca3d292bc8579efe479773de81fff89d5f30be94",
+    "transform/models/gold/mart_flights_typed.sql": "sha256:4e106c9b26c8d9fcef7a4679d1af54cababb7c775e2d8c515dabc65c58edfb43",
+    "transform/models/gold/mart_flights_typed.yml": "sha256:a2295f8a96c76c4c0cce9313a44a84201eba68c90b4916351e13f90ed4d24a6f",
+    "transform/models/gold/mart_invoice_lines_typed.sql": "sha256:367d6d3b28b73b957684bc515823ab1005488090e50213361e0e12f07d10c94a",
+    "transform/models/gold/mart_invoice_lines_typed.yml": "sha256:27bebece5eff1443d672cf06d07c5dd2387e139606c65b92350c9ebaeef35c99",
+    "transform/models/gold/vw_airport_weather_typed.sql": "sha256:9bff5af00948533672eec223b6cbb7783c5d059ea1aa2b7172378376eba6caef",
+    "transform/models/gold/vw_airport_weather_typed.yml": "sha256:9f8d87fc72ad4e9697cd79b39fe7d89771001aad656b82fcce87b99622040704",
+    "transform/models/gold/vw_flights_typed.sql": "sha256:7f00eeee6502ac08f96361dd00cb290454ee8c1d731682c2fa47096bd04955ca",
+    "transform/models/gold/vw_flights_typed.yml": "sha256:1aab378f0a45f3062512248855d9b3ff1340f9c50feedceeeab7d7141d21ccbe",
+    "transform/models/gold/vw_invoice_lines_typed.sql": "sha256:04e2e2d8578452891cf01d6b321ad54626cb7f6f5eee9c167d031675edb72aeb",
+    "transform/models/gold/vw_invoice_lines_typed.yml": "sha256:a52583ce0bf79d2e8baf98d2d3ec3806fb29f7ff529c6786d16310b5c200f667"
   },
   "sources": {
     "compiled_context": {
-      "version": "v0010"
+      "version": "v0012"
     },
     "gold_contract": {
       "id": "gold_unified_event_star",
-      "version": "1.5.0"
+      "version": "1.6.0"
     },
     "mapping_contracts": [
+      {
+        "id": "gold_airport_weather_mapping",
+        "version": "1.0.0"
+      },
+      {
+        "id": "gold_flights_mapping",
+        "version": "1.0.0"
+      },
       {
         "id": "gold_invoice_lines_mapping",
         "version": "1.1.1"
