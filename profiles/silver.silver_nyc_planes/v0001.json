@@ -1,0 +1,204 @@
+{
+  "caps": {
+    "max_distinct_values": 20,
+    "max_sample_values": 10,
+    "max_string_chars": 120
+  },
+  "content_hash": "sha256:b8ca36adfc9b03603c075644ea6c25c6aae33c0bd230e283b7b93567b681d05c",
+  "dataset": {
+    "columns": [
+      {
+        "distinct_count": 3322,
+        "is_airbyte_metadata": false,
+        "name": "tail_number",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "VARCHAR",
+        "sample_values": [
+          "N10156",
+          "N102UW",
+          "N103US",
+          "N104UW",
+          "N10575",
+          "N105UW",
+          "N107US",
+          "N108UW",
+          "N109UW",
+          "N110UW"
+        ]
+      },
+      {
+        "distinct_count": 46,
+        "is_airbyte_metadata": false,
+        "max": 2013,
+        "min": 1956,
+        "name": "manufacture_year",
+        "null_count": 70,
+        "null_rate": 0.021072,
+        "physical_type": "INTEGER",
+        "sample_values": [
+          1956,
+          1959,
+          1963,
+          1965,
+          1967,
+          1968,
+          1972,
+          1973,
+          1974,
+          1975
+        ]
+      },
+      {
+        "distinct_count": 3,
+        "distinct_values": [
+          "Fixed wing multi engine",
+          "Fixed wing single engine",
+          "Rotorcraft"
+        ],
+        "is_airbyte_metadata": false,
+        "name": "aircraft_type",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "VARCHAR"
+      },
+      {
+        "distinct_count": 35,
+        "is_airbyte_metadata": false,
+        "name": "manufacturer",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "VARCHAR",
+        "sample_values": [
+          "AGUSTA SPA",
+          "AIRBUS",
+          "AIRBUS INDUSTRIE",
+          "AMERICAN AIRCRAFT INC",
+          "AVIAT AIRCRAFT INC",
+          "AVIONS MARCEL DASSAULT",
+          "BARKER JACK L",
+          "BEECH",
+          "BELL",
+          "BOEING"
+        ]
+      },
+      {
+        "distinct_count": 127,
+        "is_airbyte_metadata": false,
+        "name": "model",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "VARCHAR",
+        "sample_values": [
+          "150",
+          "172E",
+          "172M",
+          "172N",
+          "206B",
+          "210-5(205)",
+          "230",
+          "310Q",
+          "421C",
+          "550"
+        ]
+      },
+      {
+        "distinct_count": 4,
+        "distinct_values": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "is_airbyte_metadata": false,
+        "max": 4,
+        "min": 1,
+        "name": "engine_count",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "INTEGER"
+      },
+      {
+        "distinct_count": 48,
+        "is_airbyte_metadata": false,
+        "max": 450,
+        "min": 2,
+        "name": "seat_count",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "INTEGER",
+        "sample_values": [
+          2,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ]
+      },
+      {
+        "distinct_count": 13,
+        "distinct_values": [
+          90,
+          95,
+          105,
+          107,
+          108,
+          112,
+          126,
+          127,
+          162,
+          167,
+          202,
+          232,
+          432
+        ],
+        "is_airbyte_metadata": false,
+        "max": 432,
+        "min": 90,
+        "name": "cruise_speed_mph",
+        "null_count": 3299,
+        "null_rate": 0.993076,
+        "physical_type": "INTEGER"
+      },
+      {
+        "distinct_count": 6,
+        "distinct_values": [
+          "4 Cycle",
+          "Reciprocating",
+          "Turbo-fan",
+          "Turbo-jet",
+          "Turbo-prop",
+          "Turbo-shaft"
+        ],
+        "is_airbyte_metadata": false,
+        "name": "engine_type",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "VARCHAR"
+      },
+      {
+        "distinct_count": 1,
+        "distinct_values": [
+          "2026-09-02T23:26:22"
+        ],
+        "is_airbyte_metadata": false,
+        "max": "2026-09-02T23:26:22",
+        "min": "2026-09-02T23:26:22",
+        "name": "captured_at",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "TIMESTAMP"
+      }
+    ],
+    "duplicate_row_rate": 0.0,
+    "row_count": 3322,
+    "schema": "silver",
+    "table": "silver_nyc_planes"
+  },
+  "schema_version": "1.0.0"
+}

@@ -1,0 +1,199 @@
+{
+  "caps": {
+    "max_distinct_values": 20,
+    "max_sample_values": 10,
+    "max_string_chars": 120
+  },
+  "content_hash": "sha256:21abaae3f80a73744d2784f5e543c35d24b985382391d39fd9a4b568da78c75d",
+  "dataset": {
+    "columns": [
+      {
+        "distinct_count": 10760,
+        "is_airbyte_metadata": false,
+        "name": "runway_id",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "VARCHAR",
+        "sample_values": [
+          "232758",
+          "232759",
+          "232762",
+          "232763",
+          "232764",
+          "232765",
+          "232766",
+          "232768",
+          "232769",
+          "232770"
+        ]
+      },
+      {
+        "distinct_count": 7591,
+        "is_airbyte_metadata": false,
+        "name": "airport_ident",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "VARCHAR",
+        "sample_values": [
+          "03N",
+          "07FA",
+          "0CO2",
+          "0NM0",
+          "0TE7",
+          "13Z",
+          "16A",
+          "16K",
+          "19AK",
+          "19P"
+        ]
+      },
+      {
+        "distinct_count": 3774,
+        "is_airbyte_metadata": false,
+        "max": 16798,
+        "min": 2,
+        "name": "length_ft",
+        "null_count": 87,
+        "null_rate": 0.008086,
+        "physical_type": "INTEGER",
+        "sample_values": [
+          2,
+          20,
+          24,
+          26,
+          30,
+          37,
+          40,
+          42,
+          44,
+          47
+        ]
+      },
+      {
+        "distinct_count": 204,
+        "is_airbyte_metadata": false,
+        "max": 7000,
+        "min": 1,
+        "name": "width_ft",
+        "null_count": 888,
+        "null_rate": 0.082528,
+        "physical_type": "INTEGER",
+        "sample_values": [
+          1,
+          10,
+          15,
+          17,
+          18,
+          20,
+          22,
+          23,
+          25,
+          26
+        ]
+      },
+      {
+        "distinct_count": 239,
+        "is_airbyte_metadata": false,
+        "name": "surface",
+        "null_count": 247,
+        "null_rate": 0.022955,
+        "physical_type": "VARCHAR",
+        "sample_values": [
+          "ASP",
+          "ASP-G",
+          "ASP/CON",
+          "ASP/CONC",
+          "ASP/GVL",
+          "ASPH",
+          "ASPH 71/F/C/X/T",
+          "ASPH-CONC",
+          "ASPH-CONC-F",
+          "ASPH-CONC-G"
+        ]
+      },
+      {
+        "distinct_count": 2,
+        "distinct_values": [
+          false,
+          true
+        ],
+        "is_airbyte_metadata": false,
+        "name": "is_lighted",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "BOOLEAN"
+      },
+      {
+        "distinct_count": 2,
+        "distinct_values": [
+          false,
+          true
+        ],
+        "is_airbyte_metadata": false,
+        "name": "is_closed",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "BOOLEAN"
+      },
+      {
+        "distinct_count": 199,
+        "is_airbyte_metadata": false,
+        "name": "low_end_ident",
+        "null_count": 11,
+        "null_rate": 0.001022,
+        "physical_type": "VARCHAR",
+        "sample_values": [
+          "-12",
+          ".",
+          "00",
+          "009",
+          "01",
+          "01C",
+          "01H",
+          "01L",
+          "01R",
+          "02"
+        ]
+      },
+      {
+        "distinct_count": 177,
+        "is_airbyte_metadata": false,
+        "name": "high_end_ident",
+        "null_count": 53,
+        "null_rate": 0.004926,
+        "physical_type": "VARCHAR",
+        "sample_values": [
+          "-",
+          ".",
+          "00",
+          "01",
+          "01L",
+          "01R",
+          "04R",
+          "1",
+          "10",
+          "11"
+        ]
+      },
+      {
+        "distinct_count": 2,
+        "distinct_values": [
+          "2026-09-02T23:26:33",
+          "2026-09-02T23:26:34"
+        ],
+        "is_airbyte_metadata": false,
+        "max": "2026-09-02T23:26:34",
+        "min": "2026-09-02T23:26:33",
+        "name": "captured_at",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "TIMESTAMP"
+      }
+    ],
+    "duplicate_row_rate": 0.0,
+    "row_count": 10760,
+    "schema": "silver",
+    "table": "silver_ourairports_runways"
+  },
+  "schema_version": "1.0.0"
+}
