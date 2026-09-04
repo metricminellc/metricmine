@@ -32,10 +32,15 @@ def test_config_profiling_targets():
     # Bronze first (the original pass), then the silver pass the gold
     # phase added; the silver profile is the mapping contract's
     # profileHash source and the Phase 6 proposer's sole context (D-23).
-    assert targets == [
-        ("bronze", "online_retail_ii"),
-        ("silver", "silver_invoice_lines"),
-    ]
+    # Since the multi-source fan-in (D-41) every ingested source and every
+    # mapped silver table is a target; the retail pair anchors the list.
+    assert targets[0] == ("bronze", "online_retail_ii")
+    assert ("silver", "silver_invoice_lines") in targets
+    assert len(set(targets)) == len(targets)
+    schemas = [schema for schema, _ in targets]
+    assert schemas == sorted(schemas, key=lambda s: {"bronze": 0, "silver": 1}[s]), (
+        "bronze targets precede silver targets"
+    )
 
 
 def test_no_airbyte_target():
@@ -44,3 +49,25 @@ def test_no_airbyte_target():
     assert not any(
         t["table"].startswith("_airbyte_") for t in _profiling_cfg()["targets"]
     )
+
+
+def test_only_selector_restricts_to_configured_targets():
+    """`--only SCHEMA.TABLE` mints the named targets in config order and
+    refuses a name outside the list (F-45: a full run after a re-landing
+    re-mints every artifact, so one source lands, one artifact mints)."""
+    import pytest
+
+    from metricmine.profiling.run import select_targets
+
+    targets = [
+        {"schema": "bronze", "table": "a"},
+        {"schema": "bronze", "table": "b"},
+        {"schema": "silver", "table": "silver_a"},
+    ]
+    assert select_targets(targets, []) == targets
+    assert select_targets(targets, ["silver.silver_a", "bronze.a"]) == [
+        {"schema": "bronze", "table": "a"},
+        {"schema": "silver", "table": "silver_a"},
+    ]
+    with pytest.raises(ValueError, match="not in config"):
+        select_targets(targets, ["bronze.zzz"])

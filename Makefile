@@ -18,9 +18,17 @@ $(CONNECTOR_VENV)/bin/source-file:
 ingest: $(CONNECTOR_VENV)/bin/source-file
 	uv run python -m metricmine.ingest.land_sample
 
+# ONLY=schema.table mints one configured target (repeatable as a
+# space-separated list); with it unset every target is profiled. Observed
+# audit stamps are source data (docs/spec/profiler.md §4), so a full run
+# after a re-landing re-mints every artifact (F-45); one source lands,
+# one artifact mints.
+ONLY ?=
+ONLY_FLAGS := $(foreach t,$(ONLY),--only $(t))
+
 .PHONY: profile
 profile:
-	uv run python -m metricmine.profiling.run
+	uv run python -m metricmine.profiling.run $(ONLY_FLAGS)
 
 .PHONY: regen
 regen:

@@ -16,6 +16,7 @@ component touches, goes to the sidecar, never into artifact bytes.
 
 from __future__ import annotations
 
+import argparse
 import platform
 import sys
 from datetime import datetime, timezone
@@ -47,7 +48,43 @@ def _remedy(schema: str) -> str:
     return _REMEDIES.get(schema, "build the warehouse first")
 
 
-def main() -> int:
+def select_targets(targets: list[dict], only: list[str]) -> list[dict]:
+    """The configured targets, or the subset ``only`` names as
+    ``schema.table``, in config order. An ``only`` entry that names no
+    configured target is an error: the profiler mints artifacts for
+    configured tables and nothing else.
+
+    Why a selector exists (Arc 6, D-41): observed audit-stamp values
+    (``_airbyte_extracted_at``, ``captured_at``) are source data and
+    stay in the artifact (spec §4 rule 5), so every re-landing of bronze
+    is new bronze and a full run re-mints every table's profile. When one
+    source lands, its own artifact is the one to mint; the rest keep the
+    version their contracts were authored from.
+    """
+    if not only:
+        return list(targets)
+    wanted = set(only)
+    known = {f"{t['schema']}.{t['table']}" for t in targets}
+    unknown = sorted(wanted - known)
+    if unknown:
+        raise ValueError(
+            f"--only names targets not in config/default.yaml: {unknown}"
+        )
+    return [t for t in targets if f"{t['schema']}.{t['table']}" in wanted]
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        description="profile the configured warehouse tables into artifacts"
+    )
+    parser.add_argument(
+        "--only",
+        action="append",
+        default=[],
+        metavar="SCHEMA.TABLE",
+        help="mint only this configured target (repeatable); default: all",
+    )
+    args = parser.parse_args(argv)
     cfg = yaml.safe_load(CONFIG_PATH.read_text())["profiling"]
     warehouse_path = (REPO_ROOT / cfg["warehouse_path"]).resolve()
     if not warehouse_path.is_file():
@@ -56,7 +93,12 @@ def main() -> int:
             " run `make ingest` first"
         )
         return 1
-    for target in cfg["targets"]:
+    try:
+        targets = select_targets(cfg["targets"], args.only)
+    except ValueError as exc:
+        print(f"ERROR: {exc}")
+        return 1
+    for target in targets:
         schema, table = target["schema"], target["table"]
         if table.startswith(AIRBYTE_PREFIX):
             print(
