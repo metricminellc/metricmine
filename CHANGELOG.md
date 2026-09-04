@@ -11,6 +11,11 @@ measurements.
 
 ## [Unreleased]
 
+### Changed
+
+- The README names v1.0.0 as the current release and the start of the
+  stable line; CLAUDE.md states the stability rule as hard rule 19.
+
 ## [1.0.0] - 2026-09-02
 
 The stable line begins. From this tag the pipeline, the engine, the
