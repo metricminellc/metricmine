@@ -17,7 +17,7 @@ from pathlib import Path
 import yaml
 
 from metricmine.engine.emitters import (
-    Emission,
+    StarEmission,
     emit_extended_models,
     emit_models,
     registry_declared,
@@ -33,7 +33,7 @@ from metricmine.engine.reader import (
     EngineContractError,
     load_compiled_context,
     load_inputs,
-    validate_mapping,
+    validate_inputs,
 )
 
 MARTS_MODES = ("table", "view", "both")
@@ -45,7 +45,7 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 def build_emission_set(repo_root: Path) -> dict[str, str]:
     """The full emission set, keyed by bare filename. Pure; no writes."""
     inputs = load_inputs(repo_root)
-    validate_mapping(inputs.mapping, inputs.silver, inputs.json_schema)
+    validate_inputs(inputs)
     cfg = _config(repo_root)
     # Materialization for the engine-emitted models (D-38): `table` is the
     # committed default (the keyless demo path); `incremental` arms the
@@ -57,8 +57,10 @@ def build_emission_set(repo_root: Path) -> dict[str, str]:
             "engine.materialization must be one of"
             f" {MATERIALIZATION_MODES}, not {materialization!r}"
         )
-    emission = Emission(inputs.mapping, inputs.star, materialization)
-    files = emit_models(emission)
+    # One StarEmission over every mapping contract (D-29 as amended): the
+    # per-category sets plus the star-global objects, in category order.
+    star = StarEmission(inputs.mappings, inputs.star, materialization)
+    files = emit_models(star)
     # Extended-star activation (spec §5): the registry and the typed
     # projection join the set only once the gold contract declares
     # context_registry; the star set alone emits before the amendment.
@@ -74,9 +76,9 @@ def build_emission_set(repo_root: Path) -> dict[str, str]:
                 f"engine.marts must be one of {MARTS_MODES}, not {marts!r}"
             )
         context_version, compiled = load_compiled_context(repo_root)
-        files.update(emit_extended_models(emission, compiled, marts))
+        files.update(emit_extended_models(star, compiled, marts))
     manifest = build_manifest(
-        files, inputs.mapping, inputs.star, cfg["output_dir"]
+        files, star.mappings, inputs.star, cfg["output_dir"]
     )
     if extended:
         manifest["sources"]["compiled_context"] = {"version": context_version}

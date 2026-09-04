@@ -7,13 +7,19 @@ rehearsal (sync pass over the emitted set updated 0 YAML files; second pass
 byte-identical), so byte-equality against them IS the Q8 fixed-point claim
 in test form, and emission determinism is meaningful because of it.
 
-Interface under test (pinned at the Sitting I runbook):
+Interface under test (pinned at the Sitting I runbook; widened at the
+multi-source fan-in, D-41, to any number of mapping contracts):
 - ``metricmine.engine.emit.build_emission_set(repo_root)``: pure; returns
-  ``{relative_path_under_transform/models/gold: content}`` for the nine
-  models, nine properties files, and ``ownership-manifest.json``.
+  ``{relative_path_under_transform/models/gold: content}`` for every
+  category's models, the shared star objects, their properties files, and
+  ``ownership-manifest.json``.
 - ``metricmine.engine.reader``: ``load_inputs(repo_root)``,
-  ``validate_mapping(mapping, silver, json_schema)``, raising
-  ``EngineContractError`` on any schema or cross-check violation.
+  ``validate_inputs(inputs)``, ``validate_mapping(mapping, silver,
+  json_schema)``, raising ``EngineContractError`` on any schema or
+  cross-check violation.
+- ``metricmine.engine.emitters.StarEmission``: the star over N categories,
+  probed here with a second synthetic category built in memory so the
+  fan-in is proven whatever the committed category count.
 """
 
 from __future__ import annotations
@@ -26,9 +32,20 @@ from pathlib import Path
 import pytest
 
 from metricmine.engine.emit import build_emission_set
+from metricmine.engine.emitters import (
+    Emission,
+    StarEmission,
+    emit_extended_models,
+    emit_models,
+    fact_values_sql,
+    mart_sql,
+    projection_sql,
+    timeframe_values_sql,
+)
 from metricmine.engine.reader import (
     EngineContractError,
     load_inputs,
+    validate_inputs,
     validate_mapping,
 )
 
@@ -46,6 +63,16 @@ def _contract_version(contract_filename: str) -> str:
         (REPO / "contracts" / contract_filename).read_text(encoding="utf-8")
     )
     return doc["version"]
+
+
+def _inputs():
+    return load_inputs(REPO)
+
+
+def _first() -> Emission:
+    """The first committed category in category order."""
+    inputs = _inputs()
+    return StarEmission(inputs.mappings, inputs.star).categories[0]
 
 
 def test_emission_matches_golden_fixtures() -> None:
@@ -80,7 +107,8 @@ def test_generated_by_headers_lead_every_file() -> None:
 
 def test_ownership_manifest_hashes_the_fixed_point() -> None:
     """The manifest covers every emitted file except itself, with sha256
-    over the emitted bytes (docs/spec/engine.md §5)."""
+    over the emitted bytes (docs/spec/engine.md §5), and names every
+    mapping contract the set was emitted from, in category order."""
     emitted = build_emission_set(REPO)
     manifest = json.loads(emitted["ownership-manifest.json"])
     listed = manifest["files"]
@@ -98,9 +126,12 @@ def test_ownership_manifest_hashes_the_fixed_point() -> None:
     # Version assertions track the contracts dynamically so a contract
     # amendment refreshes the oracle without editing this test (F-19
     # lesson: literals here break on every legitimate version bump).
-    assert manifest["sources"]["mapping_contract"]["version"] == _contract_version(
-        "gold_invoice_lines_mapping.odcs.yaml"
-    )
+    inputs = _inputs()
+    star = StarEmission(inputs.mappings, inputs.star)
+    assert manifest["sources"]["mapping_contracts"] == [
+        {"id": emission.mapping["id"], "version": emission.mapping["version"]}
+        for emission in star.categories
+    ]
     assert manifest["sources"]["gold_contract"]["version"] == _contract_version(
         "gold_unified_event_star.odcs.yaml"
     )
@@ -113,13 +144,10 @@ def test_ownership_manifest_hashes_the_fixed_point() -> None:
     assert manifest["sources"]["compiled_context"]["version"] == f"v{newest:04d}"
 
 
-def _inputs():
-    return load_inputs(REPO)
-
-
-def test_reader_accepts_the_committed_mapping_contract() -> None:
+def test_reader_accepts_the_committed_mapping_contracts() -> None:
     inputs = _inputs()
-    validate_mapping(inputs.mapping, inputs.silver, inputs.json_schema)
+    assert inputs.mappings, "the engine block lists at least one mapping"
+    validate_inputs(inputs)
 
 
 @pytest.mark.parametrize(
@@ -130,7 +158,9 @@ def test_reader_accepts_the_committed_mapping_contract() -> None:
             "quality rules are dead letters in a mapping contract (F-12)",
         ),
         (
-            lambda doc: doc["schema"][0].__setitem__("name", "dim_invoice_lines"),
+            lambda doc: doc["schema"][0].__setitem__(
+                "name", "dim_" + doc["schema"][0]["name"]
+            ),
             "reserved category-name pattern (F-12 collision guard)",
         ),
         (
@@ -140,7 +170,14 @@ def test_reader_accepts_the_committed_mapping_contract() -> None:
             "derived-of references an undeclared field",
         ),
         (
-            lambda doc: doc["schema"][0].__setitem__("timeColumn", "quantity"),
+            lambda doc: doc["schema"][0].__setitem__(
+                "timeColumn",
+                next(
+                    p["name"]
+                    for p in doc["schema"][0]["properties"]
+                    if p["mappingRole"] == "measure"
+                ),
+            ),
             "timeColumn must carry mappingRole time",
         ),
         (
@@ -152,29 +189,168 @@ def test_reader_accepts_the_committed_mapping_contract() -> None:
     ],
 )
 def test_reader_rejects_invalid_mapping_contracts(mutate, reason) -> None:
-    """Fail-closed static groundedness (docs/spec/engine.md §5)."""
+    """Fail-closed static groundedness (docs/spec/engine.md §5), probed
+    on every committed category."""
     inputs = _inputs()
-    broken = copy.deepcopy(inputs.mapping)
-    mutate(broken)
-    with pytest.raises(EngineContractError):
-        validate_mapping(broken, inputs.silver, inputs.json_schema)
+    for mapping in inputs.mappings:
+        table = mapping["schema"][0]["sourceTable"].split(".", 1)[1]
+        broken = copy.deepcopy(mapping)
+        mutate(broken)
+        with pytest.raises(EngineContractError):
+            validate_mapping(broken, inputs.silvers[table], inputs.json_schema)
+
+
+def test_reader_requires_the_capture_watermark() -> None:
+    """Every mapped silver table carries captured_at (D-38): the emitted
+    models read it unconditionally, so its absence fails at the reader."""
+    inputs = _inputs()
+    mapping = inputs.mappings[0]
+    table = mapping["schema"][0]["sourceTable"].split(".", 1)[1]
+    silver = copy.deepcopy(inputs.silvers[table])
+    silver["schema"][0]["properties"] = [
+        p for p in silver["schema"][0]["properties"] if p["name"] != "captured_at"
+    ]
+    with pytest.raises(EngineContractError, match="captured_at"):
+        validate_mapping(mapping, silver, inputs.json_schema)
+
+
+def test_reader_rejects_duplicate_categories_and_sources() -> None:
+    """Star-level cross-checks (spec §5 as amended): category names and
+    source tables are unique across the mapping set."""
+    inputs = _inputs()
+    doubled = copy.deepcopy(inputs)
+    duplicated = type(inputs)(
+        mappings=[inputs.mappings[0], copy.deepcopy(inputs.mappings[0])],
+        star=doubled.star,
+        silvers=doubled.silvers,
+        json_schema=doubled.json_schema,
+    )
+    with pytest.raises(EngineContractError, match="unique"):
+        validate_inputs(duplicated)
+
+
+def _second_category(inputs) -> tuple[dict, dict, dict]:
+    """A synthetic second category built in memory from the first
+    committed one: a different name, source table, grain, and identity,
+    plus a star contract that declares its three objects (cloned from the
+    first category's, renamed), so the fan-in is probed regardless of how
+    many categories the repository commits."""
+    base = inputs.mappings[0]
+    first_name = base["schema"][0]["name"]
+    table = base["schema"][0]["sourceTable"].split(".", 1)[1]
+    silver = copy.deepcopy(inputs.silvers[table])
+    mapping = copy.deepcopy(base)
+    silver["id"] = "silver_probe_events"
+    silver["schema"][0]["name"] = "silver_probe_events"
+    mapping["id"] = "gold_probe_events_mapping"
+    mapping["version"] = "9.9.9"
+    category = mapping["schema"][0]
+    category["name"] = "probe_events"
+    category["entityGroup"] = "probe_events"
+    category["sourceTable"] = "silver.silver_probe_events"
+    category["timeGrain"] = "day"
+    category["grain"]["degenerateIdentifiers"][0]["name"] = "probe_identity"
+    star = copy.deepcopy(inputs.star)
+    cloned = []
+    for obj in inputs.star["schema"]:
+        if f"_{first_name}_" in obj["name"]:
+            twin = copy.deepcopy(obj)
+            twin["name"] = obj["name"].replace(first_name, "probe_events")
+            twin["physicalName"] = twin["name"]
+            cloned.append(twin)
+    star["schema"].extend(cloned)
+    return mapping, silver, star
+
+
+def test_fan_in_emits_every_category_and_one_shared_set() -> None:
+    """Two categories in, one star out (D-29 as amended): each category's
+    values, columns, fact, and typed surface; the shared groups once,
+    unioned over both; one registry; the manifest naming both mappings
+    in category order."""
+    inputs = _inputs()
+    second, second_silver, star_contract = _second_category(inputs)
+    validate_mapping(second, second_silver, inputs.json_schema)
+    star = StarEmission([second, inputs.mappings[0]], star_contract)
+    first_name = inputs.mappings[0]["schema"][0]["name"]
+    assert [e.category_name for e in star.categories] == sorted(
+        [first_name, "probe_events"]
+    )
+    files = emit_models(star)
+    for category in (first_name, "probe_events"):
+        assert f"dim_{category}_values.sql" in files
+        assert f"dim_{category}_columns.sql" in files
+        assert f"fact_{category}_values.sql" in files
+    for shared in ("dim_source", "dim_run", "dim_timeframe"):
+        assert f"{shared}_values.sql" in files
+        assert f"{shared}_columns.sql" in files
+        assert files[f"{shared}_values.sql"].count("union all") == 1
+    timeframe = files["dim_timeframe_values.sql"]
+    assert "source_probe_events as (" in timeframe
+    assert f"source_{first_name} as (" in timeframe
+    assert "grain := 'day'" in timeframe
+    extended = emit_extended_models(star, {"entries": []}, "both")
+    assert "context_registry.sql" in extended
+    for category in (first_name, "probe_events"):
+        assert f"mart_{category}_typed.sql" in extended
+        assert f"vw_{category}_typed.sql" in extended
+    header = files["dim_source_values.sql"].split("\n", 1)[0]
+    assert "over 2 mapping contracts" in header
+    assert inputs.mappings[0]["id"] in header and "gold_probe_events_mapping" in header
+
+
+def test_conformed_calendar_is_one_manifest_for_the_star() -> None:
+    """D-17 Amendment R: every category hashes its time payload under
+    the same manifest (grain, period_start), so the timeframe columns
+    dimension carries one row and a period shared at equal grain is one
+    values row whichever category minted it."""
+    inputs = _inputs()
+    second, _, star_contract = _second_category(inputs)
+    star = StarEmission([inputs.mappings[0], second], star_contract)
+    keys = {e.timeframe_col_key for e in star.categories}
+    assert keys == {star.timeframe_col_key}
+    assert star.timeframe_manifest == ["grain", "period_start"]
+    columns_sql = emit_models(star)["dim_timeframe_columns.sql"]
+    assert columns_sql.count(star.timeframe_col_key) == 1, columns_sql
+    for emission in star.categories:
+        fact = fact_values_sql(emission)
+        assert f"grain := '{emission.time_grain}'" in fact
+        assert (
+            f"period_start := cast(date_trunc('{emission.time_grain}',"
+            f" {emission.time_column}) as varchar)"
+        ) in fact
+        for typed in (projection_sql(emission), mart_sql(emission)):
+            assert "'$.period_start'" in typed
+            assert f" as {emission.time_column}" in typed
+
+
+def test_single_category_shared_models_carry_no_union() -> None:
+    """A one-category star emits the shared groups as one payload each,
+    with no union: the pre-fan-in shape, kept."""
+    inputs = _inputs()
+    star = StarEmission([inputs.mappings[0]], inputs.star)
+    files = emit_models(star)
+    for shared in ("dim_source", "dim_run"):
+        assert "union all" not in files[f"{shared}_values.sql"]
+    assert "union all" not in timeframe_values_sql(star)
 
 
 def test_marts_modes_shape_the_typed_surface() -> None:
     """engine.marts (D-36): `both` carries the mart and the view, `table`
     only the mart, `view` only the view; the registry pair rides every
-    mode unchanged."""
-    from metricmine.engine.emitters import Emission, emit_extended_models
-
+    mode unchanged, for every category."""
     inputs = _inputs()
-    emission = Emission(inputs.mapping, inputs.star)
+    star = StarEmission(inputs.mappings, inputs.star)
     compiled = {"entries": []}
-    both = set(emit_extended_models(emission, compiled, "both"))
-    table = set(emit_extended_models(emission, compiled, "table"))
-    view = set(emit_extended_models(emission, compiled, "view"))
+    both = set(emit_extended_models(star, compiled, "both"))
+    table = set(emit_extended_models(star, compiled, "table"))
+    view = set(emit_extended_models(star, compiled, "view"))
     registry = {"context_registry.sql", "context_registry.yml"}
-    mart = {"mart_invoice_lines_typed.sql", "mart_invoice_lines_typed.yml"}
-    vw = {"vw_invoice_lines_typed.sql", "vw_invoice_lines_typed.yml"}
+    mart = set()
+    vw = set()
+    for emission in star.categories:
+        category = emission.category_name
+        mart |= {f"mart_{category}_typed.sql", f"mart_{category}_typed.yml"}
+        vw |= {f"vw_{category}_typed.sql", f"vw_{category}_typed.yml"}
     assert both == registry | mart | vw
     assert table == registry | mart
     assert view == registry | vw
@@ -201,14 +377,13 @@ def test_mart_sql_is_lean_ordered_and_a_table() -> None:
     """The emitted mart (D-36): a materialized table, ordered by the time
     column, the business columns plus fact_hash_id, no derived identifier
     and no group hash key carried."""
-    from metricmine.engine.emitters import Emission, mart_sql
-
-    inputs = _inputs()
-    sql = mart_sql(Emission(inputs.mapping, inputs.star))
+    emission = _first()
+    sql = mart_sql(emission)
     assert "materialized='table'" in sql
-    assert sql.rstrip().endswith("order by invoiced_at")
+    assert sql.rstrip().endswith(f"order by {emission.time_column}")
     assert "    f.fact_hash_id,\n    f.captured_at\nfrom f" in sql
-    assert "line_identity" not in sql
+    for identifier in emission.derived_identifiers:
+        assert identifier["name"] not in sql
     # The group hash keys appear exactly twice each: the two sides of
     # their join condition, never as carried columns.
     assert sql.count("dim_hash_id") == 2
@@ -219,12 +394,10 @@ def test_materialization_modes_flip_only_the_config_line() -> None:
     """engine.materialization (D-38): the two modes emit the same SQL
     except the config line; the is_incremental() blocks ride both and are
     inert under table."""
-    from metricmine.engine.emitters import Emission, fact_values_sql
-
     inputs = _inputs()
-    table_sql = fact_values_sql(Emission(inputs.mapping, inputs.star))
+    table_sql = fact_values_sql(Emission(inputs.mappings[0], inputs.star))
     incr_sql = fact_values_sql(
-        Emission(inputs.mapping, inputs.star, "incremental")
+        Emission(inputs.mappings[0], inputs.star, "incremental")
     )
     assert "materialized='table'" in table_sql
     assert "materialized='incremental'" in incr_sql

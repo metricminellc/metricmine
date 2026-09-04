@@ -131,9 +131,11 @@ def test_an_unexecutable_select_is_deliberately_not_caught(wire):
 
 def test_the_session_survives_an_execution_error(wire):
     categories = wire["after_error"].structuredContent["categories"]
-    assert categories[0]["row_count"] == FACT_ROWS
+    retail = next(c for c in categories if c["category"] == "invoice_lines")
+    assert retail["row_count"] == FACT_ROWS
     # The steer fields arrive over the wire (D-31/D-32 as amended): the
-    # mart is preferred and its columns ride along.
-    assert categories[0]["typed_table"] == "mart_invoice_lines_typed"
-    assert categories[0]["typed_columns"][-1] == "fact_hash_id"
-    assert "not for analytics" in categories[0]["query_hint"]
+    # mart is preferred and its columns ride along, the provenance
+    # pointer and the capture watermark last.
+    assert retail["typed_table"] == "mart_invoice_lines_typed"
+    assert retail["typed_columns"][-2:] == ["fact_hash_id", "captured_at"]
+    assert "not for analytics" in retail["query_hint"]

@@ -37,7 +37,6 @@ GOLD_SCHEMA = "gold"
 REGISTRY_TABLE = "context_registry"
 FACT_TABLE_PATTERN = "fact_%_values"
 DIM_TABLE_PATTERN = "dim_%_values"
-DERIVED_IDENTITY_PATH = "$.line_identity"
 
 ROW_CAP_DEFAULT = 100
 ROW_CAP_MAX = 500
@@ -379,13 +378,42 @@ class GoldWarehouse:
                 self._collect(hits, table, column, content_key)
         # Derived identities live inside the dimension payloads, so they are
         # reachable only through the JSON, never as a column of their own.
+        # The registry names each category's identifiers (D-19: the address
+        # of meaning), so a new category's identity is searchable without
+        # an edit here; before the multi-source fan-in this path was the
+        # one committed name, line_identity.
+        identity_paths = self._derived_identity_paths()
         for table in dim_tables:
             payload = self._payload_column(table)
-            if payload is not None:
-                self._collect(
-                    hits, table, payload, content_key, json_path=DERIVED_IDENTITY_PATH
-                )
+            category = table[len("dim_") : -len("_values")]
+            for name in identity_paths.get(category, []):
+                if payload is not None:
+                    self._collect(
+                        hits, table, payload, content_key, json_path=f"$.{name}"
+                    )
         return {"content_key": content_key, "found": bool(hits), "hits": hits}
+
+    def _derived_identity_paths(self) -> dict[str, list[str]]:
+        """Derived identifier names per category, from the registry's
+        dimensions entries; an empty dict when the registry is absent."""
+        if not self._tables(REGISTRY_TABLE):
+            return {}
+        paths: dict[str, list[str]] = {}
+        rows = self._con.execute(
+            f"select compiled_context from {self._rel(REGISTRY_TABLE)}"
+        ).fetchall()
+        for (raw,) in rows:
+            try:
+                compiled = json.loads(raw)
+            except (TypeError, ValueError):
+                continue
+            if compiled.get("role") != "dimensions":
+                continue
+            category = compiled.get("category")
+            names = sorted(compiled.get("derived_identifiers", {}))
+            if category and names:
+                paths[category] = names
+        return paths
 
     # --------------------------------------------- lookup search surface
 

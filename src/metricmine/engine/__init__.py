@@ -6,4 +6,4 @@ writes outside transform/models/gold/ plus its ownership manifest (D-07,
 D-09).
 """
 
-ENGINE_VERSION = "0.4.0"
+ENGINE_VERSION = "0.5.0"
