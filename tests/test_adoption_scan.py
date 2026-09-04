@@ -316,25 +316,40 @@ def test_run_writes_the_plan_pair_with_the_hash(repo: Path) -> None:
 
 @pytest.mark.local
 def test_the_committed_repository_scans_clean() -> None:
-    # The repo at head: one silver model in sync, twelve engine-owned
-    # gold models (the mart included), an empty queue, and the mapping
-    # contract listed as an engine input. Local: needs the built
+    # The repo at head: every mapped silver model in sync, every
+    # engine-owned gold model skipped (the marts and views included), an
+    # empty queue, and every mapping contract listed as an engine input.
+    # Counts derive from the engine's configured categories (D-29 as
+    # amended at the multi-source fan-in). Local: needs the built
     # warehouse.
+    from metricmine.engine.emitters import StarEmission
+    from metricmine.engine.reader import load_inputs
+
     repo_root = Path(__file__).resolve().parents[1]
+    inputs = load_inputs(repo_root)
+    star = StarEmission(inputs.mappings, inputs.star)
+    categories = [e.category_name for e in star.categories]
+    silver_models = sorted(e.source_model for e in star.categories)
     inv = scan.inventory(repo_root)
     states = {model["name"]: model["state"] for model in inv["models"]}
-    assert len(states) == 13
-    assert states["silver_invoice_lines"] == "in_sync"
-    engine_owned = [
+    engine_owned = sorted(
         name for name, state in states.items() if state == "skip_engine_owned"
-    ]
-    assert len(engine_owned) == 12
-    assert "mart_invoice_lines_typed" in engine_owned
-    assert "vw_invoice_lines_typed" in engine_owned
+    )
+    # Per category: values and columns dims, the fact, the mart, the view;
+    # once: the three shared pairs and the registry.
+    assert len(engine_owned) == 7 + 5 * len(categories)
+    for category in categories:
+        assert f"mart_{category}_typed" in engine_owned
+        assert f"vw_{category}_typed" in engine_owned
+    for model in silver_models:
+        assert states[model] == "in_sync", (model, states[model])
+    assert len(states) == len(engine_owned) + len(
+        [name for name in states if name not in engine_owned]
+    )
     queued = [
         model for model in inv["models"] if model["state"] in scan.QUEUE_ORDER
     ]
     assert queued == []
-    assert [entry["id"] for entry in inv["mapping_contracts"]] == [
-        "gold_invoice_lines_mapping"
-    ]
+    assert sorted(entry["id"] for entry in inv["mapping_contracts"]) == sorted(
+        e.mapping["id"] for e in star.categories
+    )

@@ -2,10 +2,12 @@
 
 Marked `local`: they need the gitignored warehouse that `make ingest` and
 `dbt build` produce, so CI deselects them with -m "not local". Every
-expectation is a measurement of the committed sample at mapping contract
-v1.1.0 (the 44,721-line fact, the five registry rows, the seven-field
-dimensions manifest), not a spec value. A new sample window changes them
-deliberately, with the contract.
+expectation is a measurement of the committed retail sample (the
+44,721-line fact, the seven-field dimensions manifest), not a spec value;
+the registry row count and the mapping version are read from the
+committed artifacts so a new category or a contract bump never edits this
+file (the multi-source fan-in, D-41). A new sample window changes the
+measurements deliberately, with the contract.
 
 Read-only throughout: the module opens the warehouse read_only and the
 gate refuses anything that is not a SELECT, which the refusal cases here
@@ -28,7 +30,6 @@ DIMENSIONS_KEY = "2d27bd360b5092ff22047c65407ff05699afad98f455de2409665a5950a05e
 UNKNOWN_KEY = "0" * 64
 
 FACT_ROWS = 44721
-REGISTRY_ROWS = 5
 DIMENSIONS_MANIFEST = [
     "invoice_id",
     "is_cancellation",
@@ -40,6 +41,26 @@ DIMENSIONS_MANIFEST = [
 ]
 
 pytestmark = pytest.mark.local
+
+_REPO = Path(__file__).resolve().parents[1]
+
+
+def _registry_rows() -> int:
+    from metricmine.engine.reader import load_compiled_context
+
+    _version, compiled = load_compiled_context(_REPO)
+    return len(compiled["entries"])
+
+
+def _mapping_version() -> str:
+    import yaml
+
+    doc = yaml.safe_load(
+        (_REPO / "contracts" / "gold_invoice_lines_mapping.odcs.yaml").read_text(
+            encoding="utf-8"
+        )
+    )
+    return doc["version"]
 
 
 @pytest.fixture(scope="module")
@@ -69,29 +90,32 @@ MART_COLUMNS = [
     "quantity",
     "unit_price",
     "fact_hash_id",
+    "captured_at",
 ]
 
 
-def test_lists_the_one_category_with_its_row_count(gold):
-    assert gold.list_fact_categories() == {
-        "categories": [
-            {
-                "category": "invoice_lines",
-                "fact_table": "fact_invoice_lines_values",
-                "row_count": FACT_ROWS,
-                "typed_table": "mart_invoice_lines_typed",
-                "typed_columns": MART_COLUMNS,
-                "query_hint": (
-                    "Ask questions against gold.mart_invoice_lines_typed"
-                    " (typed columns, one row per invoice_lines event)."
-                    " gold.fact_invoice_lines_values and the dim_* tables"
-                    " are the content-addressed provenance layer: hash keys"
-                    " and canonical JSON payloads, joined by hash, meant"
-                    " for lookup_record and audit, not for analytics."
-                ),
-            }
-        ]
+def test_lists_the_retail_category_with_its_row_count(gold):
+    listed = gold.list_fact_categories()["categories"]
+    by_name = {entry["category"]: entry for entry in listed}
+    assert [entry["category"] for entry in listed] == sorted(by_name)
+    assert by_name["invoice_lines"] == {
+        "category": "invoice_lines",
+        "fact_table": "fact_invoice_lines_values",
+        "row_count": FACT_ROWS,
+        "typed_table": "mart_invoice_lines_typed",
+        "typed_columns": MART_COLUMNS,
+        "query_hint": (
+            "Ask questions against gold.mart_invoice_lines_typed"
+            " (typed columns, one row per invoice_lines event)."
+            " gold.fact_invoice_lines_values and the dim_* tables"
+            " are the content-addressed provenance layer: hash keys"
+            " and canonical JSON payloads, joined by hash, meant"
+            " for lookup_record and audit, not for analytics."
+        ),
     }
+    for entry in listed:
+        assert entry["typed_table"] == f"mart_{entry['category']}_typed"
+        assert entry["typed_columns"][-2:] == ["fact_hash_id", "captured_at"]
 
 
 def test_mart_answers_the_typed_question_with_the_view_rows(gold):
@@ -115,7 +139,7 @@ def test_get_schema_returns_the_registry_declaration(gold):
     assert result["found"] is True
     assert result["entity_group"] == "invoice_lines"
     assert result["contract_name"] == "gold_invoice_lines_mapping"
-    assert result["contract_version"] == "1.1.0"
+    assert result["contract_version"] == _mapping_version()
     assert result["role"] == "dimensions"
     assert result["manifest"] == DIMENSIONS_MANIFEST
 
@@ -156,7 +180,7 @@ def test_query_caps_the_fact_and_announces_truncation(gold):
 
 def test_query_under_the_cap_does_not_claim_truncation(gold):
     result = gold.query("SELECT * FROM gold.context_registry")
-    assert result["row_count"] == REGISTRY_ROWS
+    assert result["row_count"] == _registry_rows()
     assert result["truncated"] is False
 
 

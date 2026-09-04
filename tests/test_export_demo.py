@@ -2,10 +2,12 @@
 
 Marked `local`: they need the gitignored warehouse that `make ingest` and
 `dbt build` produce, so CI deselects them with -m "not local". The census
-numbers (ten gold tables, one typed view, the 44,721-line fact) are
-measurements of the committed sample at mapping contract v1.1.0, not spec
-values. The export target here is a temp path, never demo/demo.duckdb:
-the committed artifact is built only by `make export-demo`.
+is derived from the engine's configured categories (D-29 as amended at
+the multi-source fan-in): three tables per category plus the seven shared
+objects, one typed view per category; the retail fact's 44,721 rows are a
+measurement of the committed sample, not a spec value. The export target
+here is a temp path, never demo/demo.duckdb: the committed artifact is
+built only by `make export-demo`.
 """
 
 from pathlib import Path
@@ -13,13 +15,24 @@ from pathlib import Path
 import duckdb
 import pytest
 
+from metricmine.engine.emitters import StarEmission
+from metricmine.engine.reader import load_inputs
 from metricmine.export_demo import export, verify
 
-_WAREHOUSE = Path(__file__).resolve().parents[1] / "warehouse" / "metricmine.duckdb"
+_REPO = Path(__file__).resolve().parents[1]
+_WAREHOUSE = _REPO / "warehouse" / "metricmine.duckdb"
 
 FACT_ROWS = 44721
-BASE_TABLES = 11
-TYPED_VIEW = "vw_invoice_lines_typed"
+SHARED_TABLES = 7  # source, run, timeframe pairs plus the registry
+
+
+def _categories() -> list[str]:
+    inputs = load_inputs(_REPO)
+    return [e.category_name for e in StarEmission(inputs.mappings, inputs.star).categories]
+
+
+BASE_TABLES = SHARED_TABLES + 4 * len(_categories())  # dims, fact, mart per category
+TYPED_VIEWS = [f"vw_{category}_typed" for category in _categories()]
 
 pytestmark = pytest.mark.local
 
@@ -65,13 +78,13 @@ def test_export_carries_gold_schema_only(exported):
 def test_table_and_view_census(exported):
     census = _census(exported)
     assert len(census["BASE TABLE"]) == BASE_TABLES
-    assert census["VIEW"] == [f"gold.{TYPED_VIEW}"]
+    assert census["VIEW"] == [f"gold.{view}" for view in TYPED_VIEWS]
 
 
 def test_verify_passes_end_to_end(exported):
     report = verify(_WAREHOUSE, exported)
     assert len(report["tables"]) == BASE_TABLES
-    assert [v["view"] for v in report["views"]] == [TYPED_VIEW]
+    assert [v["view"] for v in report["views"]] == TYPED_VIEWS
     assert all(v["match"] for v in report["views"])
     fact_rows = {t["table"]: t["rows"] for t in report["tables"]}
     assert fact_rows["fact_invoice_lines_values"] == FACT_ROWS
@@ -83,7 +96,7 @@ def test_view_sql_is_reanchored(exported):
         (sql,) = con.execute(
             "select sql from duckdb_views()"
             " where schema_name = 'gold' and view_name = ?",
-            [TYPED_VIEW],
+            [TYPED_VIEWS[0]],
         ).fetchone()
     finally:
         con.close()
