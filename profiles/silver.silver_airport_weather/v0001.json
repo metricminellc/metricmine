@@ -1,0 +1,374 @@
+{
+  "caps": {
+    "max_distinct_values": 20,
+    "max_sample_values": 10,
+    "max_string_chars": 120
+  },
+  "content_hash": "sha256:70cb304edcaa97a18aa7411d2ed8b68a860627c53342343a78b87fa306345567",
+  "dataset": {
+    "columns": [
+      {
+        "distinct_count": 3,
+        "distinct_values": [
+          "EWR",
+          "JFK",
+          "LGA"
+        ],
+        "is_airbyte_metadata": false,
+        "name": "airport_code",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "VARCHAR"
+      },
+      {
+        "distinct_count": 4341,
+        "is_airbyte_metadata": false,
+        "max": "2013-07-01T03:00:00",
+        "min": "2013-01-01T06:00:00",
+        "name": "observed_hour_utc",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "TIMESTAMP",
+        "sample_values": [
+          "2013-01-01T06:00:00",
+          "2013-01-01T07:00:00",
+          "2013-01-01T08:00:00",
+          "2013-01-01T09:00:00",
+          "2013-01-01T10:00:00",
+          "2013-01-01T11:00:00",
+          "2013-01-01T12:00:00",
+          "2013-01-01T13:00:00",
+          "2013-01-01T14:00:00",
+          "2013-01-01T15:00:00"
+        ]
+      },
+      {
+        "distinct_count": 181,
+        "is_airbyte_metadata": false,
+        "max": "2013-06-30",
+        "min": "2013-01-01",
+        "name": "observed_date_local",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "DATE",
+        "sample_values": [
+          "2013-01-01",
+          "2013-01-02",
+          "2013-01-03",
+          "2013-01-04",
+          "2013-01-05",
+          "2013-01-06",
+          "2013-01-07",
+          "2013-01-08",
+          "2013-01-09",
+          "2013-01-10"
+        ]
+      },
+      {
+        "distinct_count": 24,
+        "is_airbyte_metadata": false,
+        "max": 23,
+        "min": 0,
+        "name": "observed_hour_local",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "INTEGER",
+        "sample_values": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ]
+      },
+      {
+        "distinct_count": 130,
+        "is_airbyte_metadata": false,
+        "max": 93.92,
+        "min": 10.94,
+        "name": "temp_f",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "DOUBLE",
+        "sample_values": [
+          10.94,
+          12.02,
+          12.92,
+          13.1,
+          14.0,
+          15.08,
+          15.98,
+          17.06,
+          17.96,
+          19.04
+        ]
+      },
+      {
+        "distinct_count": 119,
+        "is_airbyte_metadata": false,
+        "max": 73.94,
+        "min": -9.94,
+        "name": "dewpoint_f",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "DOUBLE",
+        "sample_values": [
+          -9.94,
+          -9.04,
+          -7.96,
+          -7.06,
+          -5.98,
+          -5.08,
+          -4.0,
+          -2.92,
+          -2.02,
+          -0.94
+        ]
+      },
+      {
+        "distinct_count": 2178,
+        "is_airbyte_metadata": false,
+        "max": 100.0,
+        "min": 12.74,
+        "name": "humidity_pct",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "DOUBLE",
+        "sample_values": [
+          12.74,
+          13.0,
+          13.95,
+          14.51,
+          14.65,
+          15.09,
+          15.21,
+          15.24,
+          15.26,
+          15.47
+        ]
+      },
+      {
+        "distinct_count": 37,
+        "is_airbyte_metadata": false,
+        "max": 360,
+        "min": 0,
+        "name": "wind_dir_degrees",
+        "null_count": 219,
+        "null_rate": 0.016828,
+        "physical_type": "INTEGER",
+        "sample_values": [
+          0,
+          10,
+          20,
+          30,
+          40,
+          50,
+          60,
+          70,
+          80,
+          90
+        ]
+      },
+      {
+        "distinct_count": 36,
+        "is_airbyte_metadata": false,
+        "max": 1048.36058,
+        "min": 0.0,
+        "name": "wind_speed_mph",
+        "null_count": 2,
+        "null_rate": 0.000154,
+        "physical_type": "DOUBLE",
+        "sample_values": [
+          0.0,
+          3.45234,
+          4.60312,
+          5.7539,
+          6.90468,
+          8.05546,
+          9.20624,
+          10.35702,
+          11.5078,
+          12.65858
+        ]
+      },
+      {
+        "distinct_count": 35,
+        "is_airbyte_metadata": false,
+        "max": 62.14212,
+        "min": 16.11092,
+        "name": "wind_gust_mph",
+        "null_count": 9702,
+        "null_rate": 0.745505,
+        "physical_type": "DOUBLE",
+        "sample_values": [
+          16.11092,
+          17.2617,
+          18.41248,
+          19.56326,
+          20.71404,
+          21.86482,
+          23.0156,
+          24.16638,
+          25.31716,
+          26.46794
+        ]
+      },
+      {
+        "distinct_count": 50,
+        "is_airbyte_metadata": false,
+        "max": 1.06,
+        "min": 0.0,
+        "name": "precip_inches",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "DOUBLE",
+        "sample_values": [
+          0.0,
+          0.01,
+          0.02,
+          0.03,
+          0.04,
+          0.05,
+          0.06,
+          0.07,
+          0.08,
+          0.09
+        ]
+      },
+      {
+        "distinct_count": 430,
+        "is_airbyte_metadata": false,
+        "max": 1038.4,
+        "min": 983.8,
+        "name": "pressure_mb",
+        "null_count": 1496,
+        "null_rate": 0.114953,
+        "physical_type": "DOUBLE",
+        "sample_values": [
+          983.8,
+          983.9,
+          985.0,
+          985.7,
+          986.4,
+          989.1,
+          989.7,
+          991.3,
+          991.7,
+          992.1
+        ]
+      },
+      {
+        "distinct_count": 20,
+        "distinct_values": [
+          0.0,
+          0.06,
+          0.12,
+          0.25,
+          0.5,
+          0.75,
+          1.0,
+          1.25,
+          1.5,
+          1.75,
+          2.0,
+          2.5,
+          3.0,
+          4.0,
+          5.0,
+          6.0,
+          7.0,
+          8.0,
+          9.0,
+          10.0
+        ],
+        "is_airbyte_metadata": false,
+        "max": 10.0,
+        "min": 0.0,
+        "name": "visibility_miles",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "DOUBLE"
+      },
+      {
+        "distinct_count": 3,
+        "distinct_values": [
+          "John F. Kennedy International Airport",
+          "LaGuardia Airport",
+          "Newark Liberty International Airport"
+        ],
+        "is_airbyte_metadata": false,
+        "name": "airport_name",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "VARCHAR"
+      },
+      {
+        "distinct_count": 2,
+        "distinct_values": [
+          "New York",
+          "Newark"
+        ],
+        "is_airbyte_metadata": false,
+        "name": "airport_municipality",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "VARCHAR"
+      },
+      {
+        "distinct_count": 3,
+        "distinct_values": [
+          13,
+          18,
+          21
+        ],
+        "is_airbyte_metadata": false,
+        "max": 21,
+        "min": 13,
+        "name": "airport_elevation_ft",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "INTEGER"
+      },
+      {
+        "distinct_count": 3,
+        "distinct_values": [
+          7002,
+          11000,
+          14511
+        ],
+        "is_airbyte_metadata": false,
+        "max": 14511,
+        "min": 7002,
+        "name": "airport_longest_runway_ft",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "INTEGER"
+      },
+      {
+        "distinct_count": 3,
+        "distinct_values": [
+          "2026-09-02T23:26:11",
+          "2026-09-02T23:26:12",
+          "2026-09-02T23:26:13"
+        ],
+        "is_airbyte_metadata": false,
+        "max": "2026-09-02T23:26:13",
+        "min": "2026-09-02T23:26:11",
+        "name": "captured_at",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "TIMESTAMP"
+      }
+    ],
+    "duplicate_row_rate": 0.0,
+    "row_count": 13014,
+    "schema": "silver",
+    "table": "silver_airport_weather"
+  },
+  "schema_version": "1.0.0"
+}

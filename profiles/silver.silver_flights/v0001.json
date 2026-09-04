@@ -1,0 +1,716 @@
+{
+  "caps": {
+    "max_distinct_values": 20,
+    "max_sample_values": 10,
+    "max_string_chars": 120
+  },
+  "content_hash": "sha256:2d19b75b44c2aa680549789ba634ee35b281fe90233870346553b2b1fc571e8b",
+  "dataset": {
+    "columns": [
+      {
+        "distinct_count": 181,
+        "is_airbyte_metadata": false,
+        "max": "2013-06-30",
+        "min": "2013-01-01",
+        "name": "flight_date",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "DATE",
+        "sample_values": [
+          "2013-01-01",
+          "2013-01-02",
+          "2013-01-03",
+          "2013-01-04",
+          "2013-01-05",
+          "2013-01-06",
+          "2013-01-07",
+          "2013-01-08",
+          "2013-01-09",
+          "2013-01-10"
+        ]
+      },
+      {
+        "distinct_count": 16,
+        "distinct_values": [
+          "9E",
+          "AA",
+          "AS",
+          "B6",
+          "DL",
+          "EV",
+          "F9",
+          "FL",
+          "HA",
+          "MQ",
+          "OO",
+          "UA",
+          "US",
+          "VX",
+          "WN",
+          "YV"
+        ],
+        "is_airbyte_metadata": false,
+        "name": "carrier_code",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "VARCHAR"
+      },
+      {
+        "distinct_count": 2994,
+        "is_airbyte_metadata": false,
+        "max": 8500,
+        "min": 1,
+        "name": "flight_number",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "INTEGER",
+        "sample_values": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ]
+      },
+      {
+        "distinct_count": 3,
+        "distinct_values": [
+          "EWR",
+          "JFK",
+          "LGA"
+        ],
+        "is_airbyte_metadata": false,
+        "name": "origin_airport",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "VARCHAR"
+      },
+      {
+        "distinct_count": 969,
+        "is_airbyte_metadata": false,
+        "max": 2359,
+        "min": 500,
+        "name": "sched_dep_hhmm",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "INTEGER",
+        "sample_values": [
+          500,
+          501,
+          505,
+          510,
+          515,
+          520,
+          525,
+          527,
+          529,
+          530
+        ]
+      },
+      {
+        "distinct_count": 100,
+        "is_airbyte_metadata": false,
+        "name": "dest_airport",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "VARCHAR",
+        "sample_values": [
+          "ABQ",
+          "ACK",
+          "ALB",
+          "ATL",
+          "AUS",
+          "AVL",
+          "BDL",
+          "BGR",
+          "BHM",
+          "BNA"
+        ]
+      },
+      {
+        "distinct_count": 3825,
+        "is_airbyte_metadata": false,
+        "name": "tail_number",
+        "null_count": 1521,
+        "null_rate": 0.009154,
+        "physical_type": "VARCHAR",
+        "sample_values": [
+          "D942DN",
+          "N0EGMQ",
+          "N10156",
+          "N102UW",
+          "N103US",
+          "N104UW",
+          "N10575",
+          "N105UW",
+          "N107US",
+          "N108UW"
+        ]
+      },
+      {
+        "distinct_count": 2,
+        "distinct_values": [
+          false,
+          true
+        ],
+        "is_airbyte_metadata": false,
+        "name": "is_cancelled",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "BOOLEAN"
+      },
+      {
+        "distinct_count": 1291,
+        "is_airbyte_metadata": false,
+        "max": 2400,
+        "min": 1,
+        "name": "dep_hhmm",
+        "null_count": 4883,
+        "null_rate": 0.029388,
+        "physical_type": "INTEGER",
+        "sample_values": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ]
+      },
+      {
+        "distinct_count": 469,
+        "is_airbyte_metadata": false,
+        "max": 1301,
+        "min": -33,
+        "name": "dep_delay_minutes",
+        "null_count": 4883,
+        "null_rate": 0.029388,
+        "physical_type": "INTEGER",
+        "sample_values": [
+          -33,
+          -30,
+          -27,
+          -25,
+          -24,
+          -23,
+          -22,
+          -21,
+          -20,
+          -19
+        ]
+      },
+      {
+        "distinct_count": 1392,
+        "is_airbyte_metadata": false,
+        "max": 2400,
+        "min": 1,
+        "name": "arr_hhmm",
+        "null_count": 5101,
+        "null_rate": 0.0307,
+        "physical_type": "INTEGER",
+        "sample_values": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ]
+      },
+      {
+        "distinct_count": 1134,
+        "is_airbyte_metadata": false,
+        "max": 2359,
+        "min": 1,
+        "name": "sched_arr_hhmm",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "INTEGER",
+        "sample_values": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ]
+      },
+      {
+        "distinct_count": 526,
+        "is_airbyte_metadata": false,
+        "max": 1272,
+        "min": -86,
+        "name": "arr_delay_minutes",
+        "null_count": 5480,
+        "null_rate": 0.032981,
+        "physical_type": "INTEGER",
+        "sample_values": [
+          -86,
+          -79,
+          -75,
+          -74,
+          -73,
+          -71,
+          -70,
+          -69,
+          -68,
+          -67
+        ]
+      },
+      {
+        "distinct_count": 484,
+        "is_airbyte_metadata": false,
+        "max": 695,
+        "min": 20,
+        "name": "air_time_minutes",
+        "null_count": 5480,
+        "null_rate": 0.032981,
+        "physical_type": "INTEGER",
+        "sample_values": [
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29
+        ]
+      },
+      {
+        "distinct_count": 203,
+        "is_airbyte_metadata": false,
+        "max": 4983,
+        "min": 80,
+        "name": "distance_miles",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "INTEGER",
+        "sample_values": [
+          80,
+          94,
+          96,
+          116,
+          143,
+          160,
+          169,
+          173,
+          184,
+          185
+        ]
+      },
+      {
+        "distinct_count": 19,
+        "distinct_values": [
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23
+        ],
+        "is_airbyte_metadata": false,
+        "max": 23,
+        "min": 5,
+        "name": "sched_dep_hour_local",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "INTEGER"
+      },
+      {
+        "distinct_count": 60,
+        "is_airbyte_metadata": false,
+        "max": 59,
+        "min": 0,
+        "name": "sched_dep_minute_local",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "INTEGER",
+        "sample_values": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ]
+      },
+      {
+        "distinct_count": 3439,
+        "is_airbyte_metadata": false,
+        "max": "2013-07-01T03:00:00",
+        "min": "2013-01-01T10:00:00",
+        "name": "departure_hour_utc",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "TIMESTAMP",
+        "sample_values": [
+          "2013-01-01T10:00:00",
+          "2013-01-01T11:00:00",
+          "2013-01-01T12:00:00",
+          "2013-01-01T13:00:00",
+          "2013-01-01T14:00:00",
+          "2013-01-01T15:00:00",
+          "2013-01-01T16:00:00",
+          "2013-01-01T17:00:00",
+          "2013-01-01T18:00:00",
+          "2013-01-01T19:00:00"
+        ]
+      },
+      {
+        "distinct_count": 16,
+        "distinct_values": [
+          "AirTran Airways Corporation",
+          "Alaska Airlines Inc.",
+          "American Airlines Inc.",
+          "Delta Air Lines Inc.",
+          "Endeavor Air Inc.",
+          "Envoy Air",
+          "ExpressJet Airlines Inc.",
+          "Frontier Airlines Inc.",
+          "Hawaiian Airlines Inc.",
+          "JetBlue Airways",
+          "Mesa Airlines Inc.",
+          "SkyWest Airlines Inc.",
+          "Southwest Airlines Co.",
+          "US Airways Inc.",
+          "United Air Lines Inc.",
+          "Virgin America"
+        ],
+        "is_airbyte_metadata": false,
+        "name": "carrier_name",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "VARCHAR"
+      },
+      {
+        "distinct_count": 34,
+        "is_airbyte_metadata": false,
+        "name": "aircraft_manufacturer",
+        "null_count": 26656,
+        "null_rate": 0.160426,
+        "physical_type": "VARCHAR",
+        "sample_values": [
+          "AGUSTA SPA",
+          "AIRBUS",
+          "AIRBUS INDUSTRIE",
+          "AMERICAN AIRCRAFT INC",
+          "AVIAT AIRCRAFT INC",
+          "BARKER JACK L",
+          "BEECH",
+          "BELL",
+          "BOEING",
+          "BOMBARDIER INC"
+        ]
+      },
+      {
+        "distinct_count": 121,
+        "is_airbyte_metadata": false,
+        "name": "aircraft_model",
+        "null_count": 26656,
+        "null_rate": 0.160426,
+        "physical_type": "VARCHAR",
+        "sample_values": [
+          "150",
+          "172E",
+          "172M",
+          "172N",
+          "206B",
+          "210-5(205)",
+          "230",
+          "310Q",
+          "421C",
+          "550"
+        ]
+      },
+      {
+        "distinct_count": 46,
+        "is_airbyte_metadata": false,
+        "max": 2013,
+        "min": 1956,
+        "name": "aircraft_manufacture_year",
+        "null_count": 29332,
+        "null_rate": 0.176531,
+        "physical_type": "INTEGER",
+        "sample_values": [
+          1956,
+          1959,
+          1963,
+          1965,
+          1967,
+          1968,
+          1972,
+          1973,
+          1974,
+          1975
+        ]
+      },
+      {
+        "distinct_count": 47,
+        "is_airbyte_metadata": false,
+        "max": 450,
+        "min": 2,
+        "name": "aircraft_seat_count",
+        "null_count": 26656,
+        "null_rate": 0.160426,
+        "physical_type": "INTEGER",
+        "sample_values": [
+          2,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          14
+        ]
+      },
+      {
+        "distinct_count": 6,
+        "distinct_values": [
+          "4 Cycle",
+          "Reciprocating",
+          "Turbo-fan",
+          "Turbo-jet",
+          "Turbo-prop",
+          "Turbo-shaft"
+        ],
+        "is_airbyte_metadata": false,
+        "name": "aircraft_engine_type",
+        "null_count": 26656,
+        "null_rate": 0.160426,
+        "physical_type": "VARCHAR"
+      },
+      {
+        "distinct_count": 3,
+        "distinct_values": [
+          "John F. Kennedy International Airport",
+          "LaGuardia Airport",
+          "Newark Liberty International Airport"
+        ],
+        "is_airbyte_metadata": false,
+        "name": "origin_airport_name",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "VARCHAR"
+      },
+      {
+        "distinct_count": 2,
+        "distinct_values": [
+          "New York",
+          "Newark"
+        ],
+        "is_airbyte_metadata": false,
+        "name": "origin_municipality",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "VARCHAR"
+      },
+      {
+        "distinct_count": 3,
+        "distinct_values": [
+          13,
+          18,
+          21
+        ],
+        "is_airbyte_metadata": false,
+        "max": 21,
+        "min": 13,
+        "name": "origin_elevation_ft",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "INTEGER"
+      },
+      {
+        "distinct_count": 3,
+        "distinct_values": [
+          7002,
+          11000,
+          14511
+        ],
+        "is_airbyte_metadata": false,
+        "max": 14511,
+        "min": 7002,
+        "name": "origin_longest_runway_ft",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "INTEGER"
+      },
+      {
+        "distinct_count": 99,
+        "is_airbyte_metadata": false,
+        "name": "dest_airport_name",
+        "null_count": 3471,
+        "null_rate": 0.02089,
+        "physical_type": "VARCHAR",
+        "sample_values": [
+          "Akron Canton Regional Airport",
+          "Albany International Airport",
+          "Albuquerque International Sunport",
+          "Asheville Regional Airport",
+          "Austin Bergstrom International Airport",
+          "Baltimore/Washington International Thurgood Marshall Airport",
+          "Bangor International Airport",
+          "Birmingham-Shuttlesworth International Airport",
+          "Boston Logan International Airport",
+          "Bozeman Yellowstone International Airport"
+        ]
+      },
+      {
+        "distinct_count": 95,
+        "is_airbyte_metadata": false,
+        "name": "dest_municipality",
+        "null_count": 3471,
+        "null_rate": 0.02089,
+        "physical_type": "VARCHAR",
+        "sample_values": [
+          "Aguadilla",
+          "Akron",
+          "Albany",
+          "Albuquerque",
+          "Asheville",
+          "Atlanta",
+          "Austin",
+          "Baltimore",
+          "Bangor",
+          "Birmingham"
+        ]
+      },
+      {
+        "distinct_count": 45,
+        "is_airbyte_metadata": false,
+        "name": "dest_iso_region",
+        "null_count": 3471,
+        "null_rate": 0.02089,
+        "physical_type": "VARCHAR",
+        "sample_values": [
+          "PR-U-A",
+          "US-AL",
+          "US-AR",
+          "US-AZ",
+          "US-CA",
+          "US-CO",
+          "US-CT",
+          "US-DC",
+          "US-FL",
+          "US-GA"
+        ]
+      },
+      {
+        "distinct_count": 90,
+        "is_airbyte_metadata": false,
+        "max": 6606,
+        "min": 3,
+        "name": "dest_elevation_ft",
+        "null_count": 3471,
+        "null_rate": 0.02089,
+        "physical_type": "INTEGER",
+        "sample_values": [
+          3,
+          4,
+          8,
+          9,
+          13,
+          15,
+          17,
+          20,
+          23,
+          25
+        ]
+      },
+      {
+        "distinct_count": 84,
+        "is_airbyte_metadata": false,
+        "max": 16000,
+        "min": 5076,
+        "name": "dest_longest_runway_ft",
+        "null_count": 3471,
+        "null_rate": 0.02089,
+        "physical_type": "INTEGER",
+        "sample_values": [
+          5076,
+          5504,
+          5700,
+          6300,
+          6303,
+          6522,
+          6715,
+          6801,
+          6886,
+          6904
+        ]
+      },
+      {
+        "distinct_count": 16,
+        "distinct_values": [
+          "2026-09-02T23:25:51",
+          "2026-09-02T23:25:52",
+          "2026-09-02T23:25:53",
+          "2026-09-02T23:25:54",
+          "2026-09-02T23:25:55",
+          "2026-09-02T23:25:56",
+          "2026-09-02T23:25:57",
+          "2026-09-02T23:25:58",
+          "2026-09-02T23:25:59",
+          "2026-09-02T23:26:00",
+          "2026-09-02T23:26:01",
+          "2026-09-02T23:26:02",
+          "2026-09-02T23:26:03",
+          "2026-09-02T23:26:04",
+          "2026-09-02T23:26:05",
+          "2026-09-02T23:26:06"
+        ],
+        "is_airbyte_metadata": false,
+        "max": "2026-09-02T23:26:06",
+        "min": "2026-09-02T23:25:51",
+        "name": "captured_at",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "TIMESTAMP"
+      }
+    ],
+    "duplicate_row_rate": 0.0,
+    "row_count": 166158,
+    "schema": "silver",
+    "table": "silver_flights"
+  },
+  "schema_version": "1.0.0"
+}
