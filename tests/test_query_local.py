@@ -27,6 +27,8 @@ _WAREHOUSE = Path(__file__).resolve().parents[1] / "warehouse" / "metricmine.duc
 # The dimensions schema key of the invoice_lines entity group, content-
 # addressed at contract v1.1.0 (the country join, D-17's signature test).
 DIMENSIONS_KEY = "2d27bd360b5092ff22047c65407ff05699afad98f455de2409665a5950a05e82"
+# The measures schema key of the same group: the four-measure manifest.
+MEASURES_KEY = "9dbc23cabca765eeaed72eb8161c90b5ae7857f81031656002f03e5bd9d99319"
 UNKNOWN_KEY = "0" * 64
 
 FACT_ROWS = 44721
@@ -111,11 +113,28 @@ def test_lists_the_retail_category_with_its_row_count(gold):
             " are the content-addressed provenance layer: hash keys"
             " and canonical JSON payloads, joined by hash, meant"
             " for lookup_record and audit, not for analytics."
+            " String columns there carry canonical lowercase text:"
+            " write literals in lowercase (origin_airport = 'jfk')."
+            " get_context on the keys in context_keys returns what"
+            " the columns are (data) and, kept apart by name, what"
+            " the people who approved the contracts wrote about"
+            " them (expert_context): units, vintages, nulls, joins."
         ),
+        "subject": by_name["invoice_lines"]["subject"],
+        "context_keys": {"dimensions": DIMENSIONS_KEY, "measures": MEASURES_KEY},
     }
+    # Amendment W: the listing says what each category IS in the words of
+    # the people who approved its contracts, and names the registry keys.
+    assert len(by_name["invoice_lines"]["subject"]) > 40
     for entry in listed:
         assert entry["typed_table"] == f"mart_{entry['category']}_typed"
         assert entry["typed_columns"][-2:] == ["fact_hash_id", "captured_at"]
+        assert entry["subject"], f"{entry['category']}: no subject in the listing"
+        assert set(entry["context_keys"]) == {"dimensions", "measures"}
+        for key in entry["context_keys"].values():
+            context = gold.get_context(key)["compiled_context"]
+            assert context["category"] == entry["category"]
+            assert set(context) >= {"data", "expert_context"}
 
 
 def test_mart_answers_the_typed_question_with_the_view_rows(gold):
@@ -148,10 +167,18 @@ def test_get_context_carries_the_compiled_field_descriptions(gold):
     result = gold.get_context(DIMENSIONS_KEY)
     assert result["found"] is True
     assert result["contract_name"] == "gold_invoice_lines_mapping"
-    country = result["compiled_context"]["fields"]["country"]
+    compiled = result["compiled_context"]
+    # Amendment W: the typed declaration under data, the authored meaning
+    # under expert_context, never the one inside the other.
+    country = compiled["data"]["fields"]["country"]
+    assert set(country) == {"logicalType", "mappingRole", "physicalType", "required"}
+    meaning = compiled["expert_context"]["fields"]["country"]["meaning"]
     # The country field is the dimension the signature test added by
     # contract amendment alone; its description says so.
-    assert "signature" in country["description"].lower()
+    assert "signature" in meaning.lower()
+    assert compiled["expert_context"]["note"].startswith(
+        "Authored knowledge, not a measurement"
+    )
 
 
 def test_unknown_schema_key_is_a_clean_empty_not_an_error(gold):

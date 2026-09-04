@@ -45,18 +45,35 @@ content-addressed dimensions and category-parameterized facts.
 
 Start with list_fact_categories: each category names its typed table
 (gold.mart_<category>_typed, or gold.vw_<category>_typed where only the
-view is emitted) with its columns. Ask analytical questions against that
-typed table. The star tables (fact_*, dim_*) are the content-addressed
-provenance layer: hash keys and canonical JSON payloads, joined by hash,
-meant for lookup_record and audit, not for analytics. Values read through
-the typed surface and the payloads are the canonical lowercased text
-(D-18 as amended): case-insensitive by design, not a defect.
+view is emitted) with its columns, states its subject in the words of
+the people who approved its contracts, and names the two registry keys
+(context_keys) get_context resolves. Ask analytical questions against
+that typed table. The star tables (fact_*, dim_*) are the
+content-addressed provenance layer: hash keys and canonical JSON
+payloads, joined by hash, meant for lookup_record and audit, not for
+analytics. String values read through the typed surface and the
+payloads are the canonical lowercased text (D-18 as amended): write
+string literals in lowercase (origin_airport = 'jfk', carrier_code =
+'ev'); case-insensitive by design, not a defect.
+
+Before answering from a category, read its context. get_context keeps
+two things apart by name: data is what the columns ARE (types, roles,
+grain, conformed keys and which other categories share them, the typed
+surface), derived from the contracts; expert_context is what people
+WROTE about them (subject, how to read it, limitations, lineage and
+vintage, joins with their measured completeness, cross-category joins
+with a worked example, decisions, a meaning per field). The expert
+context is authored knowledge, never a measurement; the warehouse is the
+measurement. Cite which of the two an answer rests on. Cross-category
+questions use the joins the expert context declares, on the typed
+surfaces, with the condition as written.
 
 Five tools, all reads:
 - list_fact_categories: the fact categories, their typed tables and
-  columns, and row counts.
+  columns, row counts, subjects, and context keys.
 - get_schema: a schema key's contract, role, and declared field manifest.
-- get_context: a schema key's full compiled context.
+- get_context: a schema key's full compiled context, data and
+  expert_context apart.
 - query: one SELECT statement, row-capped, against the gold schema.
 - lookup_record: every place a content key resolves, with its provenance.
 
@@ -115,7 +132,9 @@ def warehouse() -> GoldWarehouse:
 
 @server.tool()
 def list_fact_categories() -> CategoryList:
-    """List the gold fact categories with their table names and row counts."""
+    """List the gold fact categories: fact table, row count, typed table and
+    columns, the category's authored subject, and the registry keys
+    (context_keys) that get_context resolves for it."""
     return warehouse().list_fact_categories()
 
 
@@ -131,7 +150,15 @@ def get_schema(schema_key: str) -> SchemaResult:
 
 @server.tool()
 def get_context(schema_key: str) -> ContextResult:
-    """Return a schema key's full compiled context and its contract citation."""
+    """Return a schema key's full compiled context and its contract citation.
+
+    compiled_context carries data (what the columns are: typed
+    declarations, grain, conformed keys and who shares them, the typed
+    surface) and expert_context (what the people who approved the
+    contracts wrote: subject, how to read it, limitations, lineage,
+    vintage, joins with measured completeness, cross-category joins,
+    decisions, a meaning per field), kept apart by name.
+    """
     return warehouse().get_context(schema_key)
 
 
