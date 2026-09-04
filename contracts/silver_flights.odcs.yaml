@@ -1,0 +1,411 @@
+# Contract: silver_flights v1.0.0 (ODCS v3.1.0), a unified silver table (D-41).
+# Conformance settled in human-owned SQL; hand-authored from the table's own
+# profile (rule 16: proposedBy human, profileHash present, no stance keys); the
+# describe stance's live draft over the same profile is eval-lane evidence.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_flights
+name: Silver flights
+version: 1.0.0
+status: active
+domain: aviation
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: 'The unified flight table: one row per scheduled departure from New York City in
+    January through June 2013 with its carrier name, its aircraft, and its origin and destination
+    airports joined in, conformance settled here in human-owned SQL so the gold star maps
+    one category. This is the table the flights category of the star is built from and the
+    one to read for any question about flights.'
+  usage: 'Read silver.silver_flights for on-time analysis by carrier, aircraft, route, or
+    airport attribute. Delay columns are minutes and negative means early. dep_delay_minutes
+    is null exactly when the flight is cancelled (is_cancelled true, 4,883 flights), so departure
+    averages exclude cancellations by construction; arr_delay_minutes and air_time_minutes
+    are also null on 597 flights that departed but have no arrival record (diverted or unreported),
+    so arrival averages exclude those too. Count cancellations from the flag, never from a
+    null. Reference attributes are null where the reference does not know the entity: aircraft
+    columns for the 15 percent of flights whose tail number is not in the registry extract
+    (American and Envoy reported fleet numbers; a few hundred other tail numbers are simply
+    absent) and for the 1,521 flights with no tail number, destination attributes for the
+    2.1 percent of flights to Palm Beach (PBI in 2013, DJT in the 2026 reference). departure_hour_utc
+    is the conformed calendar key: the airport_weather category shares its timeframe rows
+    at hour grain, so weather at the origin joins on origin_airport and the hour.'
+  limitations: 'Joins: carrier to silver_nyc_airlines on carrier_code (100 percent of flights
+    resolve); aircraft to silver_nyc_planes on tail_number (84.0 percent of flights, 139,502
+    of 166,158; 1,521 flights carry no tail number and American and Envoy reported fleet numbers);
+    origin to silver_ourairports_airports on origin_airport (100 percent); destination on
+    dest_airport (97.9 percent, 162,687 of 166,158; every unresolved flight is a PBI flight).
+    The longest runway is the longest open runway with a published length in the 2026 reference.
+    The floors the contract enforces are below the measured values so a reference refresh
+    that adds coverage passes and one that loses it fails. Vintage: 2013, as packaged by tidyverse/nycflights13
+    at commit df98ef21 (CC0); the reference tables from OurAirports are a 2026 snapshot, so
+    an airport code can have changed between the flight and the reference (Palm Beach International
+    flew as PBI in 2013 and is coded DJT in the 2026 reference).'
+schema:
+- name: silver_flights
+  physicalName: silver_flights
+  logicalType: object
+  physicalType: table
+  description: 'The unified flight table: one row per scheduled departure from New York City
+    in January through June 2013 with its carrier name, its aircraft, and its origin and destination
+    airports joined in, conformance settled here in human-owned SQL so the gold star maps
+    one category. This is the table the flights category of the star is built from and the
+    one to read for any question about flights.'
+  dataGranularityDescription: One row per (flight_date, carrier_code, flight_number, origin_airport,
+    sched_dep_hhmm); the grain is unique by measurement at profile v0001 and enforced by the
+    error-severity grain rule.
+  properties:
+  - name: flight_date
+    logicalType: date
+    physicalType: DATE
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: Local date of the scheduled departure (America/New_York).
+  - name: carrier_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 2
+    description: Two-letter BTS carrier code; a conformed key.
+    quality:
+    - type: sql
+      description: 'Conformed key carrier_code: every value matches ^[A-Z0-9]{2,3}$ (the K1
+        normalization rule, D-41).'
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM {{ ref('silver_flights') }} WHERE NOT regexp_matches(carrier_code, '^[A-Z0-9]{2,3}$')
+      mustBe: 0
+  - name: flight_number
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 3
+    description: Flight number as published.
+  - name: origin_airport
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 4
+    description: Origin airport IATA code (EWR, JFK, LGA); a conformed key shared with the
+      airport_weather category.
+    quality:
+    - type: sql
+      description: 'Conformed key airport_iata: every value matches ^[A-Z]{3}$ (the K1 normalization
+        rule, D-41).'
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM {{ ref('silver_flights') }} WHERE NOT regexp_matches(origin_airport, '^[A-Z]{3}$')
+      mustBe: 0
+  - name: sched_dep_hhmm
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 5
+    description: Scheduled departure clock time, local, HHMM integer (517 is 05:17).
+  - name: dest_airport
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: Destination airport IATA code; a conformed key; dest_* attributes are null
+      for PBI.
+    quality:
+    - type: sql
+      description: 'Conformed key airport_iata: every value matches ^[A-Z]{3}$ (the K1 normalization
+        rule, D-41).'
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM {{ ref('silver_flights') }} WHERE NOT regexp_matches(dest_airport, '^[A-Z]{3}$')
+      mustBe: 0
+  - name: tail_number
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: Aircraft registration as reported; null on 1,521 flights; a conformed key
+      to silver_nyc_planes.
+    quality:
+    - type: sql
+      description: 'Conformed key tail_number: every value matches ^[A-Z0-9]{2,6}$ (the K1
+        normalization rule, D-41).'
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM {{ ref('silver_flights') }} WHERE tail_number IS NOT NULL AND NOT regexp_matches(tail_number, '^[A-Z0-9]{2,6}$')
+      mustBe: 0
+  - name: is_cancelled
+    logicalType: boolean
+    physicalType: BOOLEAN
+    required: true
+    description: True when the flight has no actual departure time (2.9 percent of the window);
+      delays are null on these rows.
+  - name: dep_hhmm
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: Actual departure clock time, local, HHMM; null when cancelled.
+  - name: dep_delay_minutes
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: Departure delay in minutes; negative is early; null when cancelled. The headline
+      on-time measure.
+  - name: arr_hhmm
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: Actual arrival clock time, local at the destination, HHMM; null when cancelled
+      or unreported.
+  - name: sched_arr_hhmm
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: Scheduled arrival clock time, local at the destination, HHMM.
+  - name: arr_delay_minutes
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: Arrival delay in minutes; negative is early; null when cancelled, diverted,
+      or unreported.
+  - name: air_time_minutes
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: Minutes in the air; null wherever arr_delay_minutes is null.
+  - name: distance_miles
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: Great-circle route distance in statute miles.
+  - name: sched_dep_hour_local
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: Scheduled departure hour, local (0 to 23).
+  - name: sched_dep_minute_local
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: Scheduled departure minute, local.
+  - name: departure_hour_utc
+    logicalType: date
+    physicalType: TIMESTAMP
+    required: true
+    description: Scheduled departure hour as a UTC instant; the conformed calendar key at
+      hour grain (joins weather at the origin on the same hour).
+  - name: carrier_name
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: Carrier name from silver_nyc_airlines (2013 names); resolves for every flight.
+  - name: aircraft_manufacturer
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: Manufacturer from the FAA registry via silver_nyc_planes; null when the aircraft
+      is unknown (about 16 percent of flights).
+  - name: aircraft_model
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: Model designation from the FAA registry; null when the aircraft is unknown.
+  - name: aircraft_manufacture_year
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: Year of manufacture from the FAA registry; aircraft age in 2013 is 2013 minus
+      this; null when unknown.
+  - name: aircraft_seat_count
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: Registry seat count; null when the aircraft is unknown.
+  - name: aircraft_engine_type
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: Registry engine type (Turbo-fan, Turbo-jet, and others); null when unknown.
+  - name: origin_airport_name
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: Origin airport name from the 2026 OurAirports reference.
+  - name: origin_municipality
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: Origin airport's served city from the 2026 reference.
+  - name: origin_elevation_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: Origin field elevation in feet.
+  - name: origin_longest_runway_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: Length in feet of the origin's longest open runway with a published length
+      (2026 reference).
+  - name: dest_airport_name
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: Destination airport name from the 2026 reference; null for PBI (recoded DJT).
+  - name: dest_municipality
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: Destination airport's served city; null where the reference does not know
+      the code or the city.
+  - name: dest_iso_region
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: Destination ISO 3166-2 region (US-FL); null for PBI.
+  - name: dest_elevation_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: Destination field elevation in feet; null where unpublished or unresolved.
+  - name: dest_longest_runway_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: Length in feet of the destination's longest open runway; null where unresolved
+      or unpublished.
+  - name: captured_at
+    logicalType: date
+    physicalType: TIMESTAMP
+    required: true
+    description: 'Capture timestamp carried forward from the bronze landing (_airbyte_extracted_at):
+      when this row''s capture entered the pipeline. The incremental watermark the gold layer
+      builds on (D-38). Required from the first version: the model populates it on every row
+      from its first build (F-49). Audit metadata, never a business value.'
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty; the committed extract lands every row.
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (flight_date, carrier_code, flight_number,
+      origin_airport, sched_dep_hhmm) combinations. Declared at error severity because the
+      primaryKey-flag composite test generates at warn severity at datacontract-cli 1.0.12
+      (rule 5: uniqueness as a test, never a trusted constraint).'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT flight_date, carrier_code, flight_number, origin_airport, sched_dep_hhmm
+        FROM {{ ref('silver_flights') }}
+        GROUP BY flight_date, carrier_code, flight_number, origin_airport, sched_dep_hhmm
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+  - type: sql
+    description: 'Join completeness, carrier: at least 1.00 of rows resolve carrier_code in
+      silver_nyc_airlines.carrier_code (measured 1.0000 at profile v0001; every carrier code
+      resolves). The M2 floor of D-41, declared below the measured value so a reference refresh
+      that adds coverage passes and one that loses it fails.'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT 1 FROM {{ ref('silver_flights') }}
+        HAVING SUM(CASE WHEN carrier_name IS NOT NULL THEN 1 ELSE 0 END) * 1.0 / COUNT(*) < 1.0
+      )
+    mustBe: 0
+  - type: sql
+    description: 'Join completeness, aircraft: at least 0.80 of rows resolve tail_number in
+      silver_nyc_planes.tail_number (measured 0.8396 at profile v0001; fleet numbers and missing
+      tail numbers leave 16 percent unresolved). The M2 floor of D-41, declared below the
+      measured value so a reference refresh that adds coverage passes and one that loses it
+      fails.'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT 1 FROM {{ ref('silver_flights') }}
+        HAVING SUM(CASE WHEN aircraft_manufacturer IS NOT NULL THEN 1 ELSE 0 END) * 1.0 / COUNT(*) < 0.8
+      )
+    mustBe: 0
+  - type: sql
+    description: 'Join completeness, origin: at least 1.00 of rows resolve origin_airport
+      in silver_ourairports_airports.iata_code (measured 1.0000 at profile v0001; the three
+      NYC airports all resolve). The M2 floor of D-41, declared below the measured value so
+      a reference refresh that adds coverage passes and one that loses it fails.'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT 1 FROM {{ ref('silver_flights') }}
+        HAVING SUM(CASE WHEN origin_airport_name IS NOT NULL THEN 1 ELSE 0 END) * 1.0 / COUNT(*) < 1.0
+      )
+    mustBe: 0
+  - type: sql
+    description: 'Join completeness, dest: at least 0.97 of rows resolve dest_airport in silver_ourairports_airports.iata_code
+      (measured 0.9791 at profile v0001; PBI does not resolve in the 2026 reference). The
+      M2 floor of D-41, declared below the measured value so a reference refresh that adds
+      coverage passes and one that loses it fails.'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT 1 FROM {{ ref('silver_flights') }}
+        HAVING SUM(CASE WHEN dest_airport_name IS NOT NULL THEN 1 ELSE 0 END) * 1.0 / COUNT(*) < 0.97
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: human
+- property: profileHash
+  value: sha256:2d19b75b44c2aa680549789ba634ee35b281fe90233870346553b2b1fc571e8b
+- property: proposedAt
+  value: '2026-09-02'
+- property: sourceLineage
+  value: silver_nyc_flights (the event rows) + silver_nyc_airlines (carrier_name) + silver_nyc_planes
+    (aircraft_*) + silver_ourairports_airports (origin_* and dest_* attributes) + silver_ourairports_runways
+    (the longest open runway per airport)
+- property: vintage
+  value: flights, airlines, and planes 2013 to 2014 (nycflights13 at df98ef21); airports and
+    runways 2026 (OurAirports at d27027ba)
+- property: conformedKeys
+  value: carrier_code=carrier_code, origin_airport=airport_iata, dest_airport=airport_iata,
+    tail_number=tail_number
+- property: joins
+  value:
+  - name: carrier
+    left_column: carrier_code
+    right_table: silver_nyc_airlines
+    right_column: carrier_code
+    measured_completeness: 1.0
+    floor: 1.0
+    note: every carrier code resolves
+  - name: aircraft
+    left_column: tail_number
+    right_table: silver_nyc_planes
+    right_column: tail_number
+    measured_completeness: 0.8396
+    floor: 0.8
+    note: fleet numbers and missing tail numbers leave 16 percent unresolved
+  - name: origin
+    left_column: origin_airport
+    right_table: silver_ourairports_airports
+    right_column: iata_code
+    measured_completeness: 1.0
+    floor: 1.0
+    note: the three NYC airports all resolve
+  - name: dest
+    left_column: dest_airport
+    right_table: silver_ourairports_airports
+    right_column: iata_code
+    measured_completeness: 0.9791
+    floor: 0.97
+    note: PBI does not resolve in the 2026 reference
+- property: decisionConformance
+  value: settled here in human-owned SQL; the gold star maps this table as the flights category
+    and carries no shared entity dimension (D-41)
+- property: decisionUnresolvedReferences
+  value: kept as null attributes on the flight row, never dropped rows
