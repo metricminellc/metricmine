@@ -1,0 +1,170 @@
+# Hand-authored properties file (F-02, rule 11): export output is scaffold
+# only and is never committed here. Contract enforcement is declared per
+# model (rule 3); every column carries name + data_type (rule 4). Only
+# not_null is a trusted constraint; uniqueness lives in contract-generated
+# tests (rule 5). Rendered from the Arc 6 prep's table specification, then
+# refreshed in place by datacontract dbt sync and reviewed.
+version: 2
+models:
+- name: silver_nyc_planes
+  description: 'Aircraft metadata from the FAA registry for the tail numbers seen in the 2013 New York flights: one row per tail number with manufacturer, model, year of manufacture, engines, seats, and engine type. The reference table that gives silver_flights its aircraft attributes.'
+  config:
+    contract:
+      enforced: true
+    meta:
+      datacontract_cli:
+        contract_id: silver_nyc_planes
+  columns:
+  - name: tail_number
+    data_type: VARCHAR
+    constraints:
+    - type: not_null
+    description: FAA registration (N-number). A conformed key; silver_nyc_flights.tail_number joins here.
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_nyc_planes__tail_number__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field tail_number has no missing values
+    - unique:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_nyc_planes__tail_number__field_unique
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field tail_number has no duplicate values
+  - name: manufacture_year
+    data_type: INTEGER
+    description: Year the aircraft was manufactured; null for 70 aircraft.
+  - name: aircraft_type
+    data_type: VARCHAR
+    constraints:
+    - type: not_null
+    description: FAA aircraft type classification (for example, 'Fixed wing multi engine').
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_nyc_planes__aircraft_type__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field aircraft_type has no missing values
+  - name: manufacturer
+    data_type: VARCHAR
+    constraints:
+    - type: not_null
+    description: Manufacturer as the registry spells it (BOEING, AIRBUS INDUSTRIE, EMBRAER, BOMBARDIER INC, and others; spellings vary by registration and are not normalized here).
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_nyc_planes__manufacturer__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field manufacturer has no missing values
+  - name: model
+    data_type: VARCHAR
+    constraints:
+    - type: not_null
+    description: Model designation as the registry spells it (for example, '737-824').
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_nyc_planes__model__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field model has no missing values
+  - name: engine_count
+    data_type: INTEGER
+    constraints:
+    - type: not_null
+    description: Number of engines.
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_nyc_planes__engine_count__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field engine_count has no missing values
+  - name: seat_count
+    data_type: INTEGER
+    constraints:
+    - type: not_null
+    description: Number of seats per the registry (a capacity indicator, not the airline's configured cabin).
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_nyc_planes__seat_count__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field seat_count has no missing values
+  - name: cruise_speed_mph
+    data_type: INTEGER
+    description: Average cruising speed in mph where the registry records it; null for 3,299 of 3,322 aircraft, so not a usable measure.
+  - name: engine_type
+    data_type: VARCHAR
+    constraints:
+    - type: not_null
+    description: 'Engine type as the registry classifies it: Turbo-fan (2,750), Turbo-jet (535), Reciprocating (28), and a few Turbo-shaft, 4 Cycle, and Turbo-prop.'
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_nyc_planes__engine_type__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field engine_type has no missing values
+  - name: captured_at
+    data_type: TIMESTAMP
+    constraints:
+    - type: not_null
+    description: 'Capture timestamp carried forward from the bronze landing (_airbyte_extracted_at): when this row''s capture entered the pipeline. The incremental watermark the gold layer builds on (D-38). Required from the first version: the model populates it on every row from its first build (F-49). Audit metadata, never a business value.'
+    data_tests:
+    - not_null:
+        config:
+          severity: warn
+          meta:
+            datacontract_cli:
+              check: silver_nyc_planes__captured_at__field_required
+              include_in_tests: true
+              contract_versions:
+              - 1.0.0
+              generated: true
+        description: Check that field captured_at has no missing values
