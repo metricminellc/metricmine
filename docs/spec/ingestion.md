@@ -10,13 +10,17 @@ sample), [D-04](../decisions/decision-register.md#d-04) (transform plane),
 Ingestion lands source data into the bronze schema of the working DuckDB
 warehouse. PyAirbyte owns ingestion in this system. Scope, in full:
 
-- The Airbyte `source-file` connector lands the committed Online Retail II
-  sample CSV (D-15). CSV now. The Parquet twin of the sample is a recorded
+- The Airbyte `source-file` connector lands every committed sample CSV
+  (D-15 as amended by Amendment T): one connector type, many files. The
+  `ingestion.sources` list in `config/default.yaml` names each dataset,
+  its committed CSV, and any reader options its landing needs; the
+  landing loops the connector over the list, each dataset one bronze
+  stream (D-41). CSV now. The Parquet twin of a sample is a recorded
   later increment, not built here.
 - `source-faker` remains the keyless synthetic path for tests that need no
   real data.
 - Nothing else. The README non-goals stand: streaming, Redshift, orchestration
-  platforms, and more than one or two source types.
+  platforms, and any ingestion connector type beyond this one.
 
 Boundary: the [current-state baseline](current-state/data-capture-baseline.md)'s
 acquisition stages are historical record; PyAirbyte owns ingestion in this system.
@@ -29,16 +33,17 @@ memory:
 
 | Key | Value here | Notes |
 | --- | --- | --- |
-| `dataset_name` | `online_retail_ii` | Becomes the bronze stream and table name |
+| `dataset_name` | the entry's `dataset_name` (`online_retail_ii` for the retail sample) | Becomes the bronze stream and table name; unique across the list |
 | `format` | `csv` | Enum: csv, json, jsonl, excel, excel_binary, fwf, feather, parquet, yaml |
-| `url` | path to `data/samples/online_retail_ii/online_retail_ii_<window>.csv` | The committed extract |
+| `url` | the entry's `sample_csv` (`data/samples/<source>/<extract>.csv`) | The committed extract |
 | `provider` | `{"storage": "local"}` | Storage enum: HTTPS, GCS, S3, AzBlob, SSH, SCP, SFTP, local. `local` is restricted on Airbyte Cloud; PyAirbyte runs it locally, which is this system |
-| `reader_options` | `{"dtype": {"Invoice": "str"}}` | Optional JSON string of pandas read_csv options. The Invoice dtype pin keeps C-prefixed cancellation ids as text at the reader, so inference and records agree (set in config/default.yaml at the landing PR). Any further addition is recorded here first |
+| `reader_options` | the entry's `reader_options` (`{"dtype": {"Invoice": "str"}}` for the retail sample) | Optional JSON string of pandas read_csv options, per entry. The Invoice dtype pin keeps C-prefixed cancellation ids as text at the reader, so inference and records agree. Code columns pin `str` so leading zeros survive, and a source whose codes collide with pandas' default missing markers (`NA` is a continent and a country in OurAirports) sets `"keep_default_na": false, "na_values": [""]` so the empty string is the only missing marker (F-50). Any further addition is recorded here first |
 
 ## 3. Bronze conventions
 
 - Schema `bronze` inside `warehouse/metricmine.duckdb` (gitignored, D-03).
-- One table per stream: `bronze.online_retail_ii`.
+- One table per stream, named by `dataset_name`: `bronze.online_retail_ii`
+  for the retail sample; every entry in `ingestion.sources` lands beside it.
 - `_airbyte_*` metadata columns are kept exactly as landed.
 - No renames, no casts, no cleanup in bronze. Bronze is evidence; cleanup
   is silver's contracted job.
@@ -47,7 +52,9 @@ memory:
 
 ## 4. PyAirbyte runtime behavior
 
-- `get_source("source-file", config=..., install_if_missing=True)`. The
+- `get_source("source-file", config=..., install_if_missing=True)`, once
+  per entry in `ingestion.sources`; the landing loops the connector and
+  reads each source into the same cache with replace semantics. The
   connector installs into its own venv on first run and needs network.
 - Cache: `DuckDBCache(db_path="warehouse/metricmine.duckdb",
   schema_name="bronze")`. Parameters verified against the PyAirbyte API
@@ -66,7 +73,9 @@ memory:
 
 ## 5. Acceptance criteria (Phase 2 exit)
 
-1. `bronze.online_retail_ii` row count equals the committed sample's count.
+1. Every bronze table's row count equals its committed sample's count
+   (`bronze.online_retail_ii` first; each further source records its
+   count in its sample README).
 2. Rerunning the landing leaves the count unchanged (replace semantics).
 3. Bronze is inspectable via `duckdb -readonly warehouse/metricmine.duckdb`.
 4. `_airbyte_*` columns are present.
@@ -77,3 +86,19 @@ The committed sample is governed by D-15: Online Retail II (Daqing Chen,
 UCI Machine Learning Repository, CC BY 4.0), a deterministic one-month
 complete-invoice extract under 5 MB, fetch script committed, raw download
 gitignored, Kaggle mirror acceptable for retrieval with UCI cited.
+
+Every further sample follows D-15 as amended (Amendment T): a public
+dataset cited in `data/samples/<source>/README.md` with its license and
+its publisher artifact, fetched by `scripts/fetch_<source>.py` pinned to
+that artifact (a repository commit, a published month) with the raw
+download under gitignored `data/raw/`. The script records the raw
+download's sha256 and refuses to extract from bytes that differ from
+it, so a rerun is byte-identical while the publisher artifact stands
+and a publisher revision is a loud finding. Budgets: 20 MB for the one
+event source, 10 MB for every other source, 40 MB for an arc, enforced
+in the script. The aviation family (D-41): the nycflights13 package's
+flights, hourly weather, carriers, and aircraft tables at a pinned
+commit (CC0; New York City's three airports, January through June 2013
+for the dated tables), and OurAirports airports and runways at a pinned
+commit (public domain). `docs/sources.md` is the register of every
+extract with its pin, license, digest, and window.
