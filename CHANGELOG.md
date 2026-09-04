@@ -11,6 +11,22 @@ measurements.
 
 ## [Unreleased]
 
+### Added
+
+- Decision Record 011: D-41, the multi-source proof and the star trial,
+  with its claim (co-location in gold, conformance in silver, service
+  through the typed surfaces) and its exit criterion written before the
+  first source lands; Amendments R (the conformed calendar, D-17), S
+  (the demo artifact as a release asset with a committed digest
+  manifest, D-03 and D-33), T (committed samples plural with pinned,
+  digest-checked fetch scripts, D-15), U (the engine fan-in, D-29), and
+  V (compiled schema 2.0.0 with conformed keys, D-30), and W (the data
+  and expert-context split in the registry, the subject and context
+  keys on the category listing, D-30 and D-31); findings F-36 through
+  F-53. The specs (engine, gold, ingestion, serving, agent layer,
+  profiler) and CLAUDE.md rules 9, 12, and 18 carry the amended text;
+  the non-goal on source types reads as one ingestion connector type.
+
 ### Changed
 
 - The README names v1.0.0 as the current release and the start of the

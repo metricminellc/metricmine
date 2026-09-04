@@ -63,7 +63,9 @@ The interaction surface is the CLI, the editor, and the pull request. Nothing el
 
 ```
 make propose-silver                    # bronze profile -> draft cleanup contract
+make propose-silver SOURCE=b ORACLE=p  # one bronze table of the family, scored against its contract (D-41)
 make propose-mapping                   # silver profile -> draft mapping contract
+make propose-mapping TABLE=s ORACLE=p  # one unified silver table, scored against its mapping contract (D-41)
 make propose-describe TABLE=t          # the table's own profile -> draft table contract (D-35)
 make propose-amend TABLE=t INTENT="..."  # declared change set over the committed contract (D-35)
 make verify-grain TABLE=t KEYS=a,b     # measure a declared grain, deterministic (F-10)
@@ -79,14 +81,16 @@ make propose-queue MAX=n               # walk the derived queue, capped, one cal
 
 5. **Amend (the amend stance, D-35).** `make propose-amend TABLE=<model> INTENT="<why>"` evolves a COMMITTED contract. Three governed inputs (D-23 Amendment H): the fresh profile, the committed contract (its raw bytes are the canonical bytes hashed into the `amendsContract` stamp, D-22 Amendment I; the staleness re-check hashes the same bytes), and the operator's intent, recorded verbatim in the proposal record. The model emits a declared `changes[]` set; deterministic code applies it as a patch over the committed document, so the draft's diff is the declared set by construction. The validator refuses false claims and undeclared moves symmetrically, derives the version bump from the change directions (patch for neutral, minor for widening, major for narrowing; the human sets the final version at approval), and refuses a narrowing set unless `ALLOW_RELAXATION=1` passes `--allow-relaxation`, which renders at a major bump with the printed rule-6 warning. Additions enter `required: false` with the tightening declared as a follow-up amendment after the model lands (F-28). Amend refuses an uncontracted table and points at describe, the mirror of describe's duplicate-id refusal.
 
+6. **The family selectors (D-41).** The cleanup and propose stances run over one configured table by default (the retail sample). `SOURCE=<bronze table>` points the cleanup stance at `profiles/bronze.<source>/` with the target contract `contracts/silver_<source>.odcs.yaml`; `TABLE=<silver table>` points the propose stance at `profiles/silver.<table>/` with the target `contracts/gold_<category>_mapping.odcs.yaml`; `TARGET=<id>` overrides either default. The same proposer, the same stance, one structured call per run: a family of sources is a family of runs, never a batch inside one call. `ORACLE=<path>` scores the draft against a committed contract the same way describe does (below) and writes `agreement.json` beside the record.
+
 `make demo` replays committed contracts and models, keyless and deterministic, unchanged. A regenerate path chains the propose targets live. Determinism belongs to replay; the human gate contains live variance.
 
 ## 5. Evaluation: the golden-profile set (D-25)
 
-- **Fixtures:** the golden-profile set named in `config/default.yaml` under `agents.eval.fixtures`: the two committed Online Retail II profiles by reference (D-15), one constructed pathological profile under `tests/agents/fixtures/profiles/` built by the script beside it, and the faker path when issue #15 lands. The recorded live proposals live under `tests/agents/fixtures/recorded/` for the render tests.
+- **Fixtures:** the golden-profile set named in `config/default.yaml` under `agents.eval.fixtures`: the two committed Online Retail II profiles by reference (D-15), one constructed pathological profile under `tests/agents/fixtures/profiles/` built by the script beside it, the faker path when issue #15 lands, and since Arc 6 (D-41) the aviation family: six cleanup fixtures (one per bronze source, `source:` selecting it) and two mapping fixtures (`table:` selecting the unified silver table), each naming its `oracle:`, the committed human-authored contract. The recorded live proposals live under `tests/agents/fixtures/recorded/` for the render tests; a fixture whose recording has not landed skips those tests by name until the live run lands it.
 - **Offline, every CI run, keyless:** the render path is tested against recorded proposals and the validator against constructed inputs, in the existing pytest lane.
 - **Live, manual:** `make eval-agents` runs both proposers against the fixtures when a key is present and reports **first-attempt lint pass rate** and **first-attempt groundedness pass rate**, with token and cost actuals. It honors the D-34 model override, so a model comparison is one command; comparing is enabled, not performed.
-- **The agreement study (describe):** under an explicit `--oracle PATH` the describe stance scores its rendered draft against that committed contract on profile-evidenced elements only (per-column first-class fields, presence and order, the grain tuple, rule type shapes) and writes `agreement.json` beside the record. Reported as an n=1 study against self-authored ground truth, never as accuracy.
+- **The agreement study:** under an explicit `--oracle PATH` (or a fixture's `oracle:`) a stance scores its rendered draft against that committed contract on profile-evidenced elements only and writes `agreement.json` beside the record. For a table contract (describe, cleanup): per-column first-class fields, presence and order, the grain tuple, rule type shapes. For a mapping contract (propose): per-property mapping role and first-class fields, presence and order, the category header (entity group, source table, time column and grain, grain type), the role sets, and the degenerate identifiers as declared. Prose, decisions, and provenance never move the score. The eval report carries the study per fixture as agree/checked with the mismatch count. Reported as an n=1 study against self-authored ground truth, never as accuracy.
 - **Deferred by intent:** LLM-as-judge scoring, automated A/B optimization, drift dashboards.
 
 Phase 6 exits with fixtures committed, offline assertions green, and one recorded live run.
@@ -117,7 +121,7 @@ src/metricmine/agents/
 ├── __main__.py         # CLI: propose silver | propose mapping; --profile, --model
 ├── harness.py          # shared call: structured outputs, retry budget, record writing
 ├── models.py           # D-34: default model, allow-list with rate rows, resolver
-├── agreement.py        # the first-class agreement metric (describe, --oracle)
+├── agreement.py        # the first-class agreement metric (table and mapping contracts, --oracle)
 ├── validate.py         # groundedness, completeness, staleness, lint
 ├── render.py           # proposal JSON -> canonical ODCS YAML
 ├── propose_queue.py    # the batch driver: deterministic sequencing (D-35)

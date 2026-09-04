@@ -47,7 +47,13 @@ approves every contract.
 8. Never edit a generated file whose ownership-manifest checksum has diverged
    from its baseline. Flag the drift instead.
 9. The auto-modeling engine emits dbt model files; it does not execute DDL
-   directly. Mapping contract in, gold model files out; dbt builds them.
+   directly. Mapping contracts in (one per fact category, the
+   engine.mapping_contracts list; D-29 as amended by Amendment U), gold
+   model files out; dbt builds them. The star is their fan-in: per
+   category its own dimension pair, fact, and typed surface; once per
+   star the shared groups and the registry as unions over every category
+   in category-name order. Each mapping's silver contract resolves from
+   its sourceTable (silver.<table> reads contracts/<table>.odcs.yaml).
    Mapping contracts live flat in contracts/ beside table contracts
    (physicalType: mapping is the discriminator). A mapping contract's
    category name must never equal a dbt model name: gate 3 fails loudly on
@@ -79,7 +85,24 @@ approves every contract.
     human-owned and is reviewed in the model PR.
 12. Gold is the unified event star per docs/spec/gold-unified-event-star.md:
     content-addressed values/columns dimensions, category-parameterized fact
-    tables, context_registry, and a typed surface per category. Star tables
+    tables, context_registry, and a typed surface per category, under one
+    conformed calendar (the timeframe payload is {grain, period_start} for
+    the whole star; D-17 as amended by Amendment R). Conformance across
+    sources is settled in silver and declared at the contract plane
+    (D-41): conformedKeys on each silver contract that carries a
+    conformed key, conformedKeyRules on the star contract, and the K1
+    gate (tests/test_conformed_keys.py) holding them to each other. A
+    unified silver table declares its joins as structured `joins` with
+    the measured completeness and the floor its rule enforces, and its
+    quality SQL names the table through {{ ref() }} so the sync-generated
+    tests inherit the dependency edge (F-51); the star contract declares
+    the cross-category joins the typed surfaces support
+    (crossCategoryJoins, measured, with a floor and a worked example),
+    and tests/test_declared_joins.py re-measures every declared join.
+    Never write a join completeness that was not measured. Never
+    propose a shared business-entity dimension in gold; a new category is
+    its mapping contract, its three rendered star objects
+    (scripts/render_star_objects.py), and a star contract amendment. Star tables
     and the registry materialize as `table` by default or `incremental`
     behind engine.materialization (D-38; contract enforcement permits
     both, and incremental config lines set on_schema_change fail, F-34).
@@ -167,14 +190,25 @@ approves every contract.
     multi-statement input all refuse, naming the failed check. Every
     query result is row-capped (default 100, hard cap 500) and carries an
     explicit truncated flag: a truncated result must announce itself. The
-    served database resolves MM_SERVE_DB, then demo/demo.duckdb; a
+    served database resolves MM_SERVE_DB, then demo/demo.duckdb (a release
+    asset, restored by make demo-fetch or built by make demo; D-03 as
+    amended by Amendment S); a
     missing file fails closed at startup. list_fact_categories names the
     typed surface per category (typed_table, typed_columns, query_hint;
-    D-31/D-32 as amended): analytical questions belong to that surface,
-    and the star tables stay the provenance layer. Exactly five tools;
-    never add a sixth without amending the register. Server code never prints to
-    stdout (stdio carries JSON-RPC); diagnostics go to stderr. Spec:
-    docs/spec/serving.md.
+    D-31/D-32 as amended) plus its authored subject and its registry
+    keys (context_keys; Amendment W): analytical questions belong to
+    that surface, and the star tables stay the provenance layer. Every
+    registry entry keeps data (the typed declarations, derived) and
+    expert_context (what people wrote in the contracts, carried
+    unchanged and labeled authored) apart by name (D-30 and D-31 as
+    amended by Amendment W); never fold prose into data or a
+    measurement into expert_context, and never write a description
+    anywhere but the contract it belongs to. String values on the typed
+    surface are canonical lowercase text (D-18 as amended); the
+    registry, the hint, and the server instructions say so. Exactly
+    five tools; never add a sixth without amending the register. Server
+    code never prints to stdout (stdio carries JSON-RPC); diagnostics
+    go to stderr. Spec: docs/spec/serving.md.
 19. The stable line began at v1.0.0 (September 2, 2026). The pipeline, the
     engine, the serving layer, the two proposers, and the gates change
     only through the decision register; experiments live on branches or
@@ -206,17 +240,21 @@ approves every contract.
   the shared module: exactly the five spec tools, each a delegation. It
   holds no SQL, no connection logic, and no fallback paths of its own.
 - The demo exporter (`src/metricmine/export_demo.py`) writes exactly one
-  artifact, `demo/demo.duckdb`, and nothing else. The working warehouse
-  stays gitignored (D-03); export claims are content equality by query,
-  never byte equality (D-33).
+  artifact, `demo/demo.duckdb`, plus its digest manifest,
+  `demo/demo.digest.json`, and nothing else. The manifest is committed;
+  the artifact is gitignored and ships as a release asset (D-03 and D-33
+  as amended by Amendment S). The working warehouse stays gitignored
+  (D-03); export claims are content equality by query, never byte
+  equality (D-33). Never commit a DuckDB file.
 - Portability is delegated to dbt profiles. Do not build a parallel warehouse
   abstraction for the transform layer.
 
 ## Non-goals (never propose or build these)
 Multi-tenancy, auth, billing, any UI beyond the optional read-only demo,
 streaming, Redshift, orchestration platforms, autonomous multi-step agents,
-more than one or two source types, petabyte or throughput claims, and
-production SLAs.
+ingestion connector types beyond the one PyAirbyte file connector (many
+files of that type are in scope, D-41), petabyte or throughput claims,
+and production SLAs.
 
 ## Toolchain
 Python 3.12, uv for packaging, ruff for linting, pytest for tests. dbt Core with

@@ -32,13 +32,16 @@ All toolchain behavior cited below was observed at the pinned toolchain
 ## 1. Purpose and boundary
 
 The auto-modeling engine is deterministic code, not an agent. It consumes
-two approved contracts, a **mapping contract** (declared by this spec) and
-the **gold star contract** (`contracts/gold_unified_event_star.odcs.yaml`),
-and emits the dbt model files that build the unified event star: the
-values/columns dimension pairs, the category fact table, the context
-registry, and the uncontracted typed surface per category: the
-materialized typed mart and the projection view, per the `engine.marts`
-configuration (D-36). It never
+approved contracts only: one **mapping contract** per fact category
+(declared by this spec; `engine.mapping_contracts` lists them, D-29 as
+amended by Amendment U) and the **gold star contract**
+(`contracts/gold_unified_event_star.odcs.yaml`), and emits the dbt model
+files that build the unified event star: per category, the
+values/columns dimension pair, the fact table, and the uncontracted
+typed surface (the materialized typed mart and the projection view, per
+the `engine.marts` configuration, D-36); once per star, the three shared
+group pairs and the context registry, each a union over every category
+in category-name order. It never
 executes DDL, never writes to the warehouse, never runs at proposer
 runtime, and never writes outside `transform/models/gold/` plus its
 ownership manifest (D-07, D-09). dbt builds what the engine emits; the
@@ -48,12 +51,17 @@ The signature property this machinery exists to demonstrate (D-17): a new
 dimension added to the mapping contract flows through regeneration and
 `dbt build` with no engine code change, no physical schema change, and no
 gold contract amendment, announced by a new schema key in the columns
-dimension and a registry row.
+dimension and a registry row. A new category is a new mapping contract,
+its five gold objects, and a star contract amendment declaring its
+three contracted objects (F-42); the engine code does not change.
 
 ## 2. The mapping contract
 
 One mapping contract declares how one silver table maps into one fact
-category. It is a native ODCS v3.1.0 document living flat in `contracts/`
+category; the star is the fan-in of every mapping the configuration
+lists (Amendment U), each one's silver contract resolved by convention
+from its `sourceTable` (`silver.<table>` reads
+`contracts/<table>.odcs.yaml`). It is a native ODCS v3.1.0 document living flat in `contracts/`
 beside the table contracts, and simultaneously an instance of the machine
 schema in [`engine/mapping-contract.schema.json`](engine/mapping-contract.schema.json).
 Every mapping element is **first-class YAML**: machine-consumed schema
@@ -193,9 +201,14 @@ the following are therefore requirements, not hopes:
    hyphens preserved; manifests serialize as compact JSON arrays in
    declared order (D-18, unchanged).
 
-The timeframe dimension payload derives from `timeColumn` truncated to
-`timeGrain` (`date_trunc` at the declared grain), then rendered canonically
-like every other payload value.
+The timeframe dimension payload is the conformed calendar (D-17 as
+amended by Amendment R): `{grain, period_start}` under one fixed
+manifest `["grain","period_start"]` for the whole star, `period_start`
+the category's `timeColumn` truncated to `timeGrain` (`date_trunc` at
+the declared grain) and rendered canonically like every other payload
+value, `grain` the declared grain name. Equal periods at equal grain
+hash to one row whichever category minted them; the typed surfaces
+extract `$.period_start` into each category's time column.
 
 ## 4. Registry population (D-30)
 
@@ -229,9 +242,13 @@ it; the diff arrives as a regeneration PR (D-09).
 
 ## 5. Emission mechanics
 
-- **Inputs:** the mapping contract (validated against the JSON Schema,
-  then cross-checked), the gold star contract, and the compiled-context
-  artifact version pinned for the registry.
+- **Inputs:** every mapping contract `engine.mapping_contracts` lists
+  (each validated against the JSON Schema, then cross-checked), the
+  silver contract each one names through `sourceTable`, the gold star
+  contract, and the compiled-context artifact version pinned for the
+  registry. Star-level cross-checks, fail-closed: category names
+  unique, source tables unique, `captured_at` declared on every mapped
+  silver table (the batch watermark, D-38).
 - **Reader cross-checks beyond the JSON Schema** (the engine's static
   groundedness, all fail-closed): every mapped field exists in the silver
   contract named by `sourceTable`; `timeColumn` is declared with role
@@ -239,10 +256,11 @@ it; the diff arrives as a regeneration PR (D-09).
   (`degenerateIdentifiers` columns, `of` lists, `aggregations` keys)
   names a declared field; measures are numeric logical types; the
   category name violates no reserved pattern.
-- **Outputs (the emission set: category-parameterized tables plus the
-  star-global objects):** `dim_<category>_values.sql`,
+- **Outputs (the emission set: category-parameterized tables per
+  mapping plus the star-global objects once):** `dim_<category>_values.sql`,
   `dim_<category>_columns.sql`, the shared group dims
-  (`dim_source_*`, `dim_run_*`, `dim_timeframe_*`), the fact
+  (`dim_source_*`, `dim_run_*`, `dim_timeframe_*`, each a union over
+  every category in category-name order), the fact
   `fact_<category>_values.sql`, `context_registry.sql`, the typed
   surface per `engine.marts` (D-36: `mart_<category>_typed.sql` under
   `table` or `both`, `vw_<category>_typed.sql` under `view` or `both`;
@@ -252,9 +270,9 @@ it; the diff arrives as a regeneration PR (D-09).
   contract's object catalog: star tables always; `context_registry` and
   the typed surface join it once the contract declares
   `context_registry` (the extended-star activation, F-20 era), and the
-  ownership manifest then pins the compiled-context artifact version. `dim_run` payload carries the
-  mapping contract name and version and the engine version, lineage as
-  deterministic content (D-17); audit stamps (`loaded_at`) stay plain
+  ownership manifest then pins the compiled-context artifact version. `dim_run` payload carries, one row
+  per category, the mapping contract name and version and the engine
+  version, lineage as deterministic content (D-17); audit stamps (`loaded_at`) stay plain
   columns outside every hashed payload.
 - **Generated-by headers** (D-09), exact form, first two lines of every
   emitted file (`--` for SQL, `#` for YAML):
@@ -264,6 +282,13 @@ it; the diff arrives as a regeneration PR (D-09).
   -- Engine-owned (D-09): do not edit; flag drift instead (rule 8). Spec: docs/spec/engine.md.
   ```
 
+  The star-global objects (the shared group pairs and the registry) name
+  the star and every mapping instead, in category-name order:
+
+  ```
+  -- Generated by metricmine-engine v<engine_version> from gold_unified_event_star v<version> over <n> mapping contracts (<mapping_contract_id> v<version>, ...).
+  ```
+
   Projections replace the second line with the derivative label:
   `-- Derivative typed projection over the star; uncontracted by design (D-17). Do not edit; flag drift instead (rule 8).`
   The mart replaces it with its own:
@@ -271,8 +296,9 @@ it; the diff arrives as a regeneration PR (D-09).
   Headers survive sync verbatim (F-14).
 - **Ownership manifest:** `transform/models/gold/ownership-manifest.json`,
   canonical JSON, deterministic content only (no timestamps; regeneration
-  must be byte-reproducible): `engine_version`, `sources` (mapping
-  contract id + version, gold contract id + version, compiled-context
+  must be byte-reproducible): `engine_version`, `sources` (every mapping
+  contract's id + version under `mapping_contracts`, in category-name
+  order; gold contract id + version; compiled-context
   version), and `files` mapping each emitted path to `sha256:<hex>` over
   its fixed-point bytes. The manifest never lists itself.
 - **Write discipline:** compute the full emission set in memory; validate
@@ -463,8 +489,10 @@ groups per category, performance claims),
 plus: the engine never reads the warehouse (it reads contracts and the
 compiled-context artifact; conservation numbers come from dbt tests, not
 engine queries); no template language or plugin surface (emitters are
-plain Python); no multi-source fan-in (one mapping contract, one silver
-table, one category; more source types stay a standing non-goal); no
+plain Python); no shared business-entity dimensions (conformance is
+settled in silver and declared at the contract plane, D-41; the fan-in
+co-locates categories and unions the shared groups, nothing more;
+ingestion connector types beyond the one stay a standing non-goal); no
 engine-side scheduling (regeneration is a human-invoked make target
 landing as a PR).
 

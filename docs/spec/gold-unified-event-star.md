@@ -20,10 +20,17 @@
 ## Purpose
 
 Gold is the unified event star: a source-invariant, self-describing, content-addressed
-star schema. Every source lands in the same physical shape, so new sources add rows,
-not schema. The auto-modeling engine consumes an approved mapping contract and emits
-the dbt models that build it (D-07). The star is the terminal gold layer (D-17); it
-serves consumers only through the shared query module, with the MCP server primary.
+star schema. Every source lands in the same physical shape: within a category, a new
+source of that shape adds rows, not schema, and the three shared groups and the
+registry are one set for the whole star; a new category adds its five objects and a
+star contract amendment, so the shape is what stays invariant, never the object
+count (F-42). The auto-modeling engine consumes one approved mapping contract per
+category and emits the dbt models that build the star as their fan-in (D-07; D-29 as
+amended by Amendment U). Conformance across sources is settled in silver and declared
+at the contract plane (D-41): the star co-locates categories under one registry and
+one conformed calendar and carries no shared business-entity dimension. The star is
+the terminal gold layer (D-17); it serves consumers only through the shared query
+module, with the MCP server primary.
 
 ## Objects
 
@@ -33,8 +40,8 @@ models, landing as pull requests under the ownership manifest (D-09).
 | Object | Kind | Key | Contents |
 |---|---|---|---|
 | `dim_source_values` / `dim_source_columns` | table | record hash / schema hash | Source-system group. Constant per build per source. |
-| `dim_run_values` / `dim_run_columns` | table | record hash / schema hash | Lineage group: mapping contract name + version, engine version. Deterministic content only. |
-| `dim_timeframe_values` / `dim_timeframe_columns` | table | record hash / schema hash | Time group from the mapping contract's declared time columns, at declared grain. Per row. |
+| `dim_run_values` / `dim_run_columns` | table | record hash / schema hash | Lineage group, one row per category: mapping contract name + version, engine version. Deterministic content only. |
+| `dim_timeframe_values` / `dim_timeframe_columns` | table | record hash / schema hash | The conformed calendar (Amendment R): payload `{grain, period_start}` under one manifest for the star, `period_start` each category's declared time column truncated to its grain. Equal periods at equal grain are one row across categories. |
 | `dim_<category>_values` / `dim_<category>_columns` | table | record hash / schema hash | Dimension set per fact category: attribute payload + manifest. Deduplicated by content key. |
 | `fact_<category>_values` | table | composite PK, below | Measure payload, manifest FK, group-key FKs. One row per declared grain. |
 | `context_registry` | table | schema key PK | `schema_key`, entity group, contract name, contract version, compiled context. Written by the context compiler. |
@@ -117,7 +124,10 @@ decision candidate.
 Schema keys are the address of meaning. The context compiler writes one row per
 schema key: entity group, governing contract name + version, and the compiled
 context gathered at approval time. Contracts are never embedded in payloads.
-`get-context` in the MCP server is a registry lookup.
+`get-context` in the MCP server is a registry lookup. Since compiled schema
+2.0.0 (Amendment V) the shared groups' rows cite the star contract, and each
+category's dimensions row names its conformed keys, so an agent learns which
+columns join across categories from the registry, never from prose.
 
 ## Conservation tests (carried from the 2023 ledger)
 
@@ -161,7 +171,18 @@ tables and the registry, and the typed surface stays derivative. One ODCS contra
 `contracts/gold_unified_event_star.odcs.yaml`, covers all star tables plus the
 registry as schema objects, versioned as one unit. Because the physical shape is
 source-invariant, this contract is stable: payload evolution surfaces as new
-schema keys (data), never as contract amendments (governance).
+schema keys (data), never as contract amendments (governance). A new category is
+the one amendment the shape asks for: its three contracted objects rendered from
+its mapping contract (`scripts/render_star_objects.py`), its line in the C3 union,
+its conformed keys under `conformedKeyRules`, and the cross-category joins its
+typed surface supports under `crossCategoryJoins` (D-41): per join the two
+categories, the condition aliased by category name so an agent pastes it under
+`mart_<left>_typed AS <left> JOIN mart_<right>_typed AS <right>` unchanged, the
+conformed keys and the calendar grain it rides on, the completeness measured
+through the typed surfaces, the floor, a note, and a worked example. The
+declared-join gate (`tests/test_declared_joins.py`) re-measures every one of
+them, and the context compiler carries them into every participating
+category's expert context (Amendment W).
 
 ## Signature test (restated per D-17)
 
