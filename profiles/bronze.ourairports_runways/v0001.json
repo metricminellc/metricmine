@@ -1,0 +1,474 @@
+{
+  "caps": {
+    "max_distinct_values": 20,
+    "max_sample_values": 10,
+    "max_string_chars": 120
+  },
+  "content_hash": "sha256:02990e96b848ac4edf287fdcca8136ca6b04008ab98d2a2f5287e450b0eecb33",
+  "dataset": {
+    "columns": [
+      {
+        "distinct_count": 10760,
+        "is_airbyte_metadata": false,
+        "name": "id",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "VARCHAR",
+        "sample_values": [
+          "232758",
+          "232759",
+          "232762",
+          "232763",
+          "232764",
+          "232765",
+          "232766",
+          "232768",
+          "232769",
+          "232770"
+        ]
+      },
+      {
+        "distinct_count": 7591,
+        "is_airbyte_metadata": false,
+        "name": "airport_ref",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "VARCHAR",
+        "sample_values": [
+          "10309",
+          "10366",
+          "10532",
+          "1058",
+          "10784",
+          "10856",
+          "1088",
+          "10905",
+          "1092",
+          "111"
+        ]
+      },
+      {
+        "distinct_count": 7591,
+        "is_airbyte_metadata": false,
+        "name": "airport_ident",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "VARCHAR",
+        "sample_values": [
+          "03N",
+          "07FA",
+          "0CO2",
+          "0NM0",
+          "0TE7",
+          "13Z",
+          "16A",
+          "16K",
+          "19AK",
+          "19P"
+        ]
+      },
+      {
+        "distinct_count": 3775,
+        "is_airbyte_metadata": false,
+        "max": 16798.0,
+        "min": 0.0,
+        "name": "length_ft",
+        "null_count": 86,
+        "null_rate": 0.007993,
+        "physical_type": "DECIMAL(38,9)",
+        "sample_values": [
+          0.0,
+          2.0,
+          20.0,
+          24.0,
+          26.0,
+          30.0,
+          37.0,
+          40.0,
+          42.0,
+          44.0
+        ]
+      },
+      {
+        "distinct_count": 204,
+        "is_airbyte_metadata": false,
+        "max": 7000.0,
+        "min": 1.0,
+        "name": "width_ft",
+        "null_count": 888,
+        "null_rate": 0.082528,
+        "physical_type": "DECIMAL(38,9)",
+        "sample_values": [
+          1.0,
+          10.0,
+          15.0,
+          17.0,
+          18.0,
+          20.0,
+          22.0,
+          23.0,
+          25.0,
+          26.0
+        ]
+      },
+      {
+        "distinct_count": 239,
+        "is_airbyte_metadata": false,
+        "name": "surface",
+        "null_count": 247,
+        "null_rate": 0.022955,
+        "physical_type": "VARCHAR",
+        "sample_values": [
+          "ASP",
+          "ASP-G",
+          "ASP/CON",
+          "ASP/CONC",
+          "ASP/GVL",
+          "ASPH",
+          "ASPH 71/F/C/X/T",
+          "ASPH-CONC",
+          "ASPH-CONC-F",
+          "ASPH-CONC-G"
+        ]
+      },
+      {
+        "distinct_count": 2,
+        "distinct_values": [
+          0.0,
+          1.0
+        ],
+        "is_airbyte_metadata": false,
+        "max": 1.0,
+        "min": 0.0,
+        "name": "lighted",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "DECIMAL(38,9)"
+      },
+      {
+        "distinct_count": 2,
+        "distinct_values": [
+          0.0,
+          1.0
+        ],
+        "is_airbyte_metadata": false,
+        "max": 1.0,
+        "min": 0.0,
+        "name": "closed",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "DECIMAL(38,9)"
+      },
+      {
+        "distinct_count": 199,
+        "is_airbyte_metadata": false,
+        "name": "le_ident",
+        "null_count": 11,
+        "null_rate": 0.001022,
+        "physical_type": "VARCHAR",
+        "sample_values": [
+          "-12",
+          ".",
+          "00",
+          "009",
+          "01",
+          "01C",
+          "01H",
+          "01L",
+          "01R",
+          "02"
+        ]
+      },
+      {
+        "distinct_count": 8333,
+        "is_airbyte_metadata": false,
+        "max": 82.512802,
+        "min": -62.187801,
+        "name": "le_latitude_deg",
+        "null_count": 2377,
+        "null_rate": 0.220911,
+        "physical_type": "DECIMAL(38,9)",
+        "sample_values": [
+          -62.187801,
+          -54.931,
+          -54.8442,
+          -53.778099,
+          -53.251099,
+          -53.249802,
+          -53.007999,
+          -53.001202,
+          -52.997501,
+          -51.824402
+        ]
+      },
+      {
+        "distinct_count": 8290,
+        "is_airbyte_metadata": false,
+        "max": 179.338837,
+        "min": -179.881256,
+        "name": "le_longitude_deg",
+        "null_count": 2381,
+        "null_rate": 0.221283,
+        "physical_type": "DECIMAL(38,9)",
+        "sample_values": [
+          -179.881256,
+          -178.071487,
+          -177.393005,
+          -176.658005,
+          -176.647995,
+          -176.473007,
+          -176.209,
+          -175.160995,
+          -175.139008,
+          -174.345993
+        ]
+      },
+      {
+        "distinct_count": 2648,
+        "is_airbyte_metadata": false,
+        "max": 13202.0,
+        "min": -1246.0,
+        "name": "le_elevation_ft",
+        "null_count": 2973,
+        "null_rate": 0.276301,
+        "physical_type": "DECIMAL(38,9)",
+        "sample_values": [
+          -1246.0,
+          -184.0,
+          -127.0,
+          -116.0,
+          -115.0,
+          -79.0,
+          -74.0,
+          -73.0,
+          -70.0,
+          -69.0
+        ]
+      },
+      {
+        "distinct_count": 1458,
+        "is_airbyte_metadata": false,
+        "max": 360.0,
+        "min": 0.0,
+        "name": "le_heading_degt",
+        "null_count": 2457,
+        "null_rate": 0.228346,
+        "physical_type": "DECIMAL(38,9)",
+        "sample_values": [
+          0.0,
+          0.2,
+          0.4,
+          0.7,
+          1.0,
+          1.12,
+          1.5,
+          1.9,
+          2.0,
+          2.1
+        ]
+      },
+      {
+        "distinct_count": 568,
+        "is_airbyte_metadata": false,
+        "max": 4250.0,
+        "min": 1.0,
+        "name": "le_displaced_threshold_ft",
+        "null_count": 9514,
+        "null_rate": 0.884201,
+        "physical_type": "DECIMAL(38,9)",
+        "sample_values": [
+          1.0,
+          2.0,
+          10.0,
+          19.0,
+          23.0,
+          30.0,
+          32.0,
+          33.0,
+          53.0,
+          57.0
+        ]
+      },
+      {
+        "distinct_count": 177,
+        "is_airbyte_metadata": false,
+        "name": "he_ident",
+        "null_count": 53,
+        "null_rate": 0.004926,
+        "physical_type": "VARCHAR",
+        "sample_values": [
+          "-",
+          ".",
+          "00",
+          "01",
+          "01L",
+          "01R",
+          "04R",
+          "1",
+          "10",
+          "11"
+        ]
+      },
+      {
+        "distinct_count": 8319,
+        "is_airbyte_metadata": false,
+        "max": 82.522797,
+        "min": -62.193901,
+        "name": "he_latitude_deg",
+        "null_count": 2391,
+        "null_rate": 0.222212,
+        "physical_type": "DECIMAL(38,9)",
+        "sample_values": [
+          -62.193901,
+          -54.931198,
+          -54.8424,
+          -53.777302,
+          -53.257599,
+          -53.245201,
+          -53.013802,
+          -53.000599,
+          -52.994801,
+          -51.823898
+        ]
+      },
+      {
+        "distinct_count": 8265,
+        "is_airbyte_metadata": false,
+        "max": 179.343002,
+        "min": -179.873184,
+        "name": "he_longitude_deg",
+        "null_count": 2391,
+        "null_rate": 0.222212,
+        "physical_type": "DECIMAL(38,9)",
+        "sample_values": [
+          -179.873184,
+          -178.061371,
+          -177.369995,
+          -176.651001,
+          -176.626999,
+          -176.457001,
+          -176.190002,
+          -175.139008,
+          -174.335999,
+          -174.203995
+        ]
+      },
+      {
+        "distinct_count": 2668,
+        "is_airbyte_metadata": false,
+        "max": 13314.0,
+        "min": -1210.0,
+        "name": "he_elevation_ft",
+        "null_count": 2972,
+        "null_rate": 0.276208,
+        "physical_type": "DECIMAL(38,9)",
+        "sample_values": [
+          -1210.0,
+          -181.0,
+          -135.0,
+          -133.0,
+          -131.0,
+          -76.0,
+          -72.0,
+          -71.0,
+          -70.0,
+          -69.0
+        ]
+      },
+      {
+        "distinct_count": 1457,
+        "is_airbyte_metadata": false,
+        "max": 362.0,
+        "min": 0.0,
+        "name": "he_heading_degt",
+        "null_count": 2444,
+        "null_rate": 0.227138,
+        "physical_type": "DECIMAL(38,9)",
+        "sample_values": [
+          0.0,
+          0.1,
+          0.2,
+          0.3,
+          0.4,
+          0.5,
+          0.6,
+          0.7,
+          0.8,
+          0.9
+        ]
+      },
+      {
+        "distinct_count": 533,
+        "is_airbyte_metadata": false,
+        "max": 4790.0,
+        "min": 10.0,
+        "name": "he_displaced_threshold_ft",
+        "null_count": 9683,
+        "null_rate": 0.899907,
+        "physical_type": "DECIMAL(38,9)",
+        "sample_values": [
+          10.0,
+          30.0,
+          33.0,
+          49.0,
+          50.0,
+          65.0,
+          66.0,
+          70.0,
+          75.0,
+          76.0
+        ]
+      },
+      {
+        "distinct_count": 10760,
+        "is_airbyte_metadata": true,
+        "name": "_airbyte_raw_id",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "VARCHAR",
+        "sample_values": [
+          "06a98b0a-93db-7be1-8000-48b76a2729d6",
+          "06a98b0a-93dd-71f4-8000-3fad0a0020e0",
+          "06a98b0a-93dd-7515-8000-63f1cf163a05",
+          "06a98b0a-93dd-7720-8000-63e3f3be0c4b",
+          "06a98b0a-93dd-78c6-8000-bae6fe70da62",
+          "06a98b0a-93dd-7a52-8000-08bd639facfc",
+          "06a98b0a-93dd-7bd2-8000-d10baba16fd0",
+          "06a98b0a-93dd-7d51-8000-e6b03781ed9c",
+          "06a98b0a-93dd-7ee3-8000-1a30ea897875",
+          "06a98b0a-93de-704b-8000-27f8fd3e1ffb"
+        ]
+      },
+      {
+        "distinct_count": 2,
+        "distinct_values": [
+          "2026-09-02T23:26:33",
+          "2026-09-02T23:26:34"
+        ],
+        "is_airbyte_metadata": true,
+        "max": "2026-09-02T23:26:34",
+        "min": "2026-09-02T23:26:33",
+        "name": "_airbyte_extracted_at",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "TIMESTAMP"
+      },
+      {
+        "distinct_count": 1,
+        "distinct_values": [
+          "{}"
+        ],
+        "is_airbyte_metadata": true,
+        "name": "_airbyte_meta",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "JSON"
+      }
+    ],
+    "duplicate_row_rate": 0.0,
+    "row_count": 10760,
+    "schema": "bronze",
+    "table": "ourairports_runways"
+  },
+  "schema_version": "1.0.0"
+}

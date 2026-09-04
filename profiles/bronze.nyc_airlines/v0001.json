@@ -1,0 +1,119 @@
+{
+  "caps": {
+    "max_distinct_values": 20,
+    "max_sample_values": 10,
+    "max_string_chars": 120
+  },
+  "content_hash": "sha256:563ce524575653bb56c6486fca096627efd990b3d17b0b48912886100b1cda22",
+  "dataset": {
+    "columns": [
+      {
+        "distinct_count": 16,
+        "distinct_values": [
+          "9E",
+          "AA",
+          "AS",
+          "B6",
+          "DL",
+          "EV",
+          "F9",
+          "FL",
+          "HA",
+          "MQ",
+          "OO",
+          "UA",
+          "US",
+          "VX",
+          "WN",
+          "YV"
+        ],
+        "is_airbyte_metadata": false,
+        "name": "carrier",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "VARCHAR"
+      },
+      {
+        "distinct_count": 16,
+        "distinct_values": [
+          "AirTran Airways Corporation",
+          "Alaska Airlines Inc.",
+          "American Airlines Inc.",
+          "Delta Air Lines Inc.",
+          "Endeavor Air Inc.",
+          "Envoy Air",
+          "ExpressJet Airlines Inc.",
+          "Frontier Airlines Inc.",
+          "Hawaiian Airlines Inc.",
+          "JetBlue Airways",
+          "Mesa Airlines Inc.",
+          "SkyWest Airlines Inc.",
+          "Southwest Airlines Co.",
+          "US Airways Inc.",
+          "United Air Lines Inc.",
+          "Virgin America"
+        ],
+        "is_airbyte_metadata": false,
+        "name": "name",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "VARCHAR"
+      },
+      {
+        "distinct_count": 16,
+        "distinct_values": [
+          "06a98b09-9d5f-7d1f-8000-66033e8441d3",
+          "06a98b09-9d60-7cfa-8000-04c435f3d615",
+          "06a98b09-9d60-7ee2-8000-eeef9cce32a7",
+          "06a98b09-9d60-7ffb-8000-49646f2fb1f5",
+          "06a98b09-9d61-70ea-8000-d57403e27675",
+          "06a98b09-9d61-71d4-8000-09fc48759a0e",
+          "06a98b09-9d61-7635-8000-5f62222f4105",
+          "06a98b09-9d61-77d6-8000-84b1d6b3a31d",
+          "06a98b09-9d61-78e0-8000-508587a40a0f",
+          "06a98b09-9d61-79d0-8000-f13f8f6cdeaa",
+          "06a98b09-9d61-7aa5-8000-d743235d794b",
+          "06a98b09-9d61-7b70-8000-73446617d5f2",
+          "06a98b09-9d61-7c3b-8000-2c193150077f",
+          "06a98b09-9d61-7d00-8000-8f23843f9387",
+          "06a98b09-9d61-7dca-8000-6193672667b0",
+          "06a98b09-9d61-7e8e-8000-0aa8ce1d4e33"
+        ],
+        "is_airbyte_metadata": true,
+        "name": "_airbyte_raw_id",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "VARCHAR"
+      },
+      {
+        "distinct_count": 1,
+        "distinct_values": [
+          "2026-09-02T23:26:17"
+        ],
+        "is_airbyte_metadata": true,
+        "max": "2026-09-02T23:26:17",
+        "min": "2026-09-02T23:26:17",
+        "name": "_airbyte_extracted_at",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "TIMESTAMP"
+      },
+      {
+        "distinct_count": 1,
+        "distinct_values": [
+          "{}"
+        ],
+        "is_airbyte_metadata": true,
+        "name": "_airbyte_meta",
+        "null_count": 0,
+        "null_rate": 0.0,
+        "physical_type": "JSON"
+      }
+    ],
+    "duplicate_row_rate": 0.0,
+    "row_count": 16,
+    "schema": "bronze",
+    "table": "nyc_airlines"
+  },
+  "schema_version": "1.0.0"
+}
