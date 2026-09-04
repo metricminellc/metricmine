@@ -51,6 +51,24 @@ order by design.
 | [F-33](#f-33) | A working-tree guard must allow the tool's own state and a runner's action directory; the prep's stdin cases could not see either | SDLC rung |
 | [F-34](#f-34) | Contracted incremental models require on_schema_change at dbt 1.12 | Incremental rung |
 | [F-35](#f-35) | Sync carries jinja var guards in quality-rule SQL verbatim | Incremental rung |
+| [F-36](#f-36) | Under `uv run`, `shutil.which("uv")` finds the venv's locked uv, not the operator's | SDLC rung |
+| [F-37](#f-37) | The devcontainer installs uv unpinned at create | SDLC rung |
+| [F-38](#f-38) | GitHub's GraphQL `issueTemplates` field lists no YAML issue forms | SDLC rung |
+| [F-39](#f-39) | `loaded_at` and `captured_at` are build stamps; demo equality holds at the content layer | SDLC rung |
+| [F-40](#f-40) | uv.lock bytes vary with the uv version that wrote them | SDLC rung |
+| [F-41](#f-41) | A `pull_request` workflow added by a pull request runs on that pull request | SDLC rung |
+| [F-42](#f-42) | The star is category-parameterized: a new category adds five objects and a contract amendment | Multi-source rung |
+| [F-43](#f-43) | The timeframe group did not conform across categories; the conformed calendar does | Multi-source rung |
+| [F-44](#f-44) | Hex hash text dominates the star's storage; block size is not a lever | Multi-source rung |
+| [F-45](#f-45) | Profile artifacts embed capture-time values; a full run re-mints every artifact | Multi-source rung |
+| [F-46](#f-46) | The committed silver profile predates `captured_at`; the scan reads it as an amend item | Multi-source rung |
+| [F-47](#f-47) | The local-marked pytest lane was red at v1.0.0 and CI could not see it | Multi-source rung |
+| [F-48](#f-48) | Sync names generated tests by contract version; a bump leaves the old files | Multi-source rung |
+| [F-49](#f-49) | A measured zero-null column declared optional is a scan disagreement; new contracts declare `captured_at` required | Multi-source rung |
+| [F-50](#f-50) | The source-file connector's pandas defaults read "NA" as missing | Multi-source rung |
+| [F-51](#f-51) | Sync-generated singular tests carry no dependency edge; a silver model built from other silver models names itself through `ref()` in its rules | Multi-source rung |
+| [F-52](#f-52) | YAML 1.1 boolean words as mapping keys: `on` parses as `True` and breaks canonical sorting | Multi-source rung |
+| [F-53](#f-53) | dbt's partial-parse cache keeps a test disabled across the F-13 window; the regeneration build clears `transform/target` | Multi-source rung |
 
 ## Command surface (datacontract-cli 1.0.12)
 
@@ -769,6 +787,8 @@ their author imagined.
 ([`evidence/2026-08-29_phase8_exit.md`](evidence/2026-08-29_phase8_exit.md);
 [`tests/hooks/test_working_tree_guard.py`](../../tests/hooks/test_working_tree_guard.py))
 
+## Incremental rung (Arc 5b prep, August 31, 2026)
+
 ### F-34
 **Contracted incremental models require `on_schema_change` at dbt 1.12.**
 Observed at the Arc 5b prep (August 31, 2026), on the first incremental
@@ -803,3 +823,231 @@ the unscoped run.
 [`contracts/gold_unified_event_star.odcs.yaml`](../../contracts/gold_unified_event_star.odcs.yaml);
 the compiled forms under dbt's target directory on any `--vars` run)
 
+## SDLC rung, continued (Arc 4 execution, September 2, 2026)
+
+### F-36
+**Under `uv run`, `shutil.which("uv")` finds the venv's locked uv
+package, not the operator's uv.** Observed at the Arc 4 execution
+(September 2, 2026): PyAirbyte's dependency set pins a `uv` PyPI package
+(0.8.24 at airbyte 0.53.2), the project venv's `bin` leads PATH under
+`uv run`, and doctor's uv line reported 0.8.24 on every machine (the Mac
+runs uv 0.11.28; the sandbox 0.8.17). No gate depended on it; the bug
+form's environment block would have carried the wrong uv. uv exports its
+own path to the child process as `UV`, so doctor reads
+`os.environ.get("UV") or shutil.which("uv")` since #151. The class:
+anything that asks the venv's PATH about the toolchain that manages the
+venv gets the venv's answer.
+([`scripts/doctor.py`](../../scripts/doctor.py);
+[`evidence/2026-09-02_arc4_exit.md`](evidence/2026-09-02_arc4_exit.md))
+
+### F-37
+**The devcontainer installs uv unpinned at create.** The post-create
+command runs `python3 -m pip install --user --no-cache-dir uv`, so a
+Codespace resolves the newest uv on the day it is created; the locked
+toolchain is pinned by `uv sync --frozen` regardless, so the variance is
+in the manager, never in what it installs. Recorded at the Arc 4 execution as the stranger's posture, not
+a gate; a future pin is a one-line change if a uv release ever refuses
+the lock.
+([`.devcontainer/devcontainer.json`](../../.devcontainer/devcontainer.json))
+
+### F-38
+**GitHub's GraphQL `Repository.issueTemplates` field lists no YAML issue
+forms.** With three valid forms on main after #145, the field returned an
+empty list while `contactLinks` and `isBlankIssuesEnabled` read back from
+`config.yml` correctly. The chooser page is the receipt for forms; a
+scripted check of forms cannot use that field.
+([`.github/ISSUE_TEMPLATE/`](../../.github/ISSUE_TEMPLATE/))
+
+### F-39
+**`context_registry.loaded_at` and the `captured_at` columns are build
+stamps, so committed-versus-fresh demo equality holds at the content
+layer only.** The first design of the demo-artifact gate (a cell-level
+symmetric EXCEPT against the committed artifact) red-lined on the five
+registry rows: `loaded_at` differed on all five, every content column
+equal. The shipped gate compares object sets, per-table row counts, and
+the D-33 ordered view digests, and says so in its docstring; the typed
+views carry no audit column, which is why their digests are stable
+across builds and machines.
+([`scripts/check_demo_digest.py`](../../scripts/check_demo_digest.py))
+
+### F-40
+**uv.lock bytes vary with the uv version that wrote them.** The mcp
+1.29.1 refresh at Arc 4 diffed 5+/3- from uv 0.8.17 (two greenlet wheel
+rows re-listed beside the mcp move) and 3+/3- from uv 0.11.28. A lock
+rung's gate is therefore semantic, only the named package's version
+moves, never byte-equal across machines. The F-40 class extends the F-19
+lesson (literals break on legitimate bumps) to lock files.
+([`uv.lock`](../../uv.lock))
+
+### F-41
+**A `pull_request` workflow added by a pull request runs on that same
+pull request.** The DCO check gated its own PR (#146 showed three checks
+from its first run). Platform semantics, observed live; a check can be
+made blocking from the PR that introduces it.
+([`.github/workflows/dco.yml`](../../.github/workflows/dco.yml))
+
+## Multi-source rung (Arc 6 prep, September 2, 2026)
+
+### F-42
+**The unified event star is category-parameterized: a new category adds
+five gold objects and a star contract amendment.** Each mapping contract
+emits its own values and columns dimensions, its fact, its mart, and its
+view, and the star contract declares those objects by name with their
+conservation rules. "New sources add rows, not schema" holds within a
+category (a second file of the same shape adds rows) and for the three
+shared groups; across categories it is the shape that is invariant, not
+the object count. Measured at the Arc 6 prep rehearsal of the family: one category was 13 dbt
+models (one silver, twelve gold) and 95 tests at v1.0.0; three
+categories are 31 models (nine silver, 22 gold) and 303 tests (67 star
+singular tests, 50 silver singular tests, 186 property tests), the star
+contract 1,621 lines from 863.
+([`docs/spec/gold-unified-event-star.md`](../spec/gold-unified-event-star.md);
+the renderer `scripts/render_star_objects.py`)
+
+### F-43
+**The timeframe group did not conform across categories as built; the
+conformed calendar does.** Before Arc 6 the timeframe payload's key was
+the category's own time column name (`{"invoiced_at": ...}`), so two
+categories at day grain minted different `timeframe_hash_id` rows for the
+same day and the columns dimension carried one manifest per category. The
+conformed calendar (D-17 Amendment R) makes the payload `{grain,
+period_start}` under one manifest for the whole star. Measured at the
+Arc 6 prep rehearsal on the committed family: 166,158 flights and 13,014 weather
+rows, both at hour grain, resolve to 4,341 distinct hour keys, and every
+one of the 3,439 departure hours is a key the weather category minted
+too; with the retail category's 2,004 minute-grain keys the calendar is
+6,345 rows under one timeframe columns row and one registry row.
+([`src/metricmine/engine/emitters.py`](../../src/metricmine/engine/emitters.py);
+the declared-join gate `tests/test_declared_joins.py`, landing with the star at 1.6.0)
+
+### F-44
+**Hex hash text and wide JSON payloads dominate the star's storage;
+DuckDB block size is not a compacting lever.** At the Arc 6 prep, on
+150,000 synthetic flight-like rows, block sizes of 262144, 65536, and
+16384 bytes moved the artifact by under 5 percent, and the hashes (two
+64-character keys on the fact, one on each dimension and mart row) were
+most of the bytes. At the rehearsal of the family, the demo
+artifact is 106 MB at three categories from 12 MB at one, and the
+flights category is 88 MB of it: its values dimension 59 MB (the
+29-attribute JSON payload chosen so the whole unified row reaches the
+typed surface), its fact 16 MB, its mart 13 MB; the weather and retail
+categories together are under 20 MB. The representation (32-byte BLOB
+keys against 64-character hex text; a leaner dimension payload) is a
+keying-representation candidate for a later revision, not a compaction
+lever the exporter has; the window is code, and a quarter would roughly
+halve the artifact.
+([`docs/scale.md`](../scale.md); the Arc 6 prep transcripts in project records)
+
+### F-45
+**Profile artifacts embed capture-time values, so a full `make profile`
+after any re-landing re-mints every table's artifact.** By the
+profiler's own determinism rule 5 (observed audit-stamp values are
+source data), `_airbyte_raw_id` samples, `_airbyte_extracted_at` bounds,
+and silver `captured_at` bounds change with every landing. Measured at
+the prep: a re-landing of the unchanged retail sample minted
+`bronze.online_retail_ii` v0002 with the data columns identical. The
+`--only SCHEMA.TABLE` selector (`make profile ONLY=...`) mints one
+target; an artifact mints once, at the sitting where its source lands.
+([`src/metricmine/profiling/run.py`](../../src/metricmine/profiling/run.py))
+
+### F-46
+**The committed silver profile predates `captured_at`, and the adoption
+scan reads it as an amend item.** `profiles/silver.silver_invoice_lines/v0001`
+was minted before silver 1.2.0 added `captured_at`, so `make scan` at
+v1.0.0 derives `amend` for `silver_invoice_lines` ("captured_at: in
+contract, absent from profile"). A fresh profile then disagrees on
+`captured_at.required` (contract false, measured true), which is exactly
+the F-28 tightening the register deferred. Measured at the prep: the
+re-profile plus silver 1.3.0 (`captured_at` required) leaves the queue
+empty.
+([`src/metricmine/adoption/scan.py`](../../src/metricmine/adoption/scan.py))
+
+### F-47
+**The local-marked pytest lane was red at v1.0.0 and nothing in CI could
+see it.** Four of 52 failed at the tag: the scan test (F-46), two query
+tests (the mart's typed columns end in `captured_at` since D-38; the
+mapping version literal 1.1.0 against 1.1.1 since Arc 3), and the server
+round trip (`typed_columns[-1]`). CI deselects `local`, so the drift
+accumulated across two arcs. The lane is generalized to any category
+count at the fan-in and re-run at every sitting close from here on.
+([`tests/test_query_local.py`](../../tests/test_query_local.py))
+
+### F-48
+**Sync names generated singular tests by contract version, so a bump
+leaves the previous version's files in place.** A star contract bump
+from 1.4.0 to 1.5.0 wrote 67 files named `gold_unified_event_star__1_5_0__...`
+beside the 35 `__1_4_0__` files, which stay until `git rm`; the
+regeneration discipline (review the generated set, commit the reviewed
+state) covers it and the runbook names the `git rm` step.
+([`transform/tests/datacontract_cli/`](../../transform/tests/datacontract_cli/))
+
+### F-49
+**The scan reads a measured zero-null column declared optional as a
+disagreement, so a new contract declares `captured_at` required from its
+first version.** F-28's optional-first rule governs additions to an
+existing contract (the model cannot yet populate what the contract
+newly requires); a new silver table whose model populates the column
+from its first build declares it required, and the scan agrees.
+([`src/metricmine/adoption/scan.py`](../../src/metricmine/adoption/scan.py))
+
+### F-50
+**The source-file connector's pandas defaults read "NA" as missing.**
+OurAirports codes North America as continent `NA` and Namibia as
+iso_country `NA`; landed with the connector's default reader options,
+32.6 percent of continents (2,951 airports) and 31 countries arrived as
+NULL, and a required column failed at the first build. The reader
+options `{"keep_default_na": false, "na_values": [""]}` make the empty
+string the only missing marker; every code then lands as text. The
+class: pandas' default NA list (`NA`, `N/A`, `NULL`, `None`, `NaN`, and
+more) eats legitimate codes in any source, so the landing pins it
+wherever a code column can collide.
+([`config/default.yaml`](../../config/default.yaml);
+[`docs/spec/ingestion.md`](../spec/ingestion.md))
+
+### F-51
+**Sync-generated singular tests carry no dependency edge, so a silver
+model built from other silver models must name itself through
+`ref()` in its quality rules.** `datacontract dbt sync` writes each
+quality rule's SQL into a singular test verbatim. With the schema-
+qualified form (`silver.silver_flights`) dbt sees no edge, schedules
+the test at DAG level zero, and on an empty warehouse runs it before
+the unified table exists: twelve `Catalog Error` failures in the first
+cold build of the family, invisible on a warehouse that already carried
+the tables from an earlier build. The cleanup tables build at level
+zero, so their schema-qualified rules (the F-08 louder-red design) keep
+passing by ordering; the unified tables build at level one, so their
+rules reference `{{ ref('<table>') }}`, the F-19 pattern the star
+contract uses, and the generated tests inherit the edge. Every
+regeneration cold-builds from an empty warehouse from here on: a
+warehouse that already carries the tables cannot show this class.
+(`contracts/silver_flights.odcs.yaml` and its generated tests under
+`transform/tests/datacontract_cli/silver_flights/`, landing with the unified tables)
+
+### F-52
+**YAML 1.1 boolean words as mapping keys parse as booleans.** A
+structured custom property whose entry used `on:` as a key (a join
+condition) loaded as `True: ...` under PyYAML, and the compiler's
+canonical serialization failed sorting a mapping with a boolean key
+beside string keys. `on`, `off`, `yes`, and `no` are booleans in YAML
+1.1; structured contract values use words outside that set
+(`join_condition`), and a loader-side check is not needed once the
+key is named safely.
+([`src/metricmine/context/compile.py`](../../src/metricmine/context/compile.py))
+
+### F-53
+**dbt's partial-parse cache keeps a disabled test disabled across the
+F-13 window, so the regeneration build clears `transform/target`
+first.** At the star's 1.6.0 rung the contract's C3 rule names two
+columns dimensions the regeneration has not emitted yet; dbt disables
+the sync-generated test with a WARNING and the cold build ends one test
+short (PASS=253). When the regeneration lands the dimensions, a build
+that reads `transform/target/partial_parse.msgpack` keeps the test
+disabled: PASS=333 with C3 silently absent and `make audit-gold` at 66,
+and no warning this time because the cache never re-evaluated the
+test. Removing `transform/target` before the build forces a full parse:
+PASS=334, audit 67, C3 among them. The rule from here: every cold
+build removes the warehouse and `transform/target` together, and a
+count one short of the expected total after a contract bump is a
+parse-cache symptom before it is anything else.
+(`transform/tests/datacontract_cli/gold_unified_event_star/gold_unified_event_star__1_6_0__context_registry__c3_registry_coverage__every_schema_key_p.sql`,
+landing with the regeneration)
