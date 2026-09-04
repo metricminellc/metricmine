@@ -41,3 +41,243 @@ sources:
             description: PyAirbyte extraction timestamp (TIMESTAMP), kept as landed.
           - name: _airbyte_meta
             description: PyAirbyte per-record metadata (JSON), kept as landed.
+      - name: nyc_flights
+        description: >
+          nycflights13 flights extract as landed (166,158 rows at profile
+          v0001): every departure from EWR, JFK, and LGA in January through
+          June 2013, nineteen columns. Numbers land as DECIMAL(38,9) and
+          time_hour as VARCHAR; casting is a silver-contract decision.
+        columns:
+          - name: year
+            description: Local departure year as landed (DECIMAL(38,9); 2013 throughout).
+          - name: month
+            description: Local departure month as landed (DECIMAL(38,9); 1 to 6 in the window).
+          - name: day
+            description: Local departure day of month as landed (DECIMAL(38,9)).
+          - name: dep_time
+            description: Actual departure clock time, local, HHMM or HMM form (DECIMAL(38,9); null on cancelled flights).
+          - name: sched_dep_time
+            description: Scheduled departure clock time, local, HHMM or HMM form (DECIMAL(38,9)).
+          - name: dep_delay
+            description: Departure delay in minutes as landed (DECIMAL(38,9); negative is early; null on cancelled flights).
+          - name: arr_time
+            description: Actual arrival clock time, local at the destination, HHMM or HMM form (DECIMAL(38,9); null when missing).
+          - name: sched_arr_time
+            description: Scheduled arrival clock time, local at the destination (DECIMAL(38,9)).
+          - name: arr_delay
+            description: Arrival delay in minutes as landed (DECIMAL(38,9); negative is early).
+          - name: carrier
+            description: Two-letter carrier code as landed (VARCHAR; the nyc_airlines lookup resolves it).
+          - name: flight
+            description: Flight number as landed (DECIMAL(38,9)).
+          - name: tailnum
+            description: Aircraft tail number as landed (VARCHAR; empty for a few flights; the nyc_planes table resolves most).
+          - name: origin
+            description: Origin airport code as landed (VARCHAR; EWR, JFK, or LGA).
+          - name: dest
+            description: Destination airport code as landed (VARCHAR).
+          - name: air_time
+            description: Minutes in the air as landed (DECIMAL(38,9); null when missing).
+          - name: distance
+            description: Route distance in miles as landed (DECIMAL(38,9)).
+          - name: hour
+            description: Scheduled departure hour, local (DECIMAL(38,9)).
+          - name: minute
+            description: Scheduled departure minute, local (DECIMAL(38,9)).
+          - name: time_hour
+            description: Scheduled departure hour as a UTC instant, ISO form with a Z suffix (VARCHAR); the join key to nyc_weather.
+          - name: _airbyte_raw_id
+            description: PyAirbyte per-record id (VARCHAR), kept as landed.
+          - name: _airbyte_extracted_at
+            description: PyAirbyte extraction timestamp (TIMESTAMP), kept as landed.
+          - name: _airbyte_meta
+            description: PyAirbyte per-record metadata (JSON), kept as landed.
+      - name: nyc_weather
+        description: >
+          nycflights13 weather extract as landed (13,014 rows at profile
+          v0001): hourly ASOS observations at the three NYC airports,
+          January through June 2013, fifteen columns; "NA" landed as null.
+        columns:
+          - name: origin
+            description: Airport code of the observing station as landed (VARCHAR; EWR, JFK, or LGA).
+          - name: year
+            description: Local observation year (DECIMAL(38,9)).
+          - name: month
+            description: Local observation month (DECIMAL(38,9)).
+          - name: day
+            description: Local observation day (DECIMAL(38,9)).
+          - name: hour
+            description: Local observation hour (DECIMAL(38,9)).
+          - name: temp
+            description: Temperature in degrees Fahrenheit (DECIMAL(38,9)).
+          - name: dewp
+            description: Dew point in degrees Fahrenheit (DECIMAL(38,9)).
+          - name: humid
+            description: Relative humidity in percent (DECIMAL(38,9)).
+          - name: wind_dir
+            description: Wind direction in degrees (DECIMAL(38,9); null when calm or missing).
+          - name: wind_speed
+            description: Wind speed in mph (DECIMAL(38,9)).
+          - name: wind_gust
+            description: Wind gust speed in mph (DECIMAL(38,9); null when no gust was reported).
+          - name: precip
+            description: Precipitation in inches for the hour (DECIMAL(38,9)).
+          - name: pressure
+            description: Sea-level pressure in millibars (DECIMAL(38,9); null when missing).
+          - name: visib
+            description: Visibility in miles (DECIMAL(38,9)).
+          - name: time_hour
+            description: Observation hour as a UTC instant, ISO form with a Z suffix (VARCHAR); the join key to nyc_flights.
+          - name: _airbyte_raw_id
+            description: PyAirbyte per-record id (VARCHAR), kept as landed.
+          - name: _airbyte_extracted_at
+            description: PyAirbyte extraction timestamp (TIMESTAMP), kept as landed.
+          - name: _airbyte_meta
+            description: PyAirbyte per-record metadata (JSON), kept as landed.
+      - name: nyc_airlines
+        description: >
+          nycflights13 airlines lookup as landed (16 rows at profile v0001):
+          carrier code and name.
+        columns:
+          - name: carrier
+            description: Two-letter carrier code as landed (VARCHAR).
+          - name: name
+            description: Carrier name as landed (VARCHAR).
+          - name: _airbyte_raw_id
+            description: PyAirbyte per-record id (VARCHAR), kept as landed.
+          - name: _airbyte_extracted_at
+            description: PyAirbyte extraction timestamp (TIMESTAMP), kept as landed.
+          - name: _airbyte_meta
+            description: PyAirbyte per-record metadata (JSON), kept as landed.
+      - name: nyc_planes
+        description: >
+          nycflights13 planes table as landed (3,322 rows at profile v0001):
+          FAA registry metadata per tail number; "NA" landed as null.
+        columns:
+          - name: tailnum
+            description: Aircraft tail number as landed (VARCHAR).
+          - name: year
+            description: Year of manufacture (DECIMAL(38,9); null for 70 aircraft).
+          - name: type
+            description: Aircraft type classification as landed (VARCHAR).
+          - name: manufacturer
+            description: Manufacturer as landed (VARCHAR).
+          - name: model
+            description: Model as landed (VARCHAR).
+          - name: engines
+            description: Engine count (DECIMAL(38,9)).
+          - name: seats
+            description: Seat count (DECIMAL(38,9)).
+          - name: speed
+            description: Average cruising speed in mph (DECIMAL(38,9); null for most aircraft).
+          - name: engine
+            description: Engine type as landed (VARCHAR).
+          - name: _airbyte_raw_id
+            description: PyAirbyte per-record id (VARCHAR), kept as landed.
+          - name: _airbyte_extracted_at
+            description: PyAirbyte extraction timestamp (TIMESTAMP), kept as landed.
+          - name: _airbyte_meta
+            description: PyAirbyte per-record metadata (JSON), kept as landed.
+      - name: ourairports_airports
+        description: >
+          OurAirports airports extract as landed (9,057 rows at profile
+          v0001): every airport carrying an IATA code, nineteen columns;
+          codes landed as text with keep_default_na false so "NA" (North
+          America; Namibia) survives (F-50).
+        columns:
+          - name: id
+            description: OurAirports internal id as landed (VARCHAR).
+          - name: ident
+            description: The airport identifier, usually the ICAO code (VARCHAR).
+          - name: type
+            description: Airport size class as landed (VARCHAR; large_airport, medium_airport, small_airport, and others).
+          - name: name
+            description: Airport name as landed (VARCHAR).
+          - name: latitude_deg
+            description: Latitude in decimal degrees, WGS84 (DECIMAL(38,9)).
+          - name: longitude_deg
+            description: Longitude in decimal degrees, WGS84 (DECIMAL(38,9)).
+          - name: elevation_ft
+            description: Elevation in feet above mean sea level (DECIMAL(38,9); null when unknown).
+          - name: continent
+            description: Continent code as landed (VARCHAR; NA is North America).
+          - name: iso_country
+            description: ISO 3166-1 country code as landed (VARCHAR; NA is Namibia).
+          - name: iso_region
+            description: ISO 3166-2 region code as landed (VARCHAR).
+          - name: municipality
+            description: Municipality as landed (VARCHAR).
+          - name: scheduled_service
+            description: Whether the airport has scheduled airline service (VARCHAR; yes or no).
+          - name: icao_code
+            description: ICAO code as landed (VARCHAR).
+          - name: iata_code
+            description: IATA code as landed (VARCHAR; non-empty in this extract by construction).
+          - name: gps_code
+            description: GPS code as landed (VARCHAR).
+          - name: local_code
+            description: Local code as landed (VARCHAR).
+          - name: home_link
+            description: Home page URL as landed (VARCHAR).
+          - name: wikipedia_link
+            description: Wikipedia URL as landed (VARCHAR).
+          - name: keywords
+            description: Search keywords as landed (VARCHAR).
+          - name: _airbyte_raw_id
+            description: PyAirbyte per-record id (VARCHAR), kept as landed.
+          - name: _airbyte_extracted_at
+            description: PyAirbyte extraction timestamp (TIMESTAMP), kept as landed.
+          - name: _airbyte_meta
+            description: PyAirbyte per-record metadata (JSON), kept as landed.
+      - name: ourairports_runways
+        description: >
+          OurAirports runways extract as landed (10,760 rows at profile
+          v0001): the runways of the airports in the airports extract,
+          twenty columns; codes landed as text with keep_default_na false.
+        columns:
+          - name: id
+            description: OurAirports internal runway id as landed (VARCHAR).
+          - name: airport_ref
+            description: The airport's internal id as landed (VARCHAR).
+          - name: airport_ident
+            description: The airport identifier the runway belongs to (VARCHAR).
+          - name: length_ft
+            description: Runway length in feet (DECIMAL(38,9); null when unknown).
+          - name: width_ft
+            description: Runway width in feet (DECIMAL(38,9); null when unknown).
+          - name: surface
+            description: Surface description as landed (VARCHAR; free text).
+          - name: lighted
+            description: Whether the runway is lighted (DECIMAL(38,9); 1 or 0).
+          - name: closed
+            description: Whether the runway is closed (DECIMAL(38,9); 1 or 0).
+          - name: le_ident
+            description: Low-end runway identifier (VARCHAR).
+          - name: le_latitude_deg
+            description: Low-end latitude (DECIMAL(38,9); null when unknown).
+          - name: le_longitude_deg
+            description: Low-end longitude (DECIMAL(38,9); null when unknown).
+          - name: le_elevation_ft
+            description: Low-end elevation in feet (DECIMAL(38,9); null when unknown).
+          - name: le_heading_degt
+            description: Low-end true heading in degrees (DECIMAL(38,9); null when unknown).
+          - name: le_displaced_threshold_ft
+            description: Low-end displaced threshold in feet (DECIMAL(38,9); null when unknown).
+          - name: he_ident
+            description: High-end runway identifier (VARCHAR).
+          - name: he_latitude_deg
+            description: High-end latitude (DECIMAL(38,9); null when unknown).
+          - name: he_longitude_deg
+            description: High-end longitude (DECIMAL(38,9); null when unknown).
+          - name: he_elevation_ft
+            description: High-end elevation in feet (DECIMAL(38,9); null when unknown).
+          - name: he_heading_degt
+            description: High-end true heading in degrees (DECIMAL(38,9); null when unknown).
+          - name: he_displaced_threshold_ft
+            description: High-end displaced threshold in feet (DECIMAL(38,9); null when unknown).
+          - name: _airbyte_raw_id
+            description: PyAirbyte per-record id (VARCHAR), kept as landed.
+          - name: _airbyte_extracted_at
+            description: PyAirbyte extraction timestamp (TIMESTAMP), kept as landed.
+          - name: _airbyte_meta
+            description: PyAirbyte per-record metadata (JSON), kept as landed.
