@@ -60,6 +60,8 @@ class FactCategory(TypedDict):
     typed_table: str | None
     typed_columns: list[str]
     query_hint: str
+    subject: str
+    context_keys: dict[str, str]
 
 
 class CategoryList(TypedDict):
@@ -252,6 +254,7 @@ class GoldWarehouse:
         agent acts on.
         """
         categories: list[FactCategory] = []
+        registry = self._category_registry()
         for table in self._tables(FACT_TABLE_PATTERN):
             (count,) = self._con.execute(
                 f"select count(*) from {self._rel(table)}"
@@ -278,12 +281,20 @@ class GoldWarehouse:
                     " content-addressed provenance layer: hash keys and"
                     " canonical JSON payloads, joined by hash, meant for"
                     " lookup_record and audit, not for analytics."
+                    " String columns there carry canonical lowercase text:"
+                    " write literals in lowercase (origin_airport = 'jfk')."
+                    " get_context on the keys in context_keys returns what"
+                    " the columns are (data) and, kept apart by name, what"
+                    " the people who approved the contracts wrote about"
+                    " them (expert_context): units, vintages, nulls, joins."
                 )
             else:
                 query_hint = (
                     f"Query gold.{table}; no typed surface is emitted for"
                     " this category."
                 )
+            entries = registry.get(category, {})
+            dimensions = entries.get("dimensions", {})
             categories.append(
                 {
                     "category": category,
@@ -292,9 +303,42 @@ class GoldWarehouse:
                     "typed_table": typed_table,
                     "typed_columns": typed_columns,
                     "query_hint": query_hint,
+                    "subject": dimensions.get("subject", ""),
+                    "context_keys": {
+                        role: entry["schema_key"] for role, entry in entries.items()
+                    },
                 }
             )
         return {"categories": categories}
+
+    def _category_registry(self) -> dict[str, dict[str, dict[str, str]]]:
+        """category -> role -> {schema_key, subject} from the registry's
+        category entries (Amendment W to D-31): the subject is the
+        authored expert context's opening line, so a category listing
+        says what each category IS in the words of the people who
+        approved its contracts, and names the keys get_context resolves.
+        An absent registry reads as empty."""
+        if not self._tables(REGISTRY_TABLE):
+            return {}
+        out: dict[str, dict[str, dict[str, str]]] = {}
+        rows = self._con.execute(
+            f"select schema_key, compiled_context from {self._rel(REGISTRY_TABLE)}"
+        ).fetchall()
+        for schema_key, raw in rows:
+            try:
+                compiled = json.loads(raw)
+            except (TypeError, ValueError):
+                continue
+            category = compiled.get("category")
+            role = compiled.get("role")
+            if not category or role not in ("dimensions", "measures"):
+                continue
+            expert = compiled.get("expert_context") or {}
+            out.setdefault(category, {})[role] = {
+                "schema_key": schema_key,
+                "subject": str(expert.get("subject", "")),
+            }
+        return out
 
     def get_schema(self, schema_key: str) -> SchemaResult:
         """The registry's declaration for a schema key: contract, role, manifest."""
@@ -410,7 +454,10 @@ class GoldWarehouse:
             if compiled.get("role") != "dimensions":
                 continue
             category = compiled.get("category")
-            names = sorted(compiled.get("derived_identifiers", {}))
+            # Compiled schema 2.0.0 keeps the typed declarations under
+            # data; the pre-fan-in artifact carried the key at the top.
+            data = compiled.get("data") or compiled
+            names = sorted(data.get("derived_identifiers", {}))
             if category and names:
                 paths[category] = names
         return paths
