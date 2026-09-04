@@ -156,3 +156,130 @@ def summary_lines(result: dict) -> list[str]:
     else:
         lines.append("  mismatches: none")
     return lines
+
+
+# ---------------------------------------------------------------- mapping
+# The propose stance's study (D-41): a rendered mapping draft against the
+# committed, human-authored mapping contract. Scored on what the silver
+# profile can evidence: per property the mappingRole, logicalType,
+# physicalType, and required flag; property presence and order; the
+# category header (entityGroup, sourceTable, timeColumn, timeGrain, grain
+# type); and the degenerate identifiers as declared. Descriptions and
+# decisions stay unscored, as above.
+
+_MAPPING_FIELDS = ("mappingRole", "logicalType", "physicalType", "required")
+
+
+def _mapping_index(document: dict) -> dict[str, dict]:
+    return {
+        prop["name"]: {
+            "mappingRole": prop.get("mappingRole"),
+            "logicalType": prop.get("logicalType"),
+            "physicalType": prop.get("physicalType"),
+            "required": bool(prop.get("required", False)),
+        }
+        for prop in document["schema"][0]["properties"]
+    }
+
+
+def _identifiers(document: dict) -> list[tuple]:
+    grain = document["schema"][0].get("grain") or {}
+    out = []
+    for entry in grain.get("degenerateIdentifiers") or []:
+        if entry.get("source") == "derived":
+            out.append(("derived", entry.get("name"), entry.get("derivation"), tuple(entry.get("of") or [])))
+        else:
+            out.append(("column", entry.get("column")))
+    return out
+
+
+def score_mapping(draft: dict, oracle: dict) -> dict:
+    """First-class agreement between a mapping draft and its oracle."""
+    draft_props = _mapping_index(draft)
+    oracle_props = _mapping_index(oracle)
+    shared = [name for name in oracle_props if name in draft_props]
+    mismatches: list[str] = []
+    field_agree = dict.fromkeys(_MAPPING_FIELDS, 0)
+    for name in oracle_props:
+        if name not in draft_props:
+            mismatches.append(f"{name}: missing from the draft")
+    for name in draft_props:
+        if name not in oracle_props:
+            mismatches.append(f"{name}: extra in the draft")
+    for name in shared:
+        for field in _MAPPING_FIELDS:
+            want = oracle_props[name][field]
+            got = draft_props[name][field]
+            if want == got:
+                field_agree[field] += 1
+            else:
+                mismatches.append(f"{name}.{field}: oracle={want!r} draft={got!r}")
+
+    oracle_cat = oracle["schema"][0]
+    draft_cat = draft["schema"][0]
+    header = {}
+    for key in ("entityGroup", "sourceTable", "timeColumn", "timeGrain"):
+        header[key] = oracle_cat.get(key) == draft_cat.get(key)
+        if not header[key]:
+            mismatches.append(f"{key}: oracle={oracle_cat.get(key)!r} draft={draft_cat.get(key)!r}")
+    oracle_grain_type = (oracle_cat.get("grain") or {}).get("type")
+    draft_grain_type = (draft_cat.get("grain") or {}).get("type")
+    header["grainType"] = oracle_grain_type == draft_grain_type
+    if not header["grainType"]:
+        mismatches.append(f"grain.type: oracle={oracle_grain_type!r} draft={draft_grain_type!r}")
+    oracle_ids = _identifiers(oracle)
+    draft_ids = _identifiers(draft)
+    ids_equal = oracle_ids == draft_ids
+    if not ids_equal:
+        mismatches.append(f"degenerateIdentifiers: oracle={oracle_ids!r} draft={draft_ids!r}")
+
+    def roles(index: dict, role: str) -> list[str]:
+        return [name for name, spec in index.items() if spec["mappingRole"] == role]
+
+    return {
+        "oracle_id": oracle.get("id"),
+        "properties": {
+            "oracle": len(oracle_props),
+            "draft": len(draft_props),
+            "shared": len(shared),
+            "ordinal_order_equal": list(oracle_props) == list(draft_props),
+        },
+        "first_class_checks": {
+            "agree": sum(field_agree.values()),
+            "checked": len(shared) * len(_MAPPING_FIELDS),
+            "per_field": {
+                field: f"{field_agree[field]}/{len(shared)}" for field in _MAPPING_FIELDS
+            },
+        },
+        "header": header,
+        "roles": {
+            "dimensions_equal": set(roles(oracle_props, "dimension")) == set(roles(draft_props, "dimension")),
+            "measures_equal": set(roles(oracle_props, "measure")) == set(roles(draft_props, "measure")),
+        },
+        "identifiers_equal": ids_equal,
+        "mismatches": mismatches,
+    }
+
+
+def summary_lines_mapping(result: dict) -> list[str]:
+    first = result["first_class_checks"]
+    header = result["header"]
+    lines = [
+        f"agreement study (n=1) against oracle {result['oracle_id']!r}: "
+        f"first-class {first['agree']}/{first['checked']} agree",
+        "  per field: "
+        + ", ".join(f"{field} {ratio}" for field, ratio in first["per_field"].items()),
+        f"  properties: oracle {result['properties']['oracle']}, draft "
+        f"{result['properties']['draft']}, ordinal order equal: "
+        f"{result['properties']['ordinal_order_equal']}",
+        "  header: " + ", ".join(f"{key} {value}" for key, value in header.items()),
+        f"  roles: dimensions equal {result['roles']['dimensions_equal']}, "
+        f"measures equal {result['roles']['measures_equal']}; identifiers equal "
+        f"{result['identifiers_equal']}",
+    ]
+    if result["mismatches"]:
+        lines.append("  mismatches:")
+        lines.extend(f"    - {item}" for item in result["mismatches"])
+    else:
+        lines.append("  mismatches: none")
+    return lines

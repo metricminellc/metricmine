@@ -189,3 +189,47 @@ agents:
       - label: silver-cleanup-messy-orders
         proposer: silver
         profile: tests/agents/fixtures/profiles/bronze.messy_orders/v0001.json
+      # The multi-source family (D-41): every aviation cleanup and both
+      # mapping proposals scored against the committed, human-authored
+      # contract as an n=1 agreement study each (D-25). The oracle is the
+      # contract the arc landed; the draft lands in the outbox only.
+      - label: silver-cleanup-nyc-flights
+        proposer: silver
+        source: nyc_flights
+        profile: profiles/bronze.nyc_flights/v0001.json
+        oracle: contracts/silver_nyc_flights.odcs.yaml
+      - label: silver-cleanup-nyc-weather
+        proposer: silver
+        source: nyc_weather
+        profile: profiles/bronze.nyc_weather/v0001.json
+        oracle: contracts/silver_nyc_weather.odcs.yaml
+      - label: silver-cleanup-nyc-airlines
+        proposer: silver
+        source: nyc_airlines
+        profile: profiles/bronze.nyc_airlines/v0001.json
+        oracle: contracts/silver_nyc_airlines.odcs.yaml
+      - label: silver-cleanup-nyc-planes
+        proposer: silver
+        source: nyc_planes
+        profile: profiles/bronze.nyc_planes/v0001.json
+        oracle: contracts/silver_nyc_planes.odcs.yaml
+      - label: silver-cleanup-ourairports-airports
+        proposer: silver
+        source: ourairports_airports
+        profile: profiles/bronze.ourairports_airports/v0001.json
+        oracle: contracts/silver_ourairports_airports.odcs.yaml
+      - label: silver-cleanup-ourairports-runways
+        proposer: silver
+        source: ourairports_runways
+        profile: profiles/bronze.ourairports_runways/v0001.json
+        oracle: contracts/silver_ourairports_runways.odcs.yaml
+      - label: mapping-propose-flights
+        proposer: mapping
+        table: silver_flights
+        profile: profiles/silver.silver_flights/v0001.json
+        oracle: contracts/gold_flights_mapping.odcs.yaml
+      - label: mapping-propose-airport-weather
+        proposer: mapping
+        table: silver_airport_weather
+        profile: profiles/silver.silver_airport_weather/v0001.json
+        oracle: contracts/gold_airport_weather_mapping.odcs.yaml

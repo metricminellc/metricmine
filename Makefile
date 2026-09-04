@@ -73,13 +73,26 @@ demo-fetch:
 MODEL ?=
 MODEL_FLAG := $(if $(MODEL),--model $(MODEL),)
 
+# The multi-source selectors (D-41): SOURCE picks the bronze table the
+# cleanup stance profiles (default: the configured retail table), TABLE
+# picks the silver table the propose stance profiles, TARGET names the
+# target contract id, and ORACLE scores the draft against a committed
+# contract as an n=1 agreement study (D-25). All optional; empty means the
+# configured default. Example:
+#   make propose-silver SOURCE=nyc_flights ORACLE=contracts/silver_nyc_flights.odcs.yaml
+SOURCE ?=
+TARGET ?=
+SOURCE_FLAG = $(if $(SOURCE),--source $(SOURCE),)
+TARGET_FLAG = $(if $(TARGET),--target $(TARGET),)
+MAPPING_TABLE_FLAG = $(if $(TABLE),--table $(TABLE),)
+
 .PHONY: propose-silver
 propose-silver:
-	uv run python -m metricmine.agents propose silver $(MODEL_FLAG)
+	uv run python -m metricmine.agents propose silver $(SOURCE_FLAG) $(TARGET_FLAG) $(ORACLE_FLAG) $(MODEL_FLAG)
 
 .PHONY: propose-mapping
 propose-mapping:
-	uv run python -m metricmine.agents propose mapping $(MODEL_FLAG)
+	uv run python -m metricmine.agents propose mapping $(MAPPING_TABLE_FLAG) $(TARGET_FLAG) $(ORACLE_FLAG) $(MODEL_FLAG)
 
 # The keyless replay (D-24; docs/demo.md path B in one command): land the
 # committed sample into bronze, build the contracted models, export the

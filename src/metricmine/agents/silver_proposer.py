@@ -25,17 +25,37 @@ VERSION = "0.1.0"
 STANCE = "cleanup"
 
 
-def build_spec(repo_root: Path) -> ProposerSpec:
+def build_spec(
+    repo_root: Path, source: str | None = None, target: str | None = None
+) -> ProposerSpec:
+    """The cleanup stance over one bronze table's profile.
+
+    Without a source the stance runs over the configured table (the
+    retail sample, the committed default). With ``source`` (D-41, the
+    multi-source proof) the profile directory is profiles/bronze.<source>/
+    and the target contract contracts/<target>.odcs.yaml, where target
+    defaults to silver_<source>; the same proposer, the same stance, one
+    structured call, so a family of sources is a family of runs and the
+    eval lane can score each draft against its human-authored oracle.
+    """
     stance_cfg = load_agents_config(repo_root)["silver"]["stances"][STANCE]
+    if source:
+        profile_dir = repo_root / "profiles" / f"bronze.{source}"
+        target_contract = (
+            repo_root / "contracts" / f"{target or 'silver_' + source}.odcs.yaml"
+        )
+    else:
+        profile_dir = repo_root / stance_cfg["profile_dir"]
+        target_contract = repo_root / (target and f"contracts/{target}.odcs.yaml" or stance_cfg["target_contract"])
     return ProposerSpec(
         name=NAME,
         version=VERSION,
         stance=STANCE,
-        profile_dir=repo_root / stance_cfg["profile_dir"],
+        profile_dir=profile_dir,
         prompt_path=repo_root / stance_cfg["prompt"],
         proposal_schema=repo_root / stance_cfg["proposal_schema"],
         contract_schema=None,
-        target_contract=repo_root / stance_cfg["target_contract"],
+        target_contract=target_contract,
         render=render_cleanup,
         validate=validate_cleanup,
     )
