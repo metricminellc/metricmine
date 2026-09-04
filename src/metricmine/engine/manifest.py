@@ -22,16 +22,21 @@ def file_digest(content: str) -> str:
 
 
 def build_manifest(
-    files: dict[str, str], mapping: dict, star: dict, output_dir: str
+    files: dict[str, str], mappings: list[dict], star: dict, output_dir: str
 ) -> dict:
-    """The manifest over an emitted set keyed by bare filename."""
+    """The manifest over an emitted set keyed by bare filename.
+
+    ``sources`` names the star contract and every mapping contract the
+    set was emitted from, in the emission's category order (D-29 as
+    amended at the multi-source fan-in).
+    """
     return {
         "engine_version": ENGINE_VERSION,
         "sources": {
-            "mapping_contract": {
-                "id": mapping["id"],
-                "version": mapping["version"],
-            },
+            "mapping_contracts": [
+                {"id": mapping["id"], "version": mapping["version"]}
+                for mapping in mappings
+            ],
             "gold_contract": {"id": star["id"], "version": star["version"]},
         },
         "files": {
