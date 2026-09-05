@@ -11,6 +11,13 @@ measurements.
 
 ## [Unreleased]
 
+### Added
+
+- The eight recorded live proposals for the aviation family under
+  `tests/agents/fixtures/recorded/`, copied verbatim from the September
+  4 eval study (claude-sonnet-5, one run per fixture); the recorded
+  render and lint tests no longer skip by name.
+
 ## [1.1.0] - 2026-09-05
 
 The multi-source proof (D-41): a second family of sources through the
