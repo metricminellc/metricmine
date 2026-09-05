@@ -111,6 +111,14 @@ for it:
 - `/contract-review` is a project Skill that checks a contract change
   against the review conventions and reports READY, NEEDS CHANGES, or
   REFUSE. Run it before opening a contract pull request.
+- Oscar is the repository's resident guide, a read-only subagent under
+  `.claude/agents/`. Ask Claude Code for Oscar and ask how the system
+  works, where a task is done, what a rule means, how to keep silver
+  clean, or how the proposers draft contracts; it answers from the
+  repository's own files and cites the file and line. Ask it to review a
+  contract, a draft, or a contract-only pull request and it runs the
+  same checklist as `/contract-review`, prints the table and the verdict,
+  and never edits.
 - The repository's GitHub Action prepares pull requests for backlog issues
   when a maintainer asks it to in a comment. It never opens, approves, or
   merges a pull request; a person does. Contributors do not need it and
