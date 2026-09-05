@@ -313,6 +313,14 @@ Decisions cited anywhere as D-0x resolve in
   command text, never a subprocess, so this rule stays in force where
   the guard cannot see. Hooks are local to Claude Code; CI is the gate
   of record and no check migrates out of it.
+- Oscar (`.claude/agents/oscar.md`) is the repository's resident guide
+  and contract reviewer: a read-only subagent that answers how the
+  system works and where a task is done from the repository's own files,
+  citing the file and line, and that runs the contract-review Skill's
+  checklist over a contract, a draft, or a diff, prints its table and
+  verdict, and stops. It never edits a file, never runs a proposer or a
+  build, and never retries a refusal on its own. It is SDLC-layer
+  tooling, not a pipeline agent; the D-10 count is unchanged.
 
 ### Commit and PR conventions
 Every commit and PR follows these:
