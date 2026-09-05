@@ -11,7 +11,7 @@ measurements.
 
 ## [Unreleased]
 
-## [1.1.0] - 2026-09-XX
+## [1.1.0] - 2026-09-05
 
 The multi-source proof (D-41): a second family of sources through the
 same pipeline, one star, one calendar, and the joins measured rather
