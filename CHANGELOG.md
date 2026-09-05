@@ -17,6 +17,18 @@ measurements.
   `tests/agents/fixtures/recorded/`, copied verbatim from the September
   4 eval study (claude-sonnet-5, one run per fixture); the recorded
   render and lint tests no longer skip by name.
+- Oscar, the repository's resident guide (`.claude/agents/oscar.md`): a
+  read-only Claude Code subagent that answers how the system works and
+  where a task is done from the repository's own files, cites the file
+  and line, and runs the contract-review checklist on request. SDLC-layer
+  tooling in the D-37 posture; not a pipeline agent, so the D-10 count is
+  unchanged.
+
+### Changed
+
+- The read-only contract-reviewer subagent is folded into Oscar; its
+  review rules are unchanged, and the `/contract-review` Skill is
+  untouched.
 
 ## [1.1.0] - 2026-09-05
 
