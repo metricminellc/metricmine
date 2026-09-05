@@ -1,0 +1,231 @@
+{
+  "target_table": "silver_nyc_weather",
+  "columns": [
+    {
+      "source_column": "origin",
+      "action": "keep",
+      "target_name": "origin",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 across 13014 rows and distinct_count is 3 with values EWR, JFK, LGA, a clean low-cardinality airport code."
+    },
+    {
+      "source_column": "year",
+      "action": "cast",
+      "target_name": "year",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "Landed as DECIMAL(38,9) but the only distinct value is 2013.0, an integral value, and null_rate is 0.0, so INTEGER is safe."
+    },
+    {
+      "source_column": "month",
+      "action": "cast",
+      "target_name": "month",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "Distinct values 1.0 through 6.0 are all integral with min 1.0 and max 6.0 and null_rate 0.0, so INTEGER replaces the DECIMAL(38,9) landing type."
+    },
+    {
+      "source_column": "day",
+      "action": "cast",
+      "target_name": "day",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "Sample values 1.0 through 10.0 with min 1.0, max 31.0, distinct_count 31 and null_rate 0.0 are all integral calendar days, justifying INTEGER."
+    },
+    {
+      "source_column": "hour",
+      "action": "cast",
+      "target_name": "hour",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "Sample values 0.0 through 9.0 with min 0.0, max 23.0, distinct_count 24 and null_rate 0.0 are all integral hour-of-day values, justifying INTEGER."
+    },
+    {
+      "source_column": "temp",
+      "action": "cast",
+      "target_name": "temp",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(6,2)",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "Sample values like 10.94, 12.02, 15.98 are non-integral with min 10.94 and max 93.92 and null_rate 0.0, so DECIMAL(6,2) preserves precision."
+    },
+    {
+      "source_column": "dewp",
+      "action": "cast",
+      "target_name": "dewp",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(6,2)",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "Sample values including negatives like -9.94 and -7.06 with min -9.94, max 73.94 and null_rate 0.0 require a signed DECIMAL(6,2)."
+    },
+    {
+      "source_column": "humid",
+      "action": "cast",
+      "target_name": "humid",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(6,2)",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "Sample values like 12.74, 13.95, 15.47 are fractional with min 12.74, max 100.0, distinct_count 2178 and null_rate 0.0, so DECIMAL(6,2) fits."
+    },
+    {
+      "source_column": "wind_dir",
+      "action": "cast",
+      "target_name": "wind_dir",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "Sample values 0.0 through 90.0 in steps of ten are all integral degree headings with min 0.0, max 360.0, but null_rate 0.016828 (219 nulls) means the column stays nullable."
+    },
+    {
+      "source_column": "wind_speed",
+      "action": "cast",
+      "target_name": "wind_speed",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(10,5)",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "Sample values like 3.45234 and 8.05546 carry five decimal places with min 0.0, max 1048.36058, and null_rate 0.000154 (2 nulls) requires nullable retention rather than imputation."
+    },
+    {
+      "source_column": "wind_gust",
+      "action": "cast",
+      "target_name": "wind_gust",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(10,5)",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "Sample values like 16.11092 and 24.16638 justify DECIMAL(10,5), but null_rate 0.745505 (9702 of 13014 rows) means the column is sparsely populated and must remain nullable."
+    },
+    {
+      "source_column": "precip",
+      "action": "cast",
+      "target_name": "precip",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(5,2)",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "Sample values 0.0 through 0.09 with min 0.0, max 1.06 and null_rate 0.0 across all 13014 rows justify a required DECIMAL(5,2)."
+    },
+    {
+      "source_column": "pressure",
+      "action": "cast",
+      "target_name": "pressure",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(7,2)",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "Sample values like 983.8 and 991.7 with min 983.8, max 1038.4 justify DECIMAL(7,2), but null_rate 0.114953 (1496 nulls) means the column must remain nullable."
+    },
+    {
+      "source_column": "visib",
+      "action": "cast",
+      "target_name": "visib",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(4,2)",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "The 20 distinct_values (0.0 through 10.0, including fractional entries like 0.06 and 0.25) with null_rate 0.0 justify a required DECIMAL(4,2)."
+    },
+    {
+      "source_column": "time_hour",
+      "action": "cast",
+      "target_name": "time_hour",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "All 10 sample values follow the consistent ISO8601 pattern 2013-01-01T0X:00:00Z with distinct_count 4341 and null_rate 0.0, supporting a VARCHAR-to-TIMESTAMP cast."
+    },
+    {
+      "source_column": "_airbyte_raw_id",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "is_airbyte_metadata is true and this UUID is a capture-tool artifact, not a business column."
+    },
+    {
+      "source_column": "_airbyte_extracted_at",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "is_airbyte_metadata is true; the 3 distinct extraction timestamps reflect ingestion time, not weather data."
+    },
+    {
+      "source_column": "_airbyte_meta",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "JSON",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "is_airbyte_metadata is true and the single distinct value '{}' carries no business information."
+    }
+  ],
+  "dedupe_strategy": "none",
+  "dedupe_keys": [],
+  "grain_keys": [
+    "origin",
+    "time_hour"
+  ],
+  "decisions": [
+    {
+      "key": "decisionDropMetadata",
+      "value": "excluded-as-capture-artifacts",
+      "rationale": "_airbyte_raw_id, _airbyte_extracted_at, and _airbyte_meta are all flagged is_airbyte_metadata true and carry no business meaning."
+    },
+    {
+      "key": "decisionExactDuplicates",
+      "value": "no-duplicates-found",
+      "rationale": "duplicate_row_rate is 0.0 across all 13014 rows, so no deduplication step is proposed."
+    },
+    {
+      "key": "decisionGrain",
+      "value": "origin-plus-time-hour",
+      "rationale": "origin (3 distinct airport codes) combined with time_hour (4341 distinct hourly timestamps, null_rate 0.0 on both) plausibly identifies one weather observation per station per hour."
+    },
+    {
+      "key": "decisionCastIntegralColumns",
+      "value": "cast-decimal-to-integer",
+      "rationale": "year, month, day, hour, and wind_dir all land as DECIMAL(38,9) but their sample/distinct values (e.g. 2013.0, 1.0-6.0, 1.0-31.0, 0.0-23.0, 0.0-90.0 in tens) are integral, so they are cast to INTEGER."
+    },
+    {
+      "key": "decisionCastTimeHour",
+      "value": "cast-string-to-timestamp",
+      "rationale": "time_hour samples uniformly match the ISO8601 pattern YYYY-MM-DDTHH:00:00Z with null_rate 0.0, supporting a TIMESTAMP cast."
+    },
+    {
+      "key": "decisionNullWindGust",
+      "value": "retained-sparse-nullable",
+      "rationale": "wind_gust has null_rate 0.745505 (9702 of 13014 rows null); the column is retained as nullable rather than imputed or dropped."
+    },
+    {
+      "key": "decisionNullPressure",
+      "value": "retained-nullable",
+      "rationale": "pressure has null_rate 0.114953 (1496 nulls) and is retained as a nullable DECIMAL(7,2) rather than imputed."
+    }
+  ],
+  "purpose": "This table provides cleaned, typed hourly weather observations for the three NYC-area airports (EWR, JFK, LGA) for downstream flight-delay and operations analysis.",
+  "usage": "Consumers should join on origin and time_hour to align weather with flight records; wind_gust and pressure carry substantial nulls (74.6% and 11.5% respectively) and must be handled explicitly (e.g. coalesce or filter) rather than assumed populated, and wind_dir has a small null rate (1.7%) from missing calm-wind readings.",
+  "limitations": "Cleanup did not impute any null values; wind_gust remains sparsely populated (74.6% null) and pressure (11.5% null) and wind_dir (1.7%) and wind_speed (0.02%) retain their original null patterns from bronze. No duplicate rows were found (duplicate_row_rate 0.0), so no dedupe logic was applied, and the declared grain (origin, time_hour) has not been measured for uniqueness in the warehouse and should be validated before reliance."
+}
