@@ -953,11 +953,26 @@ calendar this record mints. The star fails the trial if a question
 needs a hand-written gold object, or a conformed entity cannot be
 joined across categories through the typed surfaces.
 
-The verdict is appended to this entry at the exit with the measured
-cost of per-category dimensions
-([F-44](../verification/gate_proof_findings.md#f-44)); a failing verdict
-makes shared entity dimensions the next register amendment, and a
-passing one records the cost as the price of the shape. The standing
+Verdict, recorded at the arc's exit: the trial passes, on numbers
+measured at the September 3, 2026 rehearsal and held by the sittings'
+own gates before this paragraph landed. M1: 31 models and 303 tests
+green in one cold build (PASS=334), the audit and the demo gate green.
+M2: the K1 gate holds three keys; the five declared silver joins measure
+1.0000, 0.8396, 1.0000, 0.9791, and 1.0000 against floors 1.00, 0.80,
+1.00, 0.97, and 1.00; the declared cross-category join (a flight's
+weather at its origin in its departure hour) measures 0.9994 through the
+typed surfaces and through silver alike against a floor of 0.99, and
+every one of the 3,439 departure hours is a calendar row the weather
+category minted too. M3: seven questions answer on the typed surfaces
+as documented: three join flights to weather across categories on the
+conformed airport code and the calendar hour, three more lean on joins
+settled in silver (the carrier, the aircraft registry, the airport
+reference), and one is the retail control. The measured cost of
+per-category dimensions
+([F-44](../verification/gate_proof_findings.md#f-44)): the flights
+category's values dimension is 59 MB of a 106 MB artifact, the price of
+a wide payload chosen so the whole unified row reaches the typed
+surface; the register records it as the price of the shape. The standing
 non-goal on source types reads, from this decision, as one ingestion
 connector type with many files of that type in scope. The release after
 the arc is 1.1.0: additive contract semantics, the fact primary key
