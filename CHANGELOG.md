@@ -9,7 +9,7 @@ binding text, and the
 [findings register](docs/verification/gate_proof_findings.md) carries the
 measurements.
 
-## [Unreleased]
+## [1.1.1] - 2026-09-06
 
 ### Added
 
@@ -95,6 +95,12 @@ measurements.
   whose UTF-8 bytes are not valid cp1252, so its check failed on Windows
   and nowhere else (F-57). The earlier file-URI attempt (#188) was wrong
   and is reverted.
+- The `online_retail_ii` reader options in `config/default.yaml` declare
+  `encoding: utf-8`, the same fix as the ourairports samples. Its pound
+  signs are two UTF-8 bytes the Windows cp1252 default read as two wrong
+  characters, which the D-33 digest gate caught on the Windows build; the
+  demo build now reads every sample as UTF-8 on every platform. A no-op
+  off Windows, where UTF-8 was already the default (F-57).
 
 ## [1.1.0] - 2026-09-05
 
