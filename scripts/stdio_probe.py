@@ -1,27 +1,28 @@
-"""An experiment, not a gate: where is the server blocked, and what frees it?
+"""An experiment, not a gate: which stdout path frees the large answer?
 
-Probe 2 (run 34043637817) failed all three candidates on Windows: stdout
-written on the loop with no worker thread, the selector event loop, and a
-100 ms ticker task. The third answer (the first over 8 KB) still arrived
-only after the next stdin line, in every case within half a second of the
-poke. A ticker task that cannot run is one that has no loop to run on, so
-the main thread itself is the suspect: blocked in something synchronous
-that a stdin read on another thread releases. This probe makes the server
-dump every thread's stack to stderr every 8 seconds (faulthandler), so
-the blocked frame is named, and tries three more candidates.
+Probe 3 (run 34045163103) named the frame. On Windows the server's main
+thread sits in the asyncio ProactorEventLoop poll
+(`asyncio\\windows_events.py` `_poll` -> `GetQueuedCompletionStatus`), the
+anyio worker threads idle in `queue.get`, and the third answer, the first
+that carries the running total past the pipe buffer, is not written until
+the next stdin event wakes the completion port. The mcp SDK's stdout
+writer pushes every answer through `anyio.to_thread` worker-thread writes
+(`mcp/server/stdio.py`, `stdout_writer`). Every candidate so far left that
+path intact and failed. This probe tries stdout paths that leave it.
 
     uv run python scripts/stdio_probe.py
 
-  Q1 control: the shipped server, with the stack dumps.
-  Q2 tool-thread: the sync tool function run in a worker thread instead
-     of on the event loop (the SDK's call_fn_with_arg_validation patched).
-  Q3 raw-stdin: the server's stdin read by Win32 ReadFile through ctypes
-     on a worker thread (os.read on Linux), never through the C runtime's
-     _read and its per-descriptor lock; handed to stdio_server() as stdin.
-  Q4 unbuffered: the server started with python -u (stdout and stderr
-     unbuffered at the interpreter level).
+  R0 control: the shipped server, for the reproduction.
+  R1 thread-writer: stdout written by a dedicated OS thread off a plain
+     queue.Queue, handed to stdio_server(stdout=...); the coroutine's write
+     only enqueues, so it never waits on the loop's completion-port wakeup.
+  R2 inline: stdout written synchronously in the coroutine itself, no
+     worker thread at all (stdio_server(stdout=...) with blocking write).
+  R3 selector: the server run on a WindowsSelectorEventLoopPolicy loop
+     through a clean asyncio.run, bypassing FastMCP.run and anyio.run, so
+     the loop is provably the selector and not the proactor.
 
-Every wait is bounded; the whole probe takes under three minutes even when
+Every wait is bounded; the whole probe takes about three minutes even when
 every candidate fails. Keyless; no network.
 """
 
@@ -61,6 +62,7 @@ def interpreter() -> Path:
 
 DUMP = "import faulthandler, sys; faulthandler.dump_traceback_later(8, repeat=True, file=sys.stderr)\n"
 
+# R0: the shipped server, unaltered but for the stack dumps.
 WRAP_CONTROL = (
     DUMP
     + r"""
@@ -69,82 +71,78 @@ runpy.run_module("metricmine.server", run_name="__main__")
 """
 )
 
-WRAP_TOOL_THREAD = (
+# R1: a dedicated OS thread writes stdout off a plain queue; the coroutine's
+# write only enqueues. No dependency on the loop's completion-port wakeup for
+# the bytes to leave the process.
+WRAP_THREAD_WRITER = (
     DUMP
     + r"""
-import runpy, sys
-import anyio
-from mcp.server.fastmcp.utilities import func_metadata as fm
-orig = fm.FuncMetadata.call_fn_with_arg_validation
-async def patched(self, fn, fn_is_async, arguments_to_validate, arguments_to_pass_directly):
-    if fn_is_async:
-        return await orig(self, fn, fn_is_async, arguments_to_validate, arguments_to_pass_directly)
-    pre = self.pre_parse_json(arguments_to_validate)
-    parsed = self.arg_model.model_validate(pre).model_dump_one_level()
-    parsed |= arguments_to_pass_directly or {}
-    return await anyio.to_thread.run_sync(lambda: fn(**parsed))
-fm.FuncMetadata.call_fn_with_arg_validation = patched
-sys.stderr.write("[wrapper] sync tools run in a worker thread\n"); sys.stderr.flush()
+import runpy, sys, threading, queue as _q
+import mcp.server.stdio as stdio
+import mcp.server.fastmcp.server as fs
+class ThreadWriter:
+    def __init__(self):
+        self._q = _q.Queue()
+        self._buf = sys.stdout.buffer
+        self._t = threading.Thread(target=self._run, name="stdout-writer", daemon=True)
+        self._t.start()
+    def _run(self):
+        while True:
+            data = self._q.get()
+            if data is None:
+                return
+            self._buf.write(data); self._buf.flush()
+    async def write(self, s):
+        self._q.put(s.encode("utf-8"))
+    async def flush(self):
+        pass
+async def run_stdio_async(self):
+    async with stdio.stdio_server(stdout=ThreadWriter()) as (read_stream, write_stream):
+        await self._mcp_server.run(read_stream, write_stream, self._mcp_server.create_initialization_options())
+fs.FastMCP.run_stdio_async = run_stdio_async
+sys.stderr.write("[wrapper] stdout written by a dedicated thread off a queue\n"); sys.stderr.flush()
 runpy.run_module("metricmine.server", run_name="__main__")
 """
 )
 
-WRAP_RAW_STDIN = (
+# R2: stdout written synchronously in the coroutine, no worker thread.
+WRAP_INLINE = (
     DUMP
     + r"""
 import runpy, sys
-import anyio
 import mcp.server.stdio as stdio
 import mcp.server.fastmcp.server as fs
-if sys.platform == "win32":
-    import ctypes, msvcrt
-    from ctypes import wintypes
-    k32 = ctypes.WinDLL("kernel32", use_last_error=True)
-    HANDLE = wintypes.HANDLE(msvcrt.get_osfhandle(0))
-    def read_chunk():
-        buf = ctypes.create_string_buffer(65536)
-        n = wintypes.DWORD(0)
-        ok = k32.ReadFile(HANDLE, buf, 65536, ctypes.byref(n), None)
-        return buf.raw[: n.value] if ok else b""
-    HOW = "Win32 ReadFile through ctypes"
-else:
-    import os
-    def read_chunk():
-        return os.read(0, 65536)
-    HOW = "os.read"
-class RawStdin:
+class InlineWriter:
     def __init__(self):
-        self._buf = b""
-        self._eof = False
-    def __aiter__(self):
-        return self
-    async def __anext__(self):
-        line = await anyio.to_thread.run_sync(self._next_line)
-        if line is None:
-            raise StopAsyncIteration
-        return line
-    def _next_line(self):
-        while True:
-            i = self._buf.find(b"\n")
-            if i >= 0:
-                line, self._buf = self._buf[: i + 1], self._buf[i + 1 :]
-                return line.decode("utf-8", "replace")
-            if self._eof:
-                if self._buf:
-                    line, self._buf = self._buf, b""
-                    return line.decode("utf-8", "replace")
-                return None
-            chunk = read_chunk()
-            if not chunk:
-                self._eof = True
-            else:
-                self._buf += chunk
+        self._buf = sys.stdout.buffer
+    async def write(self, s):
+        self._buf.write(s.encode("utf-8"))
+    async def flush(self):
+        self._buf.flush()
 async def run_stdio_async(self):
-    async with stdio.stdio_server(stdin=RawStdin()) as (read_stream, write_stream):
+    async with stdio.stdio_server(stdout=InlineWriter()) as (read_stream, write_stream):
         await self._mcp_server.run(read_stream, write_stream, self._mcp_server.create_initialization_options())
 fs.FastMCP.run_stdio_async = run_stdio_async
-sys.stderr.write(f"[wrapper] stdin read by {HOW} on a worker thread\n"); sys.stderr.flush()
+sys.stderr.write("[wrapper] stdout written inline in the coroutine, no worker thread\n"); sys.stderr.flush()
 runpy.run_module("metricmine.server", run_name="__main__")
+"""
+)
+
+# R3: the server on a provably selector loop, through a clean asyncio.run
+# that bypasses FastMCP.run and anyio.run entirely.
+WRAP_SELECTOR = (
+    DUMP
+    + r"""
+import asyncio, sys
+from mcp.server.stdio import stdio_server
+from metricmine.server.app import server
+async def _main():
+    async with stdio_server() as (read_stream, write_stream):
+        await server._mcp_server.run(read_stream, write_stream, server._mcp_server.create_initialization_options())
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+sys.stderr.write(f"[wrapper] loop policy {type(asyncio.get_event_loop_policy()).__name__}\n"); sys.stderr.flush()
+asyncio.run(_main())
 """
 )
 
@@ -278,7 +276,7 @@ def walk(w: Walker) -> bool:
         {
             "protocolVersion": LATEST_PROTOCOL_VERSION,
             "capabilities": {},
-            "clientInfo": {"name": "metricmine-stdio-probe", "version": "3"},
+            "clientInfo": {"name": "metricmine-stdio-probe", "version": "4"},
         },
     )
     if init is None:
@@ -349,17 +347,17 @@ def main() -> int:
     )
     results = {}
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as cwd:
-        results["Q1 control"] = run_variant(
-            "Q1 control", [str(exe), "-c", WRAP_CONTROL], env, cwd
+        results["R0 control"] = run_variant(
+            "R0 control", [str(exe), "-c", WRAP_CONTROL], env, cwd
         )
-        results["Q2 tool-thread"] = run_variant(
-            "Q2 tool-thread", [str(exe), "-c", WRAP_TOOL_THREAD], env, cwd
+        results["R1 thread-writer"] = run_variant(
+            "R1 thread-writer", [str(exe), "-c", WRAP_THREAD_WRITER], env, cwd
         )
-        results["Q3 raw-stdin"] = run_variant(
-            "Q3 raw-stdin", [str(exe), "-c", WRAP_RAW_STDIN], env, cwd
+        results["R2 inline"] = run_variant(
+            "R2 inline", [str(exe), "-c", WRAP_INLINE], env, cwd
         )
-        results["Q4 unbuffered"] = run_variant(
-            "Q4 unbuffered", [str(exe), "-u", "-c", WRAP_CONTROL], env, cwd
+        results["R3 selector"] = run_variant(
+            "R3 selector", [str(exe), "-c", WRAP_SELECTOR], env, cwd
         )
     say(
         "SUMMARY "
