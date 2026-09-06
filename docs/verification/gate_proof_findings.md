@@ -7,7 +7,7 @@ datacontract-cli 1.0.12 (isolated uv tool). All findings below were observed
 directly, not inferred from documentation. The gate path was re-proven at
 dbt-core 1.12.3 with dbt-duckdb 1.11.0 at Arc 1 ([F-30](#f-30)); every
 finding stands. They supersede any conflicting
-guidance in older references. Governing rules: CLAUDE.md rules 10–11.
+guidance in older references. Governing rules: CLAUDE.md rules 10 and 11.
 
 Findings carry canonical IDs of the form **F-nn**, cited from the
 [decision register](../decisions/decision-register.md) and from commit bodies.
@@ -69,6 +69,8 @@ order by design.
 | [F-51](#f-51) | Sync-generated singular tests carry no dependency edge; a silver model built from other silver models names itself through `ref()` in its rules | Multi-source rung |
 | [F-52](#f-52) | YAML 1.1 boolean words as mapping keys: `on` parses as `True` and breaks canonical sorting | Multi-source rung |
 | [F-53](#f-53) | dbt's partial-parse cache keeps a test disabled across the F-13 window; the regeneration build clears `transform/target` | Multi-source rung |
+| [F-54](#f-54) | The local lint lane fails on a machine without the isolated `datacontract` tool; the module skips by name | Windows rung |
+| [F-55](#f-55) | A hosted Windows runner proves the stdio launch of the server, never the desktop client's click-through | Windows rung |
 
 ## Command surface (datacontract-cli 1.0.12)
 
@@ -164,7 +166,7 @@ maintained outside the repository; nothing here depends on it).
 ## Model rung (Session F, Sitting 2, July 31, 2026)
 
 Findings observed while landing the first contracted silver model
-(contract v1.1.0, PRs #42–#44) and in the live break demo (PR #45, closed
+(contract v1.1.0, PRs #42 to #44) and in the live break demo (PR #45, closed
 unmerged by design). Same pinned toolchain as above.
 
 ### F-08
@@ -1051,3 +1053,45 @@ count one short of the expected total after a contract bump is a
 parse-cache symptom before it is anything else.
 (`transform/tests/datacontract_cli/gold_unified_event_star/gold_unified_event_star__1_6_0__context_registry__c3_registry_coverage__every_schema_key_p.sql`,
 landing with the regeneration)
+
+## Windows rung (Arc 7 prep, September 6, 2026)
+
+### F-54
+**The local lint lane fails on a machine without the isolated
+`datacontract` tool, so the module skips by name.** The demo guide says
+the demo runs without `datacontract-cli`, and Path B ends with
+`uv run pytest -q`. On a fresh clone of `cb2cd07` with the tool absent,
+that command failed the fifteen tests of `tests/agents/test_lint_local.py`
+on a missing executable (`15 failed, 69 passed` in the local lane) while
+every other local test passed; with the tool installed the same command
+passed all 84. The module now carries
+`pytest.mark.skipif(shutil.which("datacontract") is None, ...)` beside
+its `local` mark: `69 passed, 15 skipped` without the tool, unchanged
+with it. The gates stay CI's, where the tool is installed; a stranger's
+closing test run says what it skipped and why instead of failing on a
+tool the guide never asked for. The class: a local-lane test that shells
+out to a tool the demo path does not require must skip on its absence,
+or the demo path's own closing command reports a failure the demo does
+not have.
+(`tests/agents/test_lint_local.py`, landing with the Windows plumbing)
+
+### F-55
+**A hosted Windows runner proves the command a desktop config launches
+over stdio, never the desktop client's click-through.** The Windows
+entry the demo guide gives for Claude Desktop
+(`%APPDATA%\Claude\claude_desktop_config.json`; the clone's
+`.venv\Scripts\python.exe` with `-m metricmine.server`) was written from
+the MCP client guide by an author with no Windows machine. What a runner
+can measure is the command: `scripts/serve_smoke.py` spawns it the way a
+client does (from outside the repository, with the mcp SDK's default
+minimal environment, `MM_SERVE_DB` unset) and asserts the server name,
+five tools, and three categories, and the `demo-windows` job runs it
+after `demo-fetch` on every change to the demo path. What no runner can
+measure is the desktop app reading that file and listing the server, so
+the Windows desktop step ships documented, not measured, and the guide
+says so. This finding closes when a person confirms the step on a
+Windows desktop; the confirmation lands here as an addendum with the
+date and the Claude Desktop version, and the guide's sentence changes
+with it.
+(`scripts/serve_smoke.py`, landing with the Windows plumbing; the Claude
+Desktop step of [`docs/demo.md`](../demo.md))

@@ -213,7 +213,8 @@ approves every contract.
     engine, the serving layer, the two proposers, and the gates change
     only through the decision register; experiments live on branches or
     under docs/experiments/ and end in written findings; a clone of main
-    at any tag gets a working demo (make doctor, then make demo, keyless).
+    at any tag gets a working demo (make doctor, then make demo, keyless;
+    on Windows, uv run mm doctor, then uv run mm demo, D-42).
 
 ## Architecture boundaries
 - Exactly two agents exist in the pipeline: a silver cleanup proposer and a
@@ -262,6 +263,23 @@ the dbt-duckdb adapter for transforms. ODCS v3.1.0 for contracts, executed via
 datacontract-cli 1.0.12, installed as an isolated tool with
 `uv tool install --python 3.12 "datacontract-cli[duckdb]==1.0.12"`, never added to
 pyproject.toml as a project dependency. GitHub Actions for CI.
+
+Supported platforms (D-42): macOS, Linux, and Windows x64 on Python 3.12.
+`make <target>` is a convenience layer over the task entry point
+`uv run mm <target>` (src/metricmine/tasks.py) for the demo path
+(doctor, demo-fetch, ingest, demo, export-demo, demo-manifest), so the
+two never diverge: a change to a demo-path target lands in tasks.py,
+never as a Makefile-only recipe, and tests/test_tasks.py holds the
+module keyless. Every other make target is the one-line `uv run ...`
+command the Makefile shows; on Windows, run that line. Windows text on
+any surface runs in Windows PowerShell 5.1 and PowerShell 7 alike: one
+command per line and no `&&`, `$env:NAME = "value"` for environment
+lines, `.venv\Scripts\python.exe` as the interpreter, backslashes doubled
+in JSON; the demo-windows workflow proves both shells on a fresh runner.
+`.gitattributes` holds every text file to LF on checkout; captured
+evidence and the committed samples keep their bytes verbatim. Windows on
+Arm and WSL are outside the matrix (no Windows Arm wheel for the dbt
+parser; WSL is the Linux path).
 
 The MCP server runs on the official mcp SDK over stdio, pinned to the 1.x
 maintenance line (D-32 as amended; mcp 2.x cannot co-resolve with
@@ -312,7 +330,9 @@ Decisions cited anywhere as D-0x resolve in
   resolves outside the project root, naming the path. The guard reads
   command text, never a subprocess, so this rule stays in force where
   the guard cannot see. Hooks are local to Claude Code; CI is the gate
-  of record and no check migrates out of it.
+  of record and no check migrates out of it. The guard's path logic is
+  POSIX; on Windows it fails safe by asking, and a Windows guard is a
+  contributor item that opens on a Windows contributor's report (D-42).
 - Oscar (`.claude/agents/oscar.md`) is the repository's resident guide
   and contract reviewer: a read-only subagent that answers how the
   system works and where a task is done from the repository's own files,

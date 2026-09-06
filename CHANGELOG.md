@@ -13,6 +13,15 @@ measurements.
 
 ### Added
 
+- Decision Record 012: D-42, the supported platforms (macOS, Linux, and
+  Windows x64 on Python 3.12) and the task entry point `uv run mm
+  <target>` the Makefile delegates to for the demo path, with the
+  Windows text rules, the line-ending rule, what stays outside the
+  matrix and why, and the desktop step as documented until a person
+  confirms it; findings F-54 (the local lint lane on a machine without
+  the isolated tool) and F-55 (what a Windows runner proves of the
+  desktop step, and what waits on a person). CLAUDE.md rule 19, the
+  Toolchain section, and the guard note carry the platform text.
 - The eight recorded live proposals for the aviation family under
   `tests/agents/fixtures/recorded/`, copied verbatim from the September
   4 eval study (claude-sonnet-5, one run per fixture); the recorded
