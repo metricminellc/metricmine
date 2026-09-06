@@ -1,0 +1,133 @@
+name: demo-windows
+
+# The Windows path, proven on a fresh machine per change (D-42). Every
+# step runs the line docs/demo.md documents, in the documented order, in
+# both shells a Windows reader has: PowerShell 7 (pwsh) and Windows
+# PowerShell 5.1 (powershell). Path A first (install uv, sync, fetch the
+# release asset, list the categories, prove the server the desktop config
+# launches over stdio), then Path B (the keyless replay, the manifest gate
+# against the committed manifest, the test suite). Free on the public
+# repository; each run is a fresh virtual machine. The one step no runner
+# can measure is the Claude Desktop click-through (F-55); the demo guide
+# says so.
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/demo-windows.yml"
+      - ".gitattributes"
+      - "Makefile"
+      - "pyproject.toml"
+      - "uv.lock"
+      - "scripts/**"
+      - "src/metricmine/**"
+      - "tests/**"
+      - "demo/demo.digest.json"
+      - "docs/demo.md"
+      - "README.md"
+  # Public main earns its own green check after every squash-merge, the
+  # same posture as contract-gate.
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Least privilege: the workflow only reads the checked-out code.
+permissions:
+  contents: read
+
+# Cancel superseded runs on the same ref (PR branch, or main on push).
+concurrency:
+  group: demo-windows-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  demo:
+    name: Windows demo (${{ matrix.shell }})
+    runs-on: windows-latest
+    # Set from the measured cycle plus margin; a hang is a finding, not a
+    # wait.
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        # pwsh is PowerShell 7, the runner default; powershell is Windows
+        # PowerShell 5.1, which ships with Windows and rejects `&&`, so the
+        # documented lines are proven where the stricter shell runs them.
+        shell: [pwsh, powershell]
+    defaults:
+      run:
+        shell: ${{ matrix.shell }}
+    steps:
+      - uses: actions/checkout@v7
+
+      # Measured, not assumed: the runner's autocrlf setting and the line
+      # endings the checkout produced under .gitattributes. Every text file
+      # is expected w/lf; the evidence directory keeps its bytes.
+      - name: Line endings after checkout
+        run: |
+          $autocrlf = git config --get core.autocrlf
+          "core.autocrlf: $autocrlf"
+          git ls-files --eol | ForEach-Object { ($_ -split '\s+')[1] } | Group-Object | Sort-Object Count -Descending | ForEach-Object { "{0,6} {1}" -f $_.Count, $_.Name }
+
+      # The documented install line, verbatim (docs/demo.md, What you need).
+      # The installer appends its directory to GITHUB_PATH itself, so the
+      # next step finds uv with no runner-only line.
+      - name: Install uv (the documented line)
+        run: powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+
+      - name: uv is on PATH in a new step
+        run: uv --version
+
+      - name: uv sync
+        run: uv sync
+
+      - name: Path A, the preflight
+        run: uv run mm doctor
+
+      - name: Path A, fetch and verify the release asset
+        run: uv run mm demo-fetch
+
+      - name: Path A, list the categories
+        run: uv run python -c "from metricmine.query import GoldWarehouse; print(GoldWarehouse().list_fact_categories())"
+
+      # The command the Claude Desktop config launches, proven over stdio
+      # from outside the repository with a minimal environment.
+      - name: Path A, the server the desktop config launches
+        run: uv run python scripts/serve_smoke.py
+
+      - name: Path A, a second fetch already matches
+        run: uv run mm demo-fetch
+
+      # Path B, the keyless replay: the connector venv (CPython 3.10,
+      # airbyte-source-file 0.3.15, numpy<2), the landing, dbt deps, dbt
+      # build, the export. Offline mode keeps the Airbyte registry out of
+      # it, as CI on ubuntu does (D-27).
+      - name: Path B, the keyless replay
+        env:
+          AIRBYTE_OFFLINE_MODE: "1"
+        run: uv run mm demo
+
+      # uv run mm demo re-wrote demo/demo.digest.json from this build
+      # (release unpublished, this build's bytes), so the committed manifest
+      # is restored first: the check then holds this machine's gold content
+      # to what the release published, the D-33 claim on a third platform.
+      - name: Path B, the manifest gate
+        run: |
+          git checkout -- demo/demo.digest.json
+          uv run python scripts/check_demo_digest.py
+
+      - name: Path B, the test suite
+        run: uv run pytest -q
+
+      # A short card on the run page: the image, the shell, the job status.
+      # The measured lines live in the step logs above.
+      - name: Summary
+        if: always()
+        run: |
+          $lines = @()
+          $lines += "## demo-windows (${{ matrix.shell }})"
+          $lines += ""
+          $lines += "- image: $env:ImageOS $env:ImageVersion"
+          $lines += "- shell: ${{ matrix.shell }}, PowerShell $($PSVersionTable.PSVersion)"
+          $lines += "- job status: ${{ job.status }}"
+          [System.IO.File]::AppendAllLines($env:GITHUB_STEP_SUMMARY, [string[]]$lines)
