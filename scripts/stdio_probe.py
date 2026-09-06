@@ -1,29 +1,28 @@
-"""An experiment, not a gate: which stdout path frees the large answer?
+"""An experiment, not a gate: do buffered streams or a heartbeat free the answer?
 
-Probe 3 (run 34045163103) named the frame. On Windows the server's main
-thread sits in the asyncio ProactorEventLoop poll
-(`asyncio\\windows_events.py` `_poll` -> `GetQueuedCompletionStatus`), the
-anyio worker threads idle in `queue.get`, and the third answer, the first
-that carries the running total past the pipe buffer, is not written until
-the next stdin event wakes the completion port. The mcp SDK's stdout
-writer pushes every answer through `anyio.to_thread` worker-thread writes
-(`mcp/server/stdio.py`, `stdout_writer`). Every candidate so far left that
-path intact and failed. This probe tries stdout paths that leave it.
+Probes 1 through 4 ruled out the stdout write path (to_thread, a dedicated
+thread, an inline write), both event loops (proactor and selector), the
+stdin read mechanism, interpreter buffering, a loop timer, and the tool run
+in a worker thread. The stall is upstream of the stdout write and released
+only by a stdin event, and it is size-gated. Two candidates remain, both
+from the upstream lead (SDK issue #1141 fingers the buffer-0 memory streams
+at `stdio.py` L57):
 
     uv run python scripts/stdio_probe.py
 
-  R0 control: the shipped server, for the reproduction.
-  R1 thread-writer: stdout written by a dedicated OS thread off a plain
-     queue.Queue, handed to stdio_server(stdout=...); the coroutine's write
-     only enqueues, so it never waits on the loop's completion-port wakeup.
-  R2 inline: stdout written synchronously in the coroutine itself, no
-     worker thread at all (stdio_server(stdout=...) with blocking write).
-  R3 selector: the server run on a WindowsSelectorEventLoopPolicy loop
-     through a clean asyncio.run, bypassing FastMCP.run and anyio.run, so
-     the loop is provably the selector and not the proactor.
+  U0 control: the shipped server, for the reproduction.
+  U1 buffered: the transport's memory-object streams created with a real
+     buffer instead of 0, so the handler's response send never has to
+     rendezvous with the writer to complete.
+  U2 heartbeat: a background task sends a logging notification every 150 ms
+     through the same write stream, so the server generates outbound traffic
+     on its own; if that frees the answer, a keepalive is a real fix (and it
+     shows whether the loop is even servicing its own timers).
+  U3 both: buffered streams and the heartbeat together.
 
 Every wait is bounded; the whole probe takes about three minutes even when
-every candidate fails. Keyless; no network.
+every candidate fails. The `faulthandler` stack dumps stay on. Keyless; no
+network.
 """
 
 from __future__ import annotations
@@ -62,7 +61,69 @@ def interpreter() -> Path:
 
 DUMP = "import faulthandler, sys; faulthandler.dump_traceback_later(8, repeat=True, file=sys.stderr)\n"
 
-# R0: the shipped server, unaltered but for the stack dumps.
+# Shared prelude: a buffered stdio_server and a heartbeat installer. install()
+# swaps FastMCP.run_stdio_async for one that picks the buffered transport
+# and/or starts the heartbeat task, then the module runs as usual.
+COMMON = r"""
+import anyio, sys, runpy
+from io import TextIOWrapper
+from contextlib import asynccontextmanager
+import mcp.types as types
+from mcp.shared.message import SessionMessage
+import mcp.server.stdio as stdio
+import mcp.server.fastmcp.server as fs
+
+BUF = 256
+
+def _hb_message():
+    return SessionMessage(types.JSONRPCMessage.model_validate(
+        {"jsonrpc": "2.0", "method": "notifications/message",
+         "params": {"level": "debug", "logger": "hb", "data": "heartbeat"}}
+    ))
+
+@asynccontextmanager
+async def _buffered_server():
+    _stdin = anyio.wrap_file(TextIOWrapper(sys.stdin.buffer, encoding="utf-8", errors="replace"))
+    _stdout = anyio.wrap_file(TextIOWrapper(sys.stdout.buffer, encoding="utf-8"))
+    rsw, rs = anyio.create_memory_object_stream(BUF)
+    ws, wsr = anyio.create_memory_object_stream(BUF)
+    async def _rd():
+        async with rsw:
+            async for line in _stdin:
+                try:
+                    m = types.JSONRPCMessage.model_validate_json(line)
+                except Exception as exc:
+                    await rsw.send(exc); continue
+                await rsw.send(SessionMessage(m))
+    async def _wr():
+        async with wsr:
+            async for m in wsr:
+                j = m.message.model_dump_json(by_alias=True, exclude_none=True)
+                await _stdout.write(j + "\n"); await _stdout.flush()
+    async with anyio.create_task_group() as tg:
+        tg.start_soon(_rd); tg.start_soon(_wr)
+        yield rs, ws
+
+def install(buffered, heartbeat):
+    server_cm = _buffered_server if buffered else stdio.stdio_server
+    async def run_stdio_async(self):
+        async with server_cm() as (rs, ws):
+            async with anyio.create_task_group() as tg:
+                if heartbeat:
+                    async def _hb():
+                        while True:
+                            await anyio.sleep(0.15)
+                            try:
+                                await ws.send(_hb_message())
+                            except Exception:
+                                return
+                    tg.start_soon(_hb)
+                await self._mcp_server.run(rs, ws, self._mcp_server.create_initialization_options())
+                tg.cancel_scope.cancel()
+    fs.FastMCP.run_stdio_async = run_stdio_async
+    sys.stderr.write("[wrapper] buffered=%s heartbeat=%s BUF=%s\n" % (buffered, heartbeat, BUF)); sys.stderr.flush()
+"""
+
 WRAP_CONTROL = (
     DUMP
     + r"""
@@ -70,91 +131,35 @@ import runpy
 runpy.run_module("metricmine.server", run_name="__main__")
 """
 )
-
-# R1: a dedicated OS thread writes stdout off a plain queue; the coroutine's
-# write only enqueues. No dependency on the loop's completion-port wakeup for
-# the bytes to leave the process.
-WRAP_THREAD_WRITER = (
+WRAP_BUFFERED = (
     DUMP
-    + r"""
-import runpy, sys, threading, queue as _q
-import mcp.server.stdio as stdio
-import mcp.server.fastmcp.server as fs
-class ThreadWriter:
-    def __init__(self):
-        self._q = _q.Queue()
-        self._buf = sys.stdout.buffer
-        self._t = threading.Thread(target=self._run, name="stdout-writer", daemon=True)
-        self._t.start()
-    def _run(self):
-        while True:
-            data = self._q.get()
-            if data is None:
-                return
-            self._buf.write(data); self._buf.flush()
-    async def write(self, s):
-        self._q.put(s.encode("utf-8"))
-    async def flush(self):
-        pass
-async def run_stdio_async(self):
-    async with stdio.stdio_server(stdout=ThreadWriter()) as (read_stream, write_stream):
-        await self._mcp_server.run(read_stream, write_stream, self._mcp_server.create_initialization_options())
-fs.FastMCP.run_stdio_async = run_stdio_async
-sys.stderr.write("[wrapper] stdout written by a dedicated thread off a queue\n"); sys.stderr.flush()
-runpy.run_module("metricmine.server", run_name="__main__")
-"""
+    + COMMON
+    + '\ninstall(True, False)\nrunpy.run_module("metricmine.server", run_name="__main__")\n'
 )
-
-# R2: stdout written synchronously in the coroutine, no worker thread.
-WRAP_INLINE = (
+WRAP_HEARTBEAT = (
     DUMP
-    + r"""
-import runpy, sys
-import mcp.server.stdio as stdio
-import mcp.server.fastmcp.server as fs
-class InlineWriter:
-    def __init__(self):
-        self._buf = sys.stdout.buffer
-    async def write(self, s):
-        self._buf.write(s.encode("utf-8"))
-    async def flush(self):
-        self._buf.flush()
-async def run_stdio_async(self):
-    async with stdio.stdio_server(stdout=InlineWriter()) as (read_stream, write_stream):
-        await self._mcp_server.run(read_stream, write_stream, self._mcp_server.create_initialization_options())
-fs.FastMCP.run_stdio_async = run_stdio_async
-sys.stderr.write("[wrapper] stdout written inline in the coroutine, no worker thread\n"); sys.stderr.flush()
-runpy.run_module("metricmine.server", run_name="__main__")
-"""
+    + COMMON
+    + '\ninstall(False, True)\nrunpy.run_module("metricmine.server", run_name="__main__")\n'
 )
-
-# R3: the server on a provably selector loop, through a clean asyncio.run
-# that bypasses FastMCP.run and anyio.run entirely.
-WRAP_SELECTOR = (
+WRAP_BOTH = (
     DUMP
-    + r"""
-import asyncio, sys
-from mcp.server.stdio import stdio_server
-from metricmine.server.app import server
-async def _main():
-    async with stdio_server() as (read_stream, write_stream):
-        await server._mcp_server.run(read_stream, write_stream, server._mcp_server.create_initialization_options())
-if sys.platform == "win32":
-    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-sys.stderr.write(f"[wrapper] loop policy {type(asyncio.get_event_loop_policy()).__name__}\n"); sys.stderr.flush()
-asyncio.run(_main())
-"""
+    + COMMON
+    + '\ninstall(True, True)\nrunpy.run_module("metricmine.server", run_name="__main__")\n'
 )
 
 
 class Walker:
-    """Newline-delimited JSON-RPC over a child's pipes; every wait bounded."""
+    """Newline-delimited JSON-RPC over a child's pipes; every wait bounded.
+
+    Heartbeat notifications are counted, not printed, so the log stays legible.
+    """
 
     def __init__(self, proc: subprocess.Popen[bytes], label: str) -> None:
         self.proc = proc
         self.label = label
         self.lines: queue.Queue[bytes | None] = queue.Queue()
         self.arrivals: list[tuple[float, int, str]] = []
+        self.heartbeats = 0
         self._next_id = 0
         threading.Thread(target=self._read, name="server-stdout", daemon=True).start()
 
@@ -184,6 +189,9 @@ class Walker:
 
     def note(self, raw: bytes, tag: str) -> str:
         what = self.describe(raw)
+        if what == "method=notifications/message":
+            self.heartbeats += 1
+            return what
         self.arrivals.append((now(), len(raw), what))
         say(f"{self.label} {tag}: {len(raw)} bytes, {what}")
         return what
@@ -276,7 +284,7 @@ def walk(w: Walker) -> bool:
         {
             "protocolVersion": LATEST_PROTOCOL_VERSION,
             "capabilities": {},
-            "clientInfo": {"name": "metricmine-stdio-probe", "version": "4"},
+            "clientInfo": {"name": "metricmine-stdio-probe", "version": "5"},
         },
     )
     if init is None:
@@ -297,7 +305,6 @@ def walk(w: Walker) -> bool:
         say(
             f"{w.label} tools/call answered: {size} bytes, {len(cats)} categories, {took * 1000:.0f} ms"
         )
-        # A second large answer, to see the fix hold past the first.
         again, size, took = w.request(
             "tools/call", {"name": "list_fact_categories", "arguments": {}}
         )
@@ -330,7 +337,7 @@ def run_variant(label: str, cmd: list[str], env: dict[str, str], cwd: str) -> bo
         w.drain(1.0 if answered else DRAIN, "after stdin closed")
         w.finish()
         say(
-            f"{label} RESULT: {'PASS' if answered else 'FAIL'}; arrivals: "
+            f"{label} RESULT: {'PASS' if answered else 'FAIL'}; heartbeats seen: {w.heartbeats}; arrivals: "
             + "; ".join(f"{t:.3f}s {n}b {what}" for t, n, what in w.arrivals)
         )
     return answered
@@ -347,17 +354,17 @@ def main() -> int:
     )
     results = {}
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as cwd:
-        results["R0 control"] = run_variant(
-            "R0 control", [str(exe), "-c", WRAP_CONTROL], env, cwd
+        results["U0 control"] = run_variant(
+            "U0 control", [str(exe), "-c", WRAP_CONTROL], env, cwd
         )
-        results["R1 thread-writer"] = run_variant(
-            "R1 thread-writer", [str(exe), "-c", WRAP_THREAD_WRITER], env, cwd
+        results["U1 buffered"] = run_variant(
+            "U1 buffered", [str(exe), "-c", WRAP_BUFFERED], env, cwd
         )
-        results["R2 inline"] = run_variant(
-            "R2 inline", [str(exe), "-c", WRAP_INLINE], env, cwd
+        results["U2 heartbeat"] = run_variant(
+            "U2 heartbeat", [str(exe), "-c", WRAP_HEARTBEAT], env, cwd
         )
-        results["R3 selector"] = run_variant(
-            "R3 selector", [str(exe), "-c", WRAP_SELECTOR], env, cwd
+        results["U3 both"] = run_variant(
+            "U3 both", [str(exe), "-c", WRAP_BOTH], env, cwd
         )
     say(
         "SUMMARY "
