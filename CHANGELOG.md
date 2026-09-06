@@ -88,12 +88,13 @@ measurements.
   first tool answer hung until the client sent another line (F-56, numpy
   issue 24290). Loading the modules before the reader starts moves the load
   off the request path; the demo and the smoke need no change.
-- `src/metricmine/ingest/land_sample.py` passes each sample to the
-  source-file connector as `Path.as_uri()` instead of `str(path)`. The
-  connector builds `file://` + the config url; a Windows backslash path
-  made the malformed `file://d:\...` and the reader refused it, while a
-  file URI rebuilds a valid `file:///D:/...` and is byte for byte the same
-  off Windows (F-57).
+- The ourairports reader options in `config/default.yaml` declare
+  `encoding: utf-8`. The source-file connector reads a CSV in the
+  platform's default encoding when the reader options name none, which is
+  cp1252 on Windows; `ourairports_airports` carries 1,310 non-ASCII lines
+  whose UTF-8 bytes are not valid cp1252, so its check failed on Windows
+  and nowhere else (F-57). The earlier file-URI attempt (#188) was wrong
+  and is reverted.
 
 ## [1.1.0] - 2026-09-05
 
