@@ -71,6 +71,7 @@ order by design.
 | [F-53](#f-53) | dbt's partial-parse cache keeps a test disabled across the F-13 window; the regeneration build clears `transform/target` | Multi-source rung |
 | [F-54](#f-54) | The local lint lane fails on a machine without the isolated `datacontract` tool; the module skips by name | Windows rung |
 | [F-55](#f-55) | A hosted Windows runner proves the stdio launch of the server, never the desktop client's click-through | Windows rung |
+| [F-56](#f-56) | The SDK's asyncio stdio client on a Windows runner never returned from the first answer larger than the pipe buffer; the smoke reads the pipes itself with every wait bounded | Windows rung, cycle one |
 
 ## Command surface (datacontract-cli 1.0.12)
 
@@ -1095,3 +1096,47 @@ date and the Claude Desktop version, and the guide's sentence changes
 with it.
 (`scripts/serve_smoke.py`, landing with the Windows plumbing; the Claude
 Desktop step of [`docs/demo.md`](../demo.md))
+
+## Windows rung, cycle one (Arc 7 execution, September 6, 2026)
+
+### F-56
+**The SDK's asyncio stdio client on a Windows runner never returned from
+the first answer larger than the pipe buffer; the smoke now reads the
+pipes itself with every wait bounded.** Cycle one of the `demo-windows`
+check (run 34032638337, both shells) hung at `scripts/serve_smoke.py` for
+the job's whole hour. The server it launched logged `ListToolsRequest`
+and `CallToolRequest` within three seconds of the step's start (the pwsh
+leg: 12:18:00.7146 and 12:18:00.7184 UTC), nothing followed for 59
+minutes, and the job's timeout cancelled the step. The traceback at the
+cancellation came from the SDK's `stdio_client`: its stdout reader had
+parsed a message and raised `BrokenResourceError` sending it into a
+session that had already closed. The smoke as first cut printed nothing
+until the SDK's teardown returned, so the log could not name the step.
+Measured on Linux against the same server and asset, the three answers
+are 2,853 bytes (`initialize`), 6,592 bytes (`tools/list`), and 11,316
+bytes (`tools/call list_fact_categories`); asyncio's subprocess pipes on
+Windows are named pipes with an 8,192-byte buffer
+(`asyncio.windows_utils.BUFSIZE`); the first two answers arrived on the
+runner and the third did not. That is a correlation the log supports,
+not a mechanism the log shows; the mechanism inside the SDK's client is
+unmeasured. The remedy: the smoke speaks the wire protocol itself over
+`subprocess.Popen` pipes, one thread blocking on the server's stdout,
+a 60-second deadline on every answer, each answer printed with its size
+and latency as it arrives, and a bounded shutdown that reports the
+server's exit; the mcp package supplies the minimal environment and the
+protocol version and nothing else. Measured on Linux: the three answers
+in about three seconds and exit 0 in 0.2 seconds after stdin closed;
+seven injected faults (a hung tool call, an early exit, an `isError`
+answer, a 200 KB answer, CRLF line endings, a notification on stdout, a
+server that ignores end-of-file) each named within the deadline. What
+the smoke proves is unchanged: the command the desktop config launches
+answers with the server name, five tools, and three categories. Claude
+Desktop is not the Python SDK's client, so the finding says nothing
+about the desktop's own reader; F-55 stays open as before. The class: a
+proof script prints each step as it completes and bounds every wait, or
+a platform hang hides which step hung and costs the job's whole timeout.
+The fixed tree's Windows run is quoted in the Arc 7 exit record; if the
+plain reader also stops at the tool answer, this finding reopens on the
+server side.
+(`scripts/serve_smoke.py`, landing with the smoke's re-cut; the
+`demo-windows` run 34032638337)
