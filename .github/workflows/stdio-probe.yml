@@ -1,0 +1,58 @@
+name: stdio-probe
+
+# An experiment, not a gate (CLAUDE.md rule 19): one bounded run of
+# scripts/stdio_probe.py on a fresh Windows runner, with the same probe on
+# ubuntu as the control. The toolchain is set up exactly as demo-windows
+# does it (the documented uv installer line, the image's Python 3.12), so
+# the probe measures the same interpreter the check runs. Lives on the
+# experiment branch only; the branch closes into a finding and never merges.
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/stdio-probe.yml"
+      - "scripts/stdio_probe.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: stdio-probe-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  probe:
+    name: stdio probe (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install uv (the documented line, Windows)
+        if: runner.os == 'Windows'
+        run: powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+
+      - name: Install uv (the documented line, Linux)
+        if: runner.os == 'Linux'
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+
+      - name: uv is on PATH in a new step
+        run: uv --version
+
+      - name: uv sync
+        run: uv sync
+
+      - name: The interpreter the venv resolved
+        run: uv run python -c "import sys, platform; print(sys.version); print(sys.executable); print(platform.platform())"
+
+      - name: Fetch the release asset
+        run: uv run mm demo-fetch
+
+      - name: The probe
+        timeout-minutes: 12
+        run: uv run python scripts/stdio_probe.py
