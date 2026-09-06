@@ -72,6 +72,14 @@ measurements.
   executable although the demo guide says the demo runs without that
   tool; the module now skips by name with the reason (F-54: 15 failed
   before, 15 skipped after; the gates are CI's).
+- `scripts/serve_smoke.py` reads the server's pipes itself, every wait
+  bounded, each answer printed with its size and latency as it arrives,
+  and the shutdown measured: cycle one of the Windows check hung at the
+  smoke for the job's whole hour with nothing printed, the SDK's asyncio
+  pipe client never returning from the first answer larger than 8 KB
+  (F-56). What the smoke proves is unchanged: the server name, five
+  tools, and three categories from the command the desktop config
+  launches.
 
 ## [1.1.0] - 2026-09-05
 
