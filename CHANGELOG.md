@@ -38,6 +38,11 @@ measurements.
   `-m metricmine.server`, spawned from outside the repository with the
   SDK's minimal environment); exit 0 on the server name, five tools, and
   three categories (F-55).
+- The `demo-windows` workflow: Path A and Path B of the demo guide on a
+  fresh `windows-latest` runner in PowerShell 7 and Windows PowerShell
+  5.1, with a line-ending census, the stdio smoke, the manifest gate
+  against the committed manifest, and the test suite, on every change to
+  the demo path and every push to main (D-42).
 - The eight recorded live proposals for the aviation family under
   `tests/agents/fixtures/recorded/`, copied verbatim from the September
   4 eval study (claude-sonnet-5, one run per fixture); the recorded
