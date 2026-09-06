@@ -28,7 +28,9 @@ local enforcement hooks in the SDLC layer, and finding F-32. Decision
 Record 008 part two (Arc 5b) carries D-38 through D-40 and Amendments
 O, P, and Q, completing the record part one opened. Decision Record
 011 (September 2, 2026) carries D-41, the multi-source proof,
-Amendments R through W, and findings F-36 through F-53.
+Amendments R through W, and findings F-36 through F-53. Decision Record
+012 (September 6, 2026) carries D-42, the supported platforms and the task
+entry point, and findings F-54 and F-55.
 
 **Status meanings.** `adopted`: in force. `proposed`: agreed in working
 session, applied by the plans below, formal adoption pending; treat as binding
@@ -79,6 +81,7 @@ unless amended.
 | [D-39](#d-39) | Batch-scoped gates; make audit-gold full-table audit | adopted |
 | [D-40](#d-40) | docs/scale.md and the measurement rule | adopted |
 | [D-41](#d-41) | The multi-source proof and the star trial | adopted |
+| [D-42](#d-42) | Supported platforms: macOS, Linux, Windows x64; the task entry point | adopted |
 
 ## The decisions
 
@@ -978,6 +981,67 @@ connector type with many files of that type in scope. The release after
 the arc is 1.1.0: additive contract semantics, the fact primary key
 unchanged. Budgets, windows, and the ladder: Decision Record 011.
 
+### D-42
+**Supported platforms and the task entry point.** The supported matrix
+is macOS, Linux, and Windows x64 on Python 3.12 (`.python-version`).
+Every platform in it is first-class under the stability rule (CLAUDE.md
+rule 19): a clone of `main` at any tag gets a working demo there,
+keyless. CI proves the demo path on a clean ubuntu checkout
+(`contract-gate`) and, from Arc 7, on a fresh Windows runner per change
+to the demo path (`demo-windows`: `windows-latest`, a matrix over
+PowerShell 7 and Windows PowerShell 5.1, Path A then Path B, the
+manifest gate, the test suite; free on the public repository; each run a
+fresh virtual machine). `make` is a convenience layer: the demo-path
+targets (`doctor`, `demo-fetch`, `ingest`, `demo`, `export-demo`,
+`demo-manifest`) are one-line delegations to the task entry point `uv
+run mm <target>` (`src/metricmine/tasks.py`, declared under
+`[project.scripts]` and installed by `uv sync` into the project venv),
+so `make demo` on a Mac and `uv run mm demo` on Windows run the same
+code and cannot diverge; a change to a demo-path target lands in the
+module, never as a Makefile-only recipe; `tests/test_tasks.py` holds the
+module to the keyless rule (D-24) and the dbt invocation convention
+(D-11, D-20). Every hint the demo path prints (the preflight, the fetch,
+the digest check, the exporter, the serving module's fail-closed
+message) names its remedy in the running platform's form through one
+helper in that module, so no Windows reader is told to run `make`. Every
+other `make` target is the one-line `uv run ...` command the Makefile
+shows, and a Windows shell runs that line; widening the entry point is a
+later touch on a Windows contributor's report. Windows text on every
+public surface runs in Windows PowerShell 5.1 and PowerShell 7 alike:
+one command per line and no `&&`, `$env:NAME = "value"` for environment
+lines, `.venv\Scripts\python.exe` as the interpreter, backslashes
+doubled in JSON, Command Prompt not a target; the runner matrix proves
+both shells, and the uv installer line is quoted from Astral's
+documentation. Line endings: `.gitattributes` holds every text file to
+LF on checkout (`* text=auto eol=lf`) whatever `core.autocrlf` says, so
+the bytes a Windows clone hashes (the contracts' canonical hash, the
+committed samples' digests, the engine's oracle) are the bytes the Mac
+and CI hash; `docs/verification/evidence/**` and `data/samples/**` are
+`-text` and keep their bytes verbatim, and no renormalization commit was
+needed (measured at `cb2cd07`: 606 tracked text files already LF; a
+`core.autocrlf=true` clone fails eight unit tests without the file and
+none with it). Outside the matrix, with the reason: Windows on Arm (the
+locked `dbt-core-experimental-parser` sdist offers no Windows Arm wheel;
+`make doctor` says so and WSL runs the Linux path) and WSL itself (it is
+the Linux path, already proven on ubuntu). The Claude Desktop step on
+Windows ships documented from the MCP client guide
+(`%APPDATA%\Claude\claude_desktop_config.json`, opened from Settings,
+Developer, Edit Config; the Store build's virtualized copy is noted
+while anthropics/claude-code#26073 stays open). The command that entry
+launches is proven over stdio on the runner (`scripts/serve_smoke.py`:
+the venv interpreter, `-m metricmine.server`, from outside the
+repository with a minimal environment); the click-through itself is
+documented, not measured, until a person confirms it on a Windows
+desktop; F-55 records that gap and closes when the confirmation lands.
+The working-tree guard (D-37) stays POSIX-only and fails safe on Windows
+by asking; a Windows guard is a contributor item, not a demo-path item.
+`datacontract-cli` on Windows is not part of the demo path (the gates
+are CI's), and a `uv run pytest -q` without the tool skips the lint
+tests by name instead of failing them (F-54). No pin moves. The release
+that closes the arc is 1.1.1: the versioning rule of the operator's
+manual follows the contracts, and no contract, model, or demo content
+changes. Adopted September 6, 2026 (Decision Record 012).
+
 ## Session-decision and finding IDs
 
 IDs of the form `A<n>` (working-session decisions, e.g. A4) and `F-0x`
@@ -1016,6 +1080,7 @@ authority. The mapping:
 | 17 (human-only draft-to-contract flow; no relaxation without the flag; report-and-stop on fail-closed; keyless make demo) | D-24, D-08, D-10 (Amendment G), D-35 |
 | 18 (serving boundary: shared module, three-layer read-only, capped results, the typed-surface steer; the data and expert-context split; the demo artifact as a release asset) | D-31 (Amendment W), D-32, D-33 (Amendment S), D-03 (Amendment S), D-30 (Amendment W) |
 | Conventions (never read or write outside the working tree; enforced by the working-tree guard hook) | D-37, D-13, evidence [F-32](../verification/gate_proof_findings.md#f-32) |
+| Toolchain (the supported matrix; `make` over `uv run mm`; the Windows text rules; line endings) | D-42 |
 
 All decisions in this register are adopted: D-01 through D-20 as of the
 July 11, 2026 revision (Decision Record 001 Rev. 3), D-21 through D-25 as
@@ -1031,7 +1096,8 @@ August 28, 2026 revision (Decision Record 009), and D-37 as of the
 August 29, 2026 revision (Decision Record 010), and D-38 through D-40
 (with Amendments O, P, and Q) as of the Decision Record 008 part two
 revision landed with Arc 5b, and D-41 (with Amendments R through W)
-as of the September 2, 2026 revision (Decision Record 011). D-20 has no
+as of the September 2, 2026 revision (Decision Record 011), and D-42 as
+of the September 6, 2026 revision (Decision Record 012). D-20 has no
 dedicated
 CLAUDE.md rule; its substance
 is encoded directly in
