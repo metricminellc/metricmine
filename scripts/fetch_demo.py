@@ -9,12 +9,15 @@ asset keylessly from the GitHub release, verifies the bytes against the
 manifest, then verifies the file's gold content against the manifest's
 content section (the same D-33 claim CI proves on a fresh build). Path A
 of the walkthrough (serve the artifact straight into Claude Desktop) runs
-on this file; `make demo` builds the same content locally without it.
+on this file; `make demo` (`uv run mm demo` on Windows) builds the same
+content locally without it. Every hint below names the build in the
+running platform's form (D-42).
 
-    uv run python scripts/fetch_demo.py        (make demo-fetch)
+    uv run python scripts/fetch_demo.py        (make demo-fetch; uv run mm demo-fetch)
 
 No key. Exit 0 on a verified artifact, 1 on any verification failure, 2
-when the manifest names no published release yet (build it: make demo).
+when the manifest names no published release yet (build it: make demo,
+or uv run mm demo on Windows).
 """
 
 from __future__ import annotations
@@ -31,6 +34,7 @@ from metricmine.export_demo import (
     file_sha256,
     read_manifest,
 )
+from metricmine.tasks import command
 
 REPOSITORY = "metricminellc/metricmine"
 USER_AGENT = "metricmine-fetch-demo/0.1"
@@ -50,7 +54,7 @@ def main() -> int:
     if not release:
         print(
             "this tree has no published demo artifact yet (the manifest names"
-            " no release); build it locally: make demo"
+            f" no release); build it locally: {command('demo')}"
         )
         return 2
     url = asset_url(release, artifact["name"])
@@ -68,7 +72,7 @@ def main() -> int:
             part.unlink(missing_ok=True)
             print(
                 f"ERROR: {url} answered HTTP {exc.code}; the release asset may"
-                " not be published yet. Build it locally instead: make demo"
+                f" not be published yet. Build it locally instead: {command('demo')}"
             )
             return 1
         digest = file_sha256(part)
@@ -79,7 +83,7 @@ def main() -> int:
                 "ERROR: the downloaded asset does not match the manifest\n"
                 f"  manifest sha256 {artifact['sha256']} bytes {artifact['bytes']}\n"
                 f"  download sha256 {digest} bytes {size}\n"
-                "Nothing kept. Build it locally instead: make demo"
+                f"Nothing kept. Build it locally instead: {command('demo')}"
             )
             return 1
         part.replace(DEFAULT_DEST)

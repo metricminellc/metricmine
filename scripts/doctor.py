@@ -1,10 +1,12 @@
 """make doctor: the five-minute-path preflight, keyless and offline.
 
 Part of the Arc 4 stable-release surface. A stranger on a fresh clone runs
-`make doctor` and learns, before anything builds, whether this machine can
-run the demo: interpreter, uv, the locked toolchain, dbt packages, the
-committed demo artifact, and the two environment exports local dbt lanes
-need (the F-09 class). Read-only: nothing is installed, written, or fetched.
+`make doctor` (`uv run mm doctor` on Windows, D-42) and learns, before
+anything builds, whether this machine can run the demo: the platform, the
+interpreter, uv, the locked toolchain, dbt packages, the demo artifact
+(fetched or built), and the two environment lines local dbt lanes need
+(the F-09 class), printed in the running shell's form. Read-only: nothing
+is installed, written, or fetched.
 
 Verdicts: PASS, WARN (the demo still runs, or the item is only needed for
 the contract gates), FAIL (the demo path is broken). Exit 0 unless a FAIL.
@@ -12,6 +14,7 @@ the contract gates), FAIL (the demo path is broken). Exit 0 unless a FAIL.
 Run through the venv so the locked environment is what gets measured:
 
     make doctor
+    uv run mm doctor
 """
 
 from __future__ import annotations
@@ -31,8 +34,18 @@ REPO = Path(__file__).resolve().parents[1]
 # uv.lock at run time, so a lock refresh never edits this file.
 LOCKED = ["dbt-core", "dbt-duckdb", "duckdb", "anthropic", "mcp", "airbyte", "ruff"]
 DATACONTRACT_PIN = "1.0.12"
+WINDOWS = platform.system() == "Windows"
 
 results: list[tuple[str, str, str]] = []
+
+
+def cmd(target: str) -> str:
+    """The documented command for a target on this platform (D-42): the
+    Makefile on macOS and Linux, the task entry point on Windows. The same
+    one-line rule as metricmine.tasks.command; this file stays standard
+    library so it runs before the package is trusted, and
+    tests/test_doctor.py holds the two to each other."""
+    return f"uv run mm {target}" if WINDOWS else f"make {target}"
 
 
 def record(verdict: str, label: str, detail: str) -> None:
@@ -49,11 +62,25 @@ def locked_versions() -> dict[str, str]:
 
 
 def check_platform() -> None:
-    system = platform.system()
-    if system in ("Darwin", "Linux"):
-        record("PASS", "platform", f"{system} ({platform.machine()})")
+    # The supported matrix (D-42): macOS, Linux, and Windows x64. Windows on
+    # Arm is outside it because the dbt parser ships no Windows Arm wheel;
+    # WSL is the Linux path.
+    system, machine = platform.system(), platform.machine()
+    if system in ("Darwin", "Linux") or (system == "Windows" and machine == "AMD64"):
+        record("PASS", "platform", f"{system} ({machine})")
+    elif system == "Windows":
+        record(
+            "WARN",
+            "platform",
+            f"{system} ({machine}): the Windows path is x64 only (no Windows Arm"
+            " wheel for the dbt parser); WSL runs the Linux path",
+        )
     else:
-        record("WARN", "platform", f"{system}: outside the supported matrix (macOS, Linux)")
+        record(
+            "WARN",
+            "platform",
+            f"{system}: outside the supported matrix (macOS, Linux, Windows x64)",
+        )
 
 
 def check_python() -> None:
@@ -102,7 +129,7 @@ def check_dbt_packages() -> None:
     if (REPO / "transform" / "dbt_packages" / "dbt_utils").exists():
         record("PASS", "dbt packages", "transform/dbt_packages/dbt_utils present")
     else:
-        record("WARN", "dbt packages", "not installed yet; `make demo` runs dbt deps first")
+        record("WARN", "dbt packages", f"not installed yet; `{cmd('demo')}` runs dbt deps first")
 
 
 def check_datacontract() -> None:
@@ -141,10 +168,15 @@ def check_demo_artifact() -> None:
             record(
                 "WARN",
                 "demo artifact",
-                f"not fetched; make demo-fetch restores the {release} asset, or make demo builds it",
+                f"not fetched; {cmd('demo-fetch')} restores the {release} asset,"
+                f" or {cmd('demo')} builds it",
             )
         else:
-            record("WARN", "demo artifact", "no published artifact for this tree; make demo builds it")
+            record(
+                "WARN",
+                "demo artifact",
+                f"no published artifact for this tree; {cmd('demo')} builds it",
+            )
         return
     try:
         con = duckdb.connect(str(demo), read_only=True)
@@ -165,9 +197,18 @@ def check_demo_artifact() -> None:
 
 
 def print_env_exports() -> None:
+    # The two absolute paths the local dbt lanes need (the F-09 class), in
+    # the form the running shell takes: bash and zsh export lines on macOS
+    # and Linux, $env: assignments in PowerShell on Windows (D-42).
     profiles = REPO / "transform"
     warehouse = REPO / "warehouse" / "metricmine.duckdb"
     print()
+    if WINDOWS:
+        print("Local dbt lanes need these two environment lines in every fresh")
+        print("PowerShell (absolute paths; the F-09 class):")
+        print(f'  $env:DBT_PROFILES_DIR = "{profiles}"')
+        print(f'  $env:MM_WAREHOUSE_PATH = "{warehouse}"')
+        return
     print("Local dbt lanes need these two exports in every fresh terminal")
     print("(absolute paths; the F-09 class):")
     print(f'  export DBT_PROFILES_DIR="{profiles}"')

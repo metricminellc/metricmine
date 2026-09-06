@@ -27,6 +27,8 @@ from typing import Any, TypedDict
 
 import duckdb
 
+from metricmine.tasks import command
+
 ENV_VAR = "MM_SERVE_DB"
 # The committed demo artifact (D-03) resolves from this module's own
 # location, never the process CWD: the server is launched by a desktop
@@ -190,8 +192,9 @@ class GoldWarehouse:
             raise FileNotFoundError(
                 f"no gold database at {resolved} "
                 f"({ENV_VAR}={os.environ.get(ENV_VAR) or 'unset'}, "
-                f"default {DEMO_DB}). Build the committed artifact with "
-                f"`make export-demo`, or point {ENV_VAR} at a built warehouse."
+                f"default {DEMO_DB}). Restore the release asset with "
+                f"`{command('demo-fetch')}` or build it with `{command('demo')}`, "
+                f"or point {ENV_VAR} at a built warehouse."
             )
         self.path = resolved
         # Layer 1: the connection itself refuses DDL and DML on the data.

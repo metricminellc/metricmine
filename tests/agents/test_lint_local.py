@@ -2,12 +2,16 @@
 
 Spec: docs/spec/agent-layer.md §3 gate 4. Marked local: it shells out to
 the isolated datacontract tool (CLAUDE.md rule 1 toolchain), which CI's
-keyless pytest lane deselects.
+keyless pytest lane deselects. Without the tool on PATH the module skips
+by name: the demo path runs without datacontract-cli (docs/demo.md), the
+gates are CI's, and a stranger's `uv run pytest -q` after Path B should
+say so rather than fail (D-42).
 """
 
 from __future__ import annotations
 
 import json
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -23,7 +27,13 @@ from metricmine.agents.render import (
     to_yaml,
 )
 
-pytestmark = pytest.mark.local
+pytestmark = [
+    pytest.mark.local,
+    pytest.mark.skipif(
+        shutil.which("datacontract") is None,
+        reason="datacontract-cli is not on PATH; the demo runs without it and the gates are CI's",
+    ),
+]
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 

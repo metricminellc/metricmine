@@ -29,6 +29,15 @@ measurements.
   implementation serves macOS, Linux, and Windows and `RELEASE=` travels
   as `--release`; `command(target)` names a target in the running
   platform's form for every hint the demo path prints (D-42).
+- `.gitattributes`: every text file checks out LF on every platform
+  (`* text=auto eol=lf`), the binary classes named, and the captured
+  evidence and the committed samples kept byte-verbatim (`-text`), so a
+  Windows clone hashes the bytes the Mac and CI hash (D-42).
+- `scripts/serve_smoke.py`: the stdio proof of the command the Claude
+  Desktop config launches (the venv interpreter with
+  `-m metricmine.server`, spawned from outside the repository with the
+  SDK's minimal environment); exit 0 on the server name, five tools, and
+  three categories (F-55).
 - The eight recorded live proposals for the aviation family under
   `tests/agents/fixtures/recorded/`, copied verbatim from the September
   4 eval study (claude-sonnet-5, one run per fixture); the recorded
@@ -42,9 +51,27 @@ measurements.
 
 ### Changed
 
+- `make doctor` (`uv run mm doctor` on Windows) passes Windows x64 as in
+  the matrix, names Windows on Arm as outside it with the reason, prints
+  the two environment lines in the running shell's form, and names its
+  hints in that form too (D-42). Still seven checks.
+- Every hint the demo path prints names its remedy in the running
+  platform's form: the fetch (`scripts/fetch_demo.py`), the digest check
+  (`scripts/check_demo_digest.py`), the exporter, and the serving module's
+  fail-closed message, which now names `make demo-fetch` or `make demo`
+  (`uv run mm ...` on Windows) in place of the stale committed-artifact
+  sentence.
 - The read-only contract-reviewer subagent is folded into Oscar; its
   review rules are unchanged, and the `/contract-review` Skill is
   untouched.
+
+### Fixed
+
+- After Path B, `uv run pytest -q` on a machine without the isolated
+  `datacontract-cli` failed fifteen local lint tests on a missing
+  executable although the demo guide says the demo runs without that
+  tool; the module now skips by name with the reason (F-54: 15 failed
+  before, 15 skipped after; the gates are CI's).
 
 ## [1.1.0] - 2026-09-05
 

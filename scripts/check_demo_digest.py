@@ -41,6 +41,7 @@ from metricmine.export_demo import (
     read_manifest,
     resolve_source_path,
 )
+from metricmine.tasks import command
 
 
 def main() -> int:
@@ -48,7 +49,7 @@ def main() -> int:
     if not source.exists():
         print(
             f"working warehouse not found at {source}; run the build first "
-            "(make ingest, then dbt build)",
+            f"({command('ingest')}, then dbt build)",
             file=sys.stderr,
         )
         return 2
@@ -75,9 +76,12 @@ def main() -> int:
     # The local artifact is informational: absent from a fresh clone by
     # design, and a stale one is refreshed by export or fetch, never a gate.
     if not DEFAULT_DEST.exists():
-        print("local artifact: absent (make demo-fetch or make demo restores it)")
+        print(f"local artifact: absent ({command('demo-fetch')} or {command('demo')} restores it)")
     elif compare_content(DEFAULT_DEST, manifest):
-        print("local artifact: STALE against the manifest (make export-demo or make demo-fetch)")
+        print(
+            "local artifact: STALE against the manifest"
+            f" ({command('export-demo')} or {command('demo-fetch')})"
+        )
     else:
         print("local artifact: matches the manifest")
     print("demo manifest matches the built warehouse content: PASS")

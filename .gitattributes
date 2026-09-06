@@ -1,0 +1,16 @@
+# Line endings (D-42). Every text file checks out with LF on every
+# platform, whatever core.autocrlf says, so the bytes a Windows clone
+# hashes (the contracts' canonical hash, the committed samples' digests,
+# the engine's byte-identical oracle) are the bytes the Mac and CI hash.
+* text=auto eol=lf
+
+# Binary classes, named so detection never has to guess.
+*.png binary
+*.jpg binary
+*.duckdb binary
+
+# Captured evidence and the committed samples keep their bytes verbatim:
+# no conversion in either direction. One evidence capture carries mixed
+# line endings by nature, and the samples' digests are pinned by a gate.
+docs/verification/evidence/** -text
+data/samples/** -text
