@@ -25,6 +25,7 @@ from metricmine.query import (
     gate,
     resolve_db_path,
 )
+from metricmine.tasks import command
 
 # (label, sql, should_pass): the 29 probed cases.
 CASES = [
@@ -166,7 +167,8 @@ def test_missing_database_fails_closed_naming_both_paths(tmp_path, monkeypatch):
     message = str(excinfo.value)
     assert str(missing) in message
     assert str(DEMO_DB) in message
-    assert "make export-demo" in message
+    assert f"`{command('demo-fetch')}`" in message
+    assert f"`{command('demo')}`" in message
 
 
 def test_fail_closed_message_reports_the_env_var_value(tmp_path, monkeypatch):

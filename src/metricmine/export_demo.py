@@ -34,6 +34,8 @@ from typing import Any
 
 import duckdb
 
+from metricmine.tasks import command
+
 ENV_VAR = "MM_WAREHOUSE_PATH"
 RELEASE_ENV_VAR = "MM_DEMO_RELEASE"
 MANIFEST_SCHEMA_VERSION = "1.0.0"
@@ -112,7 +114,7 @@ def export(source: Path, dest: Path) -> None:
         raise FileNotFoundError(
             f"no working warehouse at {source} "
             f"({ENV_VAR}={os.environ.get(ENV_VAR) or 'unset'}). Build it "
-            f"first: `make ingest`, then "
+            f"first: `{command('ingest')}`, then "
             f"`uv run dbt build --project-dir transform --target local`."
         )
     dest.parent.mkdir(parents=True, exist_ok=True)
