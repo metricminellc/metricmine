@@ -279,7 +279,7 @@ and in findings
 
 ## Status and roadmap
 
-[v1.1.0](https://github.com/metricminellc/metricmine/releases/tag/v1.1.0)
+[v1.1.1](https://github.com/metricminellc/metricmine/releases/tag/v1.1.1)
 is the current tagged release; v1.0.0 (September 2, 2026) began the
 stable line. v0.1.0 shipped Phases 0
 through 5: the scaffold and pinned toolchain, bronze ingestion, the
@@ -299,7 +299,9 @@ aviation family of six committed extracts, the engine's fan-in over a
 list of mapping contracts, the conformed calendar and the conformed keys
 with their gate, two new categories in the star, the declared joins and
 their gate, the data and expert-context split in the registry, the
-multi-source scale curve, and the demo question set. The live roadmap is the
+multi-source scale curve, and the demo question set. v1.1.1 adds Windows x64 support for the demo
+path, proven on a fresh Windows runner on every change (D-42). The live
+roadmap is the
 [Issues tab](https://github.com/metricminellc/metricmine/issues); the
 [changelog](CHANGELOG.md) records what landed in each release.
 
