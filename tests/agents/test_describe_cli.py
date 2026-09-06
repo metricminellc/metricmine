@@ -47,7 +47,7 @@ def test_describe_refuses_to_shadow_a_committed_contract(
     assert code == 1
     assert "already exists" in err
     assert "amend" in err
-    assert "ORACLE=contracts/silver_invoice_lines.odcs.yaml" in err
+    assert "ORACLE=contracts/silver_invoice_lines.odcs.yaml" in err.replace("\\", "/")
 
 
 def test_a_missing_oracle_path_is_refused(
