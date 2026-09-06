@@ -88,6 +88,13 @@ measurements.
   first tool answer hung until the client sent another line (F-56, numpy
   issue 24290). Loading the modules before the reader starts moves the load
   off the request path; the demo and the smoke need no change.
+- The ourairports reader options in `config/default.yaml` declare
+  `encoding: utf-8`. The source-file connector reads a CSV in the
+  platform's default encoding when the reader options name none, which is
+  cp1252 on Windows; `ourairports_airports` carries 1,310 non-ASCII lines
+  whose UTF-8 bytes are not valid cp1252, so its check failed on Windows
+  and nowhere else (F-57). The earlier file-URI attempt (#188) was wrong
+  and is reverted.
 
 ## [1.1.0] - 2026-09-05
 
