@@ -38,10 +38,10 @@ ingestion:
       # The continent code for North America and the country code for
       # Namibia are the text "NA", which pandas reads as missing by
       # default; only the empty string is missing here (F-50).
-      reader_options: '{"dtype": {"id": "str", "ident": "str", "iata_code": "str", "icao_code": "str", "gps_code": "str", "local_code": "str"}, "keep_default_na": false, "na_values": [""]}'
+      reader_options: '{"dtype": {"id": "str", "ident": "str", "iata_code": "str", "icao_code": "str", "gps_code": "str", "local_code": "str"}, "keep_default_na": false, "na_values": [""], "encoding": "utf-8"}'
     - dataset_name: ourairports_runways
       sample_csv: data/samples/ourairports_runways/ourairports_runways_d27027ba4414.csv
-      reader_options: '{"dtype": {"id": "str", "airport_ref": "str", "airport_ident": "str", "le_ident": "str", "he_ident": "str", "surface": "str"}, "keep_default_na": false, "na_values": [""]}'
+      reader_options: '{"dtype": {"id": "str", "airport_ref": "str", "airport_ident": "str", "le_ident": "str", "he_ident": "str", "surface": "str"}, "keep_default_na": false, "na_values": [""], "encoding": "utf-8"}'
 
 # Profiling per docs/spec/profiler.md: the deterministic profiler reads the
 # working warehouse read-only (D-11) and writes committed artifacts under
