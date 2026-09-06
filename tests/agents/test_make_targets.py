@@ -6,6 +6,11 @@ live. This module parses the Makefile rather than running it, so the
 guarantee that the replay chain never invokes a proposer is a CI
 assertion rather than prose. Adding a target that breaks the chain fails
 here before it can fail on a machine without a key.
+
+Since D-42 the demo-path targets delegate to the task entry point
+(`uv run mm <target>`, src/metricmine/tasks.py); tests/test_tasks.py holds
+that implementation to the same rules, and this module holds the Makefile
+to the delegation.
 """
 
 from __future__ import annotations
@@ -78,14 +83,33 @@ def test_regenerate_chains_the_proposers_in_pipeline_order() -> None:
 
 
 def test_demo_is_the_keyless_replay_and_never_invokes_a_proposer() -> None:
+    # The replay's sequence lives in the task entry point (D-42), where
+    # tests/test_tasks.py holds it to the keyless rule; the Makefile's job
+    # is the one delegation line, carrying RELEASE= through.
     targets = _parse()
     prerequisites, recipe = targets["demo"]
-    assert prerequisites == ["ingest"]
-    assert any("dbt build" in line and "--target local" in line for line in recipe)
-    assert any("$(MAKE) export-demo" in line for line in recipe)
+    assert prerequisites == []
+    assert recipe == ["uv run mm demo $(RELEASE_FLAG)"]
     for line in _chain(targets, "demo"):
         for marker in _PROPOSER_MARKERS:
             assert marker not in line, f"demo chain invokes a proposer: {line!r}"
+
+
+def test_demo_path_targets_delegate_to_the_task_entry_point() -> None:
+    # One implementation on every platform (D-42): make on macOS and Linux,
+    # `uv run mm` on Windows, the same code path.
+    targets = _parse()
+    expected = {
+        "doctor": "uv run mm doctor",
+        "demo-fetch": "uv run mm demo-fetch",
+        "ingest": "uv run mm ingest",
+        "export-demo": "uv run mm export-demo $(RELEASE_FLAG)",
+        "demo-manifest": "uv run mm demo-manifest $(RELEASE_FLAG)",
+    }
+    for name, line in expected.items():
+        prerequisites, recipe = targets[name]
+        assert prerequisites == [], name
+        assert recipe == [line], name
 
 
 def test_eval_agents_is_the_live_lane() -> None:
@@ -98,11 +122,14 @@ def test_eval_agents_is_the_live_lane() -> None:
 
 
 def test_dbt_lines_follow_the_repo_root_invocation_convention() -> None:
+    # The replay's dbt lines moved to the task entry point with D-42 and
+    # are held there (tests/test_tasks.py); any dbt line left in the
+    # Makefile keeps the convention.
     targets = _parse()
-    for line in _chain(targets, "demo"):
-        if "uv run dbt" in line:
-            assert "--project-dir transform" in line
-            assert "--profiles-dir transform" in line
+    for name in targets:
+        for line in _chain(targets, name):
+            if "uv run dbt" in line:
+                assert "--project-dir transform" in line
 
 
 def test_propose_describe_carries_table_model_and_oracle_flags() -> None:
