@@ -2,21 +2,16 @@
 # `make ingest` (offline mode) so the gates build silver from real bronze;
 # pytest still covers only the unit surface (docs/spec/ingestion.md §4).
 
-# PyPI's airbyte-source-file (0.3.15) pins pandas==1.4.3, which only has
-# wheels up to Python 3.10, so the connector venv is pre-provisioned there.
-# PyAirbyte's ensure_installation() sees the executable and skips its own
-# installer.
-CONNECTOR_VENV := .venv-source-file
-CONNECTOR_PYTHON := 3.10
-
-$(CONNECTOR_VENV)/bin/source-file:
-	uv venv --python $(CONNECTOR_PYTHON) $(CONNECTOR_VENV)
-# pandas 1.4.3 wheels are built against the numpy 1.x ABI; cap numpy<2.
-	uv pip install --python $(CONNECTOR_VENV)/bin/python "airbyte-source-file==0.3.15" "numpy<2"
-
+# The demo path has one implementation on every platform (D-42):
+# src/metricmine/tasks.py, run as `uv run mm <target>`. The targets below
+# delegate to it, so `make <target>` on macOS and Linux and
+# `uv run mm <target>` on Windows are the same code path. The connector
+# venv (CPython 3.10, airbyte-source-file 0.3.15, numpy<2) is provisioned
+# there in the platform's layout; every other target here is the one-line
+# `uv run ...` command it shows, and a Windows shell runs that line.
 .PHONY: ingest
-ingest: $(CONNECTOR_VENV)/bin/source-file
-	uv run python -m metricmine.ingest.land_sample
+ingest:
+	uv run mm ingest
 
 # ONLY=schema.table mints one configured target (repeatable as a
 # space-separated list); with it unset every target is profiled. Observed
@@ -40,7 +35,7 @@ context:
 
 .PHONY: doctor
 doctor:
-	uv run python scripts/doctor.py
+	uv run mm doctor
 
 # The demo artifact is a release asset with a committed digest manifest
 # (D-03 and D-33 as amended by Amendment S): export-demo rebuilds the
@@ -49,20 +44,21 @@ doctor:
 # unpublished); demo-fetch restores the published artifact keylessly and
 # verifies it against the manifest.
 RELEASE ?=
+RELEASE_FLAG := $(if $(RELEASE),--release $(RELEASE),)
 
 .PHONY: export-demo
 export-demo:
-	MM_DEMO_RELEASE="$(RELEASE)" uv run python -m metricmine.export_demo
+	uv run mm export-demo $(RELEASE_FLAG)
 
 # demo-manifest pins the demo/demo.duckdb already on disk (the bytes a
 # release ships) without exporting; export-demo is the refresh path.
 .PHONY: demo-manifest
 demo-manifest:
-	MM_DEMO_RELEASE="$(RELEASE)" uv run python -m metricmine.export_demo --manifest-only
+	uv run mm demo-manifest $(RELEASE_FLAG)
 
 .PHONY: demo-fetch
 demo-fetch:
-	uv run python scripts/fetch_demo.py
+	uv run mm demo-fetch
 
 # Proposer agents per docs/spec/agent-layer.md §4 (D-24, D-34, D-35): one
 # structured call per target, writing a draft contract plus its record to
@@ -97,11 +93,11 @@ propose-mapping:
 # The keyless replay (D-24; docs/demo.md path B in one command): land the
 # committed sample into bronze, build the contracted models, export the
 # demo artifact. No API key, no account, no network beyond the package hub.
+# The sequence lives in src/metricmine/tasks.py (D-42); tests/test_tasks.py
+# holds it to the keyless rule.
 .PHONY: demo
-demo: ingest
-	uv run dbt deps --project-dir transform --profiles-dir transform
-	uv run dbt build --project-dir transform --profiles-dir transform --target local
-	$(MAKE) export-demo
+demo:
+	uv run mm demo $(RELEASE_FLAG)
 
 # The live regenerate path chains the two proposers in pipeline order
 # (D-24). Drafts land in the outbox; nothing under contracts/ moves.

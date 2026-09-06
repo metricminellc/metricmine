@@ -22,6 +22,13 @@ measurements.
   the isolated tool) and F-55 (what a Windows runner proves of the
   desktop step, and what waits on a person). CLAUDE.md rule 19, the
   Toolchain section, and the guard note carry the platform text.
+- The task entry point `uv run mm <target>` for the demo path
+  (`src/metricmine/tasks.py`, declared under `[project.scripts]`): the
+  Makefile's six demo-path targets (`doctor`, `demo-fetch`, `ingest`,
+  `demo`, `export-demo`, `demo-manifest`) delegate to it, so one
+  implementation serves macOS, Linux, and Windows and `RELEASE=` travels
+  as `--release`; `command(target)` names a target in the running
+  platform's form for every hint the demo path prints (D-42).
 - The eight recorded live proposals for the aviation family under
   `tests/agents/fixtures/recorded/`, copied verbatim from the September
   4 eval study (claude-sonnet-5, one run per fixture); the recorded
