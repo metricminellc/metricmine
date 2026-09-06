@@ -1,27 +1,22 @@
-"""An experiment, not a gate: do buffered streams or a heartbeat free the answer?
+"""An experiment, not a gate: does importing the heavy modules at startup free it?
 
-Probes 1 through 4 ruled out the stdout write path (to_thread, a dedicated
-thread, an inline write), both event loops (proactor and selector), the
-stdin read mechanism, interpreter buffering, a loop timer, and the tool run
-in a worker thread. The stall is upstream of the stdout write and released
-only by a stdin event, and it is size-gated. Two candidates remain, both
-from the upstream lead (SDK issue #1141 fingers the buffer-0 memory streams
-at `stdio.py` L57):
+Probe 5 and the full probe 3 dumps settled the mechanism. The tool thread
+stalls inside DuckDB's lazy `import pandas` (which loads numpy's C
+extension) on the first parameterized query, and on Windows that DLL load
+waits behind the pending synchronous stdin read; any stdin event releases
+it. Measured off Windows: DuckDB 1.4.3 imports pandas and numpy on the
+first parameterized `execute` in a process, never on literal SQL, and once
+pandas and numpy are imported the parameterized query is immediate. So the
+fix is to load them before the transport opens stdin.
 
     uv run python scripts/stdio_probe.py
 
-  U0 control: the shipped server, for the reproduction.
-  U1 buffered: the transport's memory-object streams created with a real
-     buffer instead of 0, so the handler's response send never has to
-     rendezvous with the writer to complete.
-  U2 heartbeat: a background task sends a logging notification every 150 ms
-     through the same write stream, so the server generates outbound traffic
-     on its own; if that frees the answer, a keepalive is a real fix (and it
-     shows whether the loop is even servicing its own timers).
-  U3 both: buffered streams and the heartbeat together.
+  V0 control: the shipped server, for the reproduction.
+  V1 fix: the same server with `import pandas` and `import numpy` done at
+     startup, before the module runs and before any stdin reader exists.
 
-Every wait is bounded; the whole probe takes about three minutes even when
-every candidate fails. The `faulthandler` stack dumps stay on. Keyless; no
+Every wait is bounded. The `faulthandler` stack dumps stay on, so V0's
+stall is named in the tool's import frame and V1 shows none. Keyless; no
 network.
 """
 
@@ -61,69 +56,6 @@ def interpreter() -> Path:
 
 DUMP = "import faulthandler, sys; faulthandler.dump_traceback_later(8, repeat=True, file=sys.stderr)\n"
 
-# Shared prelude: a buffered stdio_server and a heartbeat installer. install()
-# swaps FastMCP.run_stdio_async for one that picks the buffered transport
-# and/or starts the heartbeat task, then the module runs as usual.
-COMMON = r"""
-import anyio, sys, runpy
-from io import TextIOWrapper
-from contextlib import asynccontextmanager
-import mcp.types as types
-from mcp.shared.message import SessionMessage
-import mcp.server.stdio as stdio
-import mcp.server.fastmcp.server as fs
-
-BUF = 256
-
-def _hb_message():
-    return SessionMessage(types.JSONRPCMessage.model_validate(
-        {"jsonrpc": "2.0", "method": "notifications/message",
-         "params": {"level": "debug", "logger": "hb", "data": "heartbeat"}}
-    ))
-
-@asynccontextmanager
-async def _buffered_server():
-    _stdin = anyio.wrap_file(TextIOWrapper(sys.stdin.buffer, encoding="utf-8", errors="replace"))
-    _stdout = anyio.wrap_file(TextIOWrapper(sys.stdout.buffer, encoding="utf-8"))
-    rsw, rs = anyio.create_memory_object_stream(BUF)
-    ws, wsr = anyio.create_memory_object_stream(BUF)
-    async def _rd():
-        async with rsw:
-            async for line in _stdin:
-                try:
-                    m = types.JSONRPCMessage.model_validate_json(line)
-                except Exception as exc:
-                    await rsw.send(exc); continue
-                await rsw.send(SessionMessage(m))
-    async def _wr():
-        async with wsr:
-            async for m in wsr:
-                j = m.message.model_dump_json(by_alias=True, exclude_none=True)
-                await _stdout.write(j + "\n"); await _stdout.flush()
-    async with anyio.create_task_group() as tg:
-        tg.start_soon(_rd); tg.start_soon(_wr)
-        yield rs, ws
-
-def install(buffered, heartbeat):
-    server_cm = _buffered_server if buffered else stdio.stdio_server
-    async def run_stdio_async(self):
-        async with server_cm() as (rs, ws):
-            async with anyio.create_task_group() as tg:
-                if heartbeat:
-                    async def _hb():
-                        while True:
-                            await anyio.sleep(0.15)
-                            try:
-                                await ws.send(_hb_message())
-                            except Exception:
-                                return
-                    tg.start_soon(_hb)
-                await self._mcp_server.run(rs, ws, self._mcp_server.create_initialization_options())
-                tg.cancel_scope.cancel()
-    fs.FastMCP.run_stdio_async = run_stdio_async
-    sys.stderr.write("[wrapper] buffered=%s heartbeat=%s BUF=%s\n" % (buffered, heartbeat, BUF)); sys.stderr.flush()
-"""
-
 WRAP_CONTROL = (
     DUMP
     + r"""
@@ -131,35 +63,32 @@ import runpy
 runpy.run_module("metricmine.server", run_name="__main__")
 """
 )
-WRAP_BUFFERED = (
+
+# The fix as it will ship: the heavy modules DuckDB imports lazily on the
+# first parameterized query are loaded here, before the stdio transport
+# starts its stdin reader, so the numpy C-extension DLL load never runs with
+# a synchronous stdin read already pending.
+WRAP_FIX = (
     DUMP
-    + COMMON
-    + '\ninstall(True, False)\nrunpy.run_module("metricmine.server", run_name="__main__")\n'
-)
-WRAP_HEARTBEAT = (
-    DUMP
-    + COMMON
-    + '\ninstall(False, True)\nrunpy.run_module("metricmine.server", run_name="__main__")\n'
-)
-WRAP_BOTH = (
-    DUMP
-    + COMMON
-    + '\ninstall(True, True)\nrunpy.run_module("metricmine.server", run_name="__main__")\n'
+    + r"""
+import sys
+import pandas  # noqa: F401
+import numpy  # noqa: F401
+sys.stderr.write("[wrapper] pandas and numpy imported before the transport\n"); sys.stderr.flush()
+import runpy
+runpy.run_module("metricmine.server", run_name="__main__")
+"""
 )
 
 
 class Walker:
-    """Newline-delimited JSON-RPC over a child's pipes; every wait bounded.
-
-    Heartbeat notifications are counted, not printed, so the log stays legible.
-    """
+    """Newline-delimited JSON-RPC over a child's pipes; every wait bounded."""
 
     def __init__(self, proc: subprocess.Popen[bytes], label: str) -> None:
         self.proc = proc
         self.label = label
         self.lines: queue.Queue[bytes | None] = queue.Queue()
         self.arrivals: list[tuple[float, int, str]] = []
-        self.heartbeats = 0
         self._next_id = 0
         threading.Thread(target=self._read, name="server-stdout", daemon=True).start()
 
@@ -189,9 +118,6 @@ class Walker:
 
     def note(self, raw: bytes, tag: str) -> str:
         what = self.describe(raw)
-        if what == "method=notifications/message":
-            self.heartbeats += 1
-            return what
         self.arrivals.append((now(), len(raw), what))
         say(f"{self.label} {tag}: {len(raw)} bytes, {what}")
         return what
@@ -284,7 +210,7 @@ def walk(w: Walker) -> bool:
         {
             "protocolVersion": LATEST_PROTOCOL_VERSION,
             "capabilities": {},
-            "clientInfo": {"name": "metricmine-stdio-probe", "version": "5"},
+            "clientInfo": {"name": "metricmine-stdio-probe", "version": "6"},
         },
     )
     if init is None:
@@ -337,7 +263,7 @@ def run_variant(label: str, cmd: list[str], env: dict[str, str], cwd: str) -> bo
         w.drain(1.0 if answered else DRAIN, "after stdin closed")
         w.finish()
         say(
-            f"{label} RESULT: {'PASS' if answered else 'FAIL'}; heartbeats seen: {w.heartbeats}; arrivals: "
+            f"{label} RESULT: {'PASS' if answered else 'FAIL'}; arrivals: "
             + "; ".join(f"{t:.3f}s {n}b {what}" for t, n, what in w.arrivals)
         )
     return answered
@@ -354,18 +280,10 @@ def main() -> int:
     )
     results = {}
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as cwd:
-        results["U0 control"] = run_variant(
-            "U0 control", [str(exe), "-c", WRAP_CONTROL], env, cwd
+        results["V0 control"] = run_variant(
+            "V0 control", [str(exe), "-c", WRAP_CONTROL], env, cwd
         )
-        results["U1 buffered"] = run_variant(
-            "U1 buffered", [str(exe), "-c", WRAP_BUFFERED], env, cwd
-        )
-        results["U2 heartbeat"] = run_variant(
-            "U2 heartbeat", [str(exe), "-c", WRAP_HEARTBEAT], env, cwd
-        )
-        results["U3 both"] = run_variant(
-            "U3 both", [str(exe), "-c", WRAP_BOTH], env, cwd
-        )
+        results["V1 fix"] = run_variant("V1 fix", [str(exe), "-c", WRAP_FIX], env, cwd)
     say(
         "SUMMARY "
         + "; ".join(f"{k}: {'PASS' if v else 'FAIL'}" for k, v in results.items())
