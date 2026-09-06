@@ -13,6 +13,13 @@ dependencies = [
     "pyyaml>=6.0.3",
 ]
 
+# The task entry point (D-42): `uv run mm <target>` runs the demo path on
+# every platform; the Makefile's targets delegate to it. uv sync installs
+# the script into the project venv (.venv/bin/mm; .venv\Scripts\mm.exe on
+# Windows), so `uv run mm` needs no PATH change.
+[project.scripts]
+mm = "metricmine.tasks:main"
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
