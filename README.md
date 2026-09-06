@@ -311,10 +311,11 @@ contracts. DuckDB 1.4.3 is the local warehouse. PyAirbyte handles
 ingestion. The MCP server runs on the official `mcp` SDK, pinned to the
 1.x maintenance line (D-32 as amended; the register records why). The code
 is Python 3.12, managed with uv. Every pin is a register entry; none of
-them is `latest`. Supported platforms: macOS and Linux on Python 3.12.
-CI proves the path on a clean ubuntu checkout, the Mac measurements in
+them is `latest`. Supported platforms: macOS, Linux, and Windows x64 on
+Python 3.12. CI proves the path on a clean ubuntu checkout, a fresh
+Windows runner proves the Windows demo path, the Mac measurements in
 [docs/scale.md](docs/scale.md) state their environment, and `make doctor`
-checks a machine before the first build.
+(`uv run mm doctor` on Windows) checks a machine before the first build.
 
 ## Non-goals
 
