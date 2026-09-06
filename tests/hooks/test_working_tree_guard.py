@@ -19,6 +19,15 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 GUARD = _REPO_ROOT / ".claude" / "hooks" / "working_tree_guard.py"
 SETTINGS = _REPO_ROOT / ".claude" / "settings.json"
 
+# The guard's path logic is POSIX (CLAUDE.md, D-42): on Windows it fails
+# safe by asking rather than deciding, so these allow/deny cases do not
+# model its Windows behavior. A native Windows guard is a deferred
+# contributor item (D-42); until it lands these run on POSIX only.
+pytestmark = pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="working-tree guard is POSIX-only; a Windows guard is a deferred contributor item (D-42)",
+)
+
 
 def run_guard(payload, root, env_extra=None):
     env = {k: v for k, v in os.environ.items() if k != "CLAUDE_PROJECT_DIR"}
