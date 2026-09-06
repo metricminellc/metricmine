@@ -9,10 +9,13 @@
 
 ## What you need
 
-- macOS or Linux, with `git` and [uv](https://docs.astral.sh/uv/)
-  installed (`curl -LsSf https://astral.sh/uv/install.sh | sh`). uv
-  provisions the pinned Python 3.12 and every dependency; nothing else is
-  installed globally.
+- macOS, Linux, or Windows x64, with `git` and
+  [uv](https://docs.astral.sh/uv/) installed (macOS and Linux:
+  `curl -LsSf https://astral.sh/uv/install.sh | sh`; Windows:
+  `irm https://astral.sh/uv/install.ps1 | iex`). uv provisions the pinned
+  Python 3.12 and every dependency; nothing else is installed globally.
+  On Windows, run `uv run mm <target>` for each `make <target>` shown
+  below (for example `uv run mm demo-fetch`).
 - [Claude Desktop](https://claude.ai/download) for the serving beat
   (optional; path A works from the terminal without it).
 - No API keys, no accounts, no cloud resources. Everything below is
