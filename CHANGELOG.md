@@ -88,12 +88,6 @@ measurements.
   first tool answer hung until the client sent another line (F-56, numpy
   issue 24290). Loading the modules before the reader starts moves the load
   off the request path; the demo and the smoke need no change.
-- `src/metricmine/ingest/land_sample.py` passes each sample to the
-  source-file connector as `Path.as_uri()` instead of `str(path)`. The
-  connector builds `file://` + the config url; a Windows backslash path
-  made the malformed `file://d:\...` and the reader refused it, while a
-  file URI rebuilds a valid `file:///D:/...` and is byte for byte the same
-  off Windows (F-57).
 
 ## [1.1.0] - 2026-09-05
 

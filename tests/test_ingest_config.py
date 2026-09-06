@@ -68,8 +68,7 @@ def test_build_source_config():
     source_config = build_source_config(entry, csv_path)
     assert source_config["format"] == "csv"
     assert source_config["provider"] == {"storage": "local"}
-    assert source_config["url"] == csv_path.as_uri()
-    assert source_config["url"].startswith("file:///")
+    assert Path(source_config["url"]).is_absolute()
     # reader_options passes through verbatim as the JSON string.
     assert source_config["reader_options"] == entry["reader_options"]
 

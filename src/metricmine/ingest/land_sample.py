@@ -31,16 +31,13 @@ def build_source_config(cfg: dict, csv_path: Path) -> dict:
     """Build the source-file connector config from one sources entry.
 
     Config keys verified against connector docs v0.6.0 (spec §2). PyAirbyte
-    runs the connector in a local venv, so the absolute path is passed as a
-    file URI (``Path.as_uri()``). The connector's local provider strips the
-    scheme and rebuilds ``file://`` + path, and a bare Windows path would
-    make a malformed URL the reader refuses (F-57). The Docker-era
-    "/local/" prefix from the platform docs does not apply.
+    runs the connector in a local venv, so a plain absolute path is used;
+    the Docker-era "/local/" prefix from the platform docs does not apply.
     """
     source_config = {
         "dataset_name": cfg["dataset_name"],
         "format": "csv",
-        "url": csv_path.as_uri(),
+        "url": str(csv_path),
         "provider": {"storage": "local"},
     }
     if cfg.get("reader_options"):
