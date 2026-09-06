@@ -232,8 +232,11 @@ A thin adapter and nothing else: `app.py` builds the `FastMCP` server
 (`mcp.server.fastmcp`, the official SDK on the 1.x maintenance line per
 D-32 as amended) named `metricmine-gold`, registers the
 five tools as plain functions that call one shared `GoldWarehouse`
-instance, and `__main__.py` runs `server.run(transport="stdio")`, so
-`python -m metricmine.server` serves a desktop client.
+instance, and `__main__.py` imports the native modules DuckDB loads lazily on its
+first parameterized query (pandas, numpy, pyarrow) and then runs
+`server.run(transport="stdio")`, so `python -m metricmine.server` serves a
+desktop client. The eager import keeps a Windows tool answer from stalling
+behind the reader's pending stdin read while numpy's DLL loads (F-56).
 
 Probed mcp facts the implementation relies on, measured at 2.0.0 and
 re-measured unchanged at the pinned 1.29.0 (F-22):

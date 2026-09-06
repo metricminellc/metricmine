@@ -75,11 +75,19 @@ measurements.
 - `scripts/serve_smoke.py` reads the server's pipes itself, every wait
   bounded, each answer printed with its size and latency as it arrives,
   and the shutdown measured: cycle one of the Windows check hung at the
-  smoke for the job's whole hour with nothing printed, the SDK's asyncio
-  pipe client never returning from the first answer larger than 8 KB
-  (F-56). What the smoke proves is unchanged: the server name, five
+  smoke for the job's whole hour with nothing printed (F-56, whose cause the
+  finding names: DuckDB's lazy pandas import on the first parameterized
+  query, stalled on Windows behind the reader's pending stdin read). What the smoke proves is unchanged: the server name, five
   tools, and three categories from the command the desktop config
   launches.
+- `src/metricmine/server/__main__.py` imports pandas, numpy, and pyarrow at
+  startup, before the stdio transport parks its first read. On Windows
+  DuckDB's lazy pandas import on the first parameterized query loads numpy's
+  bundled OpenBLAS DLL, whose libgfortran constructor calls `fstat(0)`;
+  Windows serializes that behind the SDK reader's pending `ReadFile`, so the
+  first tool answer hung until the client sent another line (F-56, numpy
+  issue 24290). Loading the modules before the reader starts moves the load
+  off the request path; the demo and the smoke need no change.
 
 ## [1.1.0] - 2026-09-05
 
