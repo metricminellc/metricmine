@@ -1,40 +1,35 @@
-"""An experiment, not a gate: where does the third answer go on Windows?
+"""An experiment, not a gate: which fix makes the third answer arrive on Windows?
 
-Cycle one and cycle two of the Windows check (runs 34032638337 and
-34038469537) both stopped at the same place: the server the desktop config
-launches answered `initialize` and `tools/list`, logged the dispatch of
-`tools/call list_fact_categories`, and no third answer reached the client
-within the deadline, through two different clients. In cycle two the
-server then exited 0 within 0.6 s of stdin closing. This probe runs six
-bounded variants of the same walk in one process and prints a timestamped
-line for everything that happens, on both sides of the pipe, so one runner
-cycle names the layer that holds the answer. It lives on an experiment
-branch and never merges (CLAUDE.md rule 19: experiments end in findings).
+Probe 1 (run 34042155102) settled the behavior: on a Windows runner the
+server the desktop config launches answers `initialize` and `tools/list`
+at once, dispatches `tools/call list_fact_categories`, and writes that
+third answer (the first larger than 8 KB) only when the next line or the
+end-of-file arrives on its stdin: a `ping` after the deadline brought the
+answer within half a second, the same with stdout redirected to a file,
+the same through the base interpreter. The instrumented layers showed the
+write itself is instant once it is called; the delay is before the SDK's
+stdout writer is called at all. On ubuntu every variant answered at once.
+
+This probe runs the same walk four times: a control, then three candidate
+fixes applied as launch wrappers that patch the SDK's stdio run before the
+server's own entry point starts. Nothing on main changes; the branch never
+merges (CLAUDE.md rule 19).
 
     uv run python scripts/stdio_probe.py
 
-Variants:
-  V1 baseline: the smoke's walk; on a timeout, a `ping` request (the poke)
-     and a five-second drain; then stdin closed and a five-second drain;
-     every arrival printed with its time, size, and id.
-  V2 instrumented: the same walk against a server whose stdout is wrapped
-     at two layers (the buffered writer the SDK's text wrapper calls, and
-     the raw file the buffer calls), each write and flush logged to stderr
-     with the requested length, the returned count, and the time.
-  V3 file: the server's stdout redirected to a file; the four messages
-     sent blind; the file's size polled for thirty seconds, then stdin
-     closed, then polled again; the file's messages listed.
-  V4 small first: `tools/call query` with `select 1` (a tiny answer that
-     opens the warehouse) before `list_fact_categories`, to separate the
-     answer's size from the first open of the warehouse in the server.
-  V5 debug log: V1 with FASTMCP_LOG_LEVEL=DEBUG in the server's
-     environment, so the SDK logs the dispatch and the received messages.
-  V6 base interpreter: V1 with the interpreter named by the venv's
-     pyvenv.cfg `home` and the venv's site directory added by hand, no
-     venv launcher between the probe and the server.
+  P1 control: the server as shipped (expected to stop at the third answer
+     on Windows, as in probe 1).
+  P2 sync-stdout: the server's stdout handed to `stdio_server()` as an
+     object whose write and flush run on the event loop itself, with no
+     worker thread and with `newline="\\n"` (no CRLF on Windows).
+  P3 selector-loop: `asyncio.WindowsSelectorEventLoopPolicy` set before
+     the server starts, so anyio runs on a selector loop instead of the
+     proactor (no-op on Linux).
+  P4 ticker: a task that sleeps 100 ms in a loop beside the server, so the
+     event loop wakes on a timer whatever else happens.
 
-Every wait is bounded; the whole probe takes under six minutes even when
-every answer is late. Keyless; no network.
+Every wait is bounded; the whole probe takes under three minutes even when
+every candidate fails. Keyless; no network.
 """
 
 from __future__ import annotations
@@ -54,7 +49,6 @@ from mcp.types import LATEST_PROTOCOL_VERSION
 REPO = Path(__file__).resolve().parents[1]
 REQUEST_TIMEOUT = 30.0
 DRAIN = 5.0
-FILE_POLL = 30.0
 T0 = time.monotonic()
 
 
@@ -72,74 +66,50 @@ def interpreter() -> Path:
     return REPO / ".venv" / "bin" / "python"
 
 
-def site_packages() -> Path:
-    if sys.platform == "win32":
-        return REPO / ".venv" / "Lib" / "site-packages"
-    return (
-        REPO
-        / ".venv"
-        / "lib"
-        / f"python{sys.version_info[0]}.{sys.version_info[1]}"
-        / "site-packages"
-    )
+WRAP_SYNC_STDOUT = r"""
+import io, runpy, sys
+import mcp.server.stdio as stdio
+import mcp.server.fastmcp.server as fs
+class SyncStdout:
+    def __init__(self):
+        self._fp = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", newline="\n", write_through=True)
+    async def write(self, text):
+        self._fp.write(text)
+    async def flush(self):
+        self._fp.flush()
+async def run_stdio_async(self):
+    async with stdio.stdio_server(stdout=SyncStdout()) as (read_stream, write_stream):
+        await self._mcp_server.run(read_stream, write_stream, self._mcp_server.create_initialization_options())
+fs.FastMCP.run_stdio_async = run_stdio_async
+sys.stderr.write("[wrapper] sync stdout on the loop, newline=\\n\n"); sys.stderr.flush()
+runpy.run_module("metricmine.server", run_name="__main__")
+"""
 
+WRAP_SELECTOR = r"""
+import asyncio, runpy, sys
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+sys.stderr.write(f"[wrapper] policy {type(asyncio.get_event_loop_policy()).__name__}\n"); sys.stderr.flush()
+runpy.run_module("metricmine.server", run_name="__main__")
+"""
 
-def base_interpreter() -> Path | None:
-    cfg = REPO / ".venv" / "pyvenv.cfg"
-    if not cfg.is_file():
-        return None
-    for line in cfg.read_text(encoding="utf-8").splitlines():
-        key, sep, value = line.partition("=")
-        if sep and key.strip() == "home":
-            home = Path(value.strip())
-            names = (
-                ["python.exe"]
-                if sys.platform == "win32"
-                else [
-                    f"python{sys.version_info[0]}.{sys.version_info[1]}",
-                    "python3",
-                    "python",
-                ]
-            )
-            for name in names:
-                if (home / name).is_file():
-                    return home / name
-            return None
-    return None
-
-
-# The server launched through a wrapper that logs every write and flush at
-# the buffered layer (what the SDK's TextIOWrapper calls) and the raw layer
-# (what reaches the OS), then runs the server's own entry point.
-INSTRUMENT = r"""
-import io, runpy, sys, time
-T0 = time.monotonic()
-ERR = sys.stderr
-def log(line):
-    ERR.write(f"[stdout-instrument {time.monotonic() - T0:8.3f}] {line}\n"); ERR.flush()
-class RawProxy(io.RawIOBase):
-    def __init__(self, fio): self.fio = fio
-    def writable(self): return True
-    def fileno(self): return self.fio.fileno()
-    def write(self, b):
-        n = len(b); t = time.monotonic()
-        r = self.fio.write(b)
-        log(f"raw.write({n}) -> {r} in {time.monotonic() - t:.3f} s")
-        return r
-    def flush(self):
-        self.fio.flush()
-class BufProxy(io.BufferedWriter):
-    def write(self, b):
-        n = len(b); t = time.monotonic()
-        r = super().write(b)
-        log(f"buffered.write({n}) -> {r} in {time.monotonic() - t:.3f} s")
-        return r
-    def flush(self):
-        t = time.monotonic()
-        super().flush()
-        log(f"buffered.flush() in {time.monotonic() - t:.3f} s")
-sys.stdout = io.TextIOWrapper(BufProxy(RawProxy(io.FileIO(1, "wb", closefd=False)), buffer_size=8192), encoding="utf-8")
-log(f"instrumented stdout on {sys.platform} python {sys.version.split()[0]}")
+WRAP_TICKER = r"""
+import runpy, sys
+import anyio
+import mcp.server.fastmcp.server as fs
+orig = fs.FastMCP.run_stdio_async
+async def run_stdio_async(self):
+    async with anyio.create_task_group() as tg:
+        async def tick():
+            while True:
+                await anyio.sleep(0.1)
+        tg.start_soon(tick)
+        try:
+            await orig(self)
+        finally:
+            tg.cancel_scope.cancel()
+fs.FastMCP.run_stdio_async = run_stdio_async
+sys.stderr.write("[wrapper] 100 ms ticker beside the server\n"); sys.stderr.flush()
 runpy.run_module("metricmine.server", run_name="__main__")
 """
 
@@ -153,11 +123,7 @@ class Walker:
         self.lines: queue.Queue[bytes | None] = queue.Queue()
         self.arrivals: list[tuple[float, int, str]] = []
         self._next_id = 0
-        self.eof = False
-        if proc.stdout is not None:
-            threading.Thread(
-                target=self._read, name="server-stdout", daemon=True
-            ).start()
+        threading.Thread(target=self._read, name="server-stdout", daemon=True).start()
 
     def _read(self) -> None:
         assert self.proc.stdout is not None
@@ -192,7 +158,6 @@ class Walker:
     def request(
         self, method: str, params: dict | None = None, timeout: float = REQUEST_TIMEOUT
     ):
-        """Send; wait for the answer with this id; return (result_or_None, size, secs)."""
         self._next_id += 1
         rid = self._next_id
         started = now()
@@ -212,7 +177,6 @@ class Walker:
                 say(f"{self.label} TIMEOUT {method} id={rid} after {timeout:g} s")
                 return None, 0, now() - started
             if raw is None:
-                self.eof = True
                 say(
                     f"{self.label} EOF on stdout before {method} answered (poll={self.proc.poll()})"
                 )
@@ -227,7 +191,6 @@ class Walker:
                 )
 
     def drain(self, seconds: float, tag: str) -> int:
-        """Report everything that arrives in the window; return the count."""
         end = now() + seconds
         count = 0
         while True:
@@ -239,7 +202,6 @@ class Walker:
             except queue.Empty:
                 break
             if raw is None:
-                self.eof = True
                 say(
                     f"{self.label} EOF on stdout during {tag} (poll={self.proc.poll()})"
                 )
@@ -274,27 +236,14 @@ class Walker:
             )
 
 
-def launch(
-    cmd: list[str],
-    env: dict[str, str],
-    label: str,
-    stdout=subprocess.PIPE,
-    cwd: str = "",
-) -> subprocess.Popen[bytes]:
-    say(f"{label} launch: {cmd[0]} {cmd[1]} {'...' if len(cmd) > 2 else ''} cwd={cwd}")
-    return subprocess.Popen(
-        cmd, stdin=subprocess.PIPE, stdout=stdout, stderr=None, cwd=cwd or None, env=env
-    )
-
-
-def walk(w: Walker, small_first: bool = False) -> bool:
-    """Return True when the third answer arrived."""
+def walk(w: Walker) -> bool:
+    """Return True when the third answer arrived within the deadline."""
     init, size, took = w.request(
         "initialize",
         {
             "protocolVersion": LATEST_PROTOCOL_VERSION,
             "capabilities": {},
-            "clientInfo": {"name": "metricmine-stdio-probe", "version": "1"},
+            "clientInfo": {"name": "metricmine-stdio-probe", "version": "2"},
         },
     )
     if init is None:
@@ -303,16 +252,6 @@ def walk(w: Walker, small_first: bool = False) -> bool:
     tools, size, took = w.request("tools/list")
     if tools is None:
         return False
-    if small_first:
-        small, size, took = w.request(
-            "tools/call",
-            {"name": "query", "arguments": {"sql": "select 1 as one", "row_cap": 1}},
-        )
-        say(
-            f"{w.label} small call {'answered' if small is not None else 'NOT answered'}: {size} bytes"
-        )
-        if small is None:
-            return False
     call, size, took = w.request(
         "tools/call", {"name": "list_fact_categories", "arguments": {}}
     )
@@ -325,85 +264,43 @@ def walk(w: Walker, small_first: bool = False) -> bool:
         say(
             f"{w.label} tools/call answered: {size} bytes, {len(cats)} categories, {took * 1000:.0f} ms"
         )
-        return True
-    # No third answer: poke, drain, close stdin, drain.
+        # A second large answer, to see the fix hold past the first.
+        again, size, took = w.request(
+            "tools/call", {"name": "list_fact_categories", "arguments": {}}
+        )
+        say(
+            f"{w.label} second tools/call {'answered' if again is not None else 'NOT answered'}: {size} bytes, {took * 1000:.0f} ms"
+        )
+        return again is not None
     w.send({"jsonrpc": "2.0", "id": 99, "method": "ping", "params": {}})
     say(f"{w.label} poke: sent ping id=99")
     w.drain(DRAIN, "after the poke")
     return False
 
 
-def run_variant(
-    label: str, cmd: list[str], env: dict[str, str], cwd: str, small_first: bool = False
-) -> None:
+def run_variant(label: str, cmd: list[str], env: dict[str, str], cwd: str) -> bool:
     say(f"== {label} ==")
-    proc = launch(cmd, env, label, cwd=cwd)
+    proc = subprocess.Popen(
+        cmd,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=None,
+        cwd=cwd,
+        env=env,
+    )
     w = Walker(proc, label)
     answered = False
     try:
-        answered = walk(w, small_first=small_first)
+        answered = walk(w)
     finally:
         w.close_stdin()
         w.drain(1.0 if answered else DRAIN, "after stdin closed")
         w.finish()
-        w.drain(1.0, "after exit")
         say(
-            f"{label} arrivals: "
+            f"{label} RESULT: {'PASS' if answered else 'FAIL'}; arrivals: "
             + "; ".join(f"{t:.3f}s {n}b {what}" for t, n, what in w.arrivals)
         )
-
-
-def variant_file(label: str, cmd: list[str], env: dict[str, str], cwd: str) -> None:
-    say(f"== {label} ==")
-    path = Path(cwd) / "stdout.jsonl"
-    with open(path, "wb") as out:
-        proc = launch(cmd, env, label, stdout=out, cwd=cwd)
-        w = Walker(proc, label)
-        messages = [
-            {
-                "jsonrpc": "2.0",
-                "id": 1,
-                "method": "initialize",
-                "params": {
-                    "protocolVersion": LATEST_PROTOCOL_VERSION,
-                    "capabilities": {},
-                    "clientInfo": {"name": "metricmine-stdio-probe", "version": "1"},
-                },
-            },
-            {"jsonrpc": "2.0", "method": "notifications/initialized", "params": {}},
-            {"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}},
-            {
-                "jsonrpc": "2.0",
-                "id": 3,
-                "method": "tools/call",
-                "params": {"name": "list_fact_categories", "arguments": {}},
-            },
-        ]
-        for m in messages:
-            w.send(m)
-            say(f"{label} sent {m.get('method')} id={m.get('id')}")
-            time.sleep(1.0)
-        last = -1
-        end = now() + FILE_POLL
-        while now() < end:
-            size = path.stat().st_size
-            if size != last:
-                say(f"{label} file size {size}")
-                last = size
-            if size > 12000:
-                break
-            time.sleep(0.5)
-        w.close_stdin()
-        end = now() + DRAIN
-        while now() < end:
-            size = path.stat().st_size
-            if size != last:
-                say(f"{label} file size {size} (after stdin closed)")
-                last = size
-            time.sleep(0.5)
-        w.finish()
-    for i, raw in enumerate(path.read_bytes().splitlines(), 1):
-        say(f"{label} file line {i}: {len(raw) + 1} bytes, {w.describe(raw)}")
+    return answered
 
 
 def main() -> int:
@@ -415,31 +312,24 @@ def main() -> int:
     say(
         f"platform {sys.platform}, probe python {sys.version.split()[0]}, interpreter {exe}"
     )
-    say(f"minimal environment keys: {sorted(env)}")
+    results = {}
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as cwd:
-        run_variant("V1 baseline", [str(exe), "-m", "metricmine.server"], env, cwd)
-        run_variant("V2 instrumented", [str(exe), "-c", INSTRUMENT], env, cwd)
-        variant_file("V3 file", [str(exe), "-m", "metricmine.server"], env, cwd)
-        run_variant(
-            "V4 small-first",
-            [str(exe), "-m", "metricmine.server"],
-            env,
-            cwd,
-            small_first=True,
+        results["P1 control"] = run_variant(
+            "P1 control", [str(exe), "-m", "metricmine.server"], env, cwd
         )
-        run_variant(
-            "V5 debug-log",
-            [str(exe), "-m", "metricmine.server"],
-            {**env, "FASTMCP_LOG_LEVEL": "DEBUG"},
-            cwd,
+        results["P2 sync-stdout"] = run_variant(
+            "P2 sync-stdout", [str(exe), "-c", WRAP_SYNC_STDOUT], env, cwd
         )
-        base = base_interpreter()
-        if base is None:
-            say("V6 base skipped: no home in pyvenv.cfg")
-        else:
-            sp = site_packages()
-            code = f"import site, runpy; site.addsitedir({str(sp)!r}); runpy.run_module('metricmine.server', run_name='__main__')"
-            run_variant("V6 base-interpreter", [str(base), "-c", code], env, cwd)
+        results["P3 selector-loop"] = run_variant(
+            "P3 selector-loop", [str(exe), "-c", WRAP_SELECTOR], env, cwd
+        )
+        results["P4 ticker"] = run_variant(
+            "P4 ticker", [str(exe), "-c", WRAP_TICKER], env, cwd
+        )
+    say(
+        "SUMMARY "
+        + "; ".join(f"{k}: {'PASS' if v else 'FAIL'}" for k, v in results.items())
+    )
     say("probe done")
     return 0
 
