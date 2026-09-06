@@ -14,7 +14,7 @@ ingestion:
       sample_csv: data/samples/online_retail_ii/online_retail_ii_2009-12.csv
       # Invoice carries C-prefixed cancellation ids; pin it to string at
       # the reader so inference and records agree.
-      reader_options: '{"dtype": {"Invoice": "str"}}'
+      reader_options: '{"dtype": {"Invoice": "str"}, "encoding": "utf-8"}'
     # The aviation family (D-41): the nycflights13 tables at a pinned
     # commit and the two OurAirports reference tables. Code columns pin
     # to text so leading zeros and codes survive inference; a source
