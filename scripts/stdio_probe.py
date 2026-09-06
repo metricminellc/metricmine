@@ -1,32 +1,25 @@
-"""An experiment, not a gate: which fix makes the third answer arrive on Windows?
+"""An experiment, not a gate: where is the server blocked, and what frees it?
 
-Probe 1 (run 34042155102) settled the behavior: on a Windows runner the
-server the desktop config launches answers `initialize` and `tools/list`
-at once, dispatches `tools/call list_fact_categories`, and writes that
-third answer (the first larger than 8 KB) only when the next line or the
-end-of-file arrives on its stdin: a `ping` after the deadline brought the
-answer within half a second, the same with stdout redirected to a file,
-the same through the base interpreter. The instrumented layers showed the
-write itself is instant once it is called; the delay is before the SDK's
-stdout writer is called at all. On ubuntu every variant answered at once.
-
-This probe runs the same walk four times: a control, then three candidate
-fixes applied as launch wrappers that patch the SDK's stdio run before the
-server's own entry point starts. Nothing on main changes; the branch never
-merges (CLAUDE.md rule 19).
+Probe 2 (run 34043637817) failed all three candidates on Windows: stdout
+written on the loop with no worker thread, the selector event loop, and a
+100 ms ticker task. The third answer (the first over 8 KB) still arrived
+only after the next stdin line, in every case within half a second of the
+poke. A ticker task that cannot run is one that has no loop to run on, so
+the main thread itself is the suspect: blocked in something synchronous
+that a stdin read on another thread releases. This probe makes the server
+dump every thread's stack to stderr every 8 seconds (faulthandler), so
+the blocked frame is named, and tries three more candidates.
 
     uv run python scripts/stdio_probe.py
 
-  P1 control: the server as shipped (expected to stop at the third answer
-     on Windows, as in probe 1).
-  P2 sync-stdout: the server's stdout handed to `stdio_server()` as an
-     object whose write and flush run on the event loop itself, with no
-     worker thread and with `newline="\\n"` (no CRLF on Windows).
-  P3 selector-loop: `asyncio.WindowsSelectorEventLoopPolicy` set before
-     the server starts, so anyio runs on a selector loop instead of the
-     proactor (no-op on Linux).
-  P4 ticker: a task that sleeps 100 ms in a loop beside the server, so the
-     event loop wakes on a timer whatever else happens.
+  Q1 control: the shipped server, with the stack dumps.
+  Q2 tool-thread: the sync tool function run in a worker thread instead
+     of on the event loop (the SDK's call_fn_with_arg_validation patched).
+  Q3 raw-stdin: the server's stdin read by Win32 ReadFile through ctypes
+     on a worker thread (os.read on Linux), never through the C runtime's
+     _read and its per-descriptor lock; handed to stdio_server() as stdin.
+  Q4 unbuffered: the server started with python -u (stdout and stderr
+     unbuffered at the interpreter level).
 
 Every wait is bounded; the whole probe takes under three minutes even when
 every candidate fails. Keyless; no network.
@@ -66,52 +59,94 @@ def interpreter() -> Path:
     return REPO / ".venv" / "bin" / "python"
 
 
-WRAP_SYNC_STDOUT = r"""
-import io, runpy, sys
-import mcp.server.stdio as stdio
-import mcp.server.fastmcp.server as fs
-class SyncStdout:
-    def __init__(self):
-        self._fp = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", newline="\n", write_through=True)
-    async def write(self, text):
-        self._fp.write(text)
-    async def flush(self):
-        self._fp.flush()
-async def run_stdio_async(self):
-    async with stdio.stdio_server(stdout=SyncStdout()) as (read_stream, write_stream):
-        await self._mcp_server.run(read_stream, write_stream, self._mcp_server.create_initialization_options())
-fs.FastMCP.run_stdio_async = run_stdio_async
-sys.stderr.write("[wrapper] sync stdout on the loop, newline=\\n\n"); sys.stderr.flush()
+DUMP = "import faulthandler, sys; faulthandler.dump_traceback_later(8, repeat=True, file=sys.stderr)\n"
+
+WRAP_CONTROL = (
+    DUMP
+    + r"""
+import runpy
 runpy.run_module("metricmine.server", run_name="__main__")
 """
+)
 
-WRAP_SELECTOR = r"""
-import asyncio, runpy, sys
-if sys.platform == "win32":
-    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-sys.stderr.write(f"[wrapper] policy {type(asyncio.get_event_loop_policy()).__name__}\n"); sys.stderr.flush()
-runpy.run_module("metricmine.server", run_name="__main__")
-"""
-
-WRAP_TICKER = r"""
+WRAP_TOOL_THREAD = (
+    DUMP
+    + r"""
 import runpy, sys
 import anyio
-import mcp.server.fastmcp.server as fs
-orig = fs.FastMCP.run_stdio_async
-async def run_stdio_async(self):
-    async with anyio.create_task_group() as tg:
-        async def tick():
-            while True:
-                await anyio.sleep(0.1)
-        tg.start_soon(tick)
-        try:
-            await orig(self)
-        finally:
-            tg.cancel_scope.cancel()
-fs.FastMCP.run_stdio_async = run_stdio_async
-sys.stderr.write("[wrapper] 100 ms ticker beside the server\n"); sys.stderr.flush()
+from mcp.server.fastmcp.utilities import func_metadata as fm
+orig = fm.FuncMetadata.call_fn_with_arg_validation
+async def patched(self, fn, fn_is_async, arguments_to_validate, arguments_to_pass_directly):
+    if fn_is_async:
+        return await orig(self, fn, fn_is_async, arguments_to_validate, arguments_to_pass_directly)
+    pre = self.pre_parse_json(arguments_to_validate)
+    parsed = self.arg_model.model_validate(pre).model_dump_one_level()
+    parsed |= arguments_to_pass_directly or {}
+    return await anyio.to_thread.run_sync(lambda: fn(**parsed))
+fm.FuncMetadata.call_fn_with_arg_validation = patched
+sys.stderr.write("[wrapper] sync tools run in a worker thread\n"); sys.stderr.flush()
 runpy.run_module("metricmine.server", run_name="__main__")
 """
+)
+
+WRAP_RAW_STDIN = (
+    DUMP
+    + r"""
+import runpy, sys
+import anyio
+import mcp.server.stdio as stdio
+import mcp.server.fastmcp.server as fs
+if sys.platform == "win32":
+    import ctypes, msvcrt
+    from ctypes import wintypes
+    k32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    HANDLE = wintypes.HANDLE(msvcrt.get_osfhandle(0))
+    def read_chunk():
+        buf = ctypes.create_string_buffer(65536)
+        n = wintypes.DWORD(0)
+        ok = k32.ReadFile(HANDLE, buf, 65536, ctypes.byref(n), None)
+        return buf.raw[: n.value] if ok else b""
+    HOW = "Win32 ReadFile through ctypes"
+else:
+    import os
+    def read_chunk():
+        return os.read(0, 65536)
+    HOW = "os.read"
+class RawStdin:
+    def __init__(self):
+        self._buf = b""
+        self._eof = False
+    def __aiter__(self):
+        return self
+    async def __anext__(self):
+        line = await anyio.to_thread.run_sync(self._next_line)
+        if line is None:
+            raise StopAsyncIteration
+        return line
+    def _next_line(self):
+        while True:
+            i = self._buf.find(b"\n")
+            if i >= 0:
+                line, self._buf = self._buf[: i + 1], self._buf[i + 1 :]
+                return line.decode("utf-8", "replace")
+            if self._eof:
+                if self._buf:
+                    line, self._buf = self._buf, b""
+                    return line.decode("utf-8", "replace")
+                return None
+            chunk = read_chunk()
+            if not chunk:
+                self._eof = True
+            else:
+                self._buf += chunk
+async def run_stdio_async(self):
+    async with stdio.stdio_server(stdin=RawStdin()) as (read_stream, write_stream):
+        await self._mcp_server.run(read_stream, write_stream, self._mcp_server.create_initialization_options())
+fs.FastMCP.run_stdio_async = run_stdio_async
+sys.stderr.write(f"[wrapper] stdin read by {HOW} on a worker thread\n"); sys.stderr.flush()
+runpy.run_module("metricmine.server", run_name="__main__")
+"""
+)
 
 
 class Walker:
@@ -243,7 +278,7 @@ def walk(w: Walker) -> bool:
         {
             "protocolVersion": LATEST_PROTOCOL_VERSION,
             "capabilities": {},
-            "clientInfo": {"name": "metricmine-stdio-probe", "version": "2"},
+            "clientInfo": {"name": "metricmine-stdio-probe", "version": "3"},
         },
     )
     if init is None:
@@ -314,17 +349,17 @@ def main() -> int:
     )
     results = {}
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as cwd:
-        results["P1 control"] = run_variant(
-            "P1 control", [str(exe), "-m", "metricmine.server"], env, cwd
+        results["Q1 control"] = run_variant(
+            "Q1 control", [str(exe), "-c", WRAP_CONTROL], env, cwd
         )
-        results["P2 sync-stdout"] = run_variant(
-            "P2 sync-stdout", [str(exe), "-c", WRAP_SYNC_STDOUT], env, cwd
+        results["Q2 tool-thread"] = run_variant(
+            "Q2 tool-thread", [str(exe), "-c", WRAP_TOOL_THREAD], env, cwd
         )
-        results["P3 selector-loop"] = run_variant(
-            "P3 selector-loop", [str(exe), "-c", WRAP_SELECTOR], env, cwd
+        results["Q3 raw-stdin"] = run_variant(
+            "Q3 raw-stdin", [str(exe), "-c", WRAP_RAW_STDIN], env, cwd
         )
-        results["P4 ticker"] = run_variant(
-            "P4 ticker", [str(exe), "-c", WRAP_TICKER], env, cwd
+        results["Q4 unbuffered"] = run_variant(
+            "Q4 unbuffered", [str(exe), "-u", "-c", WRAP_CONTROL], env, cwd
         )
     say(
         "SUMMARY "
