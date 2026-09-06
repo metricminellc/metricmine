@@ -169,7 +169,9 @@ def test_the_happy_path_binds_three_inputs_and_prints_the_direction(
     assert captured["intent"] == "correct the quantity description"
     bound, text = captured["extra_inputs"][0]
     assert bound.kind == "committed_contract"
-    assert bound.path.endswith("contracts/silver_invoice_lines.odcs.yaml")
+    assert bound.path.replace("\\", "/").endswith(
+        "contracts/silver_invoice_lines.odcs.yaml"
+    )
     assert bound.content_hash.startswith("sha256:")
     assert bound.schema_version == captured["committed_version"]
     assert "id: silver_invoice_lines" in text
