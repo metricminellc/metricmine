@@ -191,9 +191,10 @@ What to expect, step by step:
 
 ## Troubleshooting
 
-Start with `make doctor`: it checks the platform, the interpreter, uv,
-the locked toolchain, and the demo artifact (a hint, not a failure, when
-it has not been fetched or built yet), and prints the two
+Start with `make doctor`: it checks the platform, the interpreter, the
+interpreter's TLS trust store, uv, the locked toolchain, and the demo
+artifact (a hint, not a failure, when it has not been fetched or built
+yet), and prints the two
 environment exports the local dbt lanes need.
 
 - **`uv: command not found`**: install uv (link above) and reopen the
@@ -225,7 +226,11 @@ environment exports the local dbt lanes need.
   macOS ships with no CA bundle at its OpenSSL default path. Run the
   framework's `Install Certificates.command` once, or export
   `SSL_CERT_FILE=/etc/ssl/cert.pem` for the session, then rerun
-  `uv sync`.
+  `uv sync`. This project's own downloads are not affected: they build
+  their verification context from certifi's bundle (F-58). The parser
+  build above runs in uv's subprocess, outside that code, so it needs
+  the interpreter's own trust store wired. `make doctor` reports the
+  same condition as a `trust store` failure.
 
 ## Where to next
 
