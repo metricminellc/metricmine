@@ -6,8 +6,8 @@ paths are empty still downloads. These tests hold the module to three
 things: certifi's bundle is the real code path, the machine's own trust
 survives beside it rather than under it, and the ImportError branch is a
 safety net that still verifies rather than a way to disable verification.
-The last reads the fetch scripts themselves, because a fix that a later
-edit can silently drop is not fixed. Keyless and offline; nothing here
+The last two read every fetch script in the tree, because a fix that a
+later edit can silently drop is not fixed. Keyless and offline; nothing here
 opens a socket.
 """
 
@@ -25,7 +25,8 @@ import pytest
 from metricmine import tls
 
 SCRIPTS = Path(__file__).resolve().parents[1].joinpath("scripts")
-CALL_SITES = ("fetch_common.py", "fetch_demo.py", "fetch_sample.py")
+FETCH_SCRIPTS = sorted(SCRIPTS.glob("fetch_*.py"))
+DIRECT_CALLERS = {"fetch_common.py", "fetch_demo.py", "fetch_sample.py"}
 
 
 @pytest.fixture(autouse=True)
@@ -106,16 +107,8 @@ def test_the_fallback_still_verifies(monkeypatch: pytest.MonkeyPatch) -> None:
     assert context.check_hostname is True
 
 
-@pytest.mark.parametrize("script", CALL_SITES)
-def test_every_download_passes_the_shared_context(script: str) -> None:
-    # Read as a syntax tree, not as text: the call sites wrap across lines,
-    # so a line-shaped assertion would pass on a call that dropped the
-    # keyword. Both call shapes count too, so a later `from urllib.request
-    # import urlopen` cannot slip a bare call past the guard. Every urlopen
-    # in the tree must carry context=ssl_context().
-    source = SCRIPTS.joinpath(script).read_text(encoding="utf-8")
-    assert "from metricmine.tls import ssl_context" in source
-    calls = [
+def _urlopen_calls(source: str) -> list[ast.Call]:
+    return [
         node
         for node in ast.walk(ast.parse(source))
         if isinstance(node, ast.Call)
@@ -124,10 +117,35 @@ def test_every_download_passes_the_shared_context(script: str) -> None:
             or (isinstance(node.func, ast.Name) and node.func.id == "urlopen")
         )
     ]
-    assert calls, f"{script} makes no urlopen call"
+
+
+def test_the_direct_download_sites_are_the_known_ones() -> None:
+    # Every other fetch script routes through fetch_common.download and
+    # inherits the context from there. A new one that opens its own urlopen
+    # shows up here first, so the glob below can never quietly match nothing.
+    direct = {
+        script.name
+        for script in FETCH_SCRIPTS
+        if _urlopen_calls(script.read_text(encoding="utf-8"))
+    }
+    assert direct == DIRECT_CALLERS
+
+
+@pytest.mark.parametrize("script", FETCH_SCRIPTS, ids=lambda p: p.name)
+def test_every_download_passes_the_shared_context(script: Path) -> None:
+    # Read as a syntax tree, not as text: the call sites wrap across lines,
+    # so a line-shaped assertion would pass on a call that dropped the
+    # keyword. Both call shapes count too, so a later `from urllib.request
+    # import urlopen` cannot slip a bare call past the guard. Every urlopen
+    # in the tree must carry context=ssl_context().
+    source = script.read_text(encoding="utf-8")
+    calls = _urlopen_calls(source)
+    if not calls:
+        return  # routes through fetch_common.download, checked there
+    assert "from metricmine.tls import ssl_context" in source
     for call in calls:
         keywords = {kw.arg: kw.value for kw in call.keywords}
         context = keywords.get("context")
-        assert isinstance(context, ast.Call), f"{script}:{call.lineno} has no context="
+        assert isinstance(context, ast.Call), f"{script.name}:{call.lineno} has no context="
         assert isinstance(context.func, ast.Name)
-        assert context.func.id == "ssl_context", f"{script}:{call.lineno}"
+        assert context.func.id == "ssl_context", f"{script.name}:{call.lineno}"
