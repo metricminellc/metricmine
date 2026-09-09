@@ -5,8 +5,8 @@ scripts/fetch_sample.py pattern: the publisher URL, the window, and the
 budget are code, never arguments. This module carries what they share:
 
 - ``download``: an atomic download into gitignored data/raw/ (a .part file
-  until complete), with the project's User-Agent, skipped when the raw
-  file already exists.
+  until complete), with the project's User-Agent and its shared TLS
+  context (F-58), skipped when the raw file already exists.
 - ``verify_raw``: the raw download's sha256 against the value the script
   pins once a first run has measured it. Different bytes mean the publisher
   revised the artifact; the script prints the revision and refuses to
@@ -28,6 +28,8 @@ import sys
 import urllib.error
 import urllib.request
 from pathlib import Path
+
+from metricmine.tls import ssl_context
 
 USER_AGENT = "metricmine-fetch-sample/0.1"
 RAW_ROOT = Path("data/raw")
@@ -52,7 +54,9 @@ def download(url: str, dest: Path) -> Path:
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     part = dest.with_name(dest.name + ".part")
     try:
-        with urllib.request.urlopen(req, timeout=300) as resp, open(part, "wb") as out:
+        with urllib.request.urlopen(
+            req, timeout=300, context=ssl_context()
+        ) as resp, open(part, "wb") as out:
             shutil.copyfileobj(resp, out)
     except urllib.error.HTTPError as exc:
         raise SystemExit(

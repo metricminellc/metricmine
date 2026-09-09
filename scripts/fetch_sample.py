@@ -22,6 +22,8 @@ from pathlib import Path
 
 from openpyxl import load_workbook
 
+from metricmine.tls import ssl_context
+
 # D-15 constants: the window is code, not an argument.
 SOURCE_URL = "https://archive.ics.uci.edu/static/public/502/online+retail+ii.zip"
 SHEET_NAME = "Year 2009-2010"
@@ -49,7 +51,9 @@ def ensure_raw() -> Path:
         # Atomic write: an interrupted download leaves only the .part file, so
         # RAW_ZIP exists only once complete and the next run re-downloads cleanly.
         part = RAW_ZIP.with_name(RAW_ZIP.name + ".part")
-        with urllib.request.urlopen(req) as resp, open(part, "wb") as out:
+        with urllib.request.urlopen(
+            req, context=ssl_context()
+        ) as resp, open(part, "wb") as out:
             shutil.copyfileobj(resp, out)
         part.replace(RAW_ZIP)
     if not XLSX_PATH.exists():
