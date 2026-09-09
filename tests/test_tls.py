@@ -2,12 +2,13 @@
 
 scripts/fetch_demo.py, scripts/fetch_common.py, and scripts/fetch_sample.py
 all pass this context to urlopen, so a machine whose OpenSSL default verify
-paths are empty still downloads. These tests hold the module to two things:
-certifi's bundle is the real code path, and the ImportError branch is a
+paths are empty still downloads. These tests hold the module to three
+things: certifi's bundle is the real code path, the machine's own trust
+survives beside it rather than under it, and the ImportError branch is a
 safety net that still verifies rather than a way to disable verification.
-The fourth reads the three call sites, because a fix that a later edit can
-silently drop is not fixed. Keyless and offline; nothing here opens a
-socket.
+The last reads the fetch scripts themselves, because a fix that a later
+edit can silently drop is not fixed. Keyless and offline; nothing here
+opens a socket.
 """
 
 from __future__ import annotations
@@ -50,14 +51,36 @@ def test_the_context_carries_certifis_bundle() -> None:
 
 
 def test_the_context_keeps_the_machines_own_trust() -> None:
-    # The regression guard. ssl.create_default_context(cafile=...) takes an
-    # `if cafile ... elif` branch that skips load_default_certs, so naming a
-    # bundle there drops the Windows certificate store, the system bundle on
-    # Linux, and any exported SSL_CERT_FILE. Measured on a machine holding
-    # 113 anchors, that form lost 54 of them. Nothing the machine trusts may
-    # go missing from the context this project downloads with.
+    # Nothing the machine trusts may go missing from the context this project
+    # downloads with. Measured on a machine holding 113 anchors, the
+    # substituting form lost 54 of them. This assertion sees that only where
+    # the machine has a store to lose: on a bare interpreter it compares the
+    # empty set and passes either way, which is why the next test exists.
     machine = _anchors(ssl.create_default_context())
     assert machine <= _anchors(tls.ssl_context())
+
+
+def test_the_context_is_built_additively(monkeypatch: pytest.MonkeyPatch) -> None:
+    # The same guard, independent of the ambient store, so it holds on the
+    # bare interpreter F-58 is about. create_default_context(cafile=...)
+    # takes an `if cafile or capath or cadata` branch whose `elif` holds
+    # load_default_certs, so naming a bundle there silently drops the
+    # Windows certificate store, the system bundle on Linux, and any
+    # exported SSL_CERT_FILE. The keyword must never be passed.
+    seen: list[dict[str, object]] = []
+    real = ssl.create_default_context
+
+    def record(*args: object, **kwargs: object) -> ssl.SSLContext:
+        seen.append(kwargs)
+        return real(*args, **kwargs)
+
+    monkeypatch.setattr(ssl, "create_default_context", record)
+    tls.ssl_context()
+    assert seen, "ssl_context built no default context"
+    for kwargs in seen:
+        assert "cafile" not in kwargs
+        assert "capath" not in kwargs
+        assert "cadata" not in kwargs
 
 
 def test_the_context_verifies() -> None:
@@ -86,10 +109,10 @@ def test_the_fallback_still_verifies(monkeypatch: pytest.MonkeyPatch) -> None:
 @pytest.mark.parametrize("script", CALL_SITES)
 def test_every_download_passes_the_shared_context(script: str) -> None:
     # Read as a syntax tree, not as text: the call sites wrap across lines,
-    # and both call shapes count, so a later `from urllib.request import
-    # urlopen` cannot slip a bare call past the guard.
-    # and a line-shaped assertion would pass on a call that dropped the
-    # keyword. Every urlopen in the tree must carry context=ssl_context().
+    # so a line-shaped assertion would pass on a call that dropped the
+    # keyword. Both call shapes count too, so a later `from urllib.request
+    # import urlopen` cannot slip a bare call past the guard. Every urlopen
+    # in the tree must carry context=ssl_context().
     source = SCRIPTS.joinpath(script).read_text(encoding="utf-8")
     assert "from metricmine.tls import ssl_context" in source
     calls = [
