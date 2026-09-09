@@ -73,6 +73,7 @@ order by design.
 | [F-55](#f-55) | A hosted Windows runner proves the stdio launch of the server, never the desktop client's click-through | Windows rung |
 | [F-56](#f-56) | A Windows tool answer stalled inside DuckDB's lazy pandas import, whose numpy load runs an OpenBLAS DLL that calls `fstat(0)` and serializes behind the reader's pending stdin read; the server imports the native modules at startup, before the transport | Windows rung |
 | [F-57](#f-57) | A heavily non-ASCII sample failed the connector's check on Windows, which reads a CSV in the platform default (cp1252) when the reader options name none; the ourairports samples declare `encoding: utf-8` (the earlier file-URI reading was wrong and reverted) | Windows rung, Path B |
+| [F-58](#f-58) | Three keyless download paths built no SSL context, so a python.org macOS build with an empty OpenSSL trust store failed every fetch before anything built; they now add certifi's bundle to the machine's own trust, which naming a cafile would have replaced | Toolchain rung, continued |
 
 ## Command surface (datacontract-cli 1.0.12)
 
@@ -1148,3 +1149,63 @@ server side.
 ### F-57
 **A heavily non-ASCII sample fails the source-file connector's check on Windows, which reads the file in the platform's default encoding (cp1252) unless the reader options name one; the ourairports samples declare `encoding: utf-8`.** Two Windows runs of `demo-windows` on PR #184 settled it. With the sample passed as a plain absolute path, five of the six samples checked and landed on Windows and only `ourairports_airports` failed, with the connector's generic "Please check File Format and Reader Options are set correctly" (`source_file/source.py`), not a URL error. A first reading (this finding's prior revision, reverted with #188) blamed the file URL and passed the path as `csv_path.as_uri()`. That was wrong twice over: the plain path already worked for the ASCII-safe samples, and `as_uri()` broke every sample, because the connector opens `file://` plus the scheme-stripped url with `smart_open`, and for `file:///D:/a/...` smart_open opens the literal `/D:/a/...`, a leading slash before the drive letter that Windows refuses (`OSError 22`). The real cause, read from the connector source (`source_file/client.py`, airbyte-source-file 0.3.15): `Client.encoding = reader_options.get("encoding")`, passed to `smart_open.open(..., encoding=...)`; unset, smart_open opens text in the platform's preferred encoding, UTF-8 on macOS and Linux and cp1252 on Windows. `ourairports_airports` carries 1,310 non-ASCII lines (airport names) whose UTF-8 bytes are not valid cp1252, so the decode fails on Windows and nowhere else; the ASCII-safe samples decode under either. The fix: the ourairports reader options declare `"encoding": "utf-8"`, so the connector opens the file as UTF-8 on every platform, a no-op off Windows where UTF-8 was already the default. The class: a text file read without a declared encoding is read in the platform's, and a non-ASCII file then loads on one platform and fails on another. The fixed tree's Windows run is quoted in the Arc 7 exit record.
 (`config/default.yaml`, the ourairports reader options; the `demo-windows` runs on PR #184)
+
+## Toolchain rung, continued (v1.1.2 fast-follow, September 9, 2026)
+
+### F-58
+**Three keyless download paths built no SSL context, so a python.org macOS
+build with an empty OpenSSL trust store failed every fetch before anything
+built.** `urllib.request.urlopen` with no `context=` builds one from
+`ssl.create_default_context()`, which loads OpenSSL's default verify paths
+and nothing else. On the framework CPython 3.12 measured here those paths
+are empty: `ssl.get_default_verify_paths()` returns `cafile=None` and
+`capath=None`, the `openssl_cafile` it names (`cert.pem` under the
+framework's `etc/openssl`) does not exist because the framework's
+`Install Certificates.command` was never run, and
+`ssl.create_default_context().get_ca_certs()` loads zero anchors. Every
+fetch then dies with `CERTIFICATE_VERIFY_FAILED` before anything builds.
+Reproduced before the fix branch was cut: with `SSL_CERT_FILE` and
+`SSL_CERT_DIR` pointed at nonexistent paths, `make demo-fetch` prints its
+downloading line and then fails on the certificate. The three call sites
+were `scripts/fetch_demo.py:69` (the release asset, a stranger's first
+network call), `scripts/fetch_common.py:55` (the shared `download`, which
+fans out to the six source fetch scripts, so a contributor following
+`docs/adding-a-source.md` hit the same wall), and
+`scripts/fetch_sample.py:52`. Pre-existing since before v1.1.0, and off the
+Windows path: `ssl.SSLContext.load_default_certs` reads the system
+certificate store on `win32` before it consults either path, so a Windows
+machine reports no cafile and no capath and verifies anyway. The remedy: one
+shared `metricmine.tls.ssl_context()`, passed at all three call sites, with
+certifi declared at a floor in `pyproject.toml` rather than carried
+transitively. It **adds** certifi's anchors to the machine's own trust
+rather than substituting for them, and the difference is not cosmetic.
+`ssl.create_default_context(cafile=...)` takes an `if cafile or capath or
+cadata: load_verify_locations(...)` branch whose `elif` holds the
+`load_default_certs(purpose)` call, so naming a bundle there skips the
+Windows certificate store, the system bundle on Linux, and any
+`SSL_CERT_FILE` the operator exported. Measured on a machine whose default
+store held 113 anchors: the substituting form kept 109 and lost 54 of the
+machine's own, while `create_default_context()` followed by
+`load_verify_locations(cafile=certifi.where())` lost none and ended with
+163. A corporate TLS-inspecting proxy's root lives in exactly the store the
+substituting form discards, so that form would have broken machines this
+finding never touched while appearing to fix the one it did; the review
+caught it before it shipped, and `tests/test_tls.py` now asserts that
+nothing the machine trusts goes missing. Verification is never disabled,
+and certifi absent or unreadable degrades to the context urlopen would have
+built for itself. `make doctor` gained a `trust store` check that reads
+`ssl.get_default_verify_paths()` and the default context's anchor count and
+fails when a machine has no cafile, no capath, and no anchors. Its honest
+limit: a capath that exists but is empty still passes, because proving the
+store usable needs a network call doctor is forbidden to make. The anchor
+count is never the sole test either, in both directions, and both were
+measured: a capath-only machine loads zero anchors by default and verifies
+fine, and a Windows machine loads its anchors from a store neither path
+names, so gating on the two paths alone would have failed the
+`demo-windows` preflight. The class: a download that does not name its
+trust store inherits the interpreter's, and an interpreter that ships
+without one turns a first-run fetch into a traceback the reader blames on
+the project.
+(`src/metricmine/tls.py`, landing with the three call sites; the deferred
+item carried forward in the
+[Arc 6 exit record](evidence/2026-09-05_arc6_exit.md))
