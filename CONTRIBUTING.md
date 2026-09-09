@@ -24,17 +24,22 @@ write code. The disagreement is the finding.
 
 ## Set up
 
-MetricMine runs locally on macOS or Linux with Python 3.12 and
-[uv](https://docs.astral.sh/uv/). No API key is needed for the demo, the
-tests, or CI.
+MetricMine runs locally on macOS, Linux, or Windows x64 with Python 3.12
+and [uv](https://docs.astral.sh/uv/). No API key is needed for the demo,
+the tests, or CI.
 
 ```bash
-git clone https://github.com/metricminellc/metricmine.git && cd metricmine
+git clone https://github.com/metricminellc/metricmine.git
+cd metricmine
 uv sync
 uv run ruff check .
 uv run pytest -m "not local" -q
 make demo
 ```
+
+Every line above runs as written in bash, zsh, PowerShell 7, and Windows
+PowerShell 5.1. On Windows the demo-path targets are `uv run mm <target>`
+in place of `make <target>`, so the last line is `uv run mm demo` (D-42).
 
 `make demo` lands the committed sample into bronze, builds silver and the
 gold star from the committed contracts, and rebuilds the demo export.
