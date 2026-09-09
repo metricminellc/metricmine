@@ -127,6 +127,22 @@ def check_trust_store() -> None:
             if paths.cafile
             else "no cafile, no capath, and no default anchors"
         )
+        try:
+            metadata.version("certifi")
+        except metadata.PackageNotFoundError:
+            # The line below is true only while certifi is installed. With
+            # no store here and no bundle there, a download verifies against
+            # nothing, so report what is measured instead of reassuring.
+            # Presence only: certifi is a floor, and holding it to an exact
+            # locked version would fail any in-floor bundle refresh.
+            record(
+                "WARN",
+                "trust store",
+                f"{source}, and certifi is not installed either, so the demo"
+                " path has nothing to verify a download against (run:"
+                " uv sync)",
+            )
+            return
         record(
             "WARN",
             "trust store",
