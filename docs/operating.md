@@ -44,7 +44,7 @@ The daily commands, in the order they depend on each other:
 
 | Command | What it does | Reads | Writes |
 |---|---|---|---|
-| `make doctor` | checks the platform, uv, the locked toolchain, the isolated `datacontract-cli`, the demo artifact | | nothing |
+| `make doctor` | checks the platform, the interpreter's TLS trust store, uv, the locked toolchain, the isolated `datacontract-cli`, the demo artifact | | nothing |
 | `make ingest` | lands every `ingestion.sources` entry into bronze, replace semantics | the committed extracts | the warehouse's bronze schema |
 | `make profile ONLY=<schema>.<table>` | measures a table into a committed artifact | the warehouse, read-only | `profiles/<schema>.<table>/vNNNN.json` |
 | `make scan` | derives the adoption queue and names the next command per item | the tree, the contracts, the profiles, the warehouse | `proposals/plan.md` (gitignored) |
@@ -229,6 +229,7 @@ The symptom table:
 | the demo gate fails after a regeneration | the registry digest moved; `make export-demo` and commit the manifest |
 | `make demo-fetch` declines with "no published demo artifact yet" | between tags the manifest names no release; `make demo` builds the content |
 | `make doctor` reports the demo artifact as WARN | neither fetched nor built yet; a hint |
+| `make doctor` reports the trust store as WARN | this interpreter carries no CA bundle of its own; the demo path carries certifi's and runs, other Python tools on it may not |
 | a query result carries `truncated: true` | by design; aggregate or narrow instead of raising the cap |
 | a proposer exits with "fail-closed" | validation failed twice after the first attempt; nothing was written; read the record and run it yourself |
 | the K1 gate names an undeclared key, a single carrier, or a missing rule | conformance is decoration until the star declares the key, two contracts carry it, and each holds its column to the rule |

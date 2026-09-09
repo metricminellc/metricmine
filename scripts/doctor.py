@@ -3,10 +3,10 @@
 Part of the Arc 4 stable-release surface. A stranger on a fresh clone runs
 `make doctor` (`uv run mm doctor` on Windows, D-42) and learns, before
 anything builds, whether this machine can run the demo: the platform, the
-interpreter, uv, the locked toolchain, dbt packages, the demo artifact
-(fetched or built), and the two environment lines local dbt lanes need
-(the F-09 class), printed in the running shell's form. Read-only: nothing
-is installed, written, or fetched.
+interpreter, its TLS trust store, uv, the locked toolchain, dbt packages,
+the demo artifact (fetched or built), and the two environment lines local
+dbt lanes need (the F-09 class), printed in the running shell's form.
+Read-only: nothing is installed, written, or fetched.
 
 Verdicts: PASS, WARN (the demo still runs, or the item is only needed for
 the contract gates), FAIL (the demo path is broken). Exit 0 unless a FAIL.
@@ -23,6 +23,7 @@ import os
 import platform
 import re
 import shutil
+import ssl
 import subprocess
 import sys
 from importlib import metadata
@@ -89,6 +90,70 @@ def check_python() -> None:
         record("PASS", "python", platform.python_version())
     else:
         record("FAIL", "python", f"{platform.python_version()}: the project runs on 3.12 (.python-version)")
+
+
+def check_trust_store() -> None:
+    # What this interpreter itself trusts, which is no longer what the demo
+    # path verifies against: metricmine.tls adds certifi's bundle on top of
+    # it (F-58), so a bare store cannot break a download and this check
+    # reports rather than gates. A python.org framework CPython on macOS
+    # wires neither an OpenSSL cafile nor a capath until its
+    # Install Certificates.command has run, and loads no anchors at all; the
+    # demo path runs anyway, other Python tools on that interpreter do not,
+    # and that is worth a line. Windows reports no cafile and no capath
+    # either, because ssl.SSLContext.load_default_certs reads the system
+    # certificate store there before it ever consults those paths; the
+    # anchor count is what separates that working machine from a bare one,
+    # and it is never the sole test, because a capath-only machine loads
+    # zero anchors by default and verifies fine. Read-only: no network call.
+    try:
+        paths = ssl.get_default_verify_paths()
+        anchors = len(ssl.create_default_context().get_ca_certs())
+    except Exception as exc:  # noqa: BLE001 - any failure to read is the finding
+        # Reading the store reaches OpenSSL and, on Windows, the registry
+        # cert stores. A raise here would exit non-zero with a traceback,
+        # which is the outcome the WARN below exists to avoid.
+        record("WARN", "trust store", f"cannot be read: {exc}")
+        return
+    # A capath loads zero anchors by default and still verifies, because
+    # OpenSSL looks a hash up in the directory on demand; a cafile that
+    # loads zero does not. So the warning is "nothing loaded, and no capath
+    # to load it lazily", which also catches an SSL_CERT_FILE pointed at a
+    # file that exists and parses to nothing -- the misconfiguration this
+    # check's own remedy invites.
+    if not anchors and paths.capath is None:
+        source = (
+            f"{paths.cafile} loads no certificates"
+            if paths.cafile
+            else "no cafile, no capath, and no default anchors"
+        )
+        try:
+            metadata.version("certifi")
+        except metadata.PackageNotFoundError:
+            # The line below is true only while certifi is installed. With
+            # no store here and no bundle there, a download verifies against
+            # nothing, so report what is measured instead of reassuring.
+            # Presence only: certifi is a floor, and holding it to an exact
+            # locked version would fail any in-floor bundle refresh.
+            record(
+                "WARN",
+                "trust store",
+                f"{source}, and certifi is not installed either, so the demo"
+                " path has nothing to verify a download against (run:"
+                " uv sync)",
+            )
+            return
+        record(
+            "WARN",
+            "trust store",
+            f"{source}; the demo path carries its own CA bundle and runs,"
+            " other Python tools on this interpreter may not (python.org"
+            " builds: Install Certificates.command; otherwise point"
+            " SSL_CERT_FILE at a bundle that parses)",
+        )
+        return
+    source = paths.cafile or paths.capath or "the system certificate store"
+    record("PASS", "trust store", f"{source}, {anchors} anchors")
 
 
 def check_uv() -> None:
@@ -219,6 +284,7 @@ def main() -> int:
     for check in (
         check_platform,
         check_python,
+        check_trust_store,
         check_uv,
         check_locked,
         check_dbt_packages,

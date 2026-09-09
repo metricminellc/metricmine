@@ -5,15 +5,17 @@ before the package is trusted, so it imports nothing from metricmine and
 carries its own copy of the one-line command rule. These tests load it by
 path and hold it to the register (D-42): the supported matrix and what sits
 outside it, the environment lines in the running shell's form, and the
-hints naming the same command the task entry point names. Nothing here
-spawns a process or reads the machine; every check under test is driven by
-a monkeypatched `platform`.
+hints naming the same command the task entry point names, and the
+trust-store check in each of its verdicts. Nothing here spawns a process
+or reads the machine; every check under test is driven by a monkeypatched
+`platform` or `ssl`.
 """
 
 from __future__ import annotations
 
 import importlib.util
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -107,3 +109,107 @@ def test_the_demo_artifact_hint_names_the_fetch_and_the_build(
     assert "uv run mm demo-fetch restores the v1.1.0 asset" in detail
     assert "uv run mm demo builds it" in detail
     assert "make " not in detail
+
+
+def _trust_store_verdict(
+    monkeypatch: pytest.MonkeyPatch,
+    cafile: str | None,
+    capath: str | None,
+    anchors: int,
+    certifi_installed: bool = True,
+) -> tuple[str, str, str]:
+    paths = doctor.ssl.DefaultVerifyPaths(
+        cafile, capath, "SSL_CERT_FILE", "openssl/cert.pem", "SSL_CERT_DIR", "openssl/certs"
+    )
+    monkeypatch.setattr(doctor.ssl, "get_default_verify_paths", lambda: paths)
+    monkeypatch.setattr(
+        doctor.ssl,
+        "create_default_context",
+        lambda *args, **kwargs: SimpleNamespace(get_ca_certs=lambda: [{}] * anchors),
+    )
+    if not certifi_installed:
+
+        def absent(name: str) -> str:
+            raise doctor.metadata.PackageNotFoundError(name)
+
+        monkeypatch.setattr(doctor.metadata, "version", absent)
+    monkeypatch.setattr(doctor, "results", [])
+    doctor.check_trust_store()
+    (entry,) = doctor.results
+    return entry
+
+
+def test_a_machine_with_no_trust_source_warns(monkeypatch: pytest.MonkeyPatch) -> None:
+    # A warning, not a failure, and the detail has to say why: metricmine.tls
+    # adds certifi to whatever the machine trusts, so the demo path runs on a
+    # bare store. FAIL would exit 1 into the devcontainer's postCreateCommand
+    # and the demo-windows preflight, reddening a machine whose demo works.
+    verdict, label, detail = _trust_store_verdict(monkeypatch, None, None, 0)
+    assert (verdict, label) == ("WARN", "trust store")
+    assert "the demo path carries its own CA bundle and runs" in detail
+    assert "Install Certificates.command" in detail
+    assert "SSL_CERT_FILE" in detail
+
+
+def test_windows_loads_its_anchors_from_the_system_store_and_passes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Windows reports no cafile and no capath: ssl.SSLContext.load_default_certs
+    # reads the system certificate store there before it consults either path.
+    # Gating on the two paths alone would fail a working Windows machine, and
+    # the demo-windows workflow runs this preflight.
+    verdict, label, detail = _trust_store_verdict(monkeypatch, None, None, 168)
+    assert (verdict, label) == ("PASS", "trust store")
+    assert detail == "the system certificate store, 168 anchors"
+
+
+def test_a_capath_only_machine_passes_with_no_anchors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # The anchor count is never the sole test: a machine that resolves only a
+    # capath loads zero anchors by default and verifies fine.
+    verdict, label, detail = _trust_store_verdict(monkeypatch, None, "/etc/ssl/certs", 0)
+    assert (verdict, label) == ("PASS", "trust store")
+    assert detail == "/etc/ssl/certs, 0 anchors"
+
+
+def test_a_cafile_that_parses_to_nothing_warns(monkeypatch: pytest.MonkeyPatch) -> None:
+    # The misconfiguration this check's own remedy invites: SSL_CERT_FILE
+    # pointed at a file that exists and carries no certificates. Measured
+    # against the repository README, it used to record PASS and silence the
+    # warning without fixing anything.
+    verdict, label, detail = _trust_store_verdict(monkeypatch, "README.md", None, 0)
+    assert (verdict, label) == ("WARN", "trust store")
+    assert "README.md loads no certificates" in detail
+
+
+def test_an_unreadable_trust_store_warns_rather_than_raising(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Reading the store reaches OpenSSL and, on Windows, the registry cert
+    # stores. A raise would leave main() with a traceback and a non-zero
+    # exit, which gates the devcontainer's postCreateCommand and the
+    # demo-windows preflight: the FAIL outcome the WARN tier exists to avoid.
+    def unreadable() -> None:
+        raise OSError("cert store unavailable")
+
+    monkeypatch.setattr(doctor.ssl, "get_default_verify_paths", unreadable)
+    monkeypatch.setattr(doctor, "results", [])
+    doctor.check_trust_store()
+    (entry,) = doctor.results
+    verdict, label, detail = entry
+    assert (verdict, label) == ("WARN", "trust store")
+    assert "cannot be read" in detail
+
+
+def test_a_bare_store_with_no_certifi_says_so(monkeypatch: pytest.MonkeyPatch) -> None:
+    # The usual warning tells the reader the demo path carries its own CA
+    # bundle and runs. That is true only while certifi is installed; with no
+    # store here and no bundle there a download verifies against nothing, and
+    # the reassurance would be false right before the fetch fails.
+    verdict, label, detail = _trust_store_verdict(
+        monkeypatch, None, None, 0, certifi_installed=False
+    )
+    assert (verdict, label) == ("WARN", "trust store")
+    assert "certifi is not installed" in detail
+    assert "carries its own CA bundle and runs" not in detail

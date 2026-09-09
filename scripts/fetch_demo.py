@@ -35,6 +35,7 @@ from metricmine.export_demo import (
     read_manifest,
 )
 from metricmine.tasks import command
+from metricmine.tls import ssl_context
 
 REPOSITORY = "metricminellc/metricmine"
 USER_AGENT = "metricmine-fetch-demo/0.1"
@@ -66,7 +67,9 @@ def main() -> int:
         part = DEFAULT_DEST.with_name(DEFAULT_DEST.name + ".part")
         req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
         try:
-            with urllib.request.urlopen(req, timeout=600) as resp, open(part, "wb") as out:
+            with urllib.request.urlopen(
+                req, timeout=600, context=ssl_context()
+            ) as resp, open(part, "wb") as out:
                 shutil.copyfileobj(resp, out)
         except urllib.error.HTTPError as exc:
             part.unlink(missing_ok=True)

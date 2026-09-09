@@ -9,6 +9,64 @@ binding text, and the
 [findings register](docs/verification/gate_proof_findings.md) carries the
 measurements.
 
+## [1.1.2] - 2026-09-09
+
+### Added
+
+- `certifi` as a declared dependency at a floor (`certifi>=2026.6.17`,
+  resolved 2026.6.17 in uv.lock), and `src/metricmine/tls.py`, the one
+  place this project builds a TLS verification context. A floor rather
+  than a pin, and deliberately outside CLAUDE.md rule 1: certifi ships
+  trust anchors rather than an API, so a refreshed bundle is the point
+  of the dependency (F-58).
+- `make doctor` (`uv run mm doctor` on Windows) reports the interpreter's
+  TLS trust store, and warns when nothing is loaded and no capath could
+  load one lazily, saying that the demo path carries its own CA bundle
+  and runs and that other Python tools on that interpreter may not. The
+  capath clause matters in both directions: a capath verifies fine while
+  reporting zero anchors, and a cafile aimed at a file that parses to
+  nothing does not, so pointing `SSL_CERT_FILE` at the wrong file cannot
+  silence the warning. A warning and not a failure because the fix below is what made
+  a bare store survivable: doctor's exit code gates the devcontainer's
+  `postCreateCommand` and the `demo-windows` preflight, so failing there
+  would red a machine whose demo works. The diagnosis prints above the
+  demo-artifact line it explains. Eight checks now, seven before.
+
+### Changed
+
+- The demo guide's `CERTIFICATE_VERIFY_FAILED` entry says the project's
+  own downloads now carry certifi, and scopes itself to `uv sync`
+  building `dbt-core-experimental-parser`, whose source distribution
+  fetches its wheel with urllib in uv's own subprocess and is not
+  reached by this fix (F-58).
+
+### Fixed
+
+- The three keyless download paths (`scripts/fetch_demo.py`,
+  `scripts/fetch_common.py`, `scripts/fetch_sample.py`) called
+  `urllib.request.urlopen` with no `context=`, so Python built one from
+  `ssl.create_default_context()` and loaded OpenSSL's default verify
+  paths and nothing else. A python.org framework CPython on macOS ships
+  with those paths empty until `Install Certificates.command` has run,
+  so every fetch died with `CERTIFICATE_VERIFY_FAILED` before anything
+  built, and the failure read as a broken project rather than as a
+  missing CA bundle on the reader's own interpreter. All three now share
+  one context that adds certifi's anchors to whatever the machine
+  already trusts, rather than replacing them: naming a cafile on
+  `create_default_context` skips the branch that loads the Windows
+  certificate store, the system bundle on Linux, and any exported
+  `SSL_CERT_FILE`, which on one measured machine dropped 54 of its 113
+  anchors.
+  `scripts/fetch_common.py` is the shared download for all six source
+  fetch scripts, so a contributor following `docs/adding-a-source.md`
+  hit the same wall. Pre-existing since before v1.1.0, and off the
+  Windows path, where the system certificate store supplies the anchors
+  (F-58). Discharges the item Arc 6 carried forward.
+- The release link references: v1.1.1 shipped without a `[1.1.1]:` line
+  and `[Unreleased]` still compared from v1.1.0.
+- `CONTRIBUTING.md` said the project runs on macOS or Linux; Windows x64
+  joined the supported matrix at v1.1.1 (D-42).
+
 ## [1.1.1] - 2026-09-06
 
 ### Added
@@ -413,7 +471,9 @@ tags.
 - The decision register, the findings register, the layer specs, and the
   diagrams with their Mermaid twins.
 
-[Unreleased]: https://github.com/metricminellc/metricmine/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/metricminellc/metricmine/compare/v1.1.2...HEAD
+[1.1.2]: https://github.com/metricminellc/metricmine/compare/v1.1.1...v1.1.2
+[1.1.1]: https://github.com/metricminellc/metricmine/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/metricminellc/metricmine/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/metricminellc/metricmine/compare/v0.3.0...v1.0.0
 [0.3.0]: https://github.com/metricminellc/metricmine/compare/v0.2.0...v0.3.0
