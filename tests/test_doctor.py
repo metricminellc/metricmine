@@ -164,3 +164,32 @@ def test_a_capath_only_machine_passes_with_no_anchors(
     verdict, label, detail = _trust_store_verdict(monkeypatch, None, "/etc/ssl/certs", 0)
     assert (verdict, label) == ("PASS", "trust store")
     assert detail == "/etc/ssl/certs, 0 anchors"
+
+
+def test_a_cafile_that_parses_to_nothing_warns(monkeypatch: pytest.MonkeyPatch) -> None:
+    # The misconfiguration this check's own remedy invites: SSL_CERT_FILE
+    # pointed at a file that exists and carries no certificates. Measured
+    # against the repository README, it used to record PASS and silence the
+    # warning without fixing anything.
+    verdict, label, detail = _trust_store_verdict(monkeypatch, "README.md", None, 0)
+    assert (verdict, label) == ("WARN", "trust store")
+    assert "README.md loads no certificates" in detail
+
+
+def test_an_unreadable_trust_store_warns_rather_than_raising(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Reading the store reaches OpenSSL and, on Windows, the registry cert
+    # stores. A raise would leave main() with a traceback and a non-zero
+    # exit, which gates the devcontainer's postCreateCommand and the
+    # demo-windows preflight: the FAIL outcome the WARN tier exists to avoid.
+    def unreadable() -> None:
+        raise OSError("cert store unavailable")
+
+    monkeypatch.setattr(doctor.ssl, "get_default_verify_paths", unreadable)
+    monkeypatch.setattr(doctor, "results", [])
+    doctor.check_trust_store()
+    (entry,) = doctor.results
+    verdict, label, detail = entry
+    assert (verdict, label) == ("WARN", "trust store")
+    assert "cannot be read" in detail
