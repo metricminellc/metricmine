@@ -116,6 +116,7 @@ def _trust_store_verdict(
     cafile: str | None,
     capath: str | None,
     anchors: int,
+    certifi_installed: bool = True,
 ) -> tuple[str, str, str]:
     paths = doctor.ssl.DefaultVerifyPaths(
         cafile, capath, "SSL_CERT_FILE", "openssl/cert.pem", "SSL_CERT_DIR", "openssl/certs"
@@ -126,6 +127,12 @@ def _trust_store_verdict(
         "create_default_context",
         lambda *args, **kwargs: SimpleNamespace(get_ca_certs=lambda: [{}] * anchors),
     )
+    if not certifi_installed:
+
+        def absent(name: str) -> str:
+            raise doctor.metadata.PackageNotFoundError(name)
+
+        monkeypatch.setattr(doctor.metadata, "version", absent)
     monkeypatch.setattr(doctor, "results", [])
     doctor.check_trust_store()
     (entry,) = doctor.results
@@ -193,3 +200,16 @@ def test_an_unreadable_trust_store_warns_rather_than_raising(
     verdict, label, detail = entry
     assert (verdict, label) == ("WARN", "trust store")
     assert "cannot be read" in detail
+
+
+def test_a_bare_store_with_no_certifi_says_so(monkeypatch: pytest.MonkeyPatch) -> None:
+    # The usual warning tells the reader the demo path carries its own CA
+    # bundle and runs. That is true only while certifi is installed; with no
+    # store here and no bundle there a download verifies against nothing, and
+    # the reassurance would be false right before the fetch fails.
+    verdict, label, detail = _trust_store_verdict(
+        monkeypatch, None, None, 0, certifi_installed=False
+    )
+    assert (verdict, label) == ("WARN", "trust store")
+    assert "certifi is not installed" in detail
+    assert "carries its own CA bundle and runs" not in detail
