@@ -18,10 +18,14 @@ measurements.
   place this project builds a TLS verification context. A floor rather
   than a pin: a refreshed CA bundle needs no amendment (F-58).
 - `make doctor` (`uv run mm doctor` on Windows) reports the interpreter's
-  TLS trust store, and fails a machine that resolves no cafile, no
-  capath, and no default anchors, naming `Install Certificates.command`
-  as the fix. The diagnosis prints above the demo-artifact line it
-  explains. Eight checks now, seven before.
+  TLS trust store, and warns when a machine resolves no cafile, no
+  capath, and no default anchors, saying that the demo path carries its
+  own CA bundle and runs and that other Python tools on that interpreter
+  may not. A warning and not a failure because the fix below is what made
+  a bare store survivable: doctor's exit code gates the devcontainer's
+  `postCreateCommand` and the `demo-windows` preflight, so failing there
+  would red a machine whose demo works. The diagnosis prints above the
+  demo-artifact line it explains. Eight checks now, seven before.
 
 ### Changed
 

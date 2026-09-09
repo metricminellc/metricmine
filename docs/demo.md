@@ -194,8 +194,7 @@ What to expect, step by step:
 Start with `make doctor`: it checks the platform, the interpreter, the
 interpreter's TLS trust store, uv, the locked toolchain, and the demo
 artifact (a hint, not a failure, when it has not been fetched or built
-yet), and prints the two
-environment exports the local dbt lanes need.
+yet), and prints the two environment exports the local dbt lanes need.
 
 - **`uv: command not found`**: install uv (link above) and reopen the
   terminal. Everything else flows from it.
@@ -229,8 +228,9 @@ environment exports the local dbt lanes need.
   `uv sync`. This project's own downloads are not affected: they build
   their verification context from certifi's bundle (F-58). The parser
   build above runs in uv's subprocess, outside that code, so it needs
-  the interpreter's own trust store wired. `make doctor` reports the
-  same condition as a `trust store` failure.
+  the interpreter's own trust store wired. `make doctor` names the same
+  condition as a `trust store` warning rather than a failure, and stays
+  exit 0: the demo path runs on a bare store, this build does not.
 
 ## Where to next
 

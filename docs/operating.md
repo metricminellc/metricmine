@@ -229,6 +229,7 @@ The symptom table:
 | the demo gate fails after a regeneration | the registry digest moved; `make export-demo` and commit the manifest |
 | `make demo-fetch` declines with "no published demo artifact yet" | between tags the manifest names no release; `make demo` builds the content |
 | `make doctor` reports the demo artifact as WARN | neither fetched nor built yet; a hint |
+| `make doctor` reports the trust store as WARN | this interpreter carries no CA bundle of its own; the demo path carries certifi's and runs, other Python tools on it may not |
 | a query result carries `truncated: true` | by design; aggregate or narrow instead of raising the cap |
 | a proposer exits with "fail-closed" | validation failed twice after the first attempt; nothing was written; read the record and run it yourself |
 | the K1 gate names an undeclared key, a single carrier, or a missing rule | conformance is decoration until the star declares the key, two contracts carry it, and each holds its column to the rule |
