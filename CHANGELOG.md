@@ -16,7 +16,9 @@ measurements.
 - `certifi` as a declared dependency at a floor (`certifi>=2026.6.17`,
   resolved 2026.6.17 in uv.lock), and `src/metricmine/tls.py`, the one
   place this project builds a TLS verification context. A floor rather
-  than a pin: a refreshed CA bundle needs no amendment (F-58).
+  than a pin, and deliberately outside CLAUDE.md rule 1: certifi ships
+  trust anchors rather than an API, so a refreshed bundle is the point
+  of the dependency (F-58).
 - `make doctor` (`uv run mm doctor` on Windows) reports the interpreter's
   TLS trust store, and warns when nothing is loaded and no capath could
   load one lazily, saying that the demo path carries its own CA bundle
@@ -37,8 +39,6 @@ measurements.
   building `dbt-core-experimental-parser`, whose source distribution
   fetches its wheel with urllib in uv's own subprocess and is not
   reached by this fix (F-58).
-- CLAUDE.md rule 1 names certifi with the other declared dependencies
-  it governs.
 
 ### Fixed
 

@@ -23,9 +23,7 @@ approves every contract.
    caps mcp <2.0, finding F-22), and anthropic >=1.0,<1.1 (resolved
    1.0.0 in uv.lock; the proposer SDK, D-21 as amended by Amendment F;
    recorded fallback >=0.125,<1, exercised only on a documented live
-   failure), and certifi >=2026.6.17 (resolved 2026.6.17 in uv.lock;
-   the CA bundle the keyless downloads add to the machine's own trust,
-   F-58).
+   failure).
    Never upgrade to `latest`,
    and never upgrade any of these
    without an amendment to docs/decisions/decision-register.md in its own
