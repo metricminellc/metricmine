@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import importlib.util
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -107,3 +108,53 @@ def test_the_demo_artifact_hint_names_the_fetch_and_the_build(
     assert "uv run mm demo-fetch restores the v1.1.0 asset" in detail
     assert "uv run mm demo builds it" in detail
     assert "make " not in detail
+
+
+def _trust_store_verdict(
+    monkeypatch: pytest.MonkeyPatch,
+    cafile: str | None,
+    capath: str | None,
+    anchors: int,
+) -> tuple[str, str, str]:
+    paths = doctor.ssl.DefaultVerifyPaths(
+        cafile, capath, "SSL_CERT_FILE", "openssl/cert.pem", "SSL_CERT_DIR", "openssl/certs"
+    )
+    monkeypatch.setattr(doctor.ssl, "get_default_verify_paths", lambda: paths)
+    monkeypatch.setattr(
+        doctor.ssl,
+        "create_default_context",
+        lambda *args, **kwargs: SimpleNamespace(get_ca_certs=lambda: [{}] * anchors),
+    )
+    monkeypatch.setattr(doctor, "results", [])
+    doctor.check_trust_store()
+    (entry,) = doctor.results
+    return entry
+
+
+def test_a_machine_with_no_trust_source_fails(monkeypatch: pytest.MonkeyPatch) -> None:
+    verdict, label, detail = _trust_store_verdict(monkeypatch, None, None, 0)
+    assert (verdict, label) == ("FAIL", "trust store")
+    assert "Install Certificates.command" in detail
+    assert "SSL_CERT_FILE" in detail
+
+
+def test_windows_loads_its_anchors_from_the_system_store_and_passes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Windows reports no cafile and no capath: ssl.SSLContext.load_default_certs
+    # reads the system certificate store there before it consults either path.
+    # Gating on the two paths alone would fail a working Windows machine, and
+    # the demo-windows workflow runs this preflight.
+    verdict, label, detail = _trust_store_verdict(monkeypatch, None, None, 168)
+    assert (verdict, label) == ("PASS", "trust store")
+    assert detail == "the system certificate store, 168 anchors"
+
+
+def test_a_capath_only_machine_passes_with_no_anchors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # The anchor count is never the sole test: a machine that resolves only a
+    # capath loads zero anchors by default and verifies fine.
+    verdict, label, detail = _trust_store_verdict(monkeypatch, None, "/etc/ssl/certs", 0)
+    assert (verdict, label) == ("PASS", "trust store")
+    assert detail == "/etc/ssl/certs, 0 anchors"
