@@ -37,6 +37,7 @@ from __future__ import annotations
 
 import functools
 import ssl
+import sys
 
 
 @functools.lru_cache(maxsize=1)
@@ -50,13 +51,28 @@ def ssl_context() -> ssl.SSLContext:
     context = ssl.create_default_context()
     try:
         import certifi
-
+    except ImportError:
+        # The declared fallback: certifi is a project dependency, so its
+        # absence is a deliberate or broken environment rather than an
+        # anomaly worth a line. The default context already carries
+        # whatever this machine trusts.
+        return context
+    try:
         context.load_verify_locations(cafile=certifi.where())
-    except (ImportError, OSError):
-        # certifi is absent, or is installed without a readable bundle
-        # (a zipped install, a stripped corporate image). The default
-        # context already carries whatever this machine trusts; adding
-        # nothing is correct, and raising here would be strictly worse
-        # than the failure this module exists to prevent.
-        pass
+    except OSError as exc:
+        # certifi is installed but its bundle did not load: truncated by a
+        # partial wheel extraction, rewritten by a scanner, or unreadable.
+        # ssl.SSLError subclasses OSError, so a corrupt PEM lands here too.
+        # Raising would be worse than the failure this module prevents, but
+        # staying silent on a bare interpreter reproduces exactly the
+        # CERTIFICATE_VERIFY_FAILED of F-58 with nothing naming the cause,
+        # and doctor cannot diagnose it because it does not import this
+        # module. One line to stderr is the difference between an opaque
+        # traceback and a fixable one. Never stdout: a caller may be
+        # speaking a protocol on it.
+        print(
+            f"metricmine: certifi's CA bundle did not load ({exc}); falling"
+            " back to this interpreter's own trust",
+            file=sys.stderr,
+        )
     return context
