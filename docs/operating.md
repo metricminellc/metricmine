@@ -44,7 +44,7 @@ The daily commands, in the order they depend on each other:
 
 | Command | What it does | Reads | Writes |
 |---|---|---|---|
-| `make doctor` | checks the platform, uv, the locked toolchain, the isolated `datacontract-cli`, the demo artifact | | nothing |
+| `make doctor` | checks the platform, the interpreter's TLS trust store, uv, the locked toolchain, the isolated `datacontract-cli`, the demo artifact | | nothing |
 | `make ingest` | lands every `ingestion.sources` entry into bronze, replace semantics | the committed extracts | the warehouse's bronze schema |
 | `make profile ONLY=<schema>.<table>` | measures a table into a committed artifact | the warehouse, read-only | `profiles/<schema>.<table>/vNNNN.json` |
 | `make scan` | derives the adoption queue and names the next command per item | the tree, the contracts, the profiles, the warehouse | `proposals/plan.md` (gitignored) |
