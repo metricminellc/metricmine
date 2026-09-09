@@ -5,9 +5,10 @@ before the package is trusted, so it imports nothing from metricmine and
 carries its own copy of the one-line command rule. These tests load it by
 path and hold it to the register (D-42): the supported matrix and what sits
 outside it, the environment lines in the running shell's form, and the
-hints naming the same command the task entry point names. Nothing here
-spawns a process or reads the machine; every check under test is driven by
-a monkeypatched `platform`.
+hints naming the same command the task entry point names, and the
+trust-store check in each of its verdicts. Nothing here spawns a process
+or reads the machine; every check under test is driven by a monkeypatched
+`platform` or `ssl`.
 """
 
 from __future__ import annotations
