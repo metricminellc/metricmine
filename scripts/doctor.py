@@ -3,8 +3,9 @@
 Part of the Arc 4 stable-release surface. A stranger on a fresh clone runs
 `make doctor` (`uv run mm doctor` on Windows, D-42) and learns, before
 anything builds, whether this machine can run the demo: the platform, the
-interpreter, uv, the locked toolchain, dbt packages, the demo artifact
-(fetched or built), and the two environment lines local dbt lanes need
+interpreter, its TLS trust store, uv, the locked toolchain, dbt packages,
+the demo artifact (fetched or built), and the two environment lines local
+dbt lanes need
 (the F-09 class), printed in the running shell's form. Read-only: nothing
 is installed, written, or fetched.
 
@@ -23,6 +24,7 @@ import os
 import platform
 import re
 import shutil
+import ssl
 import subprocess
 import sys
 from importlib import metadata
@@ -89,6 +91,31 @@ def check_python() -> None:
         record("PASS", "python", platform.python_version())
     else:
         record("FAIL", "python", f"{platform.python_version()}: the project runs on 3.12 (.python-version)")
+
+
+def check_trust_store() -> None:
+    # Every download the demo path makes verifies against this interpreter's
+    # TLS trust (F-58). A python.org framework CPython on macOS wires neither
+    # an OpenSSL cafile nor a capath until its Install Certificates.command
+    # has run, and loads no anchors at all. Windows reports no cafile and no
+    # capath either, because ssl.SSLContext.load_default_certs reads the
+    # system certificate store there before it ever consults those paths; the
+    # anchor count is what separates that working machine from a bare one,
+    # and it is never the sole test, because a capath-only machine loads zero
+    # anchors by default and verifies fine. Read-only: no network call.
+    paths = ssl.get_default_verify_paths()
+    anchors = len(ssl.create_default_context().get_ca_certs())
+    if paths.cafile is None and paths.capath is None and not anchors:
+        record(
+            "FAIL",
+            "trust store",
+            "no cafile, no capath, and no default anchors; on a python.org"
+            " build run Install Certificates.command, or point SSL_CERT_FILE"
+            " at a CA bundle, then rerun",
+        )
+        return
+    source = paths.cafile or paths.capath or "the system certificate store"
+    record("PASS", "trust store", f"{source}, {anchors} anchors")
 
 
 def check_uv() -> None:
@@ -219,6 +246,7 @@ def main() -> int:
     for check in (
         check_platform,
         check_python,
+        check_trust_store,
         check_uv,
         check_locked,
         check_dbt_packages,
