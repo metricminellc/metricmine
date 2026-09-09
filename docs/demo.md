@@ -225,8 +225,8 @@ yet), and prints the two environment exports the local dbt lanes need.
   macOS ships with no CA bundle at its OpenSSL default path. Run the
   framework's `Install Certificates.command` once, or export
   `SSL_CERT_FILE=/etc/ssl/cert.pem` for the session, then rerun
-  `uv sync`. This project's own downloads are not affected: they build
-  their verification context from certifi's bundle (F-58). The parser
+  `uv sync`. This project's own downloads are not affected: they add
+  certifi's bundle to whatever this machine already trusts (F-58). The parser
   build above runs in uv's subprocess, outside that code, so it needs
   the interpreter's own trust store wired. `make doctor` names the same
   condition as a `trust store` warning rather than a failure, and stays
