@@ -52,10 +52,19 @@ def ssl_context() -> ssl.SSLContext:
     try:
         import certifi
     except ImportError:
-        # The declared fallback: certifi is a project dependency, so its
-        # absence is a deliberate or broken environment rather than an
-        # anomaly worth a line. The default context already carries
-        # whatever this machine trusts.
+        # certifi is a declared dependency, so its absence is a broken or
+        # deliberately stripped environment, not a supported mode. The
+        # default context still carries whatever this machine trusts, which
+        # on a bare interpreter is nothing: saying so is the difference
+        # between a CERTIFICATE_VERIFY_FAILED nobody can place and a fixable
+        # one, and doctor cannot say it because it does not import this
+        # module. The rarer unloadable-bundle case below gets a line; this
+        # one is the likelier of the two and had none.
+        print(
+            "metricmine: certifi is not installed; falling back to this"
+            " interpreter's own trust",
+            file=sys.stderr,
+        )
         return context
     try:
         context.load_verify_locations(cafile=certifi.where())
