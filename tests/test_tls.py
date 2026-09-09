@@ -14,8 +14,8 @@ opens a socket.
 from __future__ import annotations
 
 import ast
-import builtins
 import ssl
+import sys
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -24,8 +24,13 @@ import pytest
 
 from metricmine import tls
 
-SCRIPTS = Path(__file__).resolve().parents[1].joinpath("scripts")
-FETCH_SCRIPTS = sorted(SCRIPTS.glob("fetch_*.py"))
+REPO = Path(__file__).resolve().parents[1]
+# F-58's class is "a download that does not name its trust store", which is
+# not confined to a filename shape: every module that could open one is read,
+# and the ones that make no urlopen call skip.
+SOURCES = sorted(
+    [*REPO.joinpath("scripts").glob("*.py"), *REPO.joinpath("src").rglob("*.py")]
+)
 DIRECT_CALLERS = {"fetch_common.py", "fetch_demo.py", "fetch_sample.py"}
 
 
@@ -43,10 +48,12 @@ def _anchors(context: ssl.SSLContext) -> set[tuple[str, str]]:
 
 
 def test_the_context_carries_certifis_bundle() -> None:
-    # A subset, not an equality: the context is certifi's anchors ON TOP OF
-    # the machine's. An equality assertion here would pass only for the
-    # substituting form this module deliberately does not use.
-    bundle = ssl.create_default_context()
+    # certifi's anchors alone, loaded into an otherwise empty context, so the
+    # expectation is the bundle rather than a replay of the two calls the
+    # implementation makes. Built the earlier way -- default context plus
+    # certifi -- this assertion was true by construction for anything that
+    # made those calls and tested nothing.
+    bundle = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
     bundle.load_verify_locations(cafile=certifi.where())
     assert _anchors(bundle) <= _anchors(tls.ssl_context())
 
@@ -93,14 +100,10 @@ def test_the_context_verifies() -> None:
 def test_the_fallback_still_verifies(monkeypatch: pytest.MonkeyPatch) -> None:
     # certifi absent is a safety net, never a way to skip verification: the
     # fallback is the context urlopen would have built for itself.
-    real_import = builtins.__import__
-
-    def refuse_certifi(name: str, *args: object, **kwargs: object) -> object:
-        if name == "certifi":
-            raise ImportError("certifi is not installed")
-        return real_import(name, *args, **kwargs)  # type: ignore[arg-type]
-
-    monkeypatch.setattr(builtins, "__import__", refuse_certifi)
+    # A None entry makes exactly `import certifi` raise and touches nothing
+    # else. Replacing builtins.__import__ would route every import executed
+    # anywhere during the call through the shim.
+    monkeypatch.setitem(sys.modules, "certifi", None)
     context = tls.ssl_context()
     assert isinstance(context, ssl.SSLContext)
     assert context.verify_mode == ssl.CERT_REQUIRED
@@ -120,18 +123,18 @@ def _urlopen_calls(source: str) -> list[ast.Call]:
 
 
 def test_the_direct_download_sites_are_the_known_ones() -> None:
-    # Every other fetch script routes through fetch_common.download and
-    # inherits the context from there. A new one that opens its own urlopen
-    # shows up here first, so the glob below can never quietly match nothing.
+    # Every other module routes through fetch_common.download and inherits
+    # the context from there. A new one that opens its own urlopen shows up
+    # here first, so the sweep below can never quietly match nothing.
     direct = {
-        script.name
-        for script in FETCH_SCRIPTS
-        if _urlopen_calls(script.read_text(encoding="utf-8"))
+        source.name
+        for source in SOURCES
+        if _urlopen_calls(source.read_text(encoding="utf-8"))
     }
     assert direct == DIRECT_CALLERS
 
 
-@pytest.mark.parametrize("script", FETCH_SCRIPTS, ids=lambda p: p.name)
+@pytest.mark.parametrize("script", SOURCES, ids=lambda p: p.name)
 def test_every_download_passes_the_shared_context(script: Path) -> None:
     # Read as a syntax tree, not as text: the call sites wrap across lines,
     # so a line-shaped assertion would pass on a call that dropped the
