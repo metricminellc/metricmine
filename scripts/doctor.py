@@ -106,16 +106,34 @@ def check_trust_store() -> None:
     # anchor count is what separates that working machine from a bare one,
     # and it is never the sole test, because a capath-only machine loads
     # zero anchors by default and verifies fine. Read-only: no network call.
-    paths = ssl.get_default_verify_paths()
-    anchors = len(ssl.create_default_context().get_ca_certs())
-    if paths.cafile is None and paths.capath is None and not anchors:
+    try:
+        paths = ssl.get_default_verify_paths()
+        anchors = len(ssl.create_default_context().get_ca_certs())
+    except Exception as exc:  # noqa: BLE001 - any failure to read is the finding
+        # Reading the store reaches OpenSSL and, on Windows, the registry
+        # cert stores. A raise here would exit non-zero with a traceback,
+        # which is the outcome the WARN below exists to avoid.
+        record("WARN", "trust store", f"cannot be read: {exc}")
+        return
+    # A capath loads zero anchors by default and still verifies, because
+    # OpenSSL looks a hash up in the directory on demand; a cafile that
+    # loads zero does not. So the warning is "nothing loaded, and no capath
+    # to load it lazily", which also catches an SSL_CERT_FILE pointed at a
+    # file that exists and parses to nothing -- the misconfiguration this
+    # check's own remedy invites.
+    if not anchors and paths.capath is None:
+        source = (
+            f"{paths.cafile} loads no certificates"
+            if paths.cafile
+            else "no cafile, no capath, and no default anchors"
+        )
         record(
             "WARN",
             "trust store",
-            "no cafile, no capath, and no default anchors; the demo path"
-            " carries its own CA bundle and runs, other Python tools on this"
-            " interpreter may not (python.org builds:"
-            " Install Certificates.command; otherwise set SSL_CERT_FILE)",
+            f"{source}; the demo path carries its own CA bundle and runs,"
+            " other Python tools on this interpreter may not (python.org"
+            " builds: Install Certificates.command; otherwise point"
+            " SSL_CERT_FILE at a bundle that parses)",
         )
         return
     source = paths.cafile or paths.capath or "the system certificate store"
