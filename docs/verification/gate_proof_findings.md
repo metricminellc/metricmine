@@ -1195,8 +1195,14 @@ nothing the machine trusts goes missing. Verification is never disabled,
 and certifi absent or unreadable degrades to the context urlopen would have
 built for itself. `make doctor` gained a `trust store` check that reads
 `ssl.get_default_verify_paths()` and the default context's anchor count and
-warns when a machine has no cafile, no capath, and no anchors. It reports
-rather than gates, and the remedy above is what earned that: once the
+warns when nothing is loaded and no capath could load one lazily. That
+second clause is the whole condition: OpenSSL looks a hash up in a capath
+on demand, so a capath legitimately reports zero anchors and verifies
+fine, while a cafile that reports zero does not. Stating it that way also
+catches an `SSL_CERT_FILE` aimed at a file that exists and parses to
+nothing, which is the misconfiguration the check's own remedy invites; it
+was measured against this repository's README, which the first cut passed.
+It reports rather than gates, and the remedy above is what earned that: once the
 downloads carry their own bundle a bare store no longer breaks the demo
 path, so a failure there would red a machine whose demo runs. The first cut
 recorded FAIL, chosen against the pre-fix world and not revisited when the

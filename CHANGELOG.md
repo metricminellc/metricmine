@@ -18,10 +18,13 @@ measurements.
   place this project builds a TLS verification context. A floor rather
   than a pin: a refreshed CA bundle needs no amendment (F-58).
 - `make doctor` (`uv run mm doctor` on Windows) reports the interpreter's
-  TLS trust store, and warns when a machine resolves no cafile, no
-  capath, and no default anchors, saying that the demo path carries its
-  own CA bundle and runs and that other Python tools on that interpreter
-  may not. A warning and not a failure because the fix below is what made
+  TLS trust store, and warns when nothing is loaded and no capath could
+  load one lazily, saying that the demo path carries its own CA bundle
+  and runs and that other Python tools on that interpreter may not. The
+  capath clause matters in both directions: a capath verifies fine while
+  reporting zero anchors, and a cafile aimed at a file that parses to
+  nothing does not, so pointing `SSL_CERT_FILE` at the wrong file cannot
+  silence the warning. A warning and not a failure because the fix below is what made
   a bare store survivable: doctor's exit code gates the devcontainer's
   `postCreateCommand` and the `demo-windows` preflight, so failing there
   would red a machine whose demo works. The diagnosis prints above the
