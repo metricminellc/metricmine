@@ -34,8 +34,8 @@ measurements.
   building `dbt-core-experimental-parser`, whose source distribution
   fetches its wheel with urllib in uv's own subprocess and is not
   reached by this fix (F-58).
-- CLAUDE.md rule 1 names certifi with the other declared dependencies,
-  and says why it is the one floor there that a refresh may cross.
+- CLAUDE.md rule 1 names certifi with the other declared dependencies
+  it governs.
 
 ### Fixed
 

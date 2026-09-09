@@ -37,9 +37,9 @@ uv run pytest -m "not local" -q
 make demo
 ```
 
-Every line above runs as written in bash, zsh, PowerShell 7, and Windows
-PowerShell 5.1. On Windows the demo-path targets are `uv run mm <target>`
-in place of `make <target>`, so the last line is `uv run mm demo` (D-42).
+Every line above but the last runs as written in bash, zsh, PowerShell 7,
+and Windows PowerShell 5.1. Windows has no `make`: the demo-path targets
+are `uv run mm <target>`, so the last line is `uv run mm demo` (D-42).
 
 `make demo` lands the committed sample into bronze, builds silver and the
 gold star from the committed contracts, and rebuilds the demo export.
