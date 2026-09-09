@@ -5,9 +5,8 @@ Part of the Arc 4 stable-release surface. A stranger on a fresh clone runs
 anything builds, whether this machine can run the demo: the platform, the
 interpreter, its TLS trust store, uv, the locked toolchain, dbt packages,
 the demo artifact (fetched or built), and the two environment lines local
-dbt lanes need
-(the F-09 class), printed in the running shell's form. Read-only: nothing
-is installed, written, or fetched.
+dbt lanes need (the F-09 class), printed in the running shell's form.
+Read-only: nothing is installed, written, or fetched.
 
 Verdicts: PASS, WARN (the demo still runs, or the item is only needed for
 the contract gates), FAIL (the demo path is broken). Exit 0 unless a FAIL.
@@ -94,24 +93,29 @@ def check_python() -> None:
 
 
 def check_trust_store() -> None:
-    # Every download the demo path makes verifies against this interpreter's
-    # TLS trust (F-58). A python.org framework CPython on macOS wires neither
-    # an OpenSSL cafile nor a capath until its Install Certificates.command
-    # has run, and loads no anchors at all. Windows reports no cafile and no
-    # capath either, because ssl.SSLContext.load_default_certs reads the
-    # system certificate store there before it ever consults those paths; the
+    # What this interpreter itself trusts, which is no longer what the demo
+    # path verifies against: metricmine.tls adds certifi's bundle on top of
+    # it (F-58), so a bare store cannot break a download and this check
+    # reports rather than gates. A python.org framework CPython on macOS
+    # wires neither an OpenSSL cafile nor a capath until its
+    # Install Certificates.command has run, and loads no anchors at all; the
+    # demo path runs anyway, other Python tools on that interpreter do not,
+    # and that is worth a line. Windows reports no cafile and no capath
+    # either, because ssl.SSLContext.load_default_certs reads the system
+    # certificate store there before it ever consults those paths; the
     # anchor count is what separates that working machine from a bare one,
-    # and it is never the sole test, because a capath-only machine loads zero
-    # anchors by default and verifies fine. Read-only: no network call.
+    # and it is never the sole test, because a capath-only machine loads
+    # zero anchors by default and verifies fine. Read-only: no network call.
     paths = ssl.get_default_verify_paths()
     anchors = len(ssl.create_default_context().get_ca_certs())
     if paths.cafile is None and paths.capath is None and not anchors:
         record(
-            "FAIL",
+            "WARN",
             "trust store",
-            "no cafile, no capath, and no default anchors; on a python.org"
-            " build run Install Certificates.command, or point SSL_CERT_FILE"
-            " at a CA bundle, then rerun",
+            "no cafile, no capath, and no default anchors; the demo path"
+            " carries its own CA bundle and runs, other Python tools on this"
+            " interpreter may not (python.org builds:"
+            " Install Certificates.command; otherwise set SSL_CERT_FILE)",
         )
         return
     source = paths.cafile or paths.capath or "the system certificate store"

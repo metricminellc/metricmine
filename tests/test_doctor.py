@@ -131,9 +131,14 @@ def _trust_store_verdict(
     return entry
 
 
-def test_a_machine_with_no_trust_source_fails(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_a_machine_with_no_trust_source_warns(monkeypatch: pytest.MonkeyPatch) -> None:
+    # A warning, not a failure, and the detail has to say why: metricmine.tls
+    # adds certifi to whatever the machine trusts, so the demo path runs on a
+    # bare store. FAIL would exit 1 into the devcontainer's postCreateCommand
+    # and the demo-windows preflight, reddening a machine whose demo works.
     verdict, label, detail = _trust_store_verdict(monkeypatch, None, None, 0)
-    assert (verdict, label) == ("FAIL", "trust store")
+    assert (verdict, label) == ("WARN", "trust store")
+    assert "the demo path carries its own CA bundle and runs" in detail
     assert "Install Certificates.command" in detail
     assert "SSL_CERT_FILE" in detail
 
