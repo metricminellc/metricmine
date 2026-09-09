@@ -1195,9 +1195,23 @@ nothing the machine trusts goes missing. Verification is never disabled,
 and certifi absent or unreadable degrades to the context urlopen would have
 built for itself. `make doctor` gained a `trust store` check that reads
 `ssl.get_default_verify_paths()` and the default context's anchor count and
-fails when a machine has no cafile, no capath, and no anchors. Its honest
-limit: a capath that exists but is empty still passes, because proving the
-store usable needs a network call doctor is forbidden to make. The anchor
+warns when a machine has no cafile, no capath, and no anchors. It reports
+rather than gates, and the remedy above is what earned that: once the
+downloads carry their own bundle a bare store no longer breaks the demo
+path, so a failure there would red a machine whose demo runs. The first cut
+recorded FAIL, chosen against the pre-fix world and not revisited when the
+fix landed in the same branch; measured on the bare Framework Python this
+finding was found on, minutes apart in one shell, doctor recorded the
+failure and `make demo-fetch` then downloaded 108,277,760 bytes and verified
+19 tables and 3 views. The tier is a real gate rather than a label, because
+doctor's exit code reaches four consumers and the least documented is the
+hardest: `.devcontainer/devcontainer.json`'s `postCreateCommand` runs
+`scripts/doctor.py` as the last link of an `&&` chain, so a non-zero return
+marks container creation failed. The other three are the `demo-windows`
+preflight step, the `Makefile` target, and the task entry point's subprocess
+propagation. Its honest limit: a capath that exists but is empty still
+passes, because proving the store usable needs a network call doctor is
+forbidden to make. The anchor
 count is never the sole test either, in both directions, and both were
 measured: a capath-only machine loads zero anchors by default and verifies
 fine, and a Windows machine loads its anchors from a store neither path
