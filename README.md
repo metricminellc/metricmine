@@ -305,7 +305,7 @@ and in findings
 
 ## Status and roadmap
 
-[v1.1.2](https://github.com/metricminellc/metricmine/releases/tag/v1.1.2)
+[v1.1.3](https://github.com/metricminellc/metricmine/releases/tag/v1.1.3)
 is the current tagged release; v1.0.0 (September 2, 2026) began the
 stable line. v0.1.0 shipped Phases 0
 through 5: the scaffold and pinned toolchain, bronze ingestion, the
@@ -329,7 +329,11 @@ multi-source scale curve, and the demo question set. v1.1.1 adds Windows
 x64 support for the demo path, proven on a fresh Windows runner on every
 change (D-42). v1.1.2 gives the keyless downloads their own CA bundle on
 every platform, added to whatever the machine already trusts, so a
-fresh clone fetches on a Python whose trust store is empty (F-58). The
+fresh clone fetches on a Python whose trust store is empty (F-58).
+v1.1.3 is the first-run arc: the front door, the demo guide, the
+operator's manual and its companions, and the preflight carry what a
+stranger on any supported platform needs to reach a served star on the
+first attempt, and the two exit records the Windows arc owed land. The
 live roadmap is the
 [Issues tab](https://github.com/metricminellc/metricmine/issues); the
 [changelog](CHANGELOG.md) records what landed in each release.
