@@ -126,7 +126,7 @@ Mermaid twin beside it.</sub></div>
 
 ## What this repository demonstrates
 
-**Strategy you can audit.** Forty-one binding decisions in a versioned
+**Strategy you can audit.** Forty-two binding decisions in a versioned
 [decision register](docs/decisions/decision-register.md); specifications
 written before code; explicit non-goals; and no claim without a
 reproducible command behind it. The plan is not a slide deck. It is a
@@ -150,20 +150,46 @@ right-sized for the project and documented like everything else.
 
 ## See it run
 
-Every tagged release ships `demo/demo.duckdb`, a verified gold-only
-export, as a release asset pinned by the committed digest manifest
-(`demo/demo.digest.json`), so serving works from a fresh clone with no
-build step and no credentials:
+The demo artifact, `demo/demo.duckdb`, a verified gold-only export,
+ships as a release asset pinned by the committed digest manifest
+(`demo/demo.digest.json`), which names the release to fetch it from, so
+serving works from a fresh clone with no build step and no credentials.
+On macOS or Linux, with git and uv installed
+([what you need](docs/demo.md#what-you-need)):
 
 ```bash
-git clone https://github.com/metricminellc/metricmine.git && cd metricmine
+git clone https://github.com/metricminellc/metricmine.git
+cd metricmine
 uv sync
+make doctor
 make demo-fetch
 uv run python -c "from metricmine.query import GoldWarehouse; print(GoldWarehouse().list_fact_categories())"
 ```
 
-`make demo-fetch` downloads the asset the manifest names and verifies
-its bytes and its content; `make demo` builds the same content from the
+<details>
+<summary>Windows (PowerShell)</summary>
+
+```powershell
+git clone https://github.com/metricminellc/metricmine.git
+cd metricmine
+uv sync
+uv run mm doctor
+uv run mm demo-fetch
+uv run python -c "from metricmine.query import GoldWarehouse; print(GoldWarehouse().list_fact_categories())"
+```
+
+Windows ships no `make`, so the demo path runs through the task entry
+point `uv run mm <target>`; the Makefile's targets delegate to the same
+code, and the lines above run in Windows PowerShell 5.1 and PowerShell 7
+alike. The uv installer line, the Claude Desktop wiring, and the Windows
+troubleshooting group are in [docs/demo.md](docs/demo.md).
+
+</details>
+
+`make doctor` (`uv run mm doctor` on Windows) checks the machine before
+anything downloads or builds; `make demo-fetch` (`uv run mm demo-fetch`)
+downloads the asset the manifest names and verifies its bytes and its
+content; `make demo` (`uv run mm demo`) builds the same content from the
 committed samples when a tree has no published asset yet. The listing
 names three categories, each with its typed table, its subject in the
 words of the people who approved its contracts, and the registry keys
@@ -176,8 +202,7 @@ agent, and the person testing it, can tell a measurement from a claim.
 The full walkthrough (wiring the MCP server into Claude Desktop, the
 questions to ask, the complete keyless replay from raw data to a fresh
 export, and troubleshooting) is **[docs/demo.md](docs/demo.md)**, about
-ten minutes end to end. A recording of the demo is attached to the
-[latest release](https://github.com/metricminellc/metricmine/releases/latest).
+ten minutes end to end.
 
 ## Architecture at a glance
 
@@ -205,7 +230,8 @@ disposable and the meaning is portable. dbt profiles carry the execution
 plane; a second adapter is an experiment, not a promise. Two machines that
 pull the same commit build the same gold: the emitted models are
 byte-identical against a committed oracle, and the demo digest matched
-across a Linux sandbox and a Mac. A team shares the specification through
+across a Linux sandbox, a Mac, and a Windows runner. A team shares the
+specification through
 git and reproduces the data locally; nobody shares a database, a
 credential, or a cluster. What scale means here is measured, never
 claimed: [docs/scale.md](docs/scale.md) carries the curve on two stated
@@ -279,7 +305,7 @@ and in findings
 
 ## Status and roadmap
 
-[v1.1.1](https://github.com/metricminellc/metricmine/releases/tag/v1.1.1)
+[v1.1.2](https://github.com/metricminellc/metricmine/releases/tag/v1.1.2)
 is the current tagged release; v1.0.0 (September 2, 2026) began the
 stable line. v0.1.0 shipped Phases 0
 through 5: the scaffold and pinned toolchain, bronze ingestion, the
@@ -299,9 +325,12 @@ aviation family of six committed extracts, the engine's fan-in over a
 list of mapping contracts, the conformed calendar and the conformed keys
 with their gate, two new categories in the star, the declared joins and
 their gate, the data and expert-context split in the registry, the
-multi-source scale curve, and the demo question set. v1.1.1 adds Windows x64 support for the demo
-path, proven on a fresh Windows runner on every change (D-42). The live
-roadmap is the
+multi-source scale curve, and the demo question set. v1.1.1 adds Windows
+x64 support for the demo path, proven on a fresh Windows runner on every
+change (D-42). v1.1.2 gives the keyless downloads their own CA bundle on
+every platform, added to whatever the machine already trusts, so a
+fresh clone fetches on a Python whose trust store is empty (F-58). The
+live roadmap is the
 [Issues tab](https://github.com/metricminellc/metricmine/issues); the
 [changelog](CHANGELOG.md) records what landed in each release.
 
@@ -318,6 +347,10 @@ Python 3.12. CI proves the path on a clean ubuntu checkout, a fresh
 Windows runner proves the Windows demo path, the Mac measurements in
 [docs/scale.md](docs/scale.md) state their environment, and `make doctor`
 (`uv run mm doctor` on Windows) checks a machine before the first build.
+`make` is a convenience layer over `uv run mm <target>` for the demo
+path, so the two never diverge; behind every other target the Makefile
+shows the one-line `uv run ...` command, and a Windows shell runs that
+line ([D-42](docs/decisions/decision-register.md#d-42)).
 
 ## Non-goals
 

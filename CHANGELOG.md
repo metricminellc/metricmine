@@ -9,6 +9,20 @@ binding text, and the
 [findings register](docs/verification/gate_proof_findings.md) carries the
 measurements.
 
+## [Unreleased]
+
+### Changed
+
+- The front door: See it run carries the Windows block collapsed beneath
+  the macOS and Linux block, with `make doctor` (`uv run mm doctor`) as
+  the step before the fetch; the artifact sentence names the release the
+  manifest points at rather than every tagged release; the release line
+  and the status paragraph name v1.1.2; the digest sentence names the
+  Windows runner as the third machine; the decision count reads
+  forty-two; the Toolchain section states the mapping rule for every
+  other `make` target. The sentence claiming a recording is attached to
+  the latest release is gone: no release since v0.2.0 carries one.
+
 ## [1.1.2] - 2026-09-09
 
 ### Added
