@@ -189,7 +189,8 @@ The module resolves its database in this order:
 Until the demo artifact exists (it is built at Session M), local serving
 runs with `MM_SERVE_DB` pointed at the working warehouse. A missing
 database fails closed at startup with a message naming both paths and
-the `make export-demo` remedy.
+the remedy (`make demo-fetch` to restore the release asset or `make
+demo` to build it, named as `uv run mm ...` on Windows, D-42).
 
 ## 6. The shared module (`src/metricmine/query.py`)
 
@@ -290,7 +291,25 @@ Claude Desktop wiring (documented shape, verified live at P1):
 ```
 
 (The `env` entry disappears once `demo/demo.duckdb` is present, fetched
-or built, and becomes the default.)
+or built, and becomes the default.) On Windows (D-42) the file is
+`%APPDATA%\Claude\claude_desktop_config.json`, the interpreter is the
+clone's `.venv\Scripts\python.exe`, and every backslash in the JSON is
+doubled:
+
+```json
+{
+  "mcpServers": {
+    "metricmine-gold": {
+      "command": "C:\\ABSOLUTE\\PATH\\TO\\metricmine\\.venv\\Scripts\\python.exe",
+      "args": ["-m", "metricmine.server"],
+      "env": { "MM_SERVE_DB": "C:\\ABSOLUTE\\PATH\\TO\\metricmine\\warehouse\\metricmine.duckdb" }
+    }
+  }
+}
+```
+
+The command either entry launches is proven over stdio from outside the
+repository by `scripts/serve_smoke.py`, which the Windows CI job runs.
 
 ## 8. The demo export (`make export-demo`)
 
