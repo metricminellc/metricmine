@@ -13,6 +13,22 @@ measurements.
 
 ### Changed
 
+- The demo guide for a stranger on any supported platform: What you need
+  names git and uv with the lines that install them (the Windows uv line
+  as Astral documents it, with `-ExecutionPolicy ByPass`, and winget
+  beside it), PowerShell rather than Command Prompt, a short clone path
+  with the measured reason, and no step needing administrator rights;
+  `make doctor` (`uv run mm doctor`) sits before the fetch in Path A and
+  the pre-uv form is named; every platform-dependent block has its
+  Windows twin collapsed beside it (Path A, the Claude Desktop entry with
+  both config paths and the Store-build note, Path B with its `$env:`
+  line); Path B says what it additionally provisions; the troubleshooting
+  section names both forms of every command, the error text Windows
+  prints, a proxy entry measured behind one, and a Windows group; the
+  artifact sentence names the release the manifest points at. The
+  sentence claiming a recording is attached to the latest release is
+  gone. The `demo-windows` workflow's comment, which calls its install
+  line the documented one verbatim, is true again.
 - `make doctor` (`uv run mm doctor` on Windows) runs before uv exists:
   `python3 scripts/doctor.py` on any Python 3.12 answers the platform,
   the interpreter, the trust store, and whether uv is on PATH, and reports
