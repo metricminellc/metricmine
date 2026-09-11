@@ -41,11 +41,13 @@ Every line above but the last runs as written in bash, zsh, PowerShell 7,
 and Windows PowerShell 5.1. Windows has no `make`: the demo-path targets
 are `uv run mm <target>`, so the last line is `uv run mm demo` (D-42).
 
-`make demo` lands the committed sample into bronze, builds silver and the
-gold star from the committed contracts, and rebuilds the demo export.
-Restore `demo/demo.duckdb` with `git checkout` afterwards; the committed
-export changes only when a release refreshes it (D-33). The contract gates
-run locally with the isolated tool the CI workflow installs:
+`make demo` lands the committed samples into bronze, builds silver and
+the gold star from the committed contracts, and rebuilds the demo export
+locally. The artifact is gitignored and ships as a release asset, so
+there is nothing to restore afterwards; `make demo-fetch`
+(`uv run mm demo-fetch`) puts the published bytes back whenever you want
+them (D-03 and D-33 as amended by Amendment S). The contract gates run
+locally with the isolated tool the CI workflow installs:
 `uv tool install 'datacontract-cli[duckdb]==1.0.12'`.
 [docs/demo.md](docs/demo.md) walks through the serving path.
 
