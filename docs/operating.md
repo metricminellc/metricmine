@@ -40,11 +40,25 @@ terminal; `make doctor` prints them for your clone:
     export DBT_PROFILES_DIR="<clone>/transform"
     export MM_WAREHOUSE_PATH="<clone>/warehouse/metricmine.duckdb"
 
+On Windows, in PowerShell, the same two lines read
+`$env:DBT_PROFILES_DIR = "<clone>\transform"` and
+`$env:MM_WAREHOUSE_PATH = "<clone>\warehouse\metricmine.duckdb"`, and
+`uv run mm doctor` prints them in that form.
+
+The platforms (D-42). macOS, Linux, and Windows x64. Windows ships no
+`make`, so the demo-path targets in this manual (`doctor`, `demo-fetch`,
+`ingest`, `demo`, `export-demo`, `demo-manifest`) run there as
+`uv run mm <target>`, the entry point the Makefile delegates to; every
+other `make <target>` here is the one-line `uv run ...` command the
+Makefile shows for it, and a Windows shell runs that line (`uv run mm`
+lists its six targets and refuses any other name, so a miss says so).
+The Windows lines run in Windows PowerShell 5.1 and PowerShell 7 alike.
+
 The daily commands, in the order they depend on each other:
 
 | Command | What it does | Reads | Writes |
 |---|---|---|---|
-| `make doctor` | checks the platform, the interpreter's TLS trust store, uv, the locked toolchain, the isolated `datacontract-cli`, the demo artifact | | nothing |
+| `make doctor` | checks the platform, the interpreter's TLS trust store, uv, the locked toolchain, the isolated `datacontract-cli`, the demo artifact, and prints the environment lines in the running shell's form; `python3 scripts/doctor.py` runs it before uv exists | | nothing |
 | `make ingest` | lands every `ingestion.sources` entry into bronze, replace semantics | the committed extracts | the warehouse's bronze schema |
 | `make profile ONLY=<schema>.<table>` | measures a table into a committed artifact | the warehouse, read-only | `profiles/<schema>.<table>/vNNNN.json` |
 | `make scan` | derives the adoption queue and names the next command per item | the tree, the contracts, the profiles, the warehouse | `proposals/plan.md` (gitignored) |
@@ -65,11 +79,21 @@ everything keyless in about eight. Both are in
 [docs/demo.md](demo.md) with the Claude Desktop wiring. The short
 form:
 
-    git clone https://github.com/metricminellc/metricmine.git && cd metricmine
+    git clone https://github.com/metricminellc/metricmine.git
+    cd metricmine
     uv sync
     make doctor
     make demo-fetch        # Path A: the release asset, verified against the manifest
     make demo              # Path B: ingest, build, export, keyless
+
+The same on Windows, in PowerShell:
+
+    git clone https://github.com/metricminellc/metricmine.git
+    cd metricmine
+    uv sync
+    uv run mm doctor
+    uv run mm demo-fetch
+    uv run mm demo
 
 Between tags the manifest may name no release; `make demo-fetch` says
 so and Path B is the path. `make doctor` reports the demo artifact as
@@ -85,6 +109,13 @@ warehouse and the parse cache, land, build.
 
     rm -f warehouse/metricmine.duckdb warehouse/metricmine.duckdb.wal && rm -rf transform/target
     make ingest
+    uv run dbt build --project-dir transform --target local
+
+On Windows, in PowerShell, with the two environment lines set:
+
+    Remove-Item -Force -ErrorAction SilentlyContinue warehouse\metricmine.duckdb, warehouse\metricmine.duckdb.wal
+    Remove-Item -Recurse -Force -ErrorAction SilentlyContinue transform\target
+    uv run mm ingest
     uv run dbt build --project-dir transform --target local
 
 Why both removals. A warehouse that already carries tables cannot show

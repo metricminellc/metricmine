@@ -13,6 +13,19 @@ measurements.
 
 ### Changed
 
+- The operator's manual, the adding-a-source walkthrough, the
+  contributing guide, the serving spec, the bug report form, and the
+  docs map carry the Windows text beside the macOS and Linux one: the
+  PowerShell twins of the environment lines, the short form, and the
+  cold build; the platform paragraph mapping every other `make` target
+  to the `uv run ...` line the Makefile shows; the Claude Desktop entry
+  for Windows in the spec; `uv run mm doctor` in the form; the
+  contributing guide's sentence about restoring a committed artifact
+  with `git checkout` gives way to the release-asset truth (Amendment
+  S). The docs map gains the four documents it did not list
+  (`sources.md`, `sources-explained.md`, `adding-a-source.md`,
+  `operating.md`) and its demo row names the release asset. Promised
+  for these documents in the v1.1.1 release notes; landing here.
 - The demo guide for a stranger on any supported platform: What you need
   names git and uv with the lines that install them (the Windows uv line
   as Astral documents it, with `-ExecutionPolicy ByPass`, and winget

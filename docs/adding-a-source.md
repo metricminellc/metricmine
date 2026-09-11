@@ -50,7 +50,11 @@ manual for everything around them is [docs/operating.md](operating.md).
   `timeGrain: year`. Grains run from `minute` to `year` on one conformed
   calendar (D-17 Amendment R).
 - `make doctor` is green and the two exports it prints are set in the
-  shell.
+  shell. On Windows (D-42) the demo-path targets read `uv run mm <target>`
+  (`doctor`, `demo-fetch`, `ingest`, `demo`, `export-demo`,
+  `demo-manifest`), and every other `make` line in this walkthrough is
+  the one-line `uv run ...` command the Makefile shows for it; the
+  contract gates themselves run in CI.
 
 ## 1. The fetch script and the extract (Amendment T)
 
