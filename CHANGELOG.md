@@ -11,6 +11,24 @@ measurements.
 
 ## [Unreleased]
 
+## [1.1.3] - 2026-09-11
+
+The first run, on a machine nobody prepared: the front door, the demo
+guide, the operator's manual and its companions, and the preflight carry
+what a stranger on macOS, Linux, or Windows x64 needs to reach a served
+star on the first attempt, and the two exit records the ladder owed
+(`docs/verification/evidence/2026-09-06_arc7_exit.md`,
+`docs/verification/evidence/2026-09-11_arc8_exit.md`) land. No pin,
+contract, model, or demo content changed; code-only, and the committed
+manifest keeps naming the v1.1.1 asset.
+
+### Added
+
+- The Arc 7 exit record, prepared as that arc's seventh rung and never
+  landed, with the material the F-58 fix added (the four consumers of
+  doctor's exit code, the Windows anchor counts, the method lessons);
+  the Arc 8 exit record.
+
 ### Changed
 
 - The operator's manual, the adding-a-source walkthrough, the
@@ -522,7 +540,8 @@ tags.
 - The decision register, the findings register, the layer specs, and the
   diagrams with their Mermaid twins.
 
-[Unreleased]: https://github.com/metricminellc/metricmine/compare/v1.1.2...HEAD
+[Unreleased]: https://github.com/metricminellc/metricmine/compare/v1.1.3...HEAD
+[1.1.3]: https://github.com/metricminellc/metricmine/compare/v1.1.2...v1.1.3
 [1.1.2]: https://github.com/metricminellc/metricmine/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/metricminellc/metricmine/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/metricminellc/metricmine/compare/v1.0.0...v1.1.0
