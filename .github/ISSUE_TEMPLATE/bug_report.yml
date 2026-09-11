@@ -35,7 +35,7 @@ body:
     id: environment
     attributes:
       label: Environment
-      description: Paste the output of `make doctor`. It carries the platform, the interpreter, and the locked toolchain.
+      description: Paste the output of `make doctor` (`uv run mm doctor` on Windows). It carries the platform, the interpreter, and the locked toolchain.
       render: shell
     validations:
       required: true
