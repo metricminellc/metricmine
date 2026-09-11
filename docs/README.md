@@ -6,7 +6,11 @@
 
 | Path | What it is |
 |---|---|
-| [`demo.md`](demo.md) | The ten-minute demo walkthrough: serve the committed `demo/demo.duckdb` keyless, wire Claude Desktop, then the full replay from raw data to a fresh export, with troubleshooting. |
+| [`demo.md`](demo.md) | The ten-minute demo walkthrough on macOS, Linux, or Windows x64 (D-42): what a machine needs, the preflight, fetch the release's `demo/demo.duckdb` and serve it keyless, wire Claude Desktop, then the full replay from raw data to a fresh export, with troubleshooting. Every platform-dependent command in both shells. |
+| [`sources.md`](sources.md) | The sources register: what the star is built from and how each extract is pinned (D-15 as amended by Amendment T, D-41): the seven committed extracts with their publishers, commits, digests, licenses, row counts, and the vintage effects the joins carry. |
+| [`sources-explained.md`](sources-explained.md) | The demo sources, explained: what each source is, why it is in the demo, what was decided about it and why, every join and its justification, how each source moved through the system, and how to read all of it as a pattern for your own data. |
+| [`adding-a-source.md`](adding-a-source.md) | Adding a source, the path every source in this repository took: the fetch script and the extract, the profile, the cleanup contract, the model, the mapping contract, the regeneration, and the gates, step by step with the exact commands. |
+| [`operating.md`](operating.md) | The operator's manual: the daily commands in dependency order, the procedures for the situations that recur (a fresh clone, a cold build, a contract change, a new source, an adopted model, a proposer run, a release, a source refresh, a review), what every gate means when it fails, and a glossary. |
 | [`scale.md`](scale.md) | The scale posture (D-38 to D-40): what scales by design, the measured curve with its environment, disk and memory guidance, the incremental and audit recipes, and the rule that numbers publish only with their environment, never as promises. |
 | [`adoption.md`](adoption.md) | The bottom-up path (D-35): adopt an existing hand-written model into the contract gates with the scan, the describe stance, verify-grain, and enforce-properties; states, checklist, and scope. |
 | [`decisions/decision-register.md`](decisions/decision-register.md) | The authoritative index of project decisions, their status, and the CLAUDE.md rule crosswalk. Every `D-0x` citation in the repo resolves here. |
