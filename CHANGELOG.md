@@ -13,6 +13,14 @@ measurements.
 
 ### Changed
 
+- `make doctor` (`uv run mm doctor` on Windows) runs before uv exists:
+  `python3 scripts/doctor.py` on any Python 3.12 answers the platform,
+  the interpreter, the trust store, and whether uv is on PATH, and reports
+  the locked toolchain and the demo artifact as measured after `uv sync`
+  instead of failing on a system Python or raising on the artifact's
+  import (measured on a fresh clone: a traceback at `import duckdb` and
+  no check printed). A check that raises now records its own FAIL line
+  while the others still print. Still eight checks.
 - The front door: See it run carries the Windows block collapsed beneath
   the macOS and Linux block, with `make doctor` (`uv run mm doctor`) as
   the step before the fetch; the artifact sentence names the release the

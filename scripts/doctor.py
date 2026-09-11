@@ -11,10 +11,25 @@ Read-only: nothing is installed, written, or fetched.
 Verdicts: PASS, WARN (the demo still runs, or the item is only needed for
 the contract gates), FAIL (the demo path is broken). Exit 0 unless a FAIL.
 
-Run through the venv so the locked environment is what gets measured:
+Two ways to run it. Before uv exists on the machine, any Python 3.12 runs
+the file directly and answers the first questions (the platform, the
+interpreter, its trust store, whether uv is on PATH); the locked
+toolchain and the demo artifact are reported as measured after
+`uv sync`, never guessed:
+
+    python3 scripts/doctor.py
+
+After `uv sync`, run it through the venv so the locked environment is
+what gets measured:
 
     make doctor
     uv run mm doctor
+
+Standard library only, by design, so the first form needs nothing
+installed; the one third-party import (duckdb, to open the artifact) is
+guarded and reports rather than raises when the venv is not there yet,
+and a check that raises records a FAIL for itself while the others still
+print.
 """
 
 from __future__ import annotations
@@ -36,6 +51,12 @@ REPO = Path(__file__).resolve().parents[1]
 LOCKED = ["dbt-core", "dbt-duckdb", "duckdb", "anthropic", "mcp", "airbyte", "ruff"]
 DATACONTRACT_PIN = "1.0.12"
 WINDOWS = platform.system() == "Windows"
+
+# True when this interpreter is the project venv's (`uv run`, or the venv
+# activated), so the locked toolchain and the artifact are measurable.
+# Under a system Python before `uv sync` they are reported as not yet
+# measured, with the command that measures them.
+IN_PROJECT_VENV = Path(sys.prefix).resolve() == (REPO / ".venv").resolve()
 
 results: list[tuple[str, str, str]] = []
 
@@ -174,6 +195,13 @@ def check_locked() -> None:
     except FileNotFoundError:
         record("FAIL", "uv.lock", "missing; this is not a full checkout")
         return
+    if not IN_PROJECT_VENV:
+        record(
+            "WARN",
+            "locked toolchain",
+            f"not measured yet: run uv sync, then {cmd('doctor')}",
+        )
+        return
     misses = []
     for pkg in LOCKED:
         try:
@@ -218,8 +246,6 @@ def check_datacontract() -> None:
 def check_demo_artifact() -> None:
     import json
 
-    import duckdb
-
     demo = REPO / "demo" / "demo.duckdb"
     manifest_path = REPO / "demo" / "demo.digest.json"
     if not manifest_path.exists():
@@ -242,6 +268,15 @@ def check_demo_artifact() -> None:
                 "demo artifact",
                 f"no published artifact for this tree; {cmd('demo')} builds it",
             )
+        return
+    try:
+        import duckdb
+    except ImportError:
+        record(
+            "WARN",
+            "demo artifact",
+            f"present, not opened: duckdb is not importable here; run uv sync, then {cmd('doctor')}",
+        )
         return
     try:
         con = duckdb.connect(str(demo), read_only=True)
@@ -280,18 +315,24 @@ def print_env_exports() -> None:
     print(f'  export MM_WAREHOUSE_PATH="{warehouse}"')
 
 
+CHECKS = (
+    ("platform", check_platform),
+    ("python", check_python),
+    ("trust store", check_trust_store),
+    ("uv", check_uv),
+    ("locked toolchain", check_locked),
+    ("dbt packages", check_dbt_packages),
+    ("datacontract-cli", check_datacontract),
+    ("demo artifact", check_demo_artifact),
+)
+
+
 def main() -> int:
-    for check in (
-        check_platform,
-        check_python,
-        check_trust_store,
-        check_uv,
-        check_locked,
-        check_dbt_packages,
-        check_datacontract,
-        check_demo_artifact,
-    ):
-        check()
+    for label, check in CHECKS:
+        try:
+            check()
+        except Exception as exc:  # noqa: BLE001 - a crashed check is a FAIL line, never a lost report
+            record("FAIL", label, f"the check raised {type(exc).__name__}: {exc}")
     width = max(len(label) for _, label, _ in results)
     for verdict, label, detail in results:
         print(f"{verdict:<4} {label:<{width}}  {detail}")

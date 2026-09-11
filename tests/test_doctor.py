@@ -8,7 +8,8 @@ outside it, the environment lines in the running shell's form, and the
 hints naming the same command the task entry point names, and the
 trust-store check in each of its verdicts. Nothing here spawns a process
 or reads the machine; every check under test is driven by a monkeypatched
-`platform` or `ssl`.
+`platform` or `ssl`. The pre-sync mode (the file run by a system Python
+before `uv sync`) is held to reporting rather than raising.
 """
 
 from __future__ import annotations
@@ -213,3 +214,62 @@ def test_a_bare_store_with_no_certifi_says_so(monkeypatch: pytest.MonkeyPatch) -
     assert (verdict, label) == ("WARN", "trust store")
     assert "certifi is not installed" in detail
     assert "carries its own CA bundle and runs" not in detail
+
+
+def test_before_uv_sync_the_artifact_check_reports_instead_of_raising(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    # The pre-sync form (`python3 scripts/doctor.py` on a system Python) has
+    # no duckdb. Measured on a fresh clone before this guard: a traceback at
+    # the import, exit 1, and not one check line printed.
+    (tmp_path / "demo").mkdir()
+    (tmp_path / "demo" / "demo.digest.json").write_text(
+        '{"artifact": {"release": "v1.1.1"}}', encoding="utf-8"
+    )
+    (tmp_path / "demo" / "demo.duckdb").write_bytes(b"not a database")
+    monkeypatch.setattr(doctor, "REPO", tmp_path)
+    monkeypatch.setattr(doctor, "results", [])
+    monkeypatch.setattr(doctor, "WINDOWS", False)
+    monkeypatch.setitem(doctor.sys.modules, "duckdb", None)
+    doctor.check_demo_artifact()
+    (entry,) = doctor.results
+    verdict, label, detail = entry
+    assert (verdict, label) == ("WARN", "demo artifact")
+    assert "duckdb is not importable here" in detail
+    assert detail.endswith("run uv sync, then make doctor")
+
+
+def test_before_uv_sync_the_locked_toolchain_names_the_sync(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Under a system Python the locked packages are absent by definition;
+    # that is not a broken demo path, it is a step not taken yet.
+    monkeypatch.setattr(doctor, "IN_PROJECT_VENV", False)
+    monkeypatch.setattr(doctor, "results", [])
+    monkeypatch.setattr(doctor, "WINDOWS", True)
+    doctor.check_locked()
+    (entry,) = doctor.results
+    verdict, label, detail = entry
+    assert (verdict, label) == ("WARN", "locked toolchain")
+    assert detail == "not measured yet: run uv sync, then uv run mm doctor"
+
+
+def test_a_check_that_raises_records_a_fail_and_the_rest_still_print(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # main() prints after the last check, so an unhandled raise used to
+    # discard every verdict already earned. A raise is now one FAIL line.
+    def broken() -> None:
+        raise RuntimeError("boom")
+
+    def fine() -> None:
+        doctor.record("PASS", "fine", "ok")
+
+    monkeypatch.setattr(doctor, "CHECKS", (("fine", fine), ("broken", broken)))
+    monkeypatch.setattr(doctor, "results", [])
+    monkeypatch.setattr(doctor, "REPO", REPO_ROOT)
+    assert doctor.main() == 1
+    out = capsys.readouterr().out
+    assert "PASS fine" in out
+    assert "FAIL broken" in out and "RuntimeError: boom" in out
+    assert "doctor: 2 checks, 1 FAIL, 0 WARN" in out
