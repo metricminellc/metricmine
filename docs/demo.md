@@ -19,7 +19,11 @@
 - `git`. macOS offers to install it the first time you type `git`;
   Linux has it in every package manager; on Windows,
   `winget install --id Git.Git -e` or the installer at
-  [git-scm.com](https://git-scm.com/download/win).
+  [git-scm.com](https://git-scm.com/download/win). The Windows
+  installer asks for administrator approval (`winget` requests it even
+  with `--scope user`); where that approval is not yours to give, the
+  portable build on the same download page unpacks anywhere with no
+  installer, and its `cmd` folder goes on your user PATH.
 - [uv](https://docs.astral.sh/uv/). On macOS or Linux:
   `curl -LsSf https://astral.sh/uv/install.sh | sh`. On Windows, in
   PowerShell, the line Astral documents:
@@ -28,7 +32,8 @@
   policy refuses it. Then open a new terminal so the shell sees it (the
   installer adds `%USERPROFILE%\.local\bin` to your user PATH). uv
   provisions the pinned Python 3.12 and every dependency; nothing else
-  is installed globally, and no step needs administrator rights.
+  is installed globally. uv installs per user, and nothing after the two
+  installs needs administrator rights.
 - Windows ships no `make`, so every `make <target>` on this page has the
   form `uv run mm <target>`: the Makefile's targets delegate to that
   entry point and the two are the same code (D-42). Each Windows block
@@ -105,8 +110,10 @@ the three categories with their counts.
 ### Wire it into Claude Desktop
 
 Merge this entry into `claude_desktop_config.json`, keeping any existing
-keys, and replacing the command path with your absolute clone path. On
-macOS the file is
+keys, and replacing the command path with your absolute clone path.
+Claude Desktop opens the file from Settings, Developer, Edit Config on
+either platform, and creates it there when none exists yet. On macOS the
+file is
 `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 ```json
@@ -319,6 +326,10 @@ dbt lanes need, in the form your shell takes.
   configured command end to end without the desktop,
   `uv run python scripts/serve_smoke.py` spawns it the way a client does
   and prints the server name, the tool count, and the three categories.
+  Claude Desktop keeps its MCP logs under `~/Library/Logs/Claude` on
+  macOS and `%APPDATA%\Claude\logs` on Windows; `mcp.log` records the
+  connection attempts and `mcp-server-metricmine-gold.log` carries
+  whatever the server wrote to stderr.
 - **First tool call asks for permission, or the chat runs a visible
   tool-search step**: both are normal Desktop behavior on a newly added
   server; approve and continue.
@@ -363,6 +374,12 @@ Windows:
   What you need carries `-ExecutionPolicy ByPass` for that one process,
   which needs no administrator rights. Where a managed policy refuses
   even that, `winget install --id=astral-sh.uv -e` installs the same uv.
+- **The git line asks for an administrator**: the Git for Windows
+  installer requests elevation, `--scope user` included. Approve it if
+  the machine is yours. Where it is not, the portable build on the
+  git-scm.com download page unpacks anywhere with no installer; put its
+  `cmd` folder on your user PATH and open a new terminal. Everything
+  after git installs per user.
 - **`python` opens the Microsoft Store**: Windows ships an alias that
   does so when no Python is installed. Nothing here needs one: uv
   provisions the project's Python during `uv sync`, so skip the
