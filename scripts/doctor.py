@@ -110,7 +110,12 @@ def check_python() -> None:
     if (v.major, v.minor) == (3, 12):
         record("PASS", "python", platform.python_version())
     else:
-        record("FAIL", "python", f"{platform.python_version()}: the project runs on 3.12 (.python-version)")
+        record(
+            "FAIL",
+            "python",
+            f"{platform.python_version()}: the project runs on 3.12 (.python-version); "
+            f"uv sync provisions it, then {cmd('doctor')}",
+        )
 
 
 def check_trust_store() -> None:
