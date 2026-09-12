@@ -11,6 +11,18 @@ measurements.
 
 ## [Unreleased]
 
+### Changed
+
+- The demo guide scopes the administrator-rights sentence to what is
+  true: uv installs per user and nothing after the two installs needs
+  elevation, while the Git for Windows installer asks for it, `--scope
+  user` included, and the Windows troubleshooting group names the
+  portable build for a machine where that approval is not yours to give;
+  the Claude Desktop entry says that Settings, Developer, Edit Config
+  opens or creates the config file on either platform, and the
+  troubleshooting entry for a server that does not appear names where
+  Claude Desktop writes its MCP logs.
+
 ## [1.1.3] - 2026-09-11
 
 The first run, on a machine nobody prepared: the front door, the demo
