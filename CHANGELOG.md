@@ -23,6 +23,14 @@ measurements.
   troubleshooting entry for a server that does not appear names where
   Claude Desktop writes its MCP logs.
 
+### Fixed
+
+- The preflight's interpreter line, the one FAIL that named no fix:
+  on a Python that is not 3.12 (the pre-uv form on a system Python),
+  `python` now reads `uv sync provisions it, then make doctor` (`uv run
+  mm doctor` on Windows), so every FAIL line names the command that
+  fixes it, as the guide and the site say.
+
 ## [1.1.3] - 2026-09-11
 
 The first run, on a machine nobody prepared: the front door, the demo
