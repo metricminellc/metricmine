@@ -22,6 +22,16 @@ measurements.
   opens or creates the config file on either platform, and the
   troubleshooting entry for a server that does not appear names where
   Claude Desktop writes its MCP logs.
+- The demo guide names the `uv run mm <target>` form for a Linux that
+  ships without `make`, with a troubleshooting entry keyed to
+  `make: command not found`; a troubleshooting entry keyed to the
+  connector registry error names `AIRBYTE_OFFLINE_MODE=1`, the form
+  CI lands bronze in (D-27), for a network that cannot reach the
+  registry; the Path B notes and the contributing guide say that the
+  export rewrites the committed manifest and that `git checkout
+  demo/demo.digest.json` restores it before a fetch, with a
+  troubleshooting entry keyed to the fetch's refusal; and the listing
+  line's expected size reads about 5 KB, as measured, in place of 11.
 
 ### Fixed
 
