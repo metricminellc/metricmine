@@ -273,3 +273,22 @@ def test_a_check_that_raises_records_a_fail_and_the_rest_still_print(
     assert "PASS fine" in out
     assert "FAIL broken" in out and "RuntimeError: boom" in out
     assert "doctor: 2 checks, 1 FAIL, 0 WARN" in out
+
+
+@pytest.mark.parametrize(("windows", "fix"), [(False, "make doctor"), (True, "uv run mm doctor")])
+def test_a_python_off_the_pin_names_the_sync_that_provisions_it(
+    monkeypatch: pytest.MonkeyPatch, windows: bool, fix: str
+) -> None:
+    # The pre-sync form runs on whatever Python the machine has. A 3.11 is
+    # a FAIL for the interpreter, and the fix is the sync that provisions
+    # the pinned 3.12, named in the shell's form like every other hint;
+    # under uv run the venv's 3.12 is what answers, so the line never fires.
+    monkeypatch.setattr(doctor.sys, "version_info", SimpleNamespace(major=3, minor=11, micro=15))
+    monkeypatch.setattr(doctor.platform, "python_version", lambda: "3.11.15")
+    monkeypatch.setattr(doctor, "WINDOWS", windows)
+    monkeypatch.setattr(doctor, "results", [])
+    doctor.check_python()
+    (entry,) = doctor.results
+    verdict, label, detail = entry
+    assert (verdict, label) == ("FAIL", "python")
+    assert detail == f"3.11.15: the project runs on 3.12 (.python-version); uv sync provisions it, then {fix}"
