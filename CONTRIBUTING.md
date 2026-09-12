@@ -43,8 +43,9 @@ are `uv run mm <target>`, so the last line is `uv run mm demo` (D-42).
 
 `make demo` lands the committed samples into bronze, builds silver and
 the gold star from the committed contracts, and rebuilds the demo export
-locally. The artifact is gitignored and ships as a release asset, so
-there is nothing to restore afterwards; `make demo-fetch`
+locally. The artifact is gitignored and ships as a release asset; the
+one thing to restore afterwards is the manifest the export rewrote
+(`git checkout demo/demo.digest.json`), and then `make demo-fetch`
 (`uv run mm demo-fetch`) puts the published bytes back whenever you want
 them (D-03 and D-33 as amended by Amendment S). The contract gates run
 locally with the isolated tool the CI workflow installs:

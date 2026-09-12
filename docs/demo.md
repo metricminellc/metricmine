@@ -36,10 +36,13 @@
   installs needs administrator rights.
 - Windows ships no `make`, so every `make <target>` on this page has the
   form `uv run mm <target>`: the Makefile's targets delegate to that
-  entry point and the two are the same code (D-42). Each Windows block
-  runs in Windows PowerShell 5.1 and PowerShell 7 alike, one command per
-  line. Elsewhere in the repository, a `make` target that is not on this
-  page is the one-line `uv run ...` command the Makefile shows for it.
+  entry point and the two are the same code (D-42). A Linux that ships
+  without `make` (a fresh Ubuntu, a WSL distribution) runs the same
+  `uv run mm <target>` lines, or installs it from its package manager.
+  Each Windows block runs in Windows PowerShell 5.1 and PowerShell 7
+  alike, one command per line. Elsewhere in the repository, a `make`
+  target that is not on this page is the one-line `uv run ...` command
+  the Makefile shows for it.
 - [Claude Desktop](https://claude.ai/download) for the serving beat
   (optional; Path A works from the terminal without it).
 - No API keys, no accounts, no cloud resources. Everything below is
@@ -96,7 +99,7 @@ Between tags, `main` may name no published release in its manifest; the
 fetch then says so and Path B (`make demo`, `uv run mm demo` on Windows)
 builds the same content keyless in a few minutes.
 
-Expected output: one line, about 11 KB, listing three categories, each
+Expected output: one line, about 5 KB, listing three categories, each
 with its fact table, row count, typed table, authored subject, and
 registry keys: `airport_weather` (13,014 rows), `flights` (166,158
 rows), and `invoice_lines` (44,721 rows). Two of them come from the same
@@ -295,7 +298,11 @@ What to expect, step by step:
    per-file connections), and writes `demo/demo.digest.json` beside it.
    The claim is content equality by query, never byte equality (D-33),
    so your artifact proves equal even though its bytes may differ; the
-   manifest's content section is what CI holds every build to.
+   manifest's content section is what CI holds every build to. The
+   export rewrites the committed manifest to name your local artifact
+   and no release, so `git status` shows `demo/demo.digest.json`
+   modified; `git checkout demo/demo.digest.json` restores the published
+   one, and `make demo-fetch` fetches those bytes again.
 4. `pytest` runs the full suite, including the local lane that exercises
    the query gate's 29-case refusal matrix, the serving round trip, the
    export verification, the declared-join gate, the aviation
@@ -313,9 +320,26 @@ dbt lanes need, in the form your shell takes.
 - **`uv: command not found`** (on Windows, `The term 'uv' is not
   recognized`): install uv (the lines under What you need) and open a
   new terminal. Everything else flows from it.
+- **`make: command not found`** (Linux; a fresh Ubuntu or a WSL
+  distribution ships without it): run the same target as
+  `uv run mm <target>`, the form every Windows block on this page
+  uses, or install `make` from the package manager (`sudo apt install
+  make` on Debian and Ubuntu).
 - **`dbt` cannot find a profile**: `DBT_PROFILES_DIR` must point at the
   repo's `transform/` directory (the first line of Path B, `export` or
   `$env:`); run dbt from the repo root, not from inside `transform/`.
+- **`this tree has no published demo artifact yet` from `make demo-fetch`
+  after Path B**: your export rewrote `demo/demo.digest.json` to name
+  your local artifact and no release. `git checkout demo/demo.digest.json`
+  restores the committed manifest, and the fetch works again.
+- **`AirbyteConnectorRegistryError: Failed to connect to the connector
+  registry`** during `make ingest` or `make demo`: the connector
+  registry at connectors.airbyte.com is unreachable from this network
+  (a filtering proxy, an offline machine). Set `AIRBYTE_OFFLINE_MODE=1`
+  for the session (`export AIRBYTE_OFFLINE_MODE=1`;
+  `$env:AIRBYTE_OFFLINE_MODE = "1"` on Windows) and rerun. The pinned
+  connector is already provisioned, and CI lands bronze the same way
+  (D-27).
 - **Claude Desktop does not show the server**: quit it fully (Cmd+Q on
   macOS; on Windows, exit the app rather than closing its window) and
   reopen it; confirm the config file is valid JSON and the `command` path
