@@ -54,15 +54,24 @@ def _registry_rows() -> int:
     return len(compiled["entries"])
 
 
-def _mapping_version() -> str:
-    import yaml
-
-    doc = yaml.safe_load(
-        (_REPO / "contracts" / "gold_invoice_lines_mapping.odcs.yaml").read_text(
+def _emitted_mapping_version() -> str:
+    """The mapping version the committed emission was generated from, read
+    from the ownership manifest (D-09). Between a contract bump and its
+    regeneration (the F-21 window) the contract file is one version ahead
+    of the emission by design, while the built registry declares what was
+    emitted; the unit lane's emission tests hold the emission to the
+    contracts, so this lane asserts the served declaration only."""
+    manifest = json.loads(
+        (_REPO / "transform" / "models" / "gold" / "ownership-manifest.json").read_text(
             encoding="utf-8"
         )
     )
-    return doc["version"]
+    for cited in manifest["sources"]["mapping_contracts"]:
+        if cited["id"] == "gold_invoice_lines_mapping":
+            return cited["version"]
+    raise AssertionError(
+        "gold_invoice_lines_mapping is not cited by the ownership manifest"
+    )
 
 
 @pytest.fixture(scope="module")
@@ -158,7 +167,7 @@ def test_get_schema_returns_the_registry_declaration(gold):
     assert result["found"] is True
     assert result["entity_group"] == "invoice_lines"
     assert result["contract_name"] == "gold_invoice_lines_mapping"
-    assert result["contract_version"] == _mapping_version()
+    assert result["contract_version"] == _emitted_mapping_version()
     assert result["role"] == "dimensions"
     assert result["manifest"] == DIMENSIONS_MANIFEST
 
