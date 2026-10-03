@@ -675,6 +675,11 @@ the serving steer rides the pinned SDK surface unchanged. The added
 this decision verified, and the steer paragraph travels through the
 `FastMCP` instructions parameter already in use. No SDK change, no pin
 change, no new tool.
+Note, October 2026 (a correction note, not an amendment): `uv.lock` has
+resolved mcp 1.29.1 since the in-range refresh of September 2, 2026
+(#142), a chore under rule 1 of the same class as the 1.11.14 refresh
+D-05 records. The figures above are the resolution at the date
+Amendment D bound; nothing in the decision changes.
 
 ### D-33
 **Demo export: content equality by query, never byte equality.**
