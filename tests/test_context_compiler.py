@@ -21,6 +21,7 @@ multi-source fan-in, D-41, to any number of mapping contracts):
 from __future__ import annotations
 
 import json
+import shutil
 from pathlib import Path
 
 import pytest
@@ -151,6 +152,20 @@ def test_write_if_changed_is_a_no_op_on_unchanged_bytes(tmp_path) -> None:
     assert write_if_changed(tmp_path, changed, {"probe": 3}).name == "v0002.json"
 
 
+def _contracts_into(tmp_path: Path) -> Path:
+    """Put the real contracts under the mini repo: a symlink where the
+    platform grants one, a copy where it does not. Windows grants symlinks
+    to administrators and to Developer Mode and refuses a per-user
+    account (WinError 1314), so the runners passed and a stranger's
+    machine failed the three tests that build this repo (F-65)."""
+    target = tmp_path / "contracts"
+    try:
+        target.symlink_to(REPO / "contracts")
+    except OSError:
+        shutil.copytree(REPO / "contracts", target)
+    return target
+
+
 def _mini_repo(tmp_path: Path, artifact: dict | None) -> Path:
     """A tmp repo_root whose config points at the REAL contracts (absolute
     paths survive the reader's join) and at a tmp compiled dir."""
@@ -175,7 +190,7 @@ def _mini_repo(tmp_path: Path, artifact: dict | None) -> Path:
     (config / "default.yaml").write_text(yaml.safe_dump(cfg), encoding="utf-8")
     # The reader resolves each silver contract under <repo>/contracts by
     # convention, so the mini repo carries the real ones.
-    (tmp_path / "contracts").symlink_to(REPO / "contracts")
+    _contracts_into(tmp_path)
     return tmp_path
 
 
@@ -198,6 +213,29 @@ def test_current_artifact_loads(tmp_path) -> None:
     artifact also carries."""
     artifact = build_compiled_context(REPO)
     version, loaded = load_compiled_context(_mini_repo(tmp_path, artifact))
+    assert version == "v0001"
+    assert loaded["entries"] == artifact["entries"]
+
+
+def test_contracts_fall_back_to_a_copy_without_the_symlink_privilege(
+    tmp_path, monkeypatch
+) -> None:
+    """F-65: where the platform refuses the symlink (a per-user Windows
+    account raises WinError 1314), the mini repo carries a copy of the
+    contracts and the reader still loads a current artifact through it."""
+
+    def refuse(self, target, target_is_directory=False):
+        raise OSError(1314, "A required privilege is not held by the client")
+
+    monkeypatch.setattr(Path, "symlink_to", refuse)
+    artifact = build_compiled_context(REPO)
+    root = _mini_repo(tmp_path, artifact)
+    contracts = root / "contracts"
+    assert contracts.is_dir() and not contracts.is_symlink()
+    assert sorted(p.name for p in contracts.iterdir()) == sorted(
+        p.name for p in (REPO / "contracts").iterdir()
+    )
+    version, loaded = load_compiled_context(root)
     assert version == "v0001"
     assert loaded["entries"] == artifact["entries"]
 
