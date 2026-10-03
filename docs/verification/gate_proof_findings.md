@@ -79,6 +79,8 @@ order by design.
 | [F-61](#f-61) | `make export-demo` and `make demo` rewrite the committed digest manifest to the local build, and `make demo-fetch` then refuses until it is restored from git | Chore rung |
 | [F-62](#f-62) | A governed amendment corrected a silver description and left its restatement in the mapping contract stale; the served context carried both sentences, and the class is every edge where one contract restates another's column | Chore rung |
 | [F-63](#f-63) | A committed `.mcp.json` is loaded without asking by every non-interactive Claude Code session, so its launch line installs nothing and fails fast on a clone that was never synced | Chore rung |
+| [F-64](#f-64) | The Microsoft Store build of Claude Desktop runs the terminals it opens under app-package virtualization, so `uv sync` from one fails on uv's Python link; two uv variables move the install out of `AppData` | Chore rung |
+| [F-65](#f-65) | Three compiler tests made a symlink that Windows grants to administrators and Developer Mode only, so the runners passed and a per-user machine failed them; the fixture falls back to a copy | Chore rung |
 
 ## Command surface (datacontract-cli 1.0.12)
 
@@ -1135,6 +1137,15 @@ with it.
 (`scripts/serve_smoke.py`, landing with the Windows plumbing; the Claude
 Desktop step of [`docs/demo.md`](../demo.md))
 
+**Addendum (October 2, 2026): one report, the step still unmeasured.**
+A Windows 10 user ran Path A and Path B (a run dated September 23, 2026)
+from a Claude Desktop installed from the Microsoft Store, with the entry
+merged into the config file,
+and every published number reproduced (247,555 bronze rows, `PASS=334`,
+the export digests, `19 tables and 3 views`); the click-through itself,
+whether that app lists the server, was not run. This finding stays open
+and closes as the entry says, with the date and the app version.
+
 ## Windows rung, cycle one (Arc 7 execution, September 6, 2026)
 
 ### F-56
@@ -1321,6 +1332,26 @@ the same way.
 (`src/metricmine/tasks.py` and the Makefile's `ingest` target, unchanged;
 the troubleshooting entry in `docs/demo.md`, landed with #202)
 
+**Addendum (October 2, 2026): the dbt package hub is the second registry
+a filtered network refuses.** `make demo`'s package step, `dbt deps`,
+reaches `hub.getdbt.com` for `dbt-labs/dbt_utils` 1.3.3, and behind a
+proxy that allows github.com and refuses the hub it stops with
+`HTTPSConnectionPool(host='hub.getdbt.com', port=443): Max retries
+exceeded ... 403 Forbidden`, emptying `transform/dbt_packages/` on the
+way. Measured in
+this project's own sandbox on September 12 and 17 and October 2, 2026,
+and reported from a Windows user's cloud sandbox run of September 23.
+Either
+route installs the same tag (`ef562bac`) from GitHub with no hub
+contact, measured on October 2: the package placed by hand from its
+tag, after which `dbt parse` and `dbt build` find it and `dbt deps` is
+left out of the run, or `transform/packages.yml` pointed at the git
+form for the session, after which `dbt deps` installs it and rewrites
+`package-lock.yml` until both files are restored. The demo guide
+carries both. Vendoring the package, which would also remove the hub
+fetch dbt v2 makes on every parse, is a decision for the register and
+is not taken here.
+
 ### F-61
 **`make export-demo` and `make demo` rewrite the committed digest manifest
 to the local build, and `make demo-fetch` then refuses until the manifest
@@ -1438,3 +1469,59 @@ nobody prepared, which means it installs nothing and fails fast when the
 clone is not ready.
 (`.mcp.json`, landing with this finding; `scripts/serve_smoke.py` for the
 handshake the desktop config launches)
+
+### F-64
+**A terminal the Microsoft Store build of Claude Desktop opens inherits
+the app's redirected `AppData`, so a `uv sync` started from one fails
+on the link uv makes for the project's Python, and two uv variables
+that move the install out of `AppData` are the fix.** Reported
+by a Windows 10 user whose Claude Desktop came from the Microsoft Store
+and whose commands ran from that app (a run dated September 23, 2026,
+read on October 2; uv 0.12.18, Python 3.12.14, a per-user install with
+no administrator rights); the report was checked against the
+repository, not re-run. `uv
+sync` failed with a missing target directory for the Python
+minor-version link under `%APPDATA%\uv`, and the link's target was seen
+redirected into the app's package folder
+(`%LOCALAPPDATA%\Packages\Claude_pzs8sxrjxfjjc\LocalCache`), the same
+redirection the demo guide already named for the config file. Setting
+`UV_PYTHON_INSTALL_DIR` and `UV_CACHE_DIR` to plain paths under the user
+profile fixed the sync on the first retry, and Path A and Path B then
+reproduced every published number. A later `mm ingest` on the same
+machine failed once removing a temporary file (`WinError 5`), which the
+same redirection of the temp folder would explain; on the retry the
+same warnings continued without stopping the ingest. That half is
+unconfirmed, and the guide's entry sets `TEMP` and `TMP` beside the two
+uv variables. uv honors both variables
+on every platform (measured on Linux with uv 0.11.32: `uv python dir`
+and `uv cache dir` follow them). The class: an agent host that is also
+the install's process tree lends the install its own sandboxing, so a
+guide written for a person at a terminal has to say what the host's
+shell inherits; the mechanism, an app package's file-system
+virtualization, is the report's reading and the guide's existing
+config-file note, not something measured here. A `doctor` check for
+the redirection is a candidate, not built.
+(the Windows troubleshooting entry and the agent-run section of
+[`docs/demo.md`](../demo.md), landing with this finding)
+
+### F-65
+**Three compiler tests made a symlink to the contracts directory, which
+Windows grants to administrators and to Developer Mode and refuses a
+per-user account, so the hosted runners passed and the first per-user
+Windows machine failed exactly those three.** The fixture `_mini_repo`
+in `tests/test_context_compiler.py` symlinked `<tmp>/contracts` to the
+repository's `contracts/` so the reader resolves silver contracts by
+its convention. On a per-user Windows 10 account the call raised
+`OSError: [WinError 1314] A required privilege is not held by the
+client`, and `uv run pytest -q` ended `687 passed, 70 skipped, 3
+failed` (a run dated September 23, 2026, reported on October 2; the
+line is the reporter's and was not re-run here); the `demo-windows`
+runners, which hold the privilege, pass the same three, so the path CI
+measures was not the path a stranger runs (the F-47 and F-55 class).
+The fixture now tries the symlink and falls back to a directory copy on
+`OSError`, and a unit test makes the symlink call raise so the fallback
+runs on every platform. The demo path never runs these tests; a
+stranger meets them only in the closing `pytest -q` the guide asks for.
+(`tests/test_context_compiler.py`, the `_contracts_into` helper and
+`test_contracts_fall_back_to_a_copy_without_the_symlink_privilege`,
+landing with this finding)
