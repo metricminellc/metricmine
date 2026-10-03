@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "metricmine-gold": {
+      "type": "stdio",
+      "command": "uv",
+      "args": [
+        "run",
+        "--no-sync",
+        "--project",
+        "${CLAUDE_PROJECT_DIR:-.}",
+        "python",
+        "-m",
+        "metricmine.server"
+      ],
+      "env": {}
+    }
+  }
+}
