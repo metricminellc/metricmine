@@ -318,6 +318,17 @@ What to expect, step by step:
    the query gate's 29-case refusal matrix, the serving round trip, the
    export verification, the declared-join gate, the aviation
    conservation and business-logic checks, and the demo question set.
+   A test whose tool is absent skips rather than fails, and the closing
+   line says how many (`-rs` says why): the fifteen lint tests skip
+   wherever the isolated
+   `datacontract` tool is not on PATH (F-54), and on Windows the 55
+   working-tree guard cases skip as well, because that guard is
+   POSIX-only (D-42), so a Windows run reports 70 skipped where a Linux
+   or macOS run without the tool reports 15. The nine demo-question
+   tests read `MM_SERVE_DB`, then `MM_WAREHOUSE_PATH`, then the built
+   `warehouse/metricmine.duckdb`, and skip until Path B has built it;
+   to run them against the fetched asset after Path A alone, point
+   `MM_SERVE_DB` at `demo/demo.duckdb` for that one command.
 
 ## Troubleshooting
 
@@ -351,6 +362,35 @@ dbt lanes need, in the form your shell takes.
   `$env:AIRBYTE_OFFLINE_MODE = "1"` on Windows) and rerun. The pinned
   connector is already provisioned, and CI lands bronze the same way
   (D-27).
+- **`dbt deps` stops with `HTTPSConnectionPool(host='hub.getdbt.com',
+  port=443): Max retries exceeded`** (`make demo` runs it as its
+  package step, after the landing): the dbt package hub is unreachable
+  from this network while github.com is. The one package is
+  `dbt-labs/dbt_utils` 1.3.3, and either route installs it from its
+  GitHub tag with no hub contact. Place it by hand,
+  `git clone --depth 1 --branch 1.3.3 https://github.com/dbt-labs/dbt-utils.git transform/dbt_packages/dbt_utils`
+  (git's detached-HEAD note is harmless), then run Path B's lines
+  without the `dbt deps` line: `make demo` would run it again, and a
+  `dbt deps` that fails on the hub empties `transform/dbt_packages/`
+  first, taking the copy with it. Or edit `transform/packages.yml` for
+  the session so that its entry reads
+  `- git: "https://github.com/dbt-labs/dbt-utils.git"` with
+  `revision: 1.3.3` in place of the `package:` and `version:` lines,
+  run `dbt deps` (it installs from revision `ef562bac` and rewrites
+  `transform/package-lock.yml`), and restore both files with
+  `git checkout transform/packages.yml transform/package-lock.yml`
+  before committing anything. Both routes were measured in this
+  project's own sandbox, where the hub answers 403 and github.com
+  answers (F-60).
+- **`Could not set lock on file ... metricmine.duckdb: Conflicting lock
+  is held in ... python (PID ...)`** from `make ingest` or `make demo`
+  (on Windows the message names the holder as `File is already open in
+  ... python.exe`): a process from an earlier run still holds the
+  warehouse, most often a run that a command time limit or a closed
+  window ended without closing the file. End that process (the PID is
+  in the message on macOS and Linux; on Windows, `Get-Process python`
+  lists the candidates) or close the terminal that ran it, and rerun;
+  the lock is DuckDB's own, so that two writers never meet.
 - **Claude Desktop does not show the server**: quit it fully (Cmd+Q on
   macOS; on Windows, exit the app rather than closing its window) and
   reopen it; confirm the config file is valid JSON and the `command` path
@@ -419,6 +459,34 @@ Windows:
   does so when no Python is installed. Nothing here needs one: uv
   provisions the project's Python during `uv sync`, so skip the
   pre-install check and run `uv run mm doctor` after the sync.
+- **`uv sync` fails with a missing target directory under `%APPDATA%\uv`,
+  or `uv run mm ingest` fails removing a temporary file with
+  `WinError 5`, in a terminal that Claude Desktop from the Microsoft
+  Store opened**: the Store build's writes under `AppData` are
+  redirected into its package folder
+  (`%LOCALAPPDATA%\Packages\Claude_pzs8sxrjxfjjc\LocalCache`, the
+  redirection behind the config-file note above), a terminal the app
+  opens inherits it, and the link uv makes from the Python minor
+  version to its install then points where nothing landed (the
+  link's targets were seen inside the package folder). Before
+  `uv sync`, point uv and the temp folder at plain paths outside
+  `AppData` for the session:
+  `$env:UV_PYTHON_INSTALL_DIR = "$env:USERPROFILE\uv\python"`,
+  `$env:UV_CACHE_DIR = "$env:USERPROFILE\uv\cache"`,
+  `New-Item -ItemType Directory -Force "$env:USERPROFILE\tmp" | Out-Null`,
+  `$env:TEMP = "$env:USERPROFILE\tmp"`, `$env:TMP = $env:TEMP`. The two
+  uv variables fixed the sync on the Windows 10 machine that reported
+  it (a run dated September 23, 2026, reported on October 2; F-64); the
+  temp half is likely the same redirection and is unconfirmed. uv reads
+  both variables on every platform (`uv python dir` and `uv cache dir`
+  print the directories in use).
+- **Red `NativeCommandError` text around lines from `uv` or `git`**:
+  Windows PowerShell 5.1 turns anything a native command writes to
+  stderr into an error record when the output is redirected (an agent
+  running the command for you, or a `2>&1`), so uv's progress lines
+  and git's advice arrive painted red. The command succeeded if
+  `$LASTEXITCODE` is `0`. Reported from a Windows 10 machine driven by
+  an agent (a run dated September 23, 2026, reported on October 2).
 - **`The token '&&' is not a valid statement separator`**: Windows
   PowerShell 5.1 has no `&&`. Every Windows block on this page is one
   command per line; PowerShell 7 accepts either form.
@@ -443,6 +511,26 @@ Windows:
   samples' digests measure the same on every platform. A clone made
   before that file existed can still show `w/crlf` in
   `git ls-files --eol` after pulling it; clone again.
+
+## If an agent runs the demo for you
+
+The first runs on machines nobody prepared were driven by an agent
+reading this page, not by a person at a terminal, and four things are
+different when the shell is the agent's. A terminal the Microsoft
+Store build of Claude Desktop opens inherits the app's redirected
+`AppData`, so set the four variables in the Windows entry above before
+`uv sync`. An
+agent's command time limit can end a run without closing the
+warehouse, and the next run then reports the lock entry above; end the
+stale process before rerunning. Captured output in Windows PowerShell
+5.1 paints every native stderr line red (the `NativeCommandError`
+entry); read `$LASTEXITCODE`, not the color. A registry the network
+refuses stops the landing or the package install (the
+`AIRBYTE_OFFLINE_MODE` and `dbt deps` entries); this project's own
+sandbox meets both refusals, so those entries were measured there.
+Everything else on this page holds: the commands are one per line,
+every number is the committed sample's, and the suite's closing line
+says how many tests it skipped (`-rs` says why).
 
 ## Where to next
 
