@@ -19,7 +19,7 @@
     {"name": "is_cancellation", "logical_type": "boolean", "physical_type": "BOOLEAN", "required": true, "mapping_role": "dimension", "description": "Cancellation flag; exclusion is a consumer decision (2 distinct)."},
     {"name": "stock_code", "logical_type": "string", "physical_type": "VARCHAR", "required": true, "mapping_role": "dimension", "description": "Product code as landed."},
     {"name": "product_description", "logical_type": "string", "physical_type": "VARCHAR", "required": false, "mapping_role": "dimension", "description": "Product description; nulls retained."},
-    {"name": "quantity", "logical_type": "integer", "physical_type": "INTEGER", "required": true, "mapping_role": "measure", "description": "Units on the line; negative only on cancellations."},
+    {"name": "quantity", "logical_type": "integer", "physical_type": "INTEGER", "required": true, "mapping_role": "measure", "description": "Units on the line; negative on cancellation lines and on zero-unit-price stock-adjustment lines, so a negative quantity alone does not mean a cancellation."},
     {"name": "invoiced_at", "logical_type": "date", "physical_type": "TIMESTAMP", "required": true, "mapping_role": "time", "description": "Invoice timestamp; the declared time column."},
     {"name": "unit_price", "logical_type": "number", "physical_type": "DECIMAL(10,2)", "required": true, "mapping_role": "measure", "description": "Unit price in sterling; zero-price lines retained."},
     {"name": "customer_id", "logical_type": "integer", "physical_type": "INTEGER", "required": false, "mapping_role": "dimension", "description": "Customer identifier; null on guest checkouts."},

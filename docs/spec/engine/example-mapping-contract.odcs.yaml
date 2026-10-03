@@ -89,7 +89,7 @@ schema:
         physicalType: INTEGER
         required: true
         mappingRole: measure
-        description: Units on the line; negative only on cancellations.
+        description: Units on the line; negative on cancellation lines and on zero-unit-price stock-adjustment lines, so a negative quantity alone does not mean a cancellation.
       - name: invoiced_at
         logicalType: date
         physicalType: TIMESTAMP
