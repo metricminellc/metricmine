@@ -1,4 +1,4 @@
-# Mapping contract: invoice_lines category, v1.1.1 (ODCS v3.1.0).
+# Mapping contract: invoice_lines category, v1.1.2 (ODCS v3.1.0).
 # Engine input, never a table: physicalType: mapping is the machine
 # discriminator (CLAUDE.md rule 9); gate 1 lints this file, gate 3 skips it
 # by design (F-12), and the auto-modeling engine validates it against
@@ -20,11 +20,17 @@
 #   deferral. A comment and version patch only; no mapping semantics
 #   change. The run lineage payload carries this version by design
 #   (D-17), so the regeneration that follows re-keys dim_run_values.
+# - v1.1.2: the quantity description restates silver v1.3.0 instead of
+#   contradicting it (F-62): negative quantities occur on cancellation
+#   lines and on zero-unit-price stock-adjustment lines (90 of 44,721
+#   rows at the committed sample are negative and not cancellations,
+#   all at zero unit price). A description patch only; no mapping
+#   semantics change, no schema object moves.
 apiVersion: v3.1.0
 kind: DataContract
 id: gold_invoice_lines_mapping
 name: Gold mapping, invoice_lines category
-version: 1.1.1
+version: 1.1.2
 status: active
 domain: retail
 dataProduct: metricmine
@@ -95,7 +101,7 @@ schema:
         physicalType: INTEGER
         required: true
         mappingRole: measure
-        description: Units on the line; negative only on cancellations.
+        description: Units on the line; negative on cancellation lines and on zero-unit-price stock-adjustment lines, so a negative quantity alone does not mean a cancellation.
       - name: invoiced_at
         logicalType: date
         physicalType: TIMESTAMP
@@ -133,7 +139,7 @@ customProperties:
   - property: profileHash
     value: "sha256:e65bee8117b65958b8c4741b43509ece19a581dd1d6bad9a7e1da9b67b0b5fcd"
   - property: proposedAt
-    value: "2026-08-10"
+    value: "2026-10-02"
   - property: decisionCancellations
     value: flow-through-retained-and-flagged
   - property: decisionGrainForm
@@ -147,4 +153,6 @@ customProperties:
       declaration; grain form and reserved column decided at Sitting H
       planning. v1.1.0 maps the reserved country column from the same
       profile evidence (24 distinct at v0001); amendment authored at the
-      pre-K planning session.
+      pre-K planning session. v1.1.2 restates the quantity sentence to
+      agree with silver v1.3.0, measured against the committed sample
+      (F-62); authored at the Prep A planning session.

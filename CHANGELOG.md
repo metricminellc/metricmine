@@ -32,6 +32,14 @@ measurements.
 
 ### Changed
 
+- `gold_invoice_lines_mapping` v1.1.2 (D-08, a description patch):
+  the quantity sentence restates silver v1.3.0 instead of
+  contradicting it, so a consumer no longer reads two sentences that
+  cannot both be true (F-62); compiled context v0013 carries the
+  corrected sentence (D-30, F-29), and the emission oracle under
+  `tests/golden/emitted/` is refreshed beside the bump (F-21). The
+  emitted models follow in the regeneration pull request (D-09), and
+  the published artifact at the next release that carries one.
 - `pyproject.toml` carries the release line, `1.1.3`, in place of the
   `0.1.0` the server had reported to every client as
   `serverInfo.version`; `uv.lock` follows by one line, and the release
