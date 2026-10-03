@@ -74,6 +74,11 @@ order by design.
 | [F-56](#f-56) | A Windows tool answer stalled inside DuckDB's lazy pandas import, whose numpy load runs an OpenBLAS DLL that calls `fstat(0)` and serializes behind the reader's pending stdin read; the server imports the native modules at startup, before the transport | Windows rung |
 | [F-57](#f-57) | A heavily non-ASCII sample failed the connector's check on Windows, which reads a CSV in the platform default (cp1252) when the reader options name none; the ourairports samples declare `encoding: utf-8` (the earlier file-URI reading was wrong and reverted) | Windows rung, Path B |
 | [F-58](#f-58) | Three keyless download paths built no SSL context, so a python.org macOS build with an empty OpenSSL trust store failed every fetch before anything built; they now add certifi's bundle to the machine's own trust, which naming a cafile would have replaced | Toolchain rung, continued |
+| [F-59](#f-59) | The Git for Windows installer asks for elevation and winget's user scope does not avoid it, so "no step needs administrator rights" held only after the two installs | Chore rung |
+| [F-60](#f-60) | `make demo` reaches the Airbyte connector registry unless `AIRBYTE_OFFLINE_MODE=1` is set, and nothing a stranger runs sets it | Chore rung |
+| [F-61](#f-61) | `make export-demo` and `make demo` rewrite the committed digest manifest to the local build, and `make demo-fetch` then refuses until it is restored from git | Chore rung |
+| [F-62](#f-62) | A governed amendment corrected a silver description and left its restatement in the mapping contract stale; the served context carried both sentences, and the class is every edge where one contract restates another's column | Chore rung |
+| [F-63](#f-63) | A committed `.mcp.json` is loaded without asking by every non-interactive Claude Code session, so its launch line installs nothing and fails fast on a clone that was never synced | Chore rung |
 
 ## Command surface (datacontract-cli 1.0.12)
 
@@ -1078,6 +1083,20 @@ or the demo path's own closing command reports a failure the demo does
 not have.
 (`tests/agents/test_lint_local.py`, landing with the Windows plumbing)
 
+**Addendum (Chore rung, October 2026): the same class on the warehouse.**
+A stranger who runs `uv run pytest -q` after Path A alone, with the
+artifact fetched and no warehouse built, gets one failure: measured
+`1 failed, 677 passed, 82 skipped` at `a009766` on September 12 and
+`1 failed, 692 passed, 67 skipped` at `485f3a5` on October 2 (the
+fifteen-test difference is the lint lane above, skipped where the tool
+was absent and run where it was present). The failure is
+`tests/test_adoption_scan.py::test_the_committed_repository_scans_clean`,
+marked `local`, which asserts `in_sync` and reads `needs_build` where its
+local siblings skip on the missing warehouse. The demo guide runs the
+suite after `make demo` and the contributing guide runs the `not local`
+lane, so no documented path shows it; the fix, a skip like its siblings,
+is a chore-arc item and lands with its own line here.
+
 ### F-55
 **A hosted Windows runner proves the command a desktop config launches
 over stdio, never the desktop client's click-through.** The Windows
@@ -1229,3 +1248,176 @@ the project.
 (`src/metricmine/tls.py`, landing with the three call sites; the deferred
 item carried forward in the
 [Arc 6 exit record](evidence/2026-09-05_arc6_exit.md))
+
+## Chore rung (the Arc 8 audit and the September 17 probes, minted October 2026)
+
+### F-59
+**The Git for Windows installer asks for elevation, and winget's user
+scope does not avoid it, so "no step needs administrator rights" held
+only after the two installs.** The demo guide and the site's Get started
+page said that no step needs administrator rights. Read from the vendors'
+trackers on September 11, 2026, and not
+run here (no Windows machine took part in the audit): the Git for Windows
+installer requests elevation at launch, and the winget manifest's
+`--scope user` does not avoid it (microsoft/winget-pkgs issue 369735,
+open, filed May 6, 2026); on macOS the Command Line Tools install that a
+bare `git` triggers is an install too. The true form landed with #200: uv
+installs per user, and nothing after the two installs needs administrator
+rights; the Windows troubleshooting group names the portable build of git
+(a self-extracting archive with `cmd\git.exe` on the PATH, stated from the
+Git for Windows download page) for a machine where that approval is not
+the reader's to give. The one Windows recipient of the September wave did
+not report on the prompt, so the claim stands as read from the vendor
+until a person confirms it on a managed machine; the confirmation lands
+here as an addendum. The class: a claim about what a machine will ask of a
+stranger is scoped to the steps the project controls, and a step the
+project does not control is named with where its behavior was read.
+(`docs/demo.md`, the git bullet under What you need and the Windows
+troubleshooting group, landed with #200)
+
+### F-60
+**`make demo` reaches the Airbyte connector registry unless
+`AIRBYTE_OFFLINE_MODE=1` is set, and nothing a stranger runs sets it;
+behind a filter the first landing stops at the registry with PyAirbyte's
+own error.** D-27 records that CI lands bronze offline ("no Airbyte
+registry dependency, no telemetry"), and the devcontainer, both
+workflows, and every prep probe export `AIRBYTE_OFFLINE_MODE=1`; the
+Makefile, `src/metricmine/tasks.py`, the demo guide, and the README did
+not, so the measured path and the documented path differed. Measured on
+September 12, 2026, on a fresh clone in a sandbox whose egress refused
+`connectors.airbyte.com`: online, `make demo` stopped at
+`AirbyteConnectorRegistryError: Failed to connect to the connector
+registry` before landing a row, and the message names
+`AIRBYTE_OFFLINE_MODE` itself; with the variable set, the same clone
+landed 247,555 rows into bronze and built `PASS=334`. Re-measured on
+October 2 in a sandbox with the same refusal: the offline landing again
+247,555 rows. On an open network the registry answers and the online run
+proceeds, as the Mac walks of Arcs 6 to 8 showed; the Windows runner sets
+the variable and never exercises the online path. The documented remedy
+is the troubleshooting entry #202 added. The better fix, `tasks.py`
+setting the variable for the landing step unless the environment already
+sets it, so the laptop path is the measured path, amends D-27 and lands
+by its own documentation pull request first. The class: a build step
+whose network reach CI suppresses by configuration reaches the network on
+a stranger's machine unless the project's own entry point suppresses it
+the same way.
+(`src/metricmine/tasks.py` and the Makefile's `ingest` target, unchanged;
+the troubleshooting entry in `docs/demo.md`, landed with #202)
+
+### F-61
+**`make export-demo` and `make demo` rewrite the committed digest manifest
+to the local build, and `make demo-fetch` then refuses until the manifest
+is restored from git.** Measured on September 12, 2026, on Linux and
+re-measured on October 2 at `485f3a5`: after Path B, `git status
+--porcelain` prints ` M demo/demo.digest.json` (the export rewrote the
+artifact block to `release: null` and the local file's sha256 and size),
+and `make demo-fetch` prints `this tree has no published demo artifact
+yet (the manifest names no release); build it locally: make demo` and
+exits 2, until `git checkout demo/demo.digest.json`. The export re-measures
+both blocks from the build; at head the content block comes out
+unchanged, so the D-33 gate still holds the build to the published
+content, and the `demo-windows` workflow already restores the manifest
+between Path B and its manifest gate for this reason. The guide
+said the export "writes the manifest beside it" and the contributing guide
+said "there is nothing to restore afterwards"; #202 corrected both and
+keyed a troubleshooting entry to the refusal. The design question,
+whether the fetch should read the committed manifest (`git show
+HEAD:demo/demo.digest.json`) when the working copy names no release, is
+a D-33 matter and is not decided here. The class: a documented build step
+that rewrites a committed file leaves the next documented step reading
+the rewritten one, and the guide has to name the restore between them.
+(`src/metricmine/export_demo.py` and `scripts/fetch_demo.py`, unchanged;
+the Path B notes and the troubleshooting entry in `docs/demo.md` and the
+sentence in `CONTRIBUTING.md`, landed with #202)
+
+### F-62
+**A governed amendment corrected a silver column's description and left
+its restatement in the mapping contract stale; the served context carried
+both sentences, and no gate or review item read the pair.**
+`silver_invoice_lines` v1.1.1 (#99, August 26, 2026) corrected `quantity`
+from "negative only on cancellation lines" to the measured truth:
+negative values occur on cancellation-invoice lines and on zero-unit-price
+stock-adjustment lines, so consumers must not infer cancellation from a
+negative quantity alone. `gold_invoice_lines_mapping` v1.1.1 (line 98)
+restated the column in its own words, "Units on the line; negative only
+on cancellations.", and the amendment did not touch it. Measured on
+September 17 and re-measured on October 2, 2026, on both the published
+v1.1.1 asset and a Path B build at `485f3a5`: of 44,721 rows in
+`gold.mart_invoice_lines_typed`, 1,103 carry a negative quantity, 90 of
+them on lines that are not cancellations, every one of the 90 at
+`unit_price = 0`. The compiled context serves the mapping sentence as
+`meaning` and, because the silver text differs, the silver sentence as
+`source_meaning`, so a consumer's agent reads two sentences that cannot
+both be true and nothing tells it which is the claim to check. The class,
+measured at head: 9 served field pairs where a mapping contract restates
+a silver column in other words (all nine in the retail mapping; every
+other served field is a verbatim copy of silver), and 29 pairs where a
+silver contract restates a same-named upstream silver column in other
+words (`silver_flights` 19, `silver_airport_weather` 10, matched by
+column name on both sides; renamed columns are not counted), where no
+second sentence is served at all. Replayed on September 17 by a read-only
+probe
+over `git show` across every first-parent commit on main that touches
+`contracts/`: three changed a silver column's description, one of them
+with a restatement in place, and that one (#99) is the stale case; the
+history holds no commit that could show a false flag, so the replay shows
+that a deterministic check would fire, not how often it would be wrong.
+The correction is a contract change in its own pull request with its
+compiled-context refresh (D-08, F-29) and a regeneration pull request
+behind it (D-09); a stranger meets the corrected sentence only at the
+first release that carries a refreshed asset, and every earlier asset
+serves the stale one. The cure for the class is item 10 of the contract
+review checklist, landing with this finding; a deterministic report line
+on the pull request would amend the scan's text under D-35 and is not
+built. The class: a description that another contract restates in other
+words is two sentences under one approval, and an amendment that corrects
+one must read the other.
+(`contracts/gold_invoice_lines_mapping.odcs.yaml` line 98 at `485f3a5`;
+`.claude/skills/contract-review/SKILL.md` item 10, landing with this
+finding)
+
+### F-63
+**A committed `.mcp.json` is loaded without asking by every non-interactive
+Claude Code session, so its launch line installs nothing and fails fast on
+a clone that was never synced: exit 1 in well under a second, a bare
+virtual environment and no package.** Claude Code's documentation (read
+October 2, 2026) says it asks before using a project-scoped server in an
+interactive session and that `claude -p` runs, Agent SDK sessions, and
+cloud sessions load project-scoped servers without asking; the
+claude-code-action's documentation says a repository `.mcp.json` is
+detected and used automatically, with its tools still subject to
+`--allowedTools`, and that the action sets `enableAllProjectMcpServers`
+to `true`. So a committed file is a launch line that runs wherever an
+agent opens the repository, this repository's own `claude.yml` included.
+The committed entry, written by `claude mcp add --scope project
+metricmine-gold -- uv run --no-sync --project '${CLAUDE_PROJECT_DIR:-.}'
+python -m metricmine.server`, was measured on Linux with Claude Code
+2.1.288 and uv 0.11.32. On a fresh clone with no `.venv`, the line exits 1
+at once with `Error while finding module specification for
+'metricmine.server' (ModuleNotFoundError: No module named 'metricmine')`
+after creating a bare virtual environment (uv's `_virtualenv.pth`,
+`_virtualenv.py`, and their `__pycache__`, no package); Claude Code's
+own health check
+reports the server as failed to connect (`CONNECTION_CLOSED: Connection
+closed`). On a synced clone with no demo artifact present it reports
+`√ Connected`, a vendor-neutral client from outside the repository gets
+`initialize` (2,879 bytes) and five tools, and a tool call then returns
+`isError` with the fail-closed message naming `make demo-fetch`, `make
+demo`, and `MM_SERVE_DB`. Claude Code spawns the project server with the
+project root as its working directory and sets `CLAUDE_PROJECT_DIR` to
+that root in the server's environment, while the
+`${CLAUDE_PROJECT_DIR:-.}` form in the file expands to `.` because the
+variable is unset in Claude Code's own environment; `.` is the project
+root by working directory, so both halves resolve. Spawned from outside
+any project, the same line exits 1 in well under a second with uv's `--no-sync has no
+effect when used outside of a project` and the same missing module, and
+installs nothing. The unsynced failure names no remedy and nothing in the
+launch line can add one, so the contributing guide and the demo guide
+name `uv sync` beside the file. What the repository's own Action does
+with the file is measured on the pull request that commits it and is
+recorded here by addendum. The class: a configuration file an agent host
+executes on sight is a launch line that must be safe to run on a clone
+nobody prepared, which means it installs nothing and fails fast when the
+clone is not ready.
+(`.mcp.json`, landing with this finding; `scripts/serve_smoke.py` for the
+handshake the desktop config launches)

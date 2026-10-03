@@ -17,7 +17,8 @@ current diff when none is named). Read the committed version and the
 proposed version side by side (`git diff main -- contracts/`). Every
 item below is answered yes or no with the evidence (file and line). The
 rules are CLAUDE.md hard rules 4, 5, 6, 9, 11, 16, and 17; the decisions
-are D-08, D-22, D-30, and D-35; the findings are F-06, F-28, and F-29.
+are D-08, D-22, D-30, and D-35; the findings are F-06, F-28, F-29, and
+F-62.
 
 ## Checklist
 
@@ -58,6 +59,14 @@ are D-08, D-22, D-30, and D-35; the findings are F-06, F-28, and F-29.
 9. The human flow (rule 17). The draft was copied from the outbox onto a
    branch by a person; nothing wrote into contracts/ directly; make demo
    stays keyless.
+10. Restatements (F-62). When a description changes, read every contract
+    that restates that column in other words, on both edges: a silver
+    column restated by the mapping contract that declares its category,
+    and a silver column restated by the contract of a silver model built
+    from it. A restatement may say less than its source; it may not
+    contradict it. The committed history holds one amendment that
+    corrected a silver sentence and left the mapping's restatement
+    stale.
 
 ## Report
 

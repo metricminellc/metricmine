@@ -304,16 +304,22 @@ with the warehouse in `MM_WAREHOUSE_PATH`.
 A release is a tag on a clean `main`, an asset built from that commit,
 and a manifest that names the asset.
 
-1. On `main` at the commit to tag: build cold, `make export-demo`,
+1. On a branch: set `version` in `pyproject.toml` to X.Y.Z and run
+   `uv lock`, which moves one line of `uv.lock` (its own `metricmine`
+   entry); pull request; merge. The server reports this value to every
+   client as `serverInfo.version`, so it names the release the tag will
+   name.
+2. On `main` at the commit to tag: build cold, `make export-demo`,
    `uv run python scripts/check_demo_digest.py` (PASS). The export
-   rewrites only the manifest's artifact block (the sha256 and bytes of
-   this build's file); leave it uncommitted.
-2. `git tag -a vX.Y.Z -m "..."` and push the tag; create the release
+   re-measures both blocks of the manifest from this build and rewrites
+   the file (the content digests, and the artifact block with this
+   build's sha256 and bytes); leave it uncommitted.
+3. `git tag -a vX.Y.Z -m "..."` and push the tag; create the release
    with `demo/demo.duckdb` as its one asset.
-3. On a branch: `make demo-manifest RELEASE=vX.Y.Z` pins the uploaded
+4. On a branch: `make demo-manifest RELEASE=vX.Y.Z` pins the uploaded
    asset's name, sha256, and size; commit the manifest and the release
    line in the README; pull request; merge.
-4. From a fresh clone, `make demo-fetch` restores the asset and
+5. From a fresh clone, `make demo-fetch` restores the asset and
    verifies it against the manifest. That is the release's own test.
 
 Versioning follows the contracts (semantic: additive changes are minor,
