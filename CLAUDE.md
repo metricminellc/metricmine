@@ -18,7 +18,7 @@ approves every contract.
    airbyte-source-file==0.3.15 with numpy<2 on uv-provisioned CPython 3.10
    (Makefile), the dbt package dbt_utils ==1.3.3 (transform/packages.yml
    with the committed transform/package-lock.yml), and mcp >=1.28,<2
-   (resolved 1.29.0 in uv.lock; the serving dependency, D-32 as amended.
+   (resolved 1.29.1 in uv.lock; the serving dependency, D-32 as amended.
    mcp 2.x cannot resolve here: PyAirbyte requires fastmcp >=3.0, which
    caps mcp <2.0, finding F-22), and anthropic >=1.0,<1.1 (resolved
    1.0.0 in uv.lock; the proposer SDK, D-21 as amended by Amendment F;
