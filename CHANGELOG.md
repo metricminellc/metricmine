@@ -11,8 +11,38 @@ measurements.
 
 ## [Unreleased]
 
+### Added
+
+- `.mcp.json` at the repository root registers the gold server as a
+  project MCP server for Claude Code, launched with `uv run --no-sync`
+  so a clone that was never synced fails fast and installs nothing
+  (F-63); the contributing guide and the demo guide say what the file
+  does and that `uv sync` is the fix.
+- Findings F-59 through F-63 in the findings register, from the Arc 8
+  audit, the Sitting T validation, the September 17 probes, and the
+  Prep A probes: the
+  git installer's elevation prompt, the connector registry behind a
+  filter, the manifest after Path B, the stale restatement in the
+  mapping contract and the class behind it, and the committed
+  `.mcp.json`; an addendum to F-54 records the one local test that
+  fails instead of skipping without a warehouse.
+- Item 10 in the contract review checklist: when a description
+  changes, read every contract that restates that column in other
+  words, on both edges (F-62).
+
 ### Changed
 
+- `pyproject.toml` carries the release line, `1.1.3`, in place of the
+  `0.1.0` the server had reported to every client as
+  `serverInfo.version`; `uv.lock` follows by one line, and the release
+  procedure in the operating manual sets the value from here on.
+- The contract change issue form lists all thirteen committed contracts
+  in place of three.
+- `CLAUDE.md` rule 1 names the mcp resolution `uv.lock` has carried
+  since #142, 1.29.1, and D-32 carries a dated correction note saying
+  the same; the contributing guide's provenance paragraph names the
+  seven committed extracts `docs/sources.md` registers in place of one
+  sample.
 - The demo guide scopes the administrator-rights sentence to what is
   true: uv installs per user and nothing after the two installs needs
   elevation, while the Git for Windows installer asks for it, `--scope
