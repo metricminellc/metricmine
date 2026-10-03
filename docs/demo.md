@@ -173,6 +173,17 @@ Quit Claude Desktop fully and reopen it. A new chat should list
 | `query` | one row-capped SELECT; anything else refuses, naming the failed check |
 | `lookup_record` | every place a content key resolves: registry, fact, dimension, or a derived identity |
 
+If you use Claude Code in the clone instead, there is nothing to merge:
+the committed `.mcp.json` registers the same server as a project MCP
+server, and Claude Code asks before using it. The entry launches
+`uv run --no-sync --project ${CLAUDE_PROJECT_DIR:-.} python -m
+metricmine.server`, so it installs nothing; on a clone that was never
+synced the server fails to connect in well under a second, and `uv
+sync` is the fix. Measured with Claude Code 2.1.288 on Linux: the server
+connects on a synced clone with no artifact present, and every tool then
+refuses with the `make demo-fetch` remedy until the artifact exists
+(F-63).
+
 ### What the agent knows, and where it came from
 
 Every registry entry keeps two things apart by name, so an agent (and
