@@ -29,6 +29,19 @@ measurements.
 - Item 10 in the contract review checklist: when a description
   changes, read every contract that restates that column in other
   words, on both edges (F-62).
+- The demo guide carries what the first agent-driven Windows run
+  reported (a run dated September 23, 2026, reported on October 2): a
+  troubleshooting entry for the Microsoft
+  Store build of Claude Desktop, whose virtualized `AppData` breaks
+  `uv sync` from a terminal the app opened (F-64); the warehouse lock
+  a killed run leaves; the `NativeCommandError` text Windows PowerShell
+  5.1 paints on captured stderr; two routes for `dbt deps` on a
+  network that reaches github.com and not the package hub (F-60
+  addendum); which tests skip on which platform and what the
+  demo-question tests read; and a short section for the case where an
+  agent runs the demo. Findings F-64 and F-65 in the findings
+  register, with addenda to F-55 (the desktop step stays unmeasured)
+  and F-60.
 
 ### Changed
 
@@ -79,6 +92,11 @@ measurements.
 
 ### Fixed
 
+- The compiler tests' mini repository falls back to a copy of
+  `contracts/` where the platform refuses a symlink, so the three
+  tests no longer depend on the privilege a per-user Windows account
+  lacks and the runners hold (F-65); a unit test makes the symlink
+  call raise so the fallback runs on every platform.
 - The local-lane test of the served registry declaration reads the
   mapping version from the ownership manifest, what the committed
   emission was generated from, in place of the contract file, which
