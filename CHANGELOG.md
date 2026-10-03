@@ -40,6 +40,12 @@ measurements.
   `tests/golden/emitted/` is refreshed beside the bump (F-21). The
   emitted models follow in the regeneration pull request (D-09), and
   the published artifact at the next release that carries one.
+- The three public spec examples that restated the stale quantity
+  sentence (`docs/spec/engine/example-mapping-contract.odcs.yaml`,
+  `docs/spec/agent-layer/example-gold-mapping-proposal.json`,
+  `docs/spec/agent-layer/example-silver-cleanup-proposal.json`) carry
+  the corrected one (F-62); the earlier compiled-context artifacts and the
+  evidence files are history and are unchanged.
 - `pyproject.toml` carries the release line, `1.1.3`, in place of the
   `0.1.0` the server had reported to every client as
   `serverInfo.version`; `uv.lock` follows by one line, and the release
