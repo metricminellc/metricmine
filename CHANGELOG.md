@@ -65,6 +65,12 @@ measurements.
 
 ### Fixed
 
+- The local-lane test of the served registry declaration reads the
+  mapping version from the ownership manifest, what the committed
+  emission was generated from, in place of the contract file, which
+  is one version ahead for the whole gate-quiet window between a
+  mapping bump and its regeneration; the Windows job runs the whole
+  suite, so the window was red there (F-21 addendum).
 - The preflight's interpreter line, the one FAIL that named no fix:
   on a Python that is not 3.12 (the pre-uv form on a system Python),
   `python` now reads `uv sync provisions it, then make doctor` (`uv run

@@ -454,6 +454,23 @@ run, timeframe keys unchanged), all five registry rows re-cited at
 [`evidence/2026-08-10_prek_signature_regeneration_diff.log`](evidence/2026-08-10_prek_signature_regeneration_diff.log);
 [`evidence/2026-08-10_prek_registry_and_conservation.log`](evidence/2026-08-10_prek_registry_and_conservation.log))
 
+**Addendum (Chore rung, October 2026): the window reaches the local lane
+in CI.** Since the `demo-windows` workflow (Arc 7) runs the whole suite
+after Path B, a local test that asserted the served registry's mapping
+version against the contract file was red for the whole gate-quiet
+window: measured at the v1.1.2 bump in the prep sandbox,
+`tests/test_query_local.py::test_get_schema_returns_the_registry_declaration`
+failed with `assert '1.1.1' == '1.1.2'` on the contract-only tree while
+every other lane held, and the Windows legs run that test on any pull
+request that touches `tests/`, which the refreshed oracle does. The test
+now reads the version from the ownership manifest's
+`sources.mapping_contracts`, which is what the committed emission was
+generated from and what the built registry declares; the emission tests
+in the unit lane hold the emission to the contracts. The packaging rule
+above stands at three things. The class: a lane CI gains later can see
+a window the lanes it had could not (the F-47 class), so a test that
+reads two artifacts reads the two that are built together.
+
 ## Serving rung (Phase 5, Session L, August 13, 2026)
 
 ### F-22
