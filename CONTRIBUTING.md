@@ -104,8 +104,9 @@ The repository was built fresh from an independent written specification,
 and [NOTICE](NOTICE) carries that statement. Do not contribute code copied
 from another MetricMine implementation, from a proprietary system, or from
 any source whose license is incompatible with Apache-2.0. Sample data must
-be public and cited; the committed sample is Online Retail II from the UCI
-Machine Learning Repository under CC BY 4.0 (D-15).
+be public and cited; the committed samples are the seven extracts that
+[docs/sources.md](docs/sources.md) registers, each pinned to a commit and
+a digest with its publisher and license named (D-15 as amended, D-41).
 
 ## Working with the coding agents
 
@@ -127,6 +128,16 @@ for it:
   contract, a draft, or a contract-only pull request and it runs the
   same checklist as `/contract-review`, prints the table and the verdict,
   and never edits.
+- `.mcp.json` at the repository root registers the gold server,
+  `metricmine-gold`, as a project MCP server for Claude Code, launched as
+  `uv run --no-sync --project ${CLAUDE_PROJECT_DIR:-.} python -m
+  metricmine.server`. The `--no-sync` is deliberate: Claude Code asks
+  before using a project server in an interactive session and loads one
+  without asking in a non-interactive one, so the line must install
+  nothing. On a clone that was never synced it fails in well under a
+  second with `No module named 'metricmine'`, and `uv sync` is the fix;
+  the five tools answer once `make demo-fetch` or `make demo` has put a
+  gold database in place (F-63).
 - The repository's GitHub Action prepares pull requests for backlog issues
   when a maintainer asks it to in a comment. It never opens, approves, or
   merges a pull request; a person does. Contributors do not need it and
