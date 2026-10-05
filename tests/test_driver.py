@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import tomllib
 from importlib import metadata
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 
 from metricmine import driver
 
@@ -51,7 +51,8 @@ def test_write_manifest_is_idempotent_and_names_this_environment(tmp_path: Path)
 
 
 def test_the_environment_line_takes_the_shells_form() -> None:
-    folder = Path("/x/.adbc")
-    assert driver.export_line(folder, windows=False) == 'export ADBC_DRIVER_PATH="/x/.adbc"'
-    assert driver.export_line(folder, windows=True) == '$env:ADBC_DRIVER_PATH = "/x/.adbc"'
+    posix = PurePosixPath("/x/.adbc")
+    windows = PureWindowsPath(r"C:\x\.adbc")
+    assert driver.export_line(posix, windows=False) == 'export ADBC_DRIVER_PATH="/x/.adbc"'
+    assert driver.export_line(windows, windows=True) == '$env:ADBC_DRIVER_PATH = "C:\\x\\.adbc"'
     assert driver.DRIVER_DIR == driver.REPO / ".adbc"
