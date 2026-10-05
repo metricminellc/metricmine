@@ -50,9 +50,11 @@ def test_no_target_reaches_a_proposer_or_the_key(target: str) -> None:
 
 def test_demo_is_the_keyless_replay_in_order() -> None:
     lines = _lines(tasks.plan("demo", windows=False))
-    assert lines[-3:] == [
+    # The models run before the tests (D-20 as amended by Amendment Y, F-66).
+    assert lines[-4:] == [
         "uv run dbt deps --project-dir transform --profiles-dir transform",
-        "uv run dbt build --project-dir transform --profiles-dir transform --target local",
+        "uv run dbt run --project-dir transform --profiles-dir transform --target local",
+        "uv run dbt test --project-dir transform --profiles-dir transform --target local",
         "uv run python -m metricmine.export_demo",
     ]
     assert "uv run python -m metricmine.ingest.land_sample" in lines
