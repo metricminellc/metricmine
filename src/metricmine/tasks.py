@@ -13,7 +13,7 @@ The targets, the demo path (D-42 scopes the entry point to it):
     uv run mm doctor                        the preflight (scripts/doctor.py)
     uv run mm demo-fetch                    restore and verify the release asset
     uv run mm ingest                        land the committed samples into bronze
-    uv run mm demo [--release vX.Y.Z]       ingest, dbt deps, dbt build, export-demo
+    uv run mm demo [--release vX.Y.Z]       ingest, dbt deps, dbt run, dbt test, export-demo
     uv run mm export-demo [--release vX.Y.Z]
     uv run mm demo-manifest [--release vX.Y.Z]
 
@@ -63,11 +63,27 @@ RELEASE_ENV_VAR = "MM_DEMO_RELEASE"
 # The dbt lines follow the repo-root invocation convention (D-11, D-20):
 # the project and the profile are named explicitly, so the commands run
 # from the repository root on every platform without an exported
-# DBT_PROFILES_DIR.
+# DBT_PROFILES_DIR. Gate two is `dbt run` and then `dbt test` (D-20 as
+# amended by Amendment Y): the sync-generated singular tests of the
+# level-zero silver tables name their table by schema and carry no
+# dependency edge (F-51), and dbt v2 schedules an edge-less test before
+# the models, so a cold `dbt build` fails on them (F-66); running the
+# models first and the tests second keeps every test and every red
+# verdict.
 DBT_DEPS = ("dbt", "deps", "--project-dir", "transform", "--profiles-dir", "transform")
-DBT_BUILD = (
+DBT_RUN = (
     "dbt",
-    "build",
+    "run",
+    "--project-dir",
+    "transform",
+    "--profiles-dir",
+    "transform",
+    "--target",
+    "local",
+)
+DBT_TEST = (
+    "dbt",
+    "test",
     "--project-dir",
     "transform",
     "--profiles-dir",
@@ -182,12 +198,13 @@ def plan(
         ]
     if target == "demo":
         # The keyless replay (D-24; docs/demo.md Path B in one command):
-        # land bronze, install the dbt packages, build the contracted
-        # models, export the artifact. Never a proposer.
+        # land bronze, install the dbt packages, run the contracted
+        # models, test them, export the artifact. Never a proposer.
         return [
             *plan("ingest", windows=windows, uv=uv),
             Step((uv, "run", *DBT_DEPS)),
-            Step((uv, "run", *DBT_BUILD)),
+            Step((uv, "run", *DBT_RUN)),
+            Step((uv, "run", *DBT_TEST)),
             *plan("export-demo", release=release, uv=uv),
         ]
     raise ValueError(f"unknown target {target!r}; one of {', '.join(TARGETS)}")
