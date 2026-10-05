@@ -8,16 +8,19 @@ Agents propose data contracts; deterministic code and dbt execute them; a human
 approves every contract.
 
 ## Hard rules (do not violate)
-1. Pinned versions only: dbt-core 1.12.x (resolved 1.12.3; D-05 as amended
-   by Amendment N, which also names the two dependencies the 1.12 line
-   brings, dbt-core-experimental-parser at a lock-pinned pre-release and
-   metricflow, neither a project dependency), dbt-duckdb 1.11.x (resolved
-   1.11.0), datacontract-cli 1.0.12, airbyte (PyAirbyte) >=0.53,<0.54
+1. Pinned versions only: dbt-oss 2.0.x, dbt Core v2 (resolved 2.0.5; D-05
+   as amended by Amendment X, which also names what the line brings: the
+   engine wheel the sdist downloads from GitHub releases under its own
+   sha256 manifest, the DuckDB driver registered from the pinned duckdb
+   wheel through ADBC_DRIVER_PATH, and dbt_utils vendored as a local
+   package), datacontract-cli 1.0.12, airbyte (PyAirbyte) >=0.53,<0.54
    (resolved in uv.lock), duckdb==1.4.3 (explicit runtime dependency as of
    the profiler PR, matching PyAirbyte's pin), and the connector
    airbyte-source-file==0.3.15 with numpy<2 on uv-provisioned CPython 3.10
-   (Makefile), the dbt package dbt_utils ==1.3.3 (transform/packages.yml
-   with the committed transform/package-lock.yml), and mcp >=1.28,<2
+   (Makefile), the dbt package dbt_utils 1.3.3 vendored at
+   transform/vendor/dbt_utils (transform/packages.yml names it as a local
+   package, with the committed transform/package-lock.yml; the hub is
+   never reached), and mcp >=1.28,<2
    (resolved 1.29.1 in uv.lock; the serving dependency, D-32 as amended.
    mcp 2.x cannot resolve here: PyAirbyte requires fastmcp >=3.0, which
    caps mcp <2.0, finding F-22), and anthropic >=1.0,<1.1 (resolved
@@ -28,11 +31,16 @@ approves every contract.
    and never upgrade any of these
    without an amendment to docs/decisions/decision-register.md in its own
    documentation PR.
-2. dbt Core v2 is deliberately deferred. Do not upgrade to it. The 1.12
-   `--use-v2-parser` flag is a parse-only probe here: the delegated build
-   fails on every contract-enforced model (F-31), so never build, gate, or
-   ship through it. The deferral lifts only by register amendment on a
-   verified GA (D-05 as amended).
+2. dbt Core v2 is the engine (D-05 as amended by Amendment X, on the GA
+   of September 14, 2026, proven at 2.0.5 before it bound; F-66). It
+   reaches DuckDB only through the driver the project registers: never
+   let dbt download a driver from the CDN, never register a system
+   driver, and never run a dbt line without ADBC_DRIVER_PATH naming
+   .adbc/ (make driver writes the manifest; make doctor prints the
+   export). Gate two is dbt run, then dbt test (D-20 as amended by
+   Amendment Y): a cold `dbt build` fails on the edge-less generated
+   tests of the level-zero silver tables (F-51, F-66), so never gate or
+   ship through it.
 3. Profiling is standalone Python and carries no contract. Contracted transforms
    are SQL dbt models with `contract: enforced: true`.
 4. Contracts are all-or-nothing: every column declares `name` and `data_type`.
@@ -258,8 +266,10 @@ files of that type are in scope, D-41), petabyte or throughput claims,
 and production SLAs.
 
 ## Toolchain
-Python 3.12, uv for packaging, ruff for linting, pytest for tests. dbt Core with
-the dbt-duckdb adapter for transforms. ODCS v3.1.0 for contracts, executed via
+Python 3.12, uv for packaging, ruff for linting, pytest for tests. dbt Core v2
+(dbt-oss) with its built-in DuckDB adapter over ADBC for transforms, the
+driver registered from the pinned duckdb wheel (make driver). ODCS v3.1.0
+for contracts, executed via
 datacontract-cli 1.0.12, installed as an isolated tool with
 `uv tool install --python 3.12 "datacontract-cli[duckdb]==1.0.12"`, never added to
 pyproject.toml as a project dependency. GitHub Actions for CI.
@@ -267,7 +277,8 @@ pyproject.toml as a project dependency. GitHub Actions for CI.
 Supported platforms (D-42): macOS, Linux, and Windows x64 on Python 3.12.
 `make <target>` is a convenience layer over the task entry point
 `uv run mm <target>` (src/metricmine/tasks.py) for the demo path
-(doctor, demo-fetch, ingest, demo, export-demo, demo-manifest), so the
+(doctor, demo-fetch, ingest, driver, demo, export-demo, demo-manifest),
+so the
 two never diverge: a change to a demo-path target lands in tasks.py,
 never as a Makefile-only recipe, and tests/test_tasks.py holds the
 module keyless. Every other make target is the one-line `uv run ...`
@@ -278,8 +289,8 @@ lines, `.venv\Scripts\python.exe` as the interpreter, backslashes doubled
 in JSON; the demo-windows workflow proves both shells on a fresh runner.
 `.gitattributes` holds every text file to LF on checkout; captured
 evidence and the committed samples keep their bytes verbatim. Windows on
-Arm and WSL are outside the matrix (no Windows Arm wheel for the dbt
-parser; WSL is the Linux path).
+Arm and WSL are outside the matrix (the dbt engine ships wheels for
+Windows x64, macOS, and Linux only; WSL is the Linux path).
 
 The MCP server runs on the official mcp SDK over stdio, pinned to the 1.x
 maintenance line (D-32 as amended; mcp 2.x cannot co-resolve with
