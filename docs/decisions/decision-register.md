@@ -30,7 +30,10 @@ O, P, and Q, completing the record part one opened. Decision Record
 011 (September 2, 2026) carries D-41, the multi-source proof,
 Amendments R through W, and findings F-36 through F-53. Decision Record
 012 (September 6, 2026) carries D-42, the supported platforms and the task
-entry point, and findings F-54 and F-55.
+entry point, and findings F-54 and F-55. Decision Record 013 (October 3,
+2026) carries Amendment X to D-04 and D-05 (the dbt Core v2 move),
+Amendment Y to D-20 (gate two as run, then test), the confirmation of
+D-06 under v2, and finding F-66.
 
 **Status meanings.** `adopted`: in force. `proposed`: agreed in working
 session, applied by the plans below, formal adoption pending; treat as binding
@@ -43,8 +46,8 @@ unless amended.
 | [D-01](#d-01) | Repository identity and framing | adopted |
 | [D-02](#d-02) | Apache-2.0 license; provenance in NOTICE | adopted |
 | [D-03](#d-03) | Working warehouse gitignored; demo export committed | adopted |
-| [D-04](#d-04) | dbt Core + dbt-duckdb is the transform plane | adopted |
-| [D-05](#d-05) | Version pins; dbt 1.12 adopted (Amendment N); Core v2 deferred | adopted |
+| [D-04](#d-04) | dbt Core is the transform plane; v2 with its built-in DuckDB adapter (Amendment X) | adopted |
+| [D-05](#d-05) | Version pins; dbt Core v2 adopted (Amendment X), the driver registered, dbt_utils vendored | adopted |
 | [D-06](#d-06) | ODCS v3.1.0 contracts; datacontract-cli as isolated tool | adopted |
 | [D-07](#d-07) | The engine emits dbt models, never DDL | adopted |
 | [D-08](#d-08) | Symmetric gates; contracts never weakened to pass | adopted |
@@ -59,7 +62,7 @@ unless amended.
 | [D-17](#d-17) | Gold is the unified event star | adopted |
 | [D-18](#d-18) | Keying scheme v2 (canonical_key v2) | adopted |
 | [D-19](#d-19) | Context binds by content address (schema-key registry) | adopted |
-| [D-20](#d-20) | Gate-two invocation and CI profile resolution | adopted |
+| [D-20](#d-20) | Gate-two invocation (run, then test; Amendment Y) and CI profile resolution | adopted |
 | [D-21](#d-21) | Proposer invocation architecture | adopted |
 | [D-22](#d-22) | Prompt governance and lineage | adopted |
 | [D-23](#d-23) | Context discipline: grounding without retrieval | adopted |
@@ -139,6 +142,13 @@ executes all contracted transforms as SQL dbt models with
 Python, outside dbt, because its output is a reviewable artifact, not a table.
 Three planes organize the repo: `contracts/` (specification), `transform/`
 (execution), `src/` (hand-written code).
+Amended October 3, 2026 (Record 013, Amendment X, jointly with D-05): the
+plane is dbt Core v2, the Rust engine distributed as `dbt-oss` 2.0.x,
+whose DuckDB adapter is built in and reaches the warehouse through the
+ADBC driver the project registers (D-05 as amended). The substance is
+unchanged: contracted transforms are SQL dbt models with
+`contract: enforced: true`, the profiler stays outside dbt, and the
+three planes stand.
 
 ### D-05
 **Pins and deferrals.** dbt-core `>=1.11,<1.12` (resolved 1.11.12);
@@ -171,11 +181,91 @@ digest with its packaging and driver gaps recorded. The deferral lifts
 only by a further amendment on a verified GA. The 1.11.14 lock refresh
 that preceded this amendment was a chore inside the previous range and
 needed no amendment (rule 1).
+Amended October 3, 2026 (Record 013, Amendment X, jointly with D-04): the
+dbt line moves to dbt Core v2. `dbt-oss>=2.0,<2.1` (resolved 2.0.5)
+replaces `dbt-core>=1.12,<1.13` and `dbt-duckdb>=1.11,<1.12`; the Python
+adapter retires with its line; transform/dbt_project.yml mirrors the
+range as require-dbt-version [">=2.0.0", "<2.1.0"], a declaration
+dbt-oss 2.0.5 reads and does not enforce
+([F-66](../verification/gate_proof_findings.md#f-66)), so the pin is
+held by uv.lock and `make doctor`. The deferral lifts on the condition
+this decision set: 2.0.0 went GA on September 14, 2026, and the move
+was proven before it bound: at 2.0.5 the full gate set lands every
+lane, gate, the adoption scan, and the D-33 digest at their head values;
+the warehouse the engine writes carries storage version 64 and the
+library version v1.4.3, the numbers the published asset carries; and
+datacontract-cli 1.0.12 (D-06, confirmed below) syncs `updated 0` and
+tests clean against it (F-66). Four things the line brings are named
+here because rule 1 pins by the lock. The distribution: `dbt-oss` on
+PyPI is a 5 KB source distribution whose build step downloads the engine
+wheel for the machine's platform (63 to 76 MB, carrying a 172 to 321 MB
+engine, by platform; F-66 has the figures) from GitHub releases and
+verifies it against the sha256 manifest the sdist embeds, so uv.lock
+pins the sdist by hash and the wheel is pinned by that manifest; the
+download runs through the project interpreter's own TLS trust (the F-58
+class; the demo guide's entry), and wheels exist for macOS x86_64 and
+arm64, Linux manylinux 2.28 x86_64 and aarch64, and Windows x64 only.
+The driver: v2 reaches DuckDB through an ADBC driver and its pip
+distribution ships none; with nothing registered it looks for a driver
+on the machine and then downloads one from the dbt Labs CDN, whose
+DuckDB version this project does not pin. The project registers its
+own: the extension module inside the pinned Python `duckdb` wheel
+exports the ADBC entrypoint `duckdb_adbc_init`, and `uv run mm driver`
+writes an ADBC driver manifest naming it under the repository-local
+`.adbc/` (gitignored, an absolute path, written per clone), which every
+dbt line reaches through `ADBC_DRIVER_PATH` (the Makefile exports it,
+`mm` passes it to its dbt steps, the contract-gate workflow sets it on
+its job, the Windows legs reach it through `uv run mm demo`, and `make
+doctor` prints it beside the two F-09 exports). dbt therefore writes
+the warehouse with the exact engine the serving layer, the ingest, and
+the profiler open it with; the storage version is the Python pin's by
+construction; no CDN is reached. The package: v2 resolves packages.yml
+against the package hub on every parse and build, not only on `dbt
+deps`, so a network that cannot reach hub.getdbt.com could not parse
+the project; dbt-labs/dbt_utils 1.3.3 is therefore vendored at
+transform/vendor/dbt_utils (the files dbt reads, dbt_project.yml and
+macros/, from the tag ef562bac, unmodified apart from one file's CRLF
+line endings normalized to LF by the repository's line-ending rule,
+with its Apache-2.0 LICENSE beside them and a NOTICE paragraph),
+packages.yml names it as a
+local package, the committed package-lock.yml carries v2's form, and the
+hub is never reached: the hermetic path D-27 chose for bronze, applied
+to the package. What v2 refuses: the one column-level `meta` key that
+datacontract-cli 1.0.12 wrote
+([F-27](../verification/gate_proof_findings.md#f-27)) is refused at
+parse and moves under `config`, where the pinned sync leaves it; the
+sync-generated singular tests of the level-zero silver tables carry no
+dependency edge
+([F-51](../verification/gate_proof_findings.md#f-51)) and v2 schedules
+them before their models on a cold build, which Amendment Y to D-20
+answers at the gate. The lock drops 26 packages with the 1.12 line
+(dbt-core, dbt-duckdb, dbt-core-experimental-parser, metricflow, and
+their dependencies) and adds one. dbt-core 1.12.5, the newest 1.x, was
+measured as a clean within-pin patch on October 2 and is moot under this
+amendment; the 1.12 line stays the recorded fallback, reachable by a
+further amendment. Rule 2's parse-only probe retires with the 1.12
+line; F-30 and F-31 stand as the record of that line.
 
 ### D-06
 **Contract standard and tooling.** Contracts are authored natively in ODCS
 v3.1.0. datacontract-cli, pinned at 1.0.12, is installed as an isolated uv
 tool with the `[duckdb]` extra and is never a `pyproject.toml` dependency.
+Confirmed under dbt Core v2, October 3, 2026 (Record 013): nothing in this
+decision changes. The pinned tool reads the project through the
+`manifest.json` v2 still writes and shells out to the project's `dbt`
+for its test run
+([F-04](../verification/gate_proof_findings.md#f-04),
+[F-09](../verification/gate_proof_findings.md#f-09)), so it needs
+nothing from the move: `dbt sync` prints `updated 0 YAML files` on all
+13 contracts and `dbt test` prints `Tested 13 contract(s): 3 no tests ·
+10 passed.` against a v2-built warehouse
+([F-66](../verification/gate_proof_findings.md#f-66)). The 1.2.x line
+(1.2.2 at this date) lints and tests clean too, but its sync rewrites
+all 117 committed singular tests and the one properties key, so a move
+there is its own amendment with the generated tests re-committed; it
+is not taken. The ODCS v3.2.0 additions (a `context` block,
+`synonyms`, new link types) stay unread by the pinned linter; adopting
+them is a separate D-05 and D-06 matter.
 
 ### D-07
 **The engine emits models.** The auto-modeling engine is a contract-driven
@@ -381,6 +471,32 @@ from inside the project directory,
 [F-09](../verification/gate_proof_findings.md#f-09)), and the
 bronze-landing step ([D-27](#d-27)) ordered before the gates. The relative
 forms are recorded failure modes.
+Amended October 3, 2026 (Record 013, Amendment Y): gate two is
+`uv run dbt run --project-dir transform --target local` followed by
+`uv run dbt test --project-dir transform --target local`, in place of
+`dbt build`. The singular tests `datacontract dbt sync` generates from
+the level-zero silver contracts name their table by schema and carry no
+dependency edge
+([F-51](../verification/gate_proof_findings.md#f-51)), and dbt Core v2
+schedules an edge-less test at once, before the models, so a cold `dbt
+build` fails on them (20 to 24 catalog errors per build, the count a
+race; [F-66](../verification/gate_proof_findings.md#f-66)). Running the
+models first and the tests second keeps every model, every test, and
+every red verdict; what changes is that a failing test no longer skips
+the models downstream of it inside one command, which no gate relied
+on. `make demo` (`uv run mm demo`) runs the same two steps; `make
+audit-gold` keeps its test selection. The alternative, measured and not taken: the
+seven level-zero silver contracts naming their tables through
+`{{ ref() }}` in their quality rules, the F-51 remedy generalized. It
+cold-builds clean under v2 and costs seven contract bumps, 34 generated
+tests re-versioned, a compiled-context mint, and a regeneration that
+fails the D-33 gate until a release carries it; the project's own
+amendment classifier reads each rewritten rule as a modified rule, which
+narrows by the conservative reading of D-35, although the committed
+rule signatures are unchanged. That route stays open by a later
+amendment that classifies a reference rewrite as neutral; it is
+recorded here, not taken. The CI mechanization and the profile
+resolution of Amendment B stand.
 
 ### D-21
 **Proposer invocation architecture.** Each proposer is one structured
@@ -1066,8 +1182,8 @@ authority. The mapping:
 
 | CLAUDE.md rule | Governing decision(s) |
 |---|---|
-| 1 (pins; amendment required) | D-05, D-06 |
-| 2 (v2 deferred; the 1.12 parser flag is parse-only) | D-05 (Amendment N), evidence [F-31](../verification/gate_proof_findings.md#f-31) |
+| 1 (pins; amendment required) | D-05 (Amendment X), D-06 |
+| 2 (dbt Core v2 is the engine; the registered driver; gate two as run, then test) | D-04 and D-05 (Amendment X), D-20 (Amendment Y), evidence [F-66](../verification/gate_proof_findings.md#f-66) |
 | 3 (profiler uncontracted; transforms contracted SQL) | D-04 |
 | 4 (contracts all-or-nothing) | D-06, D-08 |
 | 5 (only not_null trusted; tests for the rest) | D-12, evidence [F-06](../verification/gate_proof_findings.md#f-06)/[F-08](../verification/gate_proof_findings.md#f-08) |
@@ -1102,11 +1218,12 @@ August 29, 2026 revision (Decision Record 010), and D-38 through D-40
 (with Amendments O, P, and Q) as of the Decision Record 008 part two
 revision landed with Arc 5b, and D-41 (with Amendments R through W)
 as of the September 2, 2026 revision (Decision Record 011), and D-42 as
-of the September 6, 2026 revision (Decision Record 012). D-20 has no
-dedicated
-CLAUDE.md rule; its substance
+of the September 6, 2026 revision (Decision Record 012), and Amendments
+X and Y as of the October 3, 2026 revision (Decision Record 013). D-20's
+substance
 is encoded directly in
-[`.github/workflows/contract-gate.yml`](../../.github/workflows/contract-gate.yml),
+[`.github/workflows/contract-gate.yml`](../../.github/workflows/contract-gate.yml)
+and, since Amendment Y, named in CLAUDE.md rule 2,
 and its guard-split obligation lands with the pull request that initializes
 the dbt project. Like D-20, D-26 through D-28 carry no dedicated CLAUDE.md
 rule: D-26 lives in the repository settings and branch protection, D-27 in
