@@ -266,7 +266,8 @@ too. From the repo root, on macOS or Linux:
 export DBT_PROFILES_DIR="$PWD/transform"
 uv run dbt deps --project-dir transform
 make ingest
-uv run dbt build --project-dir transform --target local
+uv run dbt run --project-dir transform --target local
+uv run dbt test --project-dir transform --target local
 make export-demo
 uv run pytest -q
 ```
@@ -278,16 +279,18 @@ uv run pytest -q
 $env:DBT_PROFILES_DIR = "$PWD\transform"
 uv run dbt deps --project-dir transform
 uv run mm ingest
-uv run dbt build --project-dir transform --target local
+uv run dbt run --project-dir transform --target local
+uv run dbt test --project-dir transform --target local
 uv run mm export-demo
 uv run pytest -q
 ```
 
 </details>
 
-Steps 1 to 3 also run as one command, `make demo` (`uv run mm demo` on
-Windows): it lands bronze, installs the dbt packages, builds the
-contracted models, and exports the artifact, keyless by construction (a
+Steps 1 to 4 also run as one command, `make demo` (`uv run mm demo` on
+Windows): it lands bronze, installs the dbt packages, runs the
+contracted models, tests them, and exports the artifact, keyless by
+construction (a
 unit test holds the sequence to never invoking a proposer). Run
 `uv run pytest -q` after it to verify.
 
@@ -297,13 +300,17 @@ What to expect, step by step:
    environment on first run (a CPython 3.10 that uv downloads, with the
    pinned connector), then lands **247,555 bronze rows across seven
    tables** exactly as they appear in the committed extracts.
-2. `dbt build` compiles the 31 contracted models (nine human-owned
-   silver tables, 22 engine-emitted gold objects) and runs every
-   generated and declared test: it ends
-   **`PASS=334 WARN=0 ERROR=0 SKIP=0`**. Shape is enforced at compile
-   time; content rules run as tests with contract-declared severity,
-   the declared joins among them.
-3. `make export-demo` (`uv run mm export-demo`) rebuilds `demo/demo.duckdb`
+2. `dbt run` compiles and builds the 31 contracted models (nine
+   human-owned silver tables, 22 engine-emitted gold objects): it ends
+   **`Summary: 31 total | 31 success`**. Shape is enforced at compile
+   time. The models run before the tests on purpose: the generated
+   tests of the level-zero silver tables carry no dependency edge, and
+   a cold `dbt build` would run them before their tables exist (F-51,
+   F-66; D-20 as amended).
+3. `dbt test` runs every generated and declared test: it ends
+   **`Summary: 303 total | 303 success`**. Content rules run with
+   contract-declared severity, the declared joins among them.
+4. `make export-demo` (`uv run mm export-demo`) rebuilds `demo/demo.duckdb`
    from your freshly built warehouse, verifies it (per-table equal counts plus symmetric
    EXCEPT, and a content digest over every typed view compared across
    per-file connections), and writes `demo/demo.digest.json` beside it.
