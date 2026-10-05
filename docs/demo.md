@@ -10,7 +10,8 @@
 ## What you need
 
 - macOS, Linux, or Windows x64. Windows on Arm is outside the matrix
-  (the dbt parser ships no Windows Arm wheel); WSL runs the Linux path.
+  (the dbt engine ships wheels for Windows x64, macOS, and Linux only);
+  WSL runs the Linux path.
   On Windows, use PowerShell (Windows PowerShell 5.1 or PowerShell 7,
   either one); Command Prompt is not a target. Clone to a short path
   such as `C:\src\metricmine`: Path B compiles files whose paths run
@@ -264,6 +265,8 @@ too. From the repo root, on macOS or Linux:
 
 ```bash
 export DBT_PROFILES_DIR="$PWD/transform"
+export ADBC_DRIVER_PATH="$PWD/.adbc"
+make driver
 uv run dbt deps --project-dir transform
 make ingest
 uv run dbt run --project-dir transform --target local
@@ -277,6 +280,8 @@ uv run pytest -q
 
 ```powershell
 $env:DBT_PROFILES_DIR = "$PWD\transform"
+$env:ADBC_DRIVER_PATH = "$PWD\.adbc"
+uv run mm driver
 uv run dbt deps --project-dir transform
 uv run mm ingest
 uv run dbt run --project-dir transform --target local
@@ -288,9 +293,9 @@ uv run pytest -q
 </details>
 
 Steps 1 to 4 also run as one command, `make demo` (`uv run mm demo` on
-Windows): it lands bronze, installs the dbt packages, runs the
-contracted models, tests them, and exports the artifact, keyless by
-construction (a
+Windows): it lands bronze, registers the driver, installs the dbt
+package, runs the contracted models, tests them, and exports the
+artifact, keyless by construction (a
 unit test holds the sequence to never invoking a proposer). Run
 `uv run pytest -q` after it to verify.
 
@@ -299,7 +304,13 @@ What to expect, step by step:
 1. `make ingest` (`uv run mm ingest`) provisions a small connector
    environment on first run (a CPython 3.10 that uv downloads, with the
    pinned connector), then lands **247,555 bronze rows across seven
-   tables** exactly as they appear in the committed extracts.
+   tables** exactly as they appear in the committed extracts. `make
+   driver` (`uv run mm driver`) writes the one file dbt needs to find
+   its DuckDB driver, `.adbc/duckdb.toml`, naming the engine inside the
+   pinned duckdb wheel; every dbt line reads it through
+   `ADBC_DRIVER_PATH`, so nothing is downloaded and the warehouse keeps
+   the pinned storage version (D-05 as amended). `dbt deps` links the
+   vendored `dbt_utils` into place; the package hub is never reached.
 2. `dbt run` compiles and builds the 31 contracted models (nine
    human-owned silver tables, 22 engine-emitted gold objects): it ends
    **`Summary: 31 total | 31 success`**. Shape is enforced at compile
@@ -369,26 +380,17 @@ dbt lanes need, in the form your shell takes.
   `$env:AIRBYTE_OFFLINE_MODE = "1"` on Windows) and rerun. The pinned
   connector is already provisioned, and CI lands bronze the same way
   (D-27).
-- **`dbt deps` stops with `HTTPSConnectionPool(host='hub.getdbt.com',
-  port=443): Max retries exceeded`** (`make demo` runs it as its
-  package step, after the landing): the dbt package hub is unreachable
-  from this network while github.com is. The one package is
-  `dbt-labs/dbt_utils` 1.3.3, and either route installs it from its
-  GitHub tag with no hub contact. Place it by hand,
-  `git clone --depth 1 --branch 1.3.3 https://github.com/dbt-labs/dbt-utils.git transform/dbt_packages/dbt_utils`
-  (git's detached-HEAD note is harmless), then run Path B's lines
-  without the `dbt deps` line: `make demo` would run it again, and a
-  `dbt deps` that fails on the hub empties `transform/dbt_packages/`
-  first, taking the copy with it. Or edit `transform/packages.yml` for
-  the session so that its entry reads
-  `- git: "https://github.com/dbt-labs/dbt-utils.git"` with
-  `revision: 1.3.3` in place of the `package:` and `version:` lines,
-  run `dbt deps` (it installs from revision `ef562bac` and rewrites
-  `transform/package-lock.yml`), and restore both files with
-  `git checkout transform/packages.yml transform/package-lock.yml`
-  before committing anything. Both routes were measured in this
-  project's own sandbox, where the hub answers 403 and github.com
-  answers (F-60).
+- **`dbt deps`, or any dbt line, reaches `hub.getdbt.com`**: it should
+  not. The one package, `dbt-labs/dbt_utils` 1.3.3, is vendored at
+  `transform/vendor/dbt_utils` and `transform/packages.yml` names it as
+  a local package, so `dbt deps` links it into `transform/dbt_packages/`
+  with no network and a filtered network parses the project (dbt v2
+  resolves `packages.yml` on every parse, not only on deps; F-66). A
+  hub error means `packages.yml` was edited back to a hub entry; restore
+  it with `git checkout transform/packages.yml
+  transform/package-lock.yml`. The two routes an earlier guide offered
+  for a hub-less network (the tag placed by hand, the git form for a
+  session) are history (F-60 addendum).
 - **`Could not set lock on file ... metricmine.duckdb: Conflicting lock
   is held in ... python (PID ...)`** from `make ingest` or `make demo`
   (on Windows the message names the holder as `File is already open in
@@ -424,19 +426,30 @@ dbt lanes need, in the form your shell takes.
 - **A write or PRAGMA attempt refuses**: also by design. Serving is
   read-only three layers deep; the refusal names the failed check
   ([serving spec](spec/serving.md)).
-- **`uv sync` fails with `CERTIFICATE_VERIFY_FAILED` while building
-  `dbt-core-experimental-parser`**: the parser's source distribution
-  fetches its wheel from GitHub releases through the project
-  interpreter's own TLS trust, and a python.org framework CPython on
-  macOS ships with no CA bundle at its OpenSSL default path. Run the
-  framework's `Install Certificates.command` once, or export
+- **`uv sync` fails with `CERTIFICATE_VERIFY_FAILED` or `failed to
+  download` while building `dbt-oss`**: the dbt engine's source
+  distribution is a 5 KB installer that fetches the engine wheel for
+  your platform (63 to 76 MB; it unpacks to a 172 to 321 MB engine) from
+  GitHub releases through the project interpreter's own TLS trust and
+  verifies it against the sha256 manifest the installer embeds (F-66),
+  and a python.org framework
+  CPython on macOS ships with no CA bundle at its OpenSSL default path.
+  Run the framework's `Install Certificates.command` once, or export
   `SSL_CERT_FILE=/etc/ssl/cert.pem` for the session, then rerun
   `uv sync`. This project's own downloads are not affected: they add
-  certifi's bundle to whatever this machine already trusts (F-58). The parser
-  build above runs in uv's subprocess, outside that code, so it needs
-  the interpreter's own trust store wired. `make doctor` names the same
-  condition as a `trust store` warning rather than a failure, and stays
-  exit 0: the demo path runs on a bare store, this build does not.
+  certifi's bundle to whatever this machine already trusts (F-58). The
+  engine build above runs in uv's subprocess, outside that code, so it
+  needs the interpreter's own trust store wired. `make doctor` names the
+  same condition as a `trust store` warning rather than a failure, and
+  stays exit 0: the demo path runs on a bare store, this build does not.
+  A slow or interrupted download fails the same step; rerun `uv sync`.
+- **`dbt` says `Failed to load duckdb driver from name, then failed to
+  load it from the CDN`**: dbt could not find the driver the project
+  registers. Run `make driver` (`uv run mm driver`) and make sure
+  `ADBC_DRIVER_PATH` names `.adbc/` in this shell (`make doctor` prints
+  the line; `make demo` and every `make` target set it themselves). A
+  dbt that reaches the CDN instead would download a driver whose DuckDB
+  version this project does not pin (F-66); the project never does.
   CPython on Windows reads the system certificate store and needs no
   such step.
 - **Behind a proxy that inspects TLS**: the demo's own downloads verify
@@ -504,10 +517,11 @@ Windows:
 - **`$env:` is not recognized, or the environment line does nothing**:
   you are in Command Prompt. Open PowerShell (Windows PowerShell 5.1 or
   PowerShell 7) and run the same lines there.
-- **`uv sync` fails building `dbt-core-experimental-parser` with `no
-  prebuilt ... wheel for this platform`**: this is Windows on Arm. The
-  parser ships wheels for Windows x64, macOS, and Linux only, so the
-  Windows path is x64 only; WSL runs the Linux path.
+- **`uv sync` fails building `dbt-oss` with `no prebuilt dbt-oss ...
+  wheel for this platform`**: this is Windows on Arm, or a Linux older
+  than manylinux 2.28. The engine ships wheels for Windows x64, macOS,
+  and Linux (glibc 2.28 and newer) only, so the Windows path is x64
+  only; WSL runs the Linux path.
 - **A path-too-long error during Path B**: dbt compiles test files whose
   paths run past 200 characters below the clone. Clone to a short path
   (`C:\src\metricmine`), or enable long paths in Windows and in Git
@@ -532,9 +546,10 @@ warehouse, and the next run then reports the lock entry above; end the
 stale process before rerunning. Captured output in Windows PowerShell
 5.1 paints every native stderr line red (the `NativeCommandError`
 entry); read `$LASTEXITCODE`, not the color. A registry the network
-refuses stops the landing or the package install (the
-`AIRBYTE_OFFLINE_MODE` and `dbt deps` entries); this project's own
-sandbox meets both refusals, so those entries were measured there.
+refuses stops the landing (the `AIRBYTE_OFFLINE_MODE` entry); the dbt
+package is vendored, so no registry stands between a clone and a
+build; this project's own sandbox meets the Airbyte refusal, so that
+entry was measured there.
 Everything else on this page holds: the commands are one per line,
 every number is the committed sample's, and the suite's closing line
 says how many tests it skipped (`-rs` says why).
