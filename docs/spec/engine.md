@@ -27,7 +27,12 @@ and the probe transcript
 [`evidence/2026-08-01_prep_probe_transcript.md`](../verification/evidence/2026-08-01_prep_probe_transcript.md).
 All toolchain behavior cited below was observed at the pinned toolchain
 (dbt-core 1.11.12 · dbt-duckdb 1.10.1 · duckdb 1.4.3 · datacontract-cli
-1.0.12), never inferred from documentation.
+1.0.12), never inferred from documentation. The dbt line moved to dbt
+Core v2 (dbt-oss 2.0.x) in October 2026 (D-05 as amended by Amendment X):
+the engine's emission is unchanged, the gate set was re-proven on the new
+line at its head values
+([F-66](../verification/gate_proof_findings.md#f-66)), and gate two runs
+the models before the tests (D-20 as amended by Amendment Y).
 
 ## 1. Purpose and boundary
 
