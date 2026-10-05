@@ -13,7 +13,8 @@ The targets, the demo path (D-42 scopes the entry point to it):
     uv run mm doctor                        the preflight (scripts/doctor.py)
     uv run mm demo-fetch                    restore and verify the release asset
     uv run mm ingest                        land the committed samples into bronze
-    uv run mm demo [--release vX.Y.Z]       ingest, dbt deps, dbt run, dbt test, export-demo
+    uv run mm driver                        register the pinned DuckDB engine as dbt's driver
+    uv run mm demo [--release vX.Y.Z]       ingest, driver, dbt deps, dbt run, dbt test, export-demo
     uv run mm export-demo [--release vX.Y.Z]
     uv run mm demo-manifest [--release vX.Y.Z]
 
@@ -53,6 +54,8 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from metricmine import driver
+
 REPO = Path(__file__).resolve().parents[2]
 
 CONNECTOR_VENV = REPO / ".venv-source-file"
@@ -91,8 +94,13 @@ DBT_TEST = (
     "--target",
     "local",
 )
+# dbt v2 loads its DuckDB driver through ADBC; the project registers the
+# pinned wheel's engine (metricmine.driver, D-05 as amended) and names its
+# folder here for every dbt step it spawns. The dict form keeps the line
+# shell-neutral.
+DBT_ENV = {driver.ENV_VAR: str(driver.DRIVER_DIR)}
 
-TARGETS = ("doctor", "demo-fetch", "ingest", "demo", "export-demo", "demo-manifest")
+TARGETS = ("doctor", "demo-fetch", "ingest", "driver", "demo", "export-demo", "demo-manifest")
 
 
 def is_windows(platform: str | None = None) -> bool:
@@ -165,6 +173,8 @@ def plan(
         return [Step((uv, "run", "python", "scripts/doctor.py"))]
     if target == "demo-fetch":
         return [Step((uv, "run", "python", "scripts/fetch_demo.py"))]
+    if target == "driver":
+        return [Step((uv, "run", "python", "-m", "metricmine.driver"))]
     if target == "ingest":
         executable = connector_executable(windows=windows)
         return [
@@ -198,13 +208,15 @@ def plan(
         ]
     if target == "demo":
         # The keyless replay (D-24; docs/demo.md Path B in one command):
-        # land bronze, install the dbt packages, run the contracted
-        # models, test them, export the artifact. Never a proposer.
+        # land bronze, register the driver, install the dbt packages, run
+        # the contracted models, test them, export the artifact. Never a
+        # proposer.
         return [
             *plan("ingest", windows=windows, uv=uv),
+            *plan("driver", uv=uv),
             Step((uv, "run", *DBT_DEPS)),
-            Step((uv, "run", *DBT_RUN)),
-            Step((uv, "run", *DBT_TEST)),
+            Step((uv, "run", *DBT_RUN), env=DBT_ENV),
+            Step((uv, "run", *DBT_TEST), env=DBT_ENV),
             *plan("export-demo", release=release, uv=uv),
         ]
     raise ValueError(f"unknown target {target!r}; one of {', '.join(TARGETS)}")

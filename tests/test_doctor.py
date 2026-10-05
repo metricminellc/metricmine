@@ -90,7 +90,9 @@ def test_the_environment_lines_take_the_running_shells_form(
     posix_lines = capsys.readouterr().out
     assert 'export DBT_PROFILES_DIR="' in posix_lines
     assert 'export MM_WAREHOUSE_PATH="' in posix_lines
+    assert 'export ADBC_DRIVER_PATH="' in posix_lines
     assert "$env:" not in posix_lines
+    assert '$env:ADBC_DRIVER_PATH = "' in windows_lines
 
 
 def test_the_demo_artifact_hint_names_the_fetch_and_the_build(

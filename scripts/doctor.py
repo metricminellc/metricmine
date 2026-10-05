@@ -4,9 +4,10 @@ Part of the Arc 4 stable-release surface. A stranger on a fresh clone runs
 `make doctor` (`uv run mm doctor` on Windows, D-42) and learns, before
 anything builds, whether this machine can run the demo: the platform, the
 interpreter, its TLS trust store, uv, the locked toolchain, dbt packages,
-the demo artifact (fetched or built), and the two environment lines local
-dbt lanes need (the F-09 class), printed in the running shell's form.
-Read-only: nothing is installed, written, or fetched.
+the dbt driver registration, the demo artifact (fetched or built), and the
+three environment lines local dbt lanes need (the F-09 class and the
+driver folder), printed in the running shell's form. Read-only: nothing
+is installed, written, or fetched.
 
 Verdicts: PASS, WARN (the demo still runs, or the item is only needed for
 the contract gates), FAIL (the demo path is broken). Exit 0 unless a FAIL.
@@ -47,8 +48,10 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 
 # The locked packages a demo run exercises; resolved versions are read from
-# uv.lock at run time, so a lock refresh never edits this file.
-LOCKED = ["dbt-core", "dbt-duckdb", "duckdb", "anthropic", "mcp", "airbyte", "ruff"]
+# uv.lock at run time, so a lock refresh never edits this file. dbt-oss is
+# the dbt v2 engine (D-05 as amended); the duckdb wheel is both the
+# warehouse library and, registered by `mm driver`, dbt's driver.
+LOCKED = ["dbt-oss", "duckdb", "anthropic", "mcp", "airbyte", "ruff"]
 DATACONTRACT_PIN = "1.0.12"
 WINDOWS = platform.system() == "Windows"
 
@@ -219,7 +222,7 @@ def check_locked() -> None:
     if misses:
         record("FAIL", "locked toolchain", "; ".join(misses) + " (run: uv sync)")
     else:
-        summary = ", ".join(f"{p} {want.get(p, '?')}" for p in ("dbt-core", "dbt-duckdb", "duckdb"))
+        summary = ", ".join(f"{p} {want.get(p, '?')}" for p in ("dbt-oss", "duckdb"))
         record("PASS", "locked toolchain", summary + ", and the rest per uv.lock")
 
 
@@ -228,6 +231,39 @@ def check_dbt_packages() -> None:
         record("PASS", "dbt packages", "transform/dbt_packages/dbt_utils present")
     else:
         record("WARN", "dbt packages", f"not installed yet; `{cmd('demo')}` runs dbt deps first")
+
+
+def check_dbt_driver() -> None:
+    # dbt v2 reaches DuckDB through an ADBC driver; the project registers
+    # the pinned wheel's engine by a manifest `mm driver` writes under
+    # .adbc/ (D-05 as amended). Without it, dbt looks for a driver on the
+    # machine and then downloads one from the dbt Labs CDN, whose DuckDB
+    # version the project does not pin.
+    manifest = REPO / ".adbc" / "duckdb.toml"
+    if not manifest.exists():
+        record(
+            "WARN",
+            "dbt driver",
+            f"not registered yet; {cmd('driver')} writes .adbc/duckdb.toml"
+            f" ({cmd('demo')} writes it too)",
+        )
+        return
+    text = manifest.read_text(encoding="utf-8")
+    m = re.search(r'^shared = "(.*)"$', text, flags=re.MULTILINE)
+    shared = m.group(1).replace("\\\\", "\\").replace('\\"', '"') if m else ""
+    if not shared or not Path(shared).exists():
+        record(
+            "FAIL",
+            "dbt driver",
+            f".adbc/duckdb.toml names a missing library ({shared or 'none'}); run {cmd('driver')}",
+        )
+        return
+    v = re.search(r'^version = "([^"]*)"$', text, flags=re.MULTILINE)
+    record(
+        "PASS",
+        "dbt driver",
+        f"the pinned duckdb {v.group(1) if v else '?'} engine, {Path(shared).name}, registered in .adbc/",
+    )
 
 
 def check_datacontract() -> None:
@@ -307,17 +343,20 @@ def print_env_exports() -> None:
     # and Linux, $env: assignments in PowerShell on Windows (D-42).
     profiles = REPO / "transform"
     warehouse = REPO / "warehouse" / "metricmine.duckdb"
+    drivers = REPO / ".adbc"
     print()
     if WINDOWS:
-        print("Local dbt lanes need these two environment lines in every fresh")
-        print("PowerShell (absolute paths; the F-09 class):")
+        print("Local dbt lanes need these three environment lines in every fresh")
+        print("PowerShell (absolute paths; the F-09 class, and the driver folder):")
         print(f'  $env:DBT_PROFILES_DIR = "{profiles}"')
         print(f'  $env:MM_WAREHOUSE_PATH = "{warehouse}"')
+        print(f'  $env:ADBC_DRIVER_PATH = "{drivers}"')
         return
-    print("Local dbt lanes need these two exports in every fresh terminal")
-    print("(absolute paths; the F-09 class):")
+    print("Local dbt lanes need these three exports in every fresh terminal")
+    print("(absolute paths; the F-09 class, and the driver folder):")
     print(f'  export DBT_PROFILES_DIR="{profiles}"')
     print(f'  export MM_WAREHOUSE_PATH="{warehouse}"')
+    print(f'  export ADBC_DRIVER_PATH="{drivers}"')
 
 
 CHECKS = (
@@ -327,6 +366,7 @@ CHECKS = (
     ("uv", check_uv),
     ("locked toolchain", check_locked),
     ("dbt packages", check_dbt_packages),
+    ("dbt driver", check_dbt_driver),
     ("datacontract-cli", check_datacontract),
     ("demo artifact", check_demo_artifact),
 )

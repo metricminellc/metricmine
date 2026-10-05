@@ -99,9 +99,11 @@ jobs:
         run: uv run mm demo-fetch
 
       # Path B, the keyless replay: the connector venv (CPython 3.10,
-      # airbyte-source-file 0.3.15, numpy<2), the landing, dbt deps, dbt
-      # build, the export. Offline mode keeps the Airbyte registry out of
-      # it, as CI on ubuntu does (D-27).
+      # airbyte-source-file 0.3.15, numpy<2), the landing, the driver
+      # manifest (the pinned duckdb wheel's .pyd registered as dbt's ADBC
+      # driver, D-05 as amended), dbt deps, dbt run, dbt test, the export.
+      # Offline mode keeps the Airbyte registry out of it, as CI on ubuntu
+      # does (D-27).
       - name: Path B, the keyless replay
         env:
           AIRBYTE_OFFLINE_MODE: "1"

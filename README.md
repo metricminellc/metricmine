@@ -340,9 +340,13 @@ live roadmap is the
 
 ## Toolchain
 
-dbt-core 1.12.x with the dbt-duckdb 1.11.x adapter runs the transforms.
-datacontract-cli 1.0.12, installed as an isolated uv tool, executes the
-contracts. DuckDB 1.4.3 is the local warehouse. PyAirbyte handles
+dbt Core v2 (`dbt-oss` 2.0.x), the Rust engine with its built-in DuckDB
+adapter, runs the transforms; its driver is the engine inside the pinned
+Python duckdb wheel, registered by the project, so no driver is ever
+downloaded and the warehouse keeps the pinned storage version (D-05 as
+amended). datacontract-cli 1.0.12, installed as an isolated uv tool,
+executes the contracts. DuckDB 1.4.3 is the local warehouse. PyAirbyte
+handles
 ingestion. The MCP server runs on the official `mcp` SDK, pinned to the
 1.x maintenance line (D-32 as amended; the register records why). The code
 is Python 3.12, managed with uv. Every pin is a register entry; none of

@@ -34,6 +34,7 @@ def test_the_entry_point_is_declared_and_carries_the_demo_path() -> None:
         "doctor",
         "demo-fetch",
         "ingest",
+        "driver",
         "demo",
         "export-demo",
         "demo-manifest",
@@ -49,15 +50,22 @@ def test_no_target_reaches_a_proposer_or_the_key(target: str) -> None:
 
 
 def test_demo_is_the_keyless_replay_in_order() -> None:
-    lines = _lines(tasks.plan("demo", windows=False))
+    steps = tasks.plan("demo", windows=False)
+    lines = _lines(steps)
     # The models run before the tests (D-20 as amended by Amendment Y, F-66).
-    assert lines[-4:] == [
+    assert lines[-5:] == [
+        "uv run python -m metricmine.driver",
         "uv run dbt deps --project-dir transform --profiles-dir transform",
         "uv run dbt run --project-dir transform --profiles-dir transform --target local",
         "uv run dbt test --project-dir transform --profiles-dir transform --target local",
         "uv run python -m metricmine.export_demo",
     ]
     assert "uv run python -m metricmine.ingest.land_sample" in lines
+    # Each dbt step that opens the warehouse names the registered driver's
+    # folder (D-05 as amended by Amendment X).
+    run, test = steps[-3], steps[-2]
+    assert run.env == {"ADBC_DRIVER_PATH": str(tasks.REPO / ".adbc")}
+    assert test.env == run.env
 
 
 def test_dbt_lines_follow_the_repo_root_invocation_convention() -> None:

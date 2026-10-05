@@ -58,7 +58,8 @@ The daily commands, in the order they depend on each other:
 
 | Command | What it does | Reads | Writes |
 |---|---|---|---|
-| `make doctor` | checks the platform, the interpreter's TLS trust store, uv, the locked toolchain, the isolated `datacontract-cli`, the demo artifact, and prints the environment lines in the running shell's form; `python3 scripts/doctor.py` runs it before uv exists | | nothing |
+| `make doctor` | checks the platform, the interpreter's TLS trust store, uv, the locked toolchain, the dbt package, the dbt driver registration, the isolated `datacontract-cli`, the demo artifact, and prints the three environment lines in the running shell's form; `python3 scripts/doctor.py` runs it before uv exists | | nothing |
+| `make driver` | writes `.adbc/duckdb.toml`, the ADBC driver manifest that points dbt at the engine inside the pinned duckdb wheel (D-05 as amended); every `make` target exports `ADBC_DRIVER_PATH` for it, and a dbt line typed by hand needs the export `make doctor` prints, the `datacontract dbt test` lines below included, since they run dbt (without it, a machine that reaches the CDN would use a driver this project does not pin) | the project venv | `.adbc/duckdb.toml` (gitignored) |
 | `make ingest` | lands every `ingestion.sources` entry into bronze, replace semantics | the committed extracts | the warehouse's bronze schema |
 | `make profile ONLY=<schema>.<table>` | measures a table into a committed artifact | the warehouse, read-only | `profiles/<schema>.<table>/vNNNN.json` |
 | `make scan` | derives the adoption queue and names the next command per item | the tree, the contracts, the profiles, the warehouse | `proposals/plan.md` (gitignored) |
@@ -115,7 +116,8 @@ the level-zero silver tables carry no dependency edge, and a cold
     uv run dbt run --project-dir transform --target local
     uv run dbt test --project-dir transform --target local
 
-On Windows, in PowerShell, with the environment lines set:
+On Windows, in PowerShell, with the three environment lines set
+(`uv run mm doctor` prints them; `uv run mm driver` first, once per clone):
 
     Remove-Item -Force -ErrorAction SilentlyContinue warehouse\metricmine.duckdb, warehouse\metricmine.duckdb.wal
     Remove-Item -Recurse -Force -ErrorAction SilentlyContinue transform\target

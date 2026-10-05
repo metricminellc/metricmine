@@ -63,6 +63,10 @@ jobs:
       # transform/warehouse/. The profile now reads this env var with the
       # repo-root-relative default; CI pins it absolute.
       MM_WAREHOUSE_PATH: ${{ github.workspace }}/warehouse/metricmine.duckdb
+      # dbt v2 loads its DuckDB driver through ADBC; the project registers
+      # the pinned wheel's engine by the manifest `uv run mm driver` writes
+      # under .adbc/ (D-05 as amended), and every dbt line reads it here.
+      ADBC_DRIVER_PATH: ${{ github.workspace }}/.adbc
     steps:
       - uses: actions/checkout@v7
 
@@ -106,14 +110,17 @@ jobs:
           echo "$(uv tool dir --bin)" >> "$GITHUB_PATH"
 
       # dbt_packages/ and warehouse/ are gitignored, so neither exists in a
-      # fresh checkout. dbt deps installs the pinned packages (packages.yml +
-      # committed package-lock.yml). DuckDB does not create missing parent
+      # fresh checkout. dbt deps installs the pinned package from the
+      # vendored copy (packages.yml + committed package-lock.yml; the hub
+      # is never reached). DuckDB does not create missing parent
       # directories for its database file, so the warehouse directory is
-      # created here before any dbt command opens a connection.
-      - name: Build prerequisites (dbt deps + warehouse dir)
+      # created here before any dbt command opens a connection. The driver
+      # manifest is written before the first dbt line that opens one.
+      - name: Build prerequisites (driver manifest + dbt deps + warehouse dir)
         if: steps.gate.outputs.gate2 == 'true' || steps.gate.outputs.gate3 == 'true'
         run: |
           mkdir -p warehouse
+          uv run mm driver
           uv run dbt deps --project-dir transform
 
       # Bronze in CI (D-27): gate two builds silver from real bronze, landed

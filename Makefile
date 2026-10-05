@@ -2,6 +2,13 @@
 # `make ingest` (offline mode) so the gates build silver from real bronze;
 # pytest still covers only the unit surface (docs/spec/ingestion.md §4).
 
+# dbt v2 loads its DuckDB driver through ADBC (D-05 as amended). The
+# project registers the pinned wheel's engine by the manifest `make driver`
+# writes under .adbc/ (gitignored, absolute path, written per clone), and
+# every dbt line below reads it through this exported variable. A dbt line
+# typed by hand needs the same export; `make doctor` prints it.
+export ADBC_DRIVER_PATH := $(CURDIR)/.adbc
+
 # The demo path has one implementation on every platform (D-42):
 # src/metricmine/tasks.py, run as `uv run mm <target>`. The targets below
 # delegate to it, so `make <target>` on macOS and Linux and
@@ -36,6 +43,10 @@ context:
 .PHONY: doctor
 doctor:
 	uv run mm doctor
+
+.PHONY: driver
+driver:
+	uv run mm driver
 
 # The demo artifact is a release asset with a committed digest manifest
 # (D-03 and D-33 as amended by Amendment S): export-demo rebuilds the
@@ -110,7 +121,7 @@ regenerate: propose-silver propose-mapping
 # by passing mm_batch_floor; this target is the same tests with the var
 # unset, so the full-table guarantee stays one command away. Keyless.
 .PHONY: audit-gold
-audit-gold:
+audit-gold: driver
 	uv run dbt test --project-dir transform --target local --select "path:tests/datacontract_cli/gold_unified_event_star"
 
 # The describe stance (D-35): adopt an EXISTING silver table by drafting the

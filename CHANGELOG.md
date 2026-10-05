@@ -45,6 +45,25 @@ measurements.
 
 ### Changed
 
+- The dbt line is dbt Core v2: `dbt-oss` 2.0.x (resolved 2.0.5) in
+  place of `dbt-core` 1.12 and `dbt-duckdb` 1.11 (D-05 as amended by
+  Amendment X); `transform/dbt_project.yml` mirrors the range; the one
+  column-level `meta` key v2 refuses moves under `config` (F-66); the
+  lock drops 26 packages and adds one. `uv run mm driver` (`make
+  driver`) registers the engine inside the pinned duckdb wheel as dbt's
+  ADBC driver through a manifest under `.adbc/` (gitignored), the
+  Makefile exports `ADBC_DRIVER_PATH`, `mm demo` writes the manifest and
+  passes the variable to its dbt steps, the contract-gate workflow sets
+  it on its job (the Windows legs reach it through `uv run mm demo`),
+  and `make doctor` gains a ninth check for the registration and prints
+  the export beside the two F-09 lines. `dbt_utils` 1.3.3 is vendored at
+  `transform/vendor/dbt_utils` with its LICENSE and a NOTICE paragraph;
+  `packages.yml` names it as a local package and `package-lock.yml`
+  carries v2's form, so the package hub is never reached. The README,
+  the demo guide, the operating manual, and the engine spec name the new
+  line; the guide's `dbt deps` entry for a hub-less network and its two
+  `dbt-core-experimental-parser` entries become the engine's download
+  entry, the driver entry, and the platform entry.
 - Gate two runs `dbt run` and then `dbt test` in place of `dbt build`
   (D-20 as amended by Amendment Y): in CI, in `make demo` (`uv run mm
   demo`), and in the demo guide's and the operating manual's lines. The
