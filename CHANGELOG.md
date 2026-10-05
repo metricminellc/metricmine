@@ -45,6 +45,13 @@ measurements.
 
 ### Changed
 
+- Gate two runs `dbt run` and then `dbt test` in place of `dbt build`
+  (D-20 as amended by Amendment Y): in CI, in `make demo` (`uv run mm
+  demo`), and in the demo guide's and the operating manual's lines. The
+  sync-generated singular tests of the level-zero silver tables carry
+  no dependency edge (F-51), and dbt Core v2 schedules them before the
+  models on a cold build (F-66); the models first and the tests second
+  keeps every test and every verdict on both dbt lines.
 - The dbt line moves to dbt Core v2 by register amendment before any
   implementing change lands: Amendment X to D-04 and D-05 (the plane is
   `dbt-oss` 2.0.x; the deferral lifts on the GA of September 14, 2026,
