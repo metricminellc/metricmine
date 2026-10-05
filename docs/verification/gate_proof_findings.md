@@ -5,7 +5,8 @@ Scratch gate proof run July 11, 2026, prior to Phase 1 exit (Decision
 Toolchain: dbt-core 1.11.12 · dbt-duckdb 1.10.1 · DuckDB engine 1.4.3 ·
 datacontract-cli 1.0.12 (isolated uv tool). All findings below were observed
 directly, not inferred from documentation. The gate path was re-proven at
-dbt-core 1.12.3 with dbt-duckdb 1.11.0 at Arc 1 ([F-30](#f-30)); every
+dbt-core 1.12.3 with dbt-duckdb 1.11.0 at Arc 1 ([F-30](#f-30)) and at
+dbt Core v2 (dbt-oss 2.0.5) in October 2026 ([F-66](#f-66)); every
 finding stands. They supersede any conflicting
 guidance in older references. Governing rules: CLAUDE.md rules 10 and 11.
 
@@ -81,6 +82,7 @@ order by design.
 | [F-63](#f-63) | A committed `.mcp.json` is loaded without asking by every non-interactive Claude Code session, so its launch line installs nothing and fails fast on a clone that was never synced | Chore rung |
 | [F-64](#f-64) | The Microsoft Store build of Claude Desktop runs the terminals it opens under app-package virtualization, so `uv sync` from one fails on uv's Python link; two uv variables move the install out of `AppData` | Chore rung |
 | [F-65](#f-65) | Three compiler tests made a symlink that Windows grants to administrators and Developer Mode only, so the runners passed and a per-user machine failed them; the fixture falls back to a copy | Chore rung |
+| [F-66](#f-66) | dbt Core v2 builds the project after one properties-key move, resolves the package hub on every parse unless the package is local, schedules the edge-less generated tests before their models on a cold build, and ships no DuckDB driver; the engine downloads at install and the driver at first run unless the project registers its own | dbt Core v2 rung |
 
 ## Command surface (datacontract-cli 1.0.12)
 
@@ -1277,6 +1279,120 @@ the project.
 item carried forward in the
 [Arc 6 exit record](evidence/2026-09-05_arc6_exit.md))
 
+## dbt Core v2 rung (Prep V, October 2026)
+
+### F-66
+**dbt Core v2 (`dbt-oss` 2.0.5) parses and builds the project after one
+properties-key move, resolves the package hub on every parse and build
+unless the package is local, schedules the 24 edge-less generated tests
+before their models on a cold build, and ships no DuckDB driver; the
+engine arrives as a 63 to 76 MB wheel download at install and the driver
+as a CDN download at first run unless the project registers its own.**
+Measured October 2 and 3, 2026, in a Linux sandbox on fresh clones at
+`485f3a5` and `5827ac1` with the pinned Python `duckdb` 1.4.3 and
+`datacontract-cli` 1.0.12, and on October 3 on a macOS 26 arm64 machine
+(uv 0.11.28) by a read-only probe script against a scratch clone; the
+Mac facts are marked below. The distribution: `dbt-oss` 2.0.5 on PyPI
+is a 5,062-byte source distribution (sha256 `1000d181...`) with one
+dependency, `mashumaro[msgpack]`; its PEP 517 backend picks the wheel
+for the machine's platform from a manifest the sdist embeds, downloads
+it from `github.com/dbt-labs/dbt/releases` with `urllib` under the
+interpreter's default TLS context, and verifies its sha256. The
+installed engine is `dbt/_core.abi3.so` (`_core.pyd` on Windows) and the
+`dbt` command is a Python console script that loads it, so a `dbt` run
+is a Python process. Five wheels exist, measured from the release
+assets (the wheel, then the engine it carries): macOS 10.12 x86_64
+(66,535,563 bytes; 195,084,620), macOS 11.0 arm64 (62,804,126;
+172,054,112), manylinux 2.28 aarch64 (64,942,384; 186,268,120),
+manylinux 2.28 x86_64 (69,112,585; 217,513,944), and win_amd64
+(75,887,849; 321,483,776). On the Mac the build step downloaded and
+verified the arm64 wheel through a python.org framework CPython 3.12.2
+whose certificate bundle was present (`etc/openssl/cert.pem` under the
+framework), so the F-58 remedy was not needed there. The lock drops 26
+packages (dbt-core, dbt-duckdb, dbt-adapters, dbt-common, metricflow,
+dbt-core-experimental-parser, agate, and their dependencies) and adds
+one, 210 to 185. The parse: with the hub refused, `dbt parse` fails
+before parsing anything (`Failed to get index from
+https://hub.getdbt.com/api/v1/index.json`), because v2 resolves
+`packages.yml` on every parse and build; with `packages.yml` naming a
+local package it prints `Loading packages.yml` and no resolution line,
+`dbt deps` symlinks the package into `dbt_packages/` (the engine carries
+a copy-fallback event for a platform without symlinks) and writes
+`package-lock.yml` in its own form (`- local: vendor/dbt_utils`,
+`name: dbt_utils`, a new `sha1_hash`), stable across runs. The one
+refusal: `[error] [UnusedConfigKey (dbt1060)]: While parsing config:
+Ignored unexpected key "meta". YAML path: columns[9].meta` at
+`transform/models/silver/silver_invoice_lines.yml:149`, the
+column-level `meta: datacontract_cli: generated: true` that sync 1.0.12
+wrote ([F-27](#f-27)); moved under `config`, the project parses in
+about a second and the pinned sync leaves the moved key in place
+(`updated 0 YAML files` on all 13). Not a refusal: `require-dbt-version:
+[">=1.12.0", "<1.13.0"]` parses at 2.0.5 without a warning, so the
+range is a declaration under v2 and a refusal under 1.x; the October 2
+smoke recorded it as a second refusal and this re-measure corrects it.
+The driver: `dbt debug` with nothing registered prints `Failed to load
+duckdb driver from name, then failed to load it from the CDN` with the
+CDN (`public.cdn.getdbt.com`) refused, so the pip distribution ships no
+driver. Registered through `ADBC_DRIVER_PATH` with a manifest naming
+the `_duckdb` extension module of the pinned wheel (it exports
+`duckdb_adbc_init` and links no libpython; the wheel's own
+`adbc_driver_duckdb` module names the same path and entrypoint), `dbt
+show --inline 'select version()'` prints `v1.4.3` and the warehouse dbt
+writes carries storage version 64 and library `v1.4.3`, the numbers the
+published asset carries. The user configuration folder
+(`~/.config/adbc/drivers` on Linux) is honored too and
+`$VIRTUAL_ENV/etc/adbc/drivers` is not; the project uses the
+repository-local route only, so nothing is written outside the clone.
+On the Mac, with nothing registered, the driver dbt fetched from the
+CDN was DuckDB v1.5.4 (`Debugging connection test: OK`, `version()`
+`v1.5.4`) and the file it wrote carried storage version 64 with library
+`v1.5.4`; the pinned wheel's `_duckdb.cpython-312-darwin.so` (its `nm`
+lists `duckdb_adbc_init`) registered through `ADBC_DRIVER_PATH`
+answered `v1.4.3` and wrote storage version 64 with library `v1.4.3`,
+taking precedence over the cached CDN driver. The Windows `.pyd` of the
+same wheel exports the entrypoint and imports `python312.dll`, which a
+`dbt` run has loaded (read from the wheel with a PE reader); whether it
+loads as dbt's driver on Windows is measured on the toolchain pull
+request's `demo-windows` legs and recorded here by addendum. dbt-autofix
+0.22.6's dry run over the project at `5827ac1` (on the Mac) reported
+three items: the same `meta` move, the
+`require_generic_test_arguments_property` behavior flag, and the
+deprecated `target-path` key in `dbt_project.yml`; the move is made by
+hand in the toolchain pull request and the other two are backlog,
+neither refused by 2.0.5. The build: on a cold warehouse `dbt build`
+fails 20 to 24 of the 24 singular tests that name `silver.<table>` by
+schema ([F-51](#f-51)'s class, the seven level-zero
+silver contracts: nyc_flights 7, nyc_weather 5, ourairports_airports 4,
+invoice_lines 2, nyc_airlines 2, nyc_planes 2, ourairports_runways 2),
+scheduled from `[1 of 334]` before the models exist; the count is a
+race with the models (24 on October 2; 20 and 22 on October 3). `dbt
+run` then `dbt test` on the same cold warehouse: 31 models, 303 tests,
+twice (D-20 as amended); a warm `dbt build` passes all 334. With the 24
+rules rewritten to `{{ ref() }}`, the route D-20's amendment records and
+does not take, a cold `dbt build` passes twice. Under v2 the full gate
+set lands at its head values: ruff, the unit lane, 13 contracts valid at
+1.0.12, the asset fetched and verified, `server: metricmine-gold, 5
+tools`, 247,555 bronze rows, the scan's queue empty, the D-33 digest
+`PASS` (registry `d431a853...`), the local lane, `make audit-gold` 67
+tests, and `datacontract dbt sync` and `dbt test` clean; v2 also writes
+its information schema under `transform/target/private/index/` as
+Parquet beside the `manifest.json` the contract tooling reads. One more
+seam, measured and left as it was: the engine posts anonymous usage
+statistics to `p.vx.dbt.com` on every command unless
+`DBT_SEND_ANONYMOUS_USAGE_STATS=false`, `DO_NOT_TRACK=1`, or the
+profile's `send_anonymous_usage_stats: false` says otherwise (the
+engine's strings carry all three switches; the sandbox refused that host
+fifteen times during one `make demo` and every command succeeded). The
+1.12 line posted to its own collector (`fishtownanalytics.sinter-collect.com`
+in `dbt/tracking.py`) under the same default, and the project has never
+set the switch on either line; whether to is backlog, not this finding.
+The class: an engine that changes who schedules, who downloads, and who
+resolves is pinned at every one of those seams, or it is not pinned.
+(`pyproject.toml`, `transform/dbt_project.yml`,
+`transform/packages.yml`, `transform/vendor/dbt_utils/`,
+`src/metricmine/driver.py`, `scripts/doctor.py`; the toolchain pull
+request)
+
 ## Chore rung (the Arc 8 audit and the September 17 probes, minted October 2026)
 
 ### F-59
@@ -1469,6 +1585,27 @@ nobody prepared, which means it installs nothing and fails fast when the
 clone is not ready.
 (`.mcp.json`, landing with this finding; `scripts/serve_smoke.py` for the
 handshake the desktop config launches)
+
+Addendum, October 3, 2026 (HR-5, from the log of run 37111755595 on
+#203): the repository's own Action never read the pull request's
+`.mcp.json`. The claude-code-action restores `.mcp.json`, `.claude/`,
+`CLAUDE.md`, and a few other configuration paths from `origin/main`
+before it runs, because a pull request head is untrusted for them
+(`Restoring .claude, .mcp.json, .claude.json, .gitmodules, .ripgreprc,
+CLAUDE.md, CLAUDE.local.md, .husky from origin/main (PR head is
+untrusted)`), and `origin/main` at `485f3a5` did not carry the file;
+the action's SHA step had already failed to open it (`fatal: could not
+open '.mcp.json' for reading: No such file or directory`). The same
+run set `enableAllProjectMcpServers: true` in the session's settings,
+and its `--allowedTools` list named only the action's own GitHub tools
+and the workflow's three commands, so on a base that carries the file
+the action loads the project server and the model sees its tools as
+unlisted ones. Claude's reply on #203 that no `metricmine-gold` tools
+were available was therefore the reply of a session with no project
+file, not of a server that failed to start. What the action does on a
+base that carries the file is measured once, as a reported line on the
+first pull request after this addendum, and recorded by a second
+addendum.
 
 ### F-64
 **A terminal the Microsoft Store build of Claude Desktop opens inherits
