@@ -7,8 +7,10 @@ name: "metricmine"
 version: "1.0.0"
 profile: "metricmine"
 
-# Mirror of the D-05 pin, enforced by dbt itself at parse time.
-require-dbt-version: [">=1.12.0", "<1.13.0"]
+# Mirror of the D-05 pin (dbt-oss 2.0.x). A dbt 1.x install refuses the
+# project on this range; dbt-oss 2.0.5 reads the key and does not enforce
+# it (measured, F-66), so the pin is held by uv.lock and `make doctor`.
+require-dbt-version: [">=2.0.0", "<2.1.0"]
 
 model-paths: ["models"]
 macro-paths: ["macros"]
