@@ -64,7 +64,7 @@ The daily commands, in the order they depend on each other:
 | `make scan` | derives the adoption queue and names the next command per item | the tree, the contracts, the profiles, the warehouse | `proposals/plan.md` (gitignored) |
 | `make context` | compiles every governing contract into the next context artifact | `contracts/` | `context/compiled/vNNNN.json` |
 | `make regen` | emits the gold star from the mapping contracts | `contracts/`, the newest context | `transform/models/gold/`, the ownership manifest |
-| `uv run dbt build --project-dir transform --target local` | builds every model with contract enforcement and runs every test | | the warehouse |
+| `uv run dbt run --project-dir transform --target local`, then `uv run dbt test --project-dir transform --target local` | builds every model with contract enforcement, then runs every test (D-20 as amended: the models first, because the generated tests of the level-zero silver tables carry no dependency edge, F-51, F-66) | | the warehouse |
 | `uv run datacontract dbt sync contracts/*.odcs.yaml --project-dir transform --target local` | writes the contracts' rules as dbt tests and refreshes properties | `contracts/` | `transform/tests/datacontract_cli/`, properties files |
 | `uv run datacontract dbt test contracts/*.odcs.yaml --project-dir transform --target local` | runs the contract tests (gate 3) | | |
 | `make audit-gold` | every contract-generated gold test in full-table form | | |
@@ -105,18 +105,23 @@ a failure.
 A warm build (`dbt build` over an existing warehouse) is fine while you
 iterate on one model. Build cold whenever a contract changed, a
 category was added, or you are about to claim a number: remove the
-warehouse and the parse cache, land, build.
+warehouse and the parse cache, land, run, test. Cold, the models go
+first and the tests second (D-20 as amended): the generated tests of
+the level-zero silver tables carry no dependency edge, and a cold
+`dbt build` runs them before their tables exist (F-51, F-66).
 
     rm -f warehouse/metricmine.duckdb warehouse/metricmine.duckdb.wal && rm -rf transform/target
     make ingest
-    uv run dbt build --project-dir transform --target local
+    uv run dbt run --project-dir transform --target local
+    uv run dbt test --project-dir transform --target local
 
-On Windows, in PowerShell, with the two environment lines set:
+On Windows, in PowerShell, with the environment lines set:
 
     Remove-Item -Force -ErrorAction SilentlyContinue warehouse\metricmine.duckdb, warehouse\metricmine.duckdb.wal
     Remove-Item -Recurse -Force -ErrorAction SilentlyContinue transform\target
     uv run mm ingest
-    uv run dbt build --project-dir transform --target local
+    uv run dbt run --project-dir transform --target local
+    uv run dbt test --project-dir transform --target local
 
 Why both removals. A warehouse that already carries tables cannot show
 what a fresh clone sees: a test that runs before its table exists
@@ -236,7 +241,7 @@ oracle and reports agreement; it needs the key and never runs in CI.
 | Gate | Command | A failure means | What to do |
 |---|---|---|---|
 | Gate 1, lint | `uv run datacontract lint <contract>` | the contract is not valid ODCS or the mapping violates its schema | fix the contract; never the gate |
-| Gate 2, build enforcement | `uv run dbt build ...` | a model's shape disagrees with its contract (a column missing, a type drifted, a not_null violated) or a test failed | fix the model, or amend the contract with a bump; never weaken a contract to pass |
+| Gate 2, build enforcement | `uv run dbt run ...`, then `uv run dbt test ...` | a model's shape disagrees with its contract (a column missing, a type drifted, a not_null violated) or a test failed | fix the model, or amend the contract with a bump; never weaken a contract to pass |
 | Gate 3, contract tests | `datacontract dbt sync` then `datacontract dbt test` | a contract's quality rule fails in the warehouse (a grain duplicate, a regex miss, a completeness under its floor, a conservation break) | read the named rule; the fix is in the data path or a deliberate amendment |
 | The unit lane | `uv run pytest -m "not local" -q` | a keyless invariant broke: the emission oracle, the pattern gate, K1, provenance, the samples gate, the compiler's tests, the query module | see the named test; the oracle and the pattern gate name the object |
 | The local lane | `uv run pytest -m local -q` | a warehouse-backed invariant broke: a declared join drifted, conservation, the serving questions, the server round trip | rebuild cold first; then read the named assertion |
