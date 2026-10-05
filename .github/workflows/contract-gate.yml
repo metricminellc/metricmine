@@ -138,9 +138,16 @@ jobs:
             datacontract lint "$contract"
           done
 
-      - name: "Gate 2: dbt build (compile-time shape enforcement)"
+      # Gate two runs the models and then the tests (D-20 as amended by
+      # Amendment Y): the sync-generated singular tests of the level-zero
+      # silver tables carry no dependency edge (F-51), and dbt v2 schedules
+      # an edge-less test before the models, so a cold `dbt build` fails
+      # on them (F-66).
+      - name: "Gate 2: dbt run, then dbt test (compile-time shape enforcement)"
         if: steps.gate.outputs.gate2 == 'true'
-        run: uv run dbt build --project-dir transform --target local
+        run: |
+          uv run dbt run --project-dir transform --target local
+          uv run dbt test --project-dir transform --target local
 
       - name: "Gate 3: datacontract dbt sync + test"
         if: steps.gate.outputs.gate3 == 'true'
