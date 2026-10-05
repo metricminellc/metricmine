@@ -45,6 +45,21 @@ measurements.
 
 ### Changed
 
+- The dbt line moves to dbt Core v2 by register amendment before any
+  implementing change lands: Amendment X to D-04 and D-05 (the plane is
+  `dbt-oss` 2.0.x; the deferral lifts on the GA of September 14, 2026,
+  proven at 2.0.5; the DuckDB driver is the pinned wheel's engine,
+  registered by the project; `dbt_utils` is vendored as a local package;
+  the one properties key v2 refuses moves under `config`), Amendment Y
+  to D-20 (gate two is `dbt run`, then `dbt test`, because the
+  edge-less generated tests of the level-zero silver tables schedule
+  first on a cold build under v2), and the confirmation of D-06 under
+  v2 (datacontract-cli stays at 1.0.12). Finding F-66 records the v2
+  build and what the engine refuses, downloads, and resolves; an
+  addendum to F-63 records what the repository's Claude Action did with
+  the committed `.mcp.json` (it restored the file from `origin/main`,
+  where it did not yet exist). `CLAUDE.md` rules 1 and 2 and its
+  toolchain section name the new line.
 - `gold_invoice_lines_mapping` v1.1.2 (D-08, a description patch):
   the quantity sentence restates silver v1.3.0 instead of
   contradicting it, so a consumer no longer reads two sentences that
