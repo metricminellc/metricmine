@@ -146,9 +146,10 @@ models:
         constraints:
           - type: not_null
         description: "Capture timestamp carried forward from the bronze landing (_airbyte_extracted_at): when the surviving line's earliest capture entered the pipeline. The incremental watermark the gold layer builds on; now required because the incremental path is proven and every row is populated."
-        meta:
-          datacontract_cli:
-            generated: true
+        config:
+          meta:
+            datacontract_cli:
+              generated: true
         data_tests:
           - not_null:
               config:
