@@ -12,19 +12,92 @@ as-is. Configuration comes from the ingestion block of
 config/default.yaml, whose ``sources`` list carries one entry per
 committed extract; this script takes no arguments, the same posture as
 scripts/fetch_sample.py.
+
+``main`` first installs the temp-file shim (F-67): PyAirbyte 0.53 leaves
+its temporary files read-only and then retries their deletion for four
+seconds each on Windows, so the landing gives each file its write bit
+back before PyAirbyte's cleanup runs. tasks.py's ingest step runs this
+module for both ``mm ingest`` and ``mm demo``, so the shim covers both.
 """
 
 from __future__ import annotations
 
+import contextlib
+import stat
 import sys
 from pathlib import Path
 
 import airbyte as ab
+import airbyte._connector_base as _ab_connector_base
+import airbyte._util.temp_files as _ab_temp_files
+import airbyte.sources.base as _ab_sources_base
 import yaml
 from airbyte.caches import DuckDBCache
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 CONFIG_PATH = REPO_ROOT / "config" / "default.yaml"
+
+# PyAirbyte 0.53 writes the connector's config, catalog, and state to
+# temporary files through ``airbyte._util.temp_files.as_temp_files``, makes
+# each one read-only, and on exit retries the unlink five times with a
+# one-second sleep between attempts before warning ``Failed to remove
+# temporary file``. Windows refuses to delete a read-only file, so every
+# temp file there costs four seconds and stays in the temp folder: five
+# files per source, 35 per landing, about 140 seconds (F-67). The helper is
+# bound by name at import time in each module that calls it, so the landing
+# rebinds it in the two modules on its path (check in ``_connector_base``,
+# discover and read in ``sources.base``);
+# ``destinations.base`` carries the same binding and the landing never
+# uses a destination. Each module is imported by alias, because ``main``
+# below has a local named ``sources``. A PyAirbyte pin move revisits this
+# (the install refuses a module whose binding it does not recognize).
+TEMP_FILE_REBIND_TARGETS = (_ab_sources_base, _ab_connector_base)
+
+
+def writable_before_cleanup(as_temp_files):
+    """Wrap PyAirbyte's ``as_temp_files`` so each temporary file gets its
+    owner write bit back before PyAirbyte's own cleanup unlinks it.
+
+    The wrapper's ``finally`` runs before the wrapped context manager's,
+    so the chmod lands between the caller's block and the unlink loop. On
+    POSIX the unlink succeeds either way and the chmod changes nothing
+    observable; on Windows it turns a four-second retry loop and a warning
+    into one successful delete. A chmod that fails is left to the loop.
+    """
+
+    @contextlib.contextmanager
+    def writable_temp_files(files_contents):
+        with as_temp_files(files_contents) as paths:
+            try:
+                yield paths
+            finally:
+                for name in paths:
+                    path = Path(name)
+                    with contextlib.suppress(OSError):
+                        path.chmod(path.stat().st_mode | stat.S_IWUSR)
+
+    writable_temp_files.wraps_as_temp_files = as_temp_files
+    return writable_temp_files
+
+
+def install_temp_file_shim() -> None:
+    """Rebind ``as_temp_files`` in every module of TEMP_FILE_REBIND_TARGETS
+    to the writable-before-cleanup wrapper (F-67). Idempotent. Refuses a
+    module whose binding is not PyAirbyte's own helper, so a pin move that
+    changes the binding fails here, loudly, instead of silently restoring
+    the Windows cost."""
+    original = _ab_temp_files.as_temp_files
+    for module in TEMP_FILE_REBIND_TARGETS:
+        bound = getattr(module, "as_temp_files", None)
+        if getattr(bound, "wraps_as_temp_files", None) is original:
+            continue
+        if bound is not original:
+            raise RuntimeError(
+                f"{module.__name__}.as_temp_files is not"
+                " airbyte._util.temp_files.as_temp_files; the PyAirbyte pin"
+                " moved its binding, so revisit the temp-file shim (F-67)"
+            )
+        module.as_temp_files = writable_before_cleanup(original)
 
 
 def build_source_config(cfg: dict, csv_path: Path) -> dict:
@@ -81,6 +154,7 @@ def ingestion_sources(cfg: dict) -> list[dict]:
 
 
 def main() -> int:
+    install_temp_file_shim()
     cfg = yaml.safe_load(CONFIG_PATH.read_text())["ingestion"]
     warehouse_path = (REPO_ROOT / cfg["warehouse_path"]).resolve()
     sources = ingestion_sources(cfg)
