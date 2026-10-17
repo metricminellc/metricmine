@@ -83,6 +83,7 @@ order by design.
 | [F-64](#f-64) | The Microsoft Store build of Claude Desktop runs the terminals it opens under app-package virtualization, so `uv sync` from one fails on uv's Python link; two uv variables move the install out of `AppData` | Chore rung |
 | [F-65](#f-65) | Three compiler tests made a symlink that Windows grants to administrators and Developer Mode only, so the runners passed and a per-user machine failed them; the fixture falls back to a copy | Chore rung |
 | [F-66](#f-66) | dbt Core v2 builds the project after one properties-key move, resolves the package hub on every parse unless the package is local, schedules the edge-less generated tests before their models on a cold build, and ships no DuckDB driver; the engine downloads at install and the driver at first run unless the project registers its own | dbt Core v2 rung |
+| [F-67](#f-67) | PyAirbyte leaves each temporary file read-only and retries its deletion for four seconds; Windows refuses the delete, so a landing there spent about 140 seconds and left 35 files behind; the landing restores the write bit before the cleanup | Windows rung, continued |
 
 ## Command surface (datacontract-cli 1.0.12)
 
@@ -1701,6 +1702,19 @@ the redirection is a candidate, not built.
 (the Windows troubleshooting entry and the agent-run section of
 [`docs/demo.md`](../demo.md), landing with this finding)
 
+**Addendum (October 6, 2026): the temp half is F-67, not the
+redirection.** The `WinError 5` the recipient's `mm ingest` printed
+while removing a temporary file is PyAirbyte's own read-only chmod
+meeting Windows' refusal to delete a read-only file ([F-67](#f-67)),
+which fires on a plain hosted runner with no Store app on every landing
+(35 lines per job on the toolchain pull request's green run) and does
+not stop the landing; on the recipient's retry, after a stale lock was
+cleared, the warnings continued without stopping the ingest. Setting
+`TEMP` and `TMP` does not change it, so the guide's entry keeps the two
+uv variables the report confirmed and drops the temp lines; the landing
+now restores the write bit before PyAirbyte's cleanup. The `uv sync`
+half stands as written.
+
 ### F-65
 **Three compiler tests made a symlink to the contracts directory, which
 Windows grants to administrators and to Developer Mode and refuses a
@@ -1722,3 +1736,84 @@ stranger meets them only in the closing `pytest -q` the guide asks for.
 (`tests/test_context_compiler.py`, the `_contracts_into` helper and
 `test_contracts_fall_back_to_a_copy_without_the_symlink_privilege`,
 landing with this finding)
+
+## Windows rung, continued (Prep G, October 2026)
+
+### F-67
+**PyAirbyte 0.53 makes each temporary file it writes read-only and then
+retries its deletion five times, one second apart; Windows refuses to
+delete a read-only file, so every landing there spent four seconds per
+file, 35 files and about 140 seconds per run, and left the 35 files in
+the temp folder.** The mechanism, read in the resolved wheel (airbyte
+0.53.2, `airbyte/_util/temp_files.py`): `as_temp_files` writes each
+content to a `NamedTemporaryFile` with `delete=False`, runs
+`Path(temp_file.name).chmod(stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH)`
+(line 41), and in its `finally` tries the unlink up to five times with
+`time.sleep(1)` between attempts before warning `Failed to remove
+temporary file: '...'. [WinError 5] Access is denied`. The helper is
+called once for check (`airbyte/_connector_base.py`, line 336), once
+for discover (`airbyte/sources/base.py`, line 312), and once for read
+with three files (`airbyte/sources/base.py`, line 775: the config as
+`.json`, the catalog and the state as `.txt`): five files per source,
+seven sources, 35 per landing. Measured on the toolchain pull request's
+green `demo-windows` run 37359183822 (October 5, 2026): 70 `Failed to
+remove temporary file` lines across the two jobs, 35 per job, in the
+five-per-source pattern (`.json`, `.json`, `.json`, `.txt`, `.txt`),
+consecutive warnings inside one read step four seconds apart
+(18:53:51, 18:53:55, 18:53:59 in the `pwsh` job), the `pwsh` job's
+keyless replay at 4m00s and the `powershell` job's at 4m43s; the same
+landing in a Linux sandbox prints zero such lines, because POSIX deletes
+a read-only file when its directory permits. Upstream has not changed
+it: read from PyPI on October 6, 2026, the helper's file is
+byte-identical in 0.53.3 (August 5, inside the pin range and outside the
+lock), 0.71.2 (October 6, the newest 0.x), and 1.0.0rc19 (October 6),
+and all three bind it by name in the same three modules. The fix: the
+landing rebinds `as_temp_files` in `airbyte.sources.base` and
+`airbyte._connector_base`
+(`airbyte.destinations.base` carries the same binding and the landing
+uses no destination) to a wrapper that gives each file its owner write
+bit back after the caller's block and before PyAirbyte's own cleanup,
+so the first unlink succeeds; it installs at the top of `main()`, which
+`tasks.py` runs for both `mm ingest` and `mm demo`, on every platform,
+and it refuses a module whose binding is not PyAirbyte's helper, so a
+pin move revisits it. The unit tests simulate Windows semantics
+(`Path.unlink` raises `PermissionError` while a file lacks its write
+bit), check the simulation against the unshimmed helper first (eight
+recorded sleeps, two warnings, two files left behind), then assert that
+with the shim no sleep is recorded, no warning is raised, and both
+files are gone; two more hold the shim to the pin: both rebinding
+targets bound the helper when the tests were imported, and every
+`as_temp_files(` call in the installed package sits in a module the
+shim rebinds or in the unused `destinations.base`, so a release that
+adds or moves a call site fails a test instead of restoring the cost.
+On Linux the landing's row counts (247,555) and the bronze content
+digests are unchanged by the shim, and the warning count is zero
+before and after; under simulated Windows delete semantics on Linux
+(`Path.unlink` refusing a file that lacks its write bit, installed
+through `sitecustomize` around the exact line `tasks.py` runs), the
+unshimmed landing printed 35 warnings, left 35 files in `/tmp`, and
+ran 3m30s, and the shimmed landing printed none, left none, and ran
+1m09s, with identical bronze content. The Windows count and the step
+time after the fix are measured on this finding's pull request's
+`demo-windows` legs and recorded here by addendum. What this explains:
+F-64's temp half, the `WinError 5` the Windows recipient saw from `mm
+ingest`, is this
+mechanism and not the Store build's redirection, and the recipient's
+warnings "continued without stopping the ingest" because the helper
+warns and moves on; the guide's `TEMP` and `TMP` lines did nothing for
+it. Recorded and not fixed: on Windows, check and discover print
+`AirbyteSubprocessFailedError ... Exit Code: 1` as an ignored
+exception (reported on October 5 from a read of the `pwsh` job log of
+#227, job 111897012057, under the 1.12 line, and not among the lines
+this record captured; its count on this finding's pull request's
+Windows legs is recorded here by addendum). The executor
+terminates the connector once the message it wants has arrived and
+tolerates exit codes 0 and -15 (`airbyte/_executors/base.py`, line
+149), while `Popen.terminate` on Windows ends the process with exit
+code 1, so the check raises inside a closing generator. It costs no
+time. The class: a library's cleanup written for one platform's file
+semantics is a per-file timeout on another, and the cost stays
+invisible until a run on that platform is timed step by step.
+(`src/metricmine/ingest/land_sample.py` and `tests/test_land_sample.py`,
+landing with this finding; the Windows troubleshooting entry of
+[`docs/demo.md`](../demo.md))

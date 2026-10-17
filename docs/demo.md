@@ -479,27 +479,26 @@ Windows:
   does so when no Python is installed. Nothing here needs one: uv
   provisions the project's Python during `uv sync`, so skip the
   pre-install check and run `uv run mm doctor` after the sync.
-- **`uv sync` fails with a missing target directory under `%APPDATA%\uv`,
-  or `uv run mm ingest` fails removing a temporary file with
-  `WinError 5`, in a terminal that Claude Desktop from the Microsoft
-  Store opened**: the Store build's writes under `AppData` are
-  redirected into its package folder
+- **`uv sync` fails with a missing target directory under `%APPDATA%\uv`
+  in a terminal that Claude Desktop from the Microsoft Store opened**:
+  the Store build's writes under `AppData` are redirected into its
+  package folder
   (`%LOCALAPPDATA%\Packages\Claude_pzs8sxrjxfjjc\LocalCache`, the
   redirection behind the config-file note above), a terminal the app
   opens inherits it, and the link uv makes from the Python minor
   version to its install then points where nothing landed (the
   link's targets were seen inside the package folder). Before
-  `uv sync`, point uv and the temp folder at plain paths outside
-  `AppData` for the session:
+  `uv sync`, point uv at plain paths outside `AppData` for the
+  session:
   `$env:UV_PYTHON_INSTALL_DIR = "$env:USERPROFILE\uv\python"`,
-  `$env:UV_CACHE_DIR = "$env:USERPROFILE\uv\cache"`,
-  `New-Item -ItemType Directory -Force "$env:USERPROFILE\tmp" | Out-Null`,
-  `$env:TEMP = "$env:USERPROFILE\tmp"`, `$env:TMP = $env:TEMP`. The two
-  uv variables fixed the sync on the Windows 10 machine that reported
-  it (a run dated September 23, 2026, reported on October 2; F-64); the
-  temp half is likely the same redirection and is unconfirmed. uv reads
-  both variables on every platform (`uv python dir` and `uv cache dir`
-  print the directories in use).
+  `$env:UV_CACHE_DIR = "$env:USERPROFILE\uv\cache"`. The two
+  variables fixed the sync on the Windows 10 machine that reported it
+  (a run dated September 23, 2026, reported on October 2; F-64). uv
+  reads both on every platform (`uv python dir` and `uv cache dir`
+  print the directories in use). The `WinError 5` the same machine
+  printed while `uv run mm ingest` removed a temporary file was
+  PyAirbyte's own doing, not the redirection, and the landing no
+  longer prints it (F-67).
 - **Red `NativeCommandError` text around lines from `uv` or `git`**:
   Windows PowerShell 5.1 turns anything a native command writes to
   stderr into an error record when the output is redirected (an agent
@@ -539,8 +538,8 @@ The first runs on machines nobody prepared were driven by an agent
 reading this page, not by a person at a terminal, and four things are
 different when the shell is the agent's. A terminal the Microsoft
 Store build of Claude Desktop opens inherits the app's redirected
-`AppData`, so set the four variables in the Windows entry above before
-`uv sync`. An
+`AppData`, so set the two uv variables in the Windows entry above
+before `uv sync`. An
 agent's command time limit can end a run without closing the
 warehouse, and the next run then reports the lock entry above; end the
 stale process before rerunning. Captured output in Windows PowerShell

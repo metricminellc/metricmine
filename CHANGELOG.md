@@ -52,6 +52,12 @@ measurements.
   `pwsh` leg and the same demo path green on the `powershell` leg, the
   first run's one path-form test failure, and the DuckDB version the
   legs do not print).
+- Finding F-67 in the findings register: PyAirbyte 0.53 leaves each
+  temporary file read-only and retries its deletion five times, one
+  second apart, which Windows refuses, so a landing there spent about
+  140 seconds and left 35 files in the temp folder (measured on the
+  toolchain pull request's Windows legs); an addendum to F-64 says its
+  temp half was this mechanism and not the Store build's redirection.
 
 ### Changed
 
@@ -149,6 +155,20 @@ measurements.
 
 ### Fixed
 
+- The bronze landing gives each of PyAirbyte's temporary files its
+  write bit back before PyAirbyte's own cleanup runs, by rebinding
+  `as_temp_files` in the two PyAirbyte modules on the landing's path,
+  so a Windows landing no longer spends four seconds per file in a
+  retry loop that ends in `Failed to remove temporary file` and no
+  longer leaves 35 files behind (F-67); the shim installs at the top of
+  the landing's `main`, which `mm ingest` and `mm demo` both run, on
+  every platform, and refuses a PyAirbyte whose binding it does not
+  recognize. Its tests simulate the Windows refusal, so they tell the
+  fixed code from the broken code on Linux and macOS too, and they fail
+  when a PyAirbyte release moves the helper's binding or adds a call
+  site the shim does not cover. The demo
+  guide's Microsoft Store entry drops the `TEMP` and `TMP` lines, which
+  did nothing for the warning, and keeps the two uv variables.
 - The compiler tests' mini repository falls back to a copy of
   `contracts/` where the platform refuses a symlink, so the three
   tests no longer depend on the privilege a per-user Windows account
