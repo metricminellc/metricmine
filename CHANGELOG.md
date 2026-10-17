@@ -42,6 +42,16 @@ measurements.
   agent runs the demo. Findings F-64 and F-65 in the findings
   register, with addenda to F-55 (the desktop step stays unmeasured)
   and F-60.
+- Two addenda from the dbt Core v2 sitting of October 5: the second
+  addendum to F-63 closes HR-5 (on a base that carries `.mcp.json`,
+  the repository's Claude Action loads the project server and the
+  session lists its five tools; the log prints no launch line, so the
+  reply is the evidence), and an addendum to F-66 records the Windows
+  legs of the toolchain pull request (the pinned wheel's `.pyd`
+  registered as dbt's driver, 31 models and 303 tests printed on the
+  `pwsh` leg and the same demo path green on the `powershell` leg, the
+  first run's one path-form test failure, and the DuckDB version the
+  legs do not print).
 
 ### Changed
 
@@ -111,6 +121,12 @@ measurements.
   the same; the contributing guide's provenance paragraph names the
   seven committed extracts `docs/sources.md` registers in place of one
   sample.
+- `CLAUDE.md` rule 7 names the adapter in force: `materialized_view`
+  is not implemented by dbt Core v2's built-in DuckDB adapter (a model
+  configured with it parses and fails at run, measured at 2.0.5), as it
+  did not exist on dbt-duckdb 1.x; and its conventions carry the
+  pure-path rule for tests that assert a path's printed form, which
+  the toolchain pull request's first Windows run earned.
 - The demo guide scopes the administrator-rights sentence to what is
   true: uv installs per user and nothing after the two installs needs
   elevation, while the Git for Windows installer asks for it, `--scope
