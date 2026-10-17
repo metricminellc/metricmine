@@ -1393,6 +1393,43 @@ resolves is pinned at every one of those seams, or it is not pinned.
 `src/metricmine/driver.py`, `scripts/doctor.py`; the toolchain pull
 request)
 
+**Addendum (October 5, 2026): the Windows `.pyd` as dbt's driver,
+measured on the toolchain pull request's `demo-windows` legs.** On
+#228 both legs, PowerShell 7 (`pwsh`) and Windows PowerShell 5.1
+(`powershell`), ran `uv run mm demo`, which writes the driver manifest
+and passes `ADBC_DRIVER_PATH` to its `dbt run` and `dbt test` steps.
+Run 37359183822 passed on both shells, the D-33 manifest gate and the
+whole suite included (by their step times, the `pwsh` job ran from
+18:52:07 to 18:58:06 and the `powershell` job from 18:52:12 to
+18:59:44 UTC). The `pwsh` job's log, in order: the preflight before the replay
+printed `WARN dbt driver        not registered yet; uv run mm driver
+writes .adbc/duckdb.toml (uv run mm demo writes it too)` and the export
+line `$env:ADBC_DRIVER_PATH = "D:\a\metricmine\metricmine\.adbc"`;
+the replay printed `wrote D:\a\metricmine\metricmine\.adbc\duckdb.toml:
+duckdb 1.4.3 at
+D:\a\metricmine\metricmine\.venv\Lib\site-packages\_duckdb.cp312-win_amd64.pyd`,
+then `Summary: 31 total | 31 success` and `Summary: 303 total | 303
+success`; the manifest gate printed `built warehouse: 19 tables and 3
+views match the manifest`, `local artifact: matches the manifest`, and
+`demo manifest matches the built warehouse content: PASS`. The
+`powershell` job's steps all completed (the keyless replay in 4m43s,
+the manifest gate in 10s, the suite in 1m22s) and the run concluded
+`success`; the record captured its preflight and fetch lines, and its
+dbt summaries and manifest gate lie past the sixty lines it kept.
+The first run on the pull request, 37357250004, failed at the suite on
+one test that had built a POSIX path with `Path()` and asserted its
+printed form
+(`tests/test_driver.py::test_the_environment_line_takes_the_shells_form`;
+`1 failed, 698 passed, 70 skipped` in the `pwsh` job's failed-step
+log, and a job reaches its suite step only after every demo step has
+passed); the test now builds `PurePosixPath` and `PureWindowsPath`.
+What the legs do not print: the DuckDB version the driver reports on
+Windows. The manifest names the pinned wheel's `.pyd` and its version
+and `dbt run` built the 31 models through it, but no `version()` line
+is printed there; on macOS the registered route takes precedence over
+a cached CDN driver (the October 3 probe), and that is the inference
+for Windows until a leg prints the line.
+
 ## Chore rung (the Arc 8 audit and the September 17 probes, minted October 2026)
 
 ### F-59
@@ -1606,6 +1643,29 @@ file, not of a server that failed to start. What the action does on a
 base that carries the file is measured once, as a reported line on the
 first pull request after this addendum, and recorded by a second
 addendum.
+
+Second addendum, October 5, 2026 (HR-5, measured on #226, whose base
+carries the file): on a base that carries `.mcp.json`, the repository's
+own Action loads the project server. The answering run, 37344323180,
+restored the configuration paths from `origin/main` as before
+(`Restoring .claude, .mcp.json, .claude.json, .gitmodules, .ripgreprc,
+CLAUDE.md, CLAUDE.local.md, .husky from origin/main (PR head is
+untrusted)`), where the file now exists (on main since #203), and set
+`enableAllProjectMcpServers: true`; its allowed-tools lists named the
+action's own GitHub tools and no `mcp__metricmine-gold__` tool, and no
+line of its log names one outside the comment's own text, as on #203.
+The workflow syncs the project before Claude Code starts
+(`claude.yml`, the step "Install project (uv sync)"), so the committed
+launch line found its environment, and the session listed exactly the
+five `mcp__metricmine-gold__` tools (`get_context`, `get_schema`,
+`list_fact_categories`, `lookup_record`, `query`) when asked,
+read-only, on #226, adding that none was called, no command was run,
+and nothing was edited, committed, or pushed; the pull request carried
+its four prepared commits unchanged. The action's log prints no line
+for the server's launch or for its tool list, so the tools' visibility
+is the reply's own evidence. HR-5 is closed: the Action tolerates the
+committed file, loads it from the base and never from a pull request
+head, and exposes the server's tools to the model as unlisted ones.
 
 ### F-64
 **A terminal the Microsoft Store build of Claude Desktop opens inherits
