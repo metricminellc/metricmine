@@ -49,9 +49,13 @@ approves every contract.
 6. Never weaken a contract to make a failing build pass. Contract changes and
    transform changes are separate pull requests, and a contract change requires
    a version bump.
-7. `materialized_view` does not exist on dbt-duckdb. Use `table`, the
-   committed default, or `incremental` behind engine.materialization
-   (D-38). Never design around materialized views.
+7. `materialized_view` is not implemented by dbt Core v2's built-in
+   DuckDB adapter: a model configured with it parses and fails at run
+   with `get_create_materialized_view_as_sql has not been implemented
+   for this adapter` (dbt1501; measured at 2.0.5 on October 6, 2026),
+   as it did not exist on dbt-duckdb 1.x. Use `table`, the committed
+   default, or `incremental` behind engine.materialization (D-38).
+   Never design around materialized views.
 8. Never edit a generated file whose ownership-manifest checksum has diverged
    from its baseline. Flag the drift instead.
 9. The auto-modeling engine emits dbt model files; it does not execute DDL
@@ -332,6 +336,12 @@ Decisions cited anywhere as D-0x resolve in
   (`git commit -s`); the DCO check on the pull request enforces it.
 - Use plan mode for any multi-file change; show the plan before editing.
 - Prefer editing existing files over creating new ones.
+- A test that asserts a path's printed form builds the path as
+  `PurePosixPath` or `PureWindowsPath`, never as `Path("/...")`: the
+  machines the project develops on are POSIX, so such a test passes
+  there and fails only on the `demo-windows` legs, where `Path("/x")`
+  prints `\x` (the toolchain pull request's first Windows run, October
+  5, 2026).
 - Never read or write paths outside the repository working tree.
   External inputs are staged into the repo by Justin before a session
   needs them. The working-tree guard enforces this rule (D-37): a
