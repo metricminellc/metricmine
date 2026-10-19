@@ -1,0 +1,14 @@
+# The governed documents register, bindings (D-43): one row per contract
+# column that rests on a quote from a governed document. The anchor is
+# validated against the extraction at bind time and on every scan. Changes
+# only by pull request; a draft is rendered by `bind`.
+bindings:
+- document_id: nycflights13-flights-rd
+  contract_id: silver_nyc_flights
+  column_name: dep_delay_minutes
+  anchor: Departure and arrival delays, in minutes. Negative times represent early departures/arrivals.
+  locator: text, line 13
+  intent: 'dep_delay_minutes rests on the nycflights13 flights help page: delays are in minutes, and a negative value is an early departure.'
+  intent_sha256: 94d42c3fa3ce4ab7ae03b08638ee984d97edcda6ace859f2e545e891d925bff5
+  bound_by: justinrgoff
+  bound_on: 2026-10-17
