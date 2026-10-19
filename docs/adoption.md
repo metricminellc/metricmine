@@ -31,6 +31,16 @@ engine does not emit is never proposed (rule 12, D-35); views are
 uncontracted until re-materialized as tables (rule 7); a model folder
 outside bronze, silver, and gold is not classified.
 
+The plan's Governed documents section (D-43; D-35 as amended by
+Amendment Z) carries a second, separate vocabulary for the documents the
+register names (`in_sync`, `changed_anchors_intact`, `anchor_broken`,
+`unreachable`, `unverified_pointer`, `unsupported_format`,
+`refused_package`, `no_text_layer`, with flags), derived the same way on
+every run and never stored. Document items never enter the queue above,
+which the batch driver walks, and a document's text never reaches a
+proposer. The vocabulary and the commands are in
+[docs/documents.md](documents.md).
+
 ## The checklist
 
 For an existing hand-written silver model with no contract:
