@@ -13,6 +13,8 @@ runs and across a mutate-and-revert cycle. Keyless, no network.
 from __future__ import annotations
 
 import json
+import shutil
+from datetime import date
 from pathlib import Path
 
 import duckdb
@@ -314,6 +316,147 @@ def test_run_writes_the_plan_pair_with_the_hash(repo: Path) -> None:
     assert plan["generated_at"] not in body
 
 
+# ---------------------------------------------------------------- governed documents (D-43)
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+POLICY = (
+    "# Delay policy\n\nDelays are measured in minutes.\n"
+    "Negative values are early departures.\n"
+)
+
+
+def _with_register(repo: Path, review_by: str = "2027-10-17") -> None:
+    """The register contract, one markdown document, and a register that
+    binds silver_daily.line_count to a sentence of it."""
+    from metricmine.documents.extract import extract_bytes
+
+    shutil.copy(
+        REPO_ROOT / "contracts" / "documents_register.odcs.yaml",
+        repo / "contracts" / "documents_register.odcs.yaml",
+    )
+    _adopted(repo)
+    (repo / "docs").mkdir()
+    (repo / "docs" / "policy.md").write_text(POLICY, encoding="utf-8")
+    digest = extract_bytes(POLICY.encode("utf-8"), "markdown").text_sha256
+    intent = "line_count rests on the policy."
+    import hashlib
+
+    _write_yaml(
+        repo / "documents" / "register" / "standing.yaml",
+        {
+            "documents": [
+                {
+                    "document_id": "policy",
+                    "title": "Delay policy",
+                    "governance": "in_repo",
+                    "access": "in_repo",
+                    "location": "docs/policy.md",
+                    "format": "markdown",
+                    "certification_source": "git_merge",
+                    "gate_strength": "publication_gate",
+                    "declared_by": "a.person",
+                    "declared_on": "2026-10-17",
+                    "review_by": review_by,
+                    "text_sha256": digest,
+                    "extractor": "metricmine.documents@1.0.0",
+                    "verified_against": "location",
+                    "verified_on": "2026-10-17",
+                }
+            ]
+        },
+    )
+    _write_yaml(
+        repo / "documents" / "register" / "bindings.yaml",
+        {
+            "bindings": [
+                {
+                    "document_id": "policy",
+                    "contract_id": "silver_daily",
+                    "column_name": "line_count",
+                    "anchor": "Delays are measured in minutes.",
+                    "locator": "text, line 3",
+                    "intent": intent,
+                    "intent_sha256": hashlib.sha256(intent.encode()).hexdigest(),
+                    "bound_by": "a.person",
+                    "bound_on": "2026-10-17",
+                }
+            ]
+        },
+    )
+
+
+def test_a_tree_without_the_register_reports_it_absent(repo: Path) -> None:
+    docs = scan.documents(repo, date(2026, 10, 17))
+    assert docs["register"] == "absent"
+    assert docs["items"] == []
+    assert "documents" not in scan.inventory(repo)  # the batch driver's inventory never reads a document
+    body = scan.render_md(repo, scan.inventory(repo), "testhead", docs)
+    assert "## Governed documents" in body
+    assert "- register: absent (no contracts/documents_register.odcs.yaml" in body
+    assert "Empty. No document is registered in this tree." in body
+
+
+def test_document_states_ride_the_plan_and_never_the_queue(repo: Path) -> None:
+    _with_register(repo)
+    inv = scan.inventory(repo)
+    section = scan.documents(repo, date(2026, 10, 17))
+    assert section["register"] == "conforms"
+    assert section["counts"] == {"in_sync": 1}
+    (item,) = section["items"]
+    assert item["state"] == "in_sync" and item["next_command"] == "none"
+    # The queue is the models' alone, unchanged by the register: the batch
+    # driver walks it, and a document's text never reaches a proposer (D-23 H).
+    assert [m["name"] for m in scan.queued_models(inv["models"])] == ["silver_daily"]
+    assert all("policy" not in m["name"] for m in inv["models"])
+    body = scan.render_md(repo, inv, "testhead", section)
+    assert "1. **`policy`**: `in_sync` (flags: none)" in body
+    assert body.index("## The queue") < body.index("## Governed documents") < body.index("## Skipped, by decision")
+
+
+def test_a_broken_anchor_and_an_overdue_review_show_in_the_plan(repo: Path) -> None:
+    _with_register(repo, review_by="2026-10-01")
+    (repo / "docs" / "policy.md").write_text(POLICY.replace("minutes", "hours"), encoding="utf-8")
+    docs = scan.documents(repo, date(2026, 10, 17))
+    (item,) = docs["items"]
+    assert item["state"] == "anchor_broken"
+    assert item["flags"] == ["review_overdue (review_by 2026-10-01)"]
+    assert item["next_command"].startswith("read the pair")  # the broken anchor outranks the overdue review
+    assert docs["counts"] == {"anchor_broken": 1, "review_overdue": 1}
+    body = scan.render_md(repo, scan.inventory(repo), "testhead", docs)
+    assert "`anchor_broken` (flags: review_overdue (review_by 2026-10-01))" in body
+    # The calendar is a parameter: on time, the flag is gone.
+    assert scan.documents(repo, date(2026, 9, 30))["items"][0]["flags"] == []
+
+
+def test_a_nonconforming_register_is_reported_not_raised(repo: Path) -> None:
+    _with_register(repo)
+    standing = repo / "documents" / "register" / "standing.yaml"
+    standing.write_text(standing.read_text(encoding="utf-8").replace("a.person", "claude-sonnet-5"), encoding="utf-8")
+    docs = scan.documents(repo, date(2026, 10, 17))
+    assert docs["register"] == "nonconforming"
+    assert "is not a person" in docs["detail"]
+    assert "- register: nonconforming (" in scan.render_md(repo, scan.inventory(repo), "testhead", docs)
+    # A malformed register file is nonconforming too, never a traceback.
+    standing.write_text("documents: [unclosed\n", encoding="utf-8")
+    docs = scan.documents(repo, date(2026, 10, 17))
+    assert docs["register"] == "nonconforming" and "not valid YAML" in docs["detail"]
+
+
+def test_the_plan_pair_carries_the_documents_at_schema_1_1_0(repo: Path) -> None:
+    _with_register(repo)
+    assert scan.run(repo) == 0
+    runs = sorted((repo / "proposals" / "scan").iterdir())
+    plan = json.loads((runs[0] / "plan.json").read_text(encoding="utf-8"))
+    assert plan["scan_schema_version"] == "1.1.0"
+    assert plan["documents"]["register"] == "conforms"
+    assert plan["documents"]["items"][0]["document_id"] == "policy"
+    assert "documents" not in plan["counts"]  # the model counts are unchanged in shape
+    docs = scan.documents(repo, date(2026, 10, 17))
+    body_one = scan.render_md(repo, scan.inventory(repo), "fixedhead", docs)
+    body_two = scan.render_md(repo, scan.inventory(repo), "fixedhead", scan.documents(repo, date(2026, 10, 17)))
+    assert body_one == body_two
+
+
 @pytest.mark.local
 def test_the_committed_repository_scans_clean() -> None:
     # The repo at head: every mapped silver model in sync, every
@@ -353,3 +496,12 @@ def test_the_committed_repository_scans_clean() -> None:
     assert sorted(entry["id"] for entry in inv["mapping_contracts"]) == sorted(
         e.mapping["id"] for e in star.categories
     )
+    # The governed documents register rides along (D-43): the demo's one
+    # document in sync, derived for a fixed day, and never queued.
+    section = scan.documents(repo_root, date(2026, 10, 17))
+    assert section["register"] == "conforms"
+    assert section["counts"] == {"in_sync": 1}
+    assert [item["document_id"] for item in section["items"]] == [
+        "nycflights13-flights-rd"
+    ]
+    assert scan.queued_models(inv["models"]) == []
