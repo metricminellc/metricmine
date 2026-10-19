@@ -1,6 +1,6 @@
 ---
 name: contract-review
-description: Review an ODCS contract change or a proposer draft against the MetricMine contract rules before it lands. Use when reviewing a file under contracts/ or proposals/, a contract-only pull request, a version bump, or an amend proposal. Covers the all-or-nothing column rule, trusted constraints, the never-weaken rule and its relaxation gate, provenance, the properties-file obligations, and the separate-PR order.
+description: Review an ODCS contract change or a proposer draft against the MetricMine contract rules before it lands. Use when reviewing a file under contracts/ or proposals/, a contract-only pull request, a version bump, or an amend proposal. Covers the all-or-nothing column rule, trusted constraints, the never-weaken rule and its relaxation gate, provenance, the properties-file obligations, the separate-PR order, restatements on all three edges, and the link types a column-level pointer may carry.
 argument-hint: [contract-path]
 allowed-tools:
   - Read
@@ -17,8 +17,8 @@ current diff when none is named). Read the committed version and the
 proposed version side by side (`git diff main -- contracts/`). Every
 item below is answered yes or no with the evidence (file and line). The
 rules are CLAUDE.md hard rules 4, 5, 6, 9, 11, 16, and 17; the decisions
-are D-08, D-22, D-30, and D-35; the findings are F-06, F-28, F-29, and
-F-62.
+are D-08, D-22, D-30, D-35, and D-43; the findings are F-06, F-28, F-29,
+F-62, and F-68.
 
 ## Checklist
 
@@ -66,7 +66,18 @@ F-62.
     from it. A restatement may say less than its source; it may not
     contradict it. The committed history holds one amendment that
     corrected a silver sentence and left the mapping's restatement
-    stale.
+    stale. The third edge is document to description (D-43): when a
+    description whose column is bound in `documents/register/bindings.yaml`
+    changes, read the anchor it rests on, and when `make scan` reads
+    `anchor_broken`, read the pair before amending either side.
+11. Pointers (D-43, F-68). A column-level `authoritativeDefinitions`
+    entry never carries a type the linter resolves (`definition` and, at
+    1.2.x, `businessDefinition` by an HTTPS fetch; `semantics` through
+    the vendor's semantics service), because a private link never
+    resolves from CI and the gate would fail on the resolution. Use
+    `glossary`, `ontology`, `taxonomy`, or a custom type, which the
+    linter treats as an opaque link. In this slice no data contract
+    carries a pointer: the binding lives in the register.
 
 ## Report
 
