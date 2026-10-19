@@ -84,6 +84,10 @@ order by design.
 | [F-65](#f-65) | Three compiler tests made a symlink that Windows grants to administrators and Developer Mode only, so the runners passed and a per-user machine failed them; the fixture falls back to a copy | Chore rung |
 | [F-66](#f-66) | dbt Core v2 builds the project after one properties-key move, resolves the package hub on every parse unless the package is local, schedules the edge-less generated tests before their models on a cold build, and ships no DuckDB driver; the engine downloads at install and the driver at first run unless the project registers its own | dbt Core v2 rung |
 | [F-67](#f-67) | PyAirbyte leaves each temporary file read-only and retries its deletion for four seconds; Windows refuses the delete, so a landing there spent about 140 seconds and left 35 files behind; the landing restores the write bit before the cleanup | Windows rung, continued |
+| [F-68](#f-68) | The pinned linter resolves a column-level `authoritativeDefinitions` link of type `definition` (an HTTPS fetch) or `semantics` (the vendor's semantics service) and fails the contract when the resolution fails; the newest linter also fetches `businessDefinition`; the contract and table levels never resolve | Governed documents rung |
+| [F-69](#f-69) | A Word or PowerPoint file's bytes change on every save while its words do not: only the zip timestamps differ, so a byte digest is not a document's identity and a digest of the normalized extracted text is | Governed documents rung |
+| [F-70](#f-70) | The common Python readers' convenient reads return a Word file's body paragraphs and a deck's text boxes only: tables, text boxes, headers, footers, footnotes, endnotes, grouped shapes, and notes each need a separate call, and a pending redline reads as neither view | Governed documents rung |
+| [F-71](#f-71) | An anchor check measures that a quote is still present: an untouched quote beside a new sentence that contradicts it reads as intact, a whitespace re-wrap reads as unchanged, and a punctuation edit inside the quote reads as broken | Governed documents rung |
 
 ## Command surface (datacontract-cli 1.0.12)
 
@@ -1817,3 +1821,173 @@ invisible until a run on that platform is timed step by step.
 (`src/metricmine/ingest/land_sample.py` and `tests/test_land_sample.py`,
 landing with this finding; the Windows troubleshooting entry of
 [`docs/demo.md`](../demo.md))
+
+**Addendum (October 17, 2026): the fix, measured on Windows.** On this
+finding's pull request (#232), the green `demo-windows` run 39022771154
+printed no `Failed to remove temporary file` line across its two jobs,
+against 70 on the toolchain pull request's green run. By each step's
+start and end in the run's job record, the keyless replay ran 2m24s in
+the `pwsh` job and 1m33s in the `powershell` job (4m00s and 4m43s on run
+37359183822), and the test suite ran 1m16s and 42s (52s and 1m22s). Each
+figure is one run, and the suite, which changed only by this finding's
+six unit tests, moved by 24 and 40 seconds between the two runs. The
+same run's log holds 42 lines that contain `Exit Code: 1` across both
+jobs; how many lines one ignored exception prints was not read, so that
+is a count of lines, not of exceptions.
+
+## Governed documents rung (Prep B, October 2026)
+
+### F-68
+**The pinned linter resolves a column-level `authoritativeDefinitions`
+link whose `type` is `definition` by fetching its URL and one whose
+`type` is `semantics` through the vendor's own semantics service, and
+fails the contract when either resolution fails; the newest linter also
+fetches `businessDefinition`, the type the standard recommends for a
+glossary entry; at the contract and table levels no type is resolved.**
+Measured on October 17, 2026, on a fresh clone at `95ada50`, with 24
+probe contracts built by code against a fictional tenant's URL
+(`https://contoso.sharepoint.invalid/...`): each of eight link types
+(`definition`, `semantics`, `businessDefinition`, `glossary`,
+`ontology`, `taxonomy`, `semanticDefinition`, and a custom type) at the
+contract level, the table level, and a column. At the pinned isolated
+tool, `datacontract-cli 1.0.12`, the column-level `definition` contract
+fails lint with `Resolve business definition: Could not resolve business
+definition '<url>' ... HTTPSConnectionPool ... Max retries exceeded` (in
+the sandbox the proxy refused the host with `Tunnel connection failed:
+403 Forbidden`; a machine without that proxy fails to resolve the
+reserved `.invalid` name instead, unmeasured here; either way the gate
+is red), the column-level `semantics` contract fails the same check from
+`https://api.entropy-data.com/api/semantics` (`the reference looks like
+an IRI, so it is resolved through /api/semantics, which requires an API
+key: set ENTROPY_DATA_API_KEY`), and the other six column-level
+contracts and every contract-level and table-level contract pass. At
+`datacontract-cli 1.2.7` (uploaded to PyPI on October 16, 2026, the
+newest release; run isolated with `uvx --from
+"datacontract-cli==1.2.7"`), `businessDefinition` joins `definition` in
+failing on the fetch and `semantics` fails as at 1.0.12; `glossary`,
+`ontology`, `taxonomy`, `semanticDefinition`, and the custom type pass,
+and the contract and table levels pass for every type. Run twice at both
+versions: identical. Neither linter checks the form of the address. Both
+carry `--no-inline-references`, which turns the resolution off for a
+whole run (measured: each failing probe lints valid under it at both
+versions), so the switch would weaken the gate for every contract to fit
+one link, and the project does not take it. What follows: a private
+location never resolves from CI and no key sits in CI, so a column-level
+pointer under a resolved type fails gate one on every pull request, and
+the type a pointer carries is load-bearing, not descriptive. The rule
+this project takes from it (D-43): a column-level pointer in a data
+contract never uses `definition`, `semantics`, or `businessDefinition`
+while any linter in the toolchain resolves them; in the first slice no
+data contract carries a pointer at all, and the binding lives in the
+register. The September 19 probe that first found the two types at
+1.0.12 and the third at 1.2.0 is re-measured here at the pins; 1.2.7
+prints `Data contract is valid against ODCS v3.1.0` where 1.0.12 prints
+`data contract is valid`, so a case-sensitive check of the pinned wording
+misses the newer linter's success line. (The probe contracts and both
+runs' output are in the prep's evidence record.)
+
+### F-69
+**A Word or PowerPoint package saved twice with the same words has
+different bytes each time, because the zip entries carry their write
+time; a byte digest therefore changes on every save and is not a
+document's identity, while a digest of the normalized extracted text
+holds still.** Measured on October 17, 2026, in the sandbox on CPython
+3.12 with packages built by code in the prep's sandbox: a
+`.docx` holding one sentence, written once with the current time in its
+zip entries and once with a fixed 1980-01-01 stamp, differs in bytes and
+in nothing else, and the two extractions have one `text_sha256`; two
+builds with the fixed stamp are byte-identical; the same holds for a
+`.pptx` with a slide and a notes part. The September 19 probe measured
+the same with files written three seconds apart by `python-docx`,
+`python-pptx`, `openpyxl`, and `reportlab`: different bytes, no part
+differs, the same text digest. The project's own samples gate pins
+source data by the sha256 of the bytes (D-15), which is right for a
+CSV and wrong for an Office file: SharePoint is reported (read, not
+measured) to rewrite Office files on upload as well, so a byte digest
+taken before upload would not match the stored bytes either. The
+identity the register records (D-43) is `text_sha256`, the sha256 of
+the extracted text after NFKC and whitespace normalization, with the
+extractor's id beside it, because the extractor is part of the
+measurement; a whitespace-only re-wrap of the file reads `in_sync`. A
+plain text file's byte digest still changes with its words only, so a
+committed copy of a public document carries both: the upstream bytes'
+sha256, which `.gitattributes` keeps verbatim, and the text digest the
+scan re-measures. (Evidence: the Prep B probe transcript; measured
+again in the prep's sandbox by the module's tests, which land with its
+pull request.)
+
+### F-70
+**The convenient reads of the common Python Office readers return a Word
+file's body paragraphs and a deck's text boxes, and nothing else: a
+table, a text box, a header, a footer, a footnote, an endnote, a
+grouped shape, and a notes part each need a separate call, and a
+paragraph with an unaccepted redline reads as neither the standing text
+nor the accepted text.** Measured on October 17, 2026, in a scratch
+environment (`python-docx 1.2.0`, `python-pptx 1.0.2`; neither is a
+project dependency and neither enters `pyproject.toml` or `uv.lock`) on
+packages built by code in the sandbox; no file written by Word or
+PowerPoint was read. On a `.docx` whose parts hold eight known
+sentences, `document.paragraphs` returned `['Body sentence one.', 'Body
+sentence two.', '', 'Split across runs.']`: the table cell (reachable
+through `document.tables`), the text box, the footnote, and the endnote
+are not in it, and the header and footer are reachable only through
+`sections[0].header` and `sections[0].footer`. On a paragraph whose
+tracked change replaces `minutes` with `seconds`, the same read returned
+`'Departure delays, in . Negative means early.'`, which is the text of
+neither view. On a `.pptx` with a text box, a table, a grouped text box,
+and a notes part, iterating `slide.shapes` for `has_text_frame` returned
+the two text boxes only; the table's cells need `shape.has_table` and
+`shape.table`, the grouped text needs `shape.shape_type == GROUP` and a
+walk of `shape.shapes`, and `notes_slide.notes_text_frame` is `None` on
+a notes part whose text sits in a text box rather than the body
+placeholder, while `notes_slide.shapes` holds it. The rule this project
+takes (D-43): an extractor walks every `word/*.xml` text part (the body,
+each header and footer by number, footnotes, endnotes), reads every
+`w:t` wherever it nests (a table cell, a text box, a split run), keeps
+`w:delText` for the standing view and skips `w:ins` and `w:moveTo`
+there, and skips `w:del` and `w:moveFrom` for the accepted view; for a
+deck it takes the slide order from `ppt/presentation.xml`'s `sldIdLst`
+through the presentation's relationships and each slide's notes part
+from the slide's own `.rels` (type `.../notesSlide`), never from the
+file numbers, because a deck whose first slide has no notes stores the
+second slide's notes as `notesSlide1.xml` (measured on the same
+fixtures: a raw reader over every part found all eight sentences with
+their parts). Two more facts the raw walk meets: Word stores a text box
+twice, as `mc:Choice` and `mc:Fallback` under `mc:AlternateContent`, so
+the fallback copy is skipped and the text counted once; and a deck's
+field text (`a:fld`: a slide number, an auto-updating date) is cached
+text that moves on a re-save, so it stays out of the words. Comments,
+SmartArt, charts, layouts, and masters are not read. Definitions live in
+tables and policies carry redlines, so a reader that returns the body
+alone certifies the wrong text.
+(Evidence: the Prep B probe transcript; measured again in the prep's
+sandbox by the module's tests, which land with its pull request.)
+
+### F-71
+**An anchor check measures that a bound quote is still present in a
+document's extracted text, and nothing more: an untouched quote beside
+a new sentence that contradicts it reads as intact, a whitespace
+re-wrap of the file reads as unchanged, and a punctuation edit inside
+the quote reads as broken.** Measured on October 17, 2026, in the
+sandbox on a markdown policy bound to one column: appending `Delays are reported in
+whole hours from 2027.` after the bound sentence `Delays are measured
+in minutes.` reads `changed_anchors_intact`, with no flag and no item
+for a person; re-wrapping the bound sentence across two lines with
+extra spaces reads `in_sync`, because the digest is over the normalized
+text; changing `minutes` to `seconds` inside the quote reads
+`anchor_broken` and names the binding, and so does changing the quote's
+closing period to a semicolon; and on the committed demo
+document, an edit to another line reads `changed_anchors_intact` while
+an edit to the quoted line reads `anchor_broken`. The September 19
+probe measured the blind spot the same way on plain text. What this
+bounds: the state the scan reports is a measurement of presence, never
+a certification that the document still means what the contract's
+sentence says, so the register's `review_by` date, which forces a
+whole-document read on a calendar, is the control for the blind spot,
+and a document's `pending_changes` flag is the early warning for the
+redline case (the standing view still carries the quote while the
+accepted view does not, measured on a Word file built with one tracked
+change). The served wording, when it comes, says what was measured and
+when, and never that a document is current (D-43). (Evidence: the Prep
+B probe transcript; measured again in the prep's sandbox by the module's
+tests, which land with its pull request.)
