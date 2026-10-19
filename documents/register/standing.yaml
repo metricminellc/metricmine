@@ -1,0 +1,23 @@
+# The governed documents register, standing rows (D-43): one row per
+# document a person certified. Held to contracts/documents_register.odcs.yaml
+# by the documents module (verify) and the unit lane. Changes only by pull
+# request; a draft is rendered by `python -m metricmine.documents bind`.
+documents:
+- document_id: nycflights13-flights-rd
+  title: Flights data (nycflights13, man/flights.Rd)
+  governance: in_repo
+  access: in_repo
+  location: documents/sources/nycflights13/flights.Rd
+  format: text
+  certification_source: git_merge
+  gate_strength: publication_gate
+  declared_by: justinrgoff
+  declared_on: 2026-10-17
+  review_by: 2027-10-17
+  text_sha256: 8b96d6ed2a14856d377b5e47b2afc94555a00df3f9de90981920b2bcb3891e09
+  extractor: metricmine.documents@1.0.0
+  verified_against: location
+  verified_on: 2026-10-17
+  upstream_url: https://raw.githubusercontent.com/tidyverse/nycflights13/df98ef215aa8216fe0838a0b8ac5bada646d814c/man/flights.Rd
+  upstream_sha256: 5bdc5b7ee76e25a26d7c7a333c6d5d0c1a9f06d759726914ac369d970ebecb4e
+  license: CC0 (the package's declared license)

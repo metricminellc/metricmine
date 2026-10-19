@@ -171,6 +171,31 @@ verify-grain:
 enforce-properties:
 	uv run python -m metricmine.adoption enforce-properties --table "$(TABLE)"
 
+# Governed documents (D-43): deterministic commands, never agents. A document
+# is opened only in the repository or under MM_DOCS_ROOT; doc-bind writes a
+# draft to the gitignored outbox and never the register; doc-verify holds the
+# register to its contract and exits 1 on what blocks a merge. DOC is a
+# repository path, a ${MM_DOCS_ROOT}/ path, or a registered document id. The
+# less common bind flags (an upstream URL and digest, a license, a review
+# date) are passed on the `uv run` line docs/documents.md shows.
+GREP_FLAG = $(if $(GREP),--grep "$(GREP)",)
+TITLE_FLAG = $(if $(TITLE),--title "$(TITLE)",)
+.PHONY: doc-find
+doc-find:
+	uv run python -m metricmine.documents find "$(QUERY)"
+
+.PHONY: doc-inspect
+doc-inspect:
+	uv run python -m metricmine.documents inspect "$(DOC)" $(GREP_FLAG)
+
+.PHONY: doc-bind
+doc-bind:
+	uv run python -m metricmine.documents bind "$(DOC)" --contract "$(CONTRACT)" --column "$(COLUMN)" --anchor "$(ANCHOR)" --intent "$(INTENT)" --by "$(BY)" $(TITLE_FLAG)
+
+.PHONY: doc-verify
+doc-verify:
+	uv run python -m metricmine.documents verify
+
 # The live eval lane over the golden-profile set (D-25): first-attempt lint
 # and groundedness pass rates with token and cost actuals; honors the D-34
 # override the same way. Needs the key; never runs in CI.

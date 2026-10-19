@@ -164,8 +164,10 @@ approves every contract.
     third agent. Its inputs are a fixed, configured list of governed,
     hashed artifacts (the profile; for amend, the committed contract and
     the operator's intent), never anything retrieved (D-23 Amendment H).
-    The adoption scan (make scan) and the batch driver (make
-    propose-queue) are deterministic code, never agents.
+    The adoption scan (make scan), the batch driver (make
+    propose-queue), and the governed documents module
+    (src/metricmine/documents/, D-43) are deterministic code, never
+    agents; a document's text is never a proposer input.
 
 16. Agent prompts are versioned artifacts in src/metricmine/agents/prompts/
     with semver headers; change them only via pull request. Every proposed
@@ -233,8 +235,23 @@ approves every contract.
   gold mapping proposer. Both emit ODCS contracts. Neither writes
   code, touches data, or runs transformations. The count is of named
   proposers; stances are modes of those two (D-35), and the adoption
-  scan, verify-grain, enforce-properties, and the batch driver are
-  deterministic code, never agents (D-10 Amendment G).
+  scan, verify-grain, enforce-properties, the batch driver, and the
+  governed documents module are deterministic code, never agents (D-10
+  Amendment G; D-43).
+- The governed documents module (src/metricmine/documents/) is
+  deterministic code, not an agent (D-43). It opens a document only in
+  the repository working tree or under the root a person mapped through
+  MM_DOCS_ROOT; it never opens a public URL or a pointer_only location,
+  never follows a path that escapes its root, never extracts a package
+  to disk, and writes nothing but a draft to the gitignored outbox
+  (fenced to proposals/) and the plan the scan writes. It extracts a
+  document's text on the standard library and derives a state on every
+  run (D-35 as amended by Amendment Z); a document's identity is its
+  extracted text, never its bytes. The register
+  (documents/register/, under contracts/documents_register.odcs.yaml) is
+  the record and changes only by pull request; a declarer or binder is a
+  person, and code refuses the agent and model names it knows. Spec:
+  docs/documents.md.
 - The auto-modeling engine (src/metricmine/engine/) is deterministic code,
   not an agent: approved contracts in, emitted gold dbt models out, per
   docs/spec/engine.md. It never runs at proposer runtime, never executes
@@ -292,7 +309,8 @@ command per line and no `&&`, `$env:NAME = "value"` for environment
 lines, `.venv\Scripts\python.exe` as the interpreter, backslashes doubled
 in JSON; the demo-windows workflow proves both shells on a fresh runner.
 `.gitattributes` holds every text file to LF on checkout; captured
-evidence and the committed samples keep their bytes verbatim. Windows on
+evidence, the committed samples, and the committed copies of governed
+documents keep their bytes verbatim. Windows on
 Arm and WSL are outside the matrix (the dbt engine ships wheels for
 Windows x64, macOS, and Linux only; WSL is the Linux path).
 
@@ -319,9 +337,12 @@ working on the agent layer (the proposers, their prompts, or the
 proposal validator), read
 `docs/spec/agent-layer.md`. Before adopting an existing model into the
 contract gates, or working on the adoption scan and its helpers, read
-`docs/adoption.md`. Before adding a source (a fetch script, a landing,
-a cleanup contract, a category), read `docs/adding-a-source.md`; the
-operator's procedures are `docs/operating.md`.
+`docs/adoption.md`. Before working on governed documents (the register,
+the extractors, the document states, or the find, inspect, bind, and
+verify commands), read `docs/documents.md`. Before adding a source (a
+fetch script, a landing, a cleanup contract, a category), read
+`docs/adding-a-source.md`; the operator's procedures are
+`docs/operating.md`.
 Decisions cited anywhere as D-0x resolve in
 `docs/decisions/decision-register.md`.
 
@@ -354,6 +375,11 @@ Decisions cited anywhere as D-0x resolve in
   of record and no check migrates out of it. The guard's path logic is
   POSIX; on Windows it fails safe by asking, and a Windows guard is a
   contributor item that opens on a Windows contributor's report (D-42).
+  The governed documents root (MM_DOCS_ROOT, D-43) is a path the guard
+  cannot see, so this rule decides: a person runs the local_path
+  commands at a terminal; an agent in this repository works on in_repo
+  documents, or on a reading copy the person staged into
+  documents/inbox/ (gitignored). CI and the demo never map the root.
 - Oscar (`.claude/agents/oscar.md`) is the repository's resident guide
   and contract reviewer: a read-only subagent that answers how the
   system works and where a task is done from the repository's own files,

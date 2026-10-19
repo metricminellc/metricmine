@@ -62,7 +62,10 @@ The daily commands, in the order they depend on each other:
 | `make driver` | writes `.adbc/duckdb.toml`, the ADBC driver manifest that points dbt at the engine inside the pinned duckdb wheel (D-05 as amended); every `make` target exports `ADBC_DRIVER_PATH` for it, and a dbt line typed by hand needs the export `make doctor` prints, the `datacontract dbt test` lines below included, since they run dbt (without it, a machine that reaches the CDN would use a driver this project does not pin) | the project venv | `.adbc/duckdb.toml` (gitignored) |
 | `make ingest` | lands every `ingestion.sources` entry into bronze, replace semantics | the committed extracts | the warehouse's bronze schema |
 | `make profile ONLY=<schema>.<table>` | measures a table into a committed artifact | the warehouse, read-only | `profiles/<schema>.<table>/vNNNN.json` |
-| `make scan` | derives the adoption queue and names the next command per item | the tree, the contracts, the profiles, the warehouse | `proposals/plan.md` (gitignored) |
+| `make scan` | derives the adoption queue and names the next command per item, and reports the governed documents' states (D-43) | the tree, the contracts, the profiles, the warehouse, the documents register | `proposals/plan.md` (gitignored) |
+| `make doc-find QUERY=<name>`, `make doc-inspect DOC=<path> GREP=<word>` | lists candidate documents with their text digests; prints a document's parts and the sentences that match, each with its locator (D-43) | the repository, and `MM_DOCS_ROOT` when mapped | nothing |
+| `make doc-bind DOC=... CONTRACT=... COLUMN=... ANCHOR="..." INTENT="..." BY=<you> TITLE="..."` | validates a binding (the column exists, the quote is in the extraction, the text is not registered elsewhere, the binder is a person) and drafts the register as it would read | the document, `contracts/`, the register | `proposals/documents/<draft>/` (gitignored); never the register |
+| `make doc-verify` | holds the register to its contract, runs its rules, derives every document's state; exits 1 on what blocks a merge | the register, the documents | nothing |
 | `make context` | compiles every governing contract into the next context artifact | `contracts/` | `context/compiled/vNNNN.json` |
 | `make regen` | emits the gold star from the mapping contracts | `contracts/`, the newest context | `transform/models/gold/`, the ownership manifest |
 | `uv run dbt run --project-dir transform --target local`, then `uv run dbt test --project-dir transform --target local` | builds every model with contract enforcement, then runs every test (D-20 as amended: the models first, because the generated tests of the level-zero silver tables carry no dependency edge, F-51, F-66) | | the warehouse |
@@ -208,6 +211,15 @@ grain; sync creates the properties file from the approved contract and
 `make propose-queue MAX=<n>` walks the queue in batch, one structured
 call per item, stopping at the cap or the first fail-closed exit.
 
+Governed documents (D-43) ride the same scan. A document a person has
+certified as the source of a column's meaning is registered under
+`documents/register/` with the verbatim quote the contract's sentence
+rests on; `make scan` reads it on every run and reports `in_sync`,
+`changed_anchors_intact`, or `anchor_broken` with the next command, and
+`make doc-verify` exits 1 when a bound quote is gone from a repository
+document. The commands, the states, and the demo's binding are in
+[docs/documents.md](documents.md).
+
 ## 6. Running the proposers
 
 Two agents exist: the silver cleanup proposer (stances cleanup,
@@ -250,7 +262,8 @@ oracle and reports agreement; it needs the key and never runs in CI.
 | The audit | `make audit-gold` | a full-table gold rule fails where the batch-scoped run passed | the batch floor hid it; the data path is wrong |
 | The manifest gate | `uv run python scripts/check_demo_digest.py` | the committed manifest does not describe the built warehouse | `make export-demo` after a regeneration; commit the manifest |
 | The engine's drift guard | `make regen` | an emitted file was edited by hand (rule 8) | discard the edit; change the contract instead |
-| The scan | `make scan` | not a failure: a queue of what is out of sync, each with its next command | follow the command |
+| The scan | `make scan` | not a failure: a queue of what is out of sync, each with its next command, and the governed documents' states | follow the command |
+| The documents verify | `make doc-verify` | the register does not conform to its contract, a rule at error severity fails, a bound quote is gone from a repository document, or a binding names a column no contract carries (D-43) | re-anchor with `bind`, or amend the contract's sentence or the binding by its own pull request; an overdue review only reports |
 
 The symptom table:
 
@@ -403,7 +416,14 @@ gates, which land the samples, build cold, sync, and test; the DCO) and
   amend; propose, amend).
 - **The outbox**: `proposals/`, gitignored, where drafts and records
   land and nothing else does.
-- **The scan**: `make scan`, the derived queue of what is out of sync.
+- **The scan**: `make scan`, the derived queue of what is out of sync,
+  and the governed documents' states beside it.
+- **Governed document**: a document a person certified as the source of
+  a column's meaning, registered under `documents/register/` with the
+  quote the contract's sentence rests on (D-43); its identity is its
+  extracted text, never its bytes.
+- **Anchor**: the verbatim quote a binding rests on, checked against the
+  extraction at bind time and on every scan.
 - **The window (F-13)**: the state between a star bump that adds a
   category and the regeneration that emits it.
 - **Cold build**: an empty warehouse and no parse cache, then land and

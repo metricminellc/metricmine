@@ -1370,12 +1370,13 @@ authority. The mapping:
 | 12 (unified event star; the conformed calendar; conformance in silver, declared at the contract plane; the declared cross-category joins; materialization modes; the typed mart default; projections; batch-scoped gates) | D-17 (Amendments P, R), D-36 (Amendment Q), D-38, D-39, D-41 |
 | 13 (canonical_key v2, deterministic payloads) | D-18 |
 | 14 (registry binding; fact key; declared grain) | D-19 |
-| 15 (proposer runtime: one structured call; proposal schema projection; allow-listed model override; governed inputs per stance; no tools/MCP/loops; outbox-only) | D-21 (Amendment F), D-23 (Amendment H), D-34, D-35, evidence [F-26](../verification/gate_proof_findings.md#f-26) |
+| 15 (proposer runtime: one structured call; proposal schema projection; allow-listed model override; governed inputs per stance; no tools/MCP/loops; outbox-only; the deterministic code named beside the proposers) | D-21 (Amendment F), D-23 (Amendment H), D-34, D-35, D-43, evidence [F-26](../verification/gate_proof_findings.md#f-26) |
 | 16 (versioned prompts; contract provenance incl. proposerStance and amendsContract; pattern-derived absence rule) | D-22 (Amendment I), D-29 |
 | 17 (human-only draft-to-contract flow; no relaxation without the flag; report-and-stop on fail-closed; keyless make demo) | D-24, D-08, D-10 (Amendment G), D-35 |
 | 18 (serving boundary: shared module, three-layer read-only, capped results, the typed-surface steer; the data and expert-context split; the demo artifact as a release asset) | D-31 (Amendment W), D-32, D-33 (Amendment S), D-03 (Amendment S), D-30 (Amendment W) |
-| Conventions (never read or write outside the working tree; enforced by the working-tree guard hook) | D-37, D-13, evidence [F-32](../verification/gate_proof_findings.md#f-32) |
-| Toolchain (the supported matrix; `make` over `uv run mm`; the Windows text rules; line endings) | D-42 |
+| Conventions (never read or write outside the working tree; enforced by the working-tree guard hook; who runs a command over the governed documents root) | D-37, D-13, D-43, evidence [F-32](../verification/gate_proof_findings.md#f-32) |
+| Toolchain (the supported matrix; `make` over `uv run mm`; the Windows text rules; line endings, the committed document copies included) | D-42, D-43 |
+| Architecture boundaries (the governed documents module: deterministic code, identity as extracted text, never a private location, the register changed only by pull request) | D-43, D-35 (Amendment Z), D-10 (Amendment G) |
 
 All decisions in this register are adopted: D-01 through D-20 as of the
 July 11, 2026 revision (Decision Record 001 Rev. 3), D-21 through D-25 as

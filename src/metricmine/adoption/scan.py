@@ -14,7 +14,11 @@ The review queue is DERIVED, never stored (D-35): no scan database, no
 status column, no state file that could go stale. Every run re-reads the
 model tree, contracts/, profiles/, config/default.yaml, and the live
 warehouse, and recomputes each state from scratch; do a step, re-run,
-and the queue flips. Output lands under the gitignored proposals/
+and the queue flips. The governed documents register (D-43; D-35 as
+amended by Amendment Z) is read the same way: each registered document's
+state is derived on this run by metricmine.documents.states and reported
+in its own section, never stored, and never queued for a proposer (D-23
+Amendment H: a document's text is never a proposer input). Output lands under the gitignored proposals/
 outbox (D-24) as plan.md plus plan.json; the plan body carries a
 content hash and no timestamp, so the same state always hashes the
 same.
@@ -37,11 +41,12 @@ import json
 import re
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 import yaml
 
+from metricmine.documents.states import documents_section, mapped_root
 from metricmine.warehouse.duckdb import DuckDBWarehouse
 
 LAYER_ORDER = {"bronze": 0, "silver": 1, "gold": 2}
@@ -417,7 +422,9 @@ def _classify(model: dict) -> tuple[str, str, str]:
 
 def inventory(repo: Path) -> dict:
     """Every model file classified, from the tree and the read-only
-    warehouse, on this call; nothing cached, nothing stored."""
+    warehouse, on this call; nothing cached, nothing stored. The governed
+    documents are not here: `documents()` derives them for `run()`, so the
+    batch driver, which walks this inventory, never reads a document."""
     defaults = _dbt_defaults(repo)
     owned = _ownership(repo)
     table_contracts, mapping_contracts = _read_contracts(repo)
@@ -503,6 +510,15 @@ def inventory(repo: Path) -> dict:
     }
 
 
+def documents(repo: Path, today: date) -> dict:
+    """The governed documents' states for the plan (D-43; D-35 as amended
+    by Amendment Z), derived for `today` through the documents module and
+    never stored or queued: the register's standing, the counts, and one
+    item per document with its next command. The root is MM_DOCS_ROOT when
+    mapped; CI and the demo never map it."""
+    return documents_section(repo, today, mapped_root())
+
+
 def queued_models(models: list[dict]) -> list[dict]:
     """The review queue in plan order: queue-state order, then layer,
     then name. Public because the batch driver (make propose-queue,
@@ -577,8 +593,10 @@ def _row(model: dict) -> str:
     )
 
 
-def render_md(repo: Path, inv: dict, head: str) -> str:
-    """The plan body: no timestamp, so the same state hashes the same."""
+def render_md(repo: Path, inv: dict, head: str, docs: dict | None = None) -> str:
+    """The plan body: no timestamp, so the same state hashes the same.
+    `docs` is the governed documents section from `documents()`; without
+    it the section reads `register: absent`."""
     models = inv["models"]
     counts = _counts(models)
     lines = [
@@ -587,7 +605,9 @@ def render_md(repo: Path, inv: dict, head: str) -> str:
         "Deterministic scan, not an agent (D-35). The queue below is"
         " DERIVED from the model tree, contracts/, profiles/,"
         " config/default.yaml, and the live warehouse on this run;"
-        " nothing is stored. Re-run after each step and the states flip.",
+        " nothing is stored. Re-run after each step and the states flip."
+        " The governed documents section (D-43) is derived the same way"
+        " from documents/register/ and the documents it names.",
         "",
         f"- repo head: `{head}`",
         f"- warehouse: `{_relative_warehouse(repo)}`"
@@ -618,6 +638,7 @@ def render_md(repo: Path, inv: dict, head: str) -> str:
             f"   next: `{model['next_command']}`",
             "",
         ]
+    lines += _documents_lines(docs)
     lines += ["## Skipped, by decision", ""]
     skipped = [
         f"- `{model['name']}`: `{model['state']}`: {model['reason']}"
@@ -645,14 +666,53 @@ def render_md(repo: Path, inv: dict, head: str) -> str:
     return "\n".join(lines)
 
 
+def _documents_lines(section: dict | None) -> list[str]:
+    """The governed documents section of the plan (D-43; D-35 as amended
+    by Amendment Z): the register's standing, the state counts in the
+    fixed order, and one item per document with its next command. Items
+    never enter the queue above, which the batch driver walks."""
+    lines = [
+        "## Governed documents",
+        "",
+        "Derived on this run from `documents/register/` and the documents"
+        " it names (D-43). A state is a measurement that a bound quote is"
+        " still present, never a certification; the merge certifies.",
+        "",
+    ]
+    if not section:
+        return lines + ["- register: absent", ""]
+    standing = section["register"]
+    detail = section["detail"]
+    lines.append(f"- register: {standing} ({detail})")
+    if section["counts"]:
+        lines += ["", "| state | documents |", "| --- | --- |"]
+        lines += [f"| `{state}` | {count} |" for state, count in section["counts"].items()]
+    lines.append("")
+    if not section["items"]:
+        return lines + ["Empty. No document is registered in this tree.", ""]
+    for position, item in enumerate(section["items"], 1):
+        flags = "; ".join(item["flags"]) if item["flags"] else "none"
+        lines += [
+            f"{position}. **`{item['document_id']}`**: `{item['state']}` (flags: {flags})  ",
+            f"   where: `{item['location']}` ({item['governance']}, {item['access']}),"
+            f" verified against {item['verified_against']}  ",
+            f"   why: {item['detail']}  ",
+            f"   next: `{item['next_command']}`",
+            "",
+        ]
+    return lines
+
+
 def run(repo: Path, now: datetime | None = None) -> int:
     """Derive the queue, write plan.md and plan.json to the outbox,
-    print the plan. Always 0: the scan reports, it never judges."""
+    print the plan. Always 0: the scan reports, it never judges. The
+    document states are derived for `now`'s calendar day."""
     head = _head_sha(repo)
-    inv = inventory(repo)
-    body = render_md(repo, inv, head)
-    plan_hash = _sha256_text(body)
     now = now or datetime.now(timezone.utc)
+    inv = inventory(repo)
+    docs = documents(repo, now.date())
+    body = render_md(repo, inv, head, docs)
+    plan_hash = _sha256_text(body)
     stamp = f"{now.strftime('%Y%m%dT%H%M%S')}{now.microsecond:06d}Z"
     out_dir = repo / "proposals" / "scan" / stamp
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -663,7 +723,8 @@ def run(repo: Path, now: datetime | None = None) -> int:
     )
     (out_dir / "plan.md").write_text(md, encoding="utf-8")
     plan = {
-        "scan_schema_version": "1.0.0",
+        # 1.1.0: the documents key (D-43); the model keys are unchanged.
+        "scan_schema_version": "1.1.0",
         # generated_at is excluded from plan_hash by construction: the
         # hash covers the plan body, which carries no time.
         "generated_at": now.isoformat(),
@@ -673,6 +734,7 @@ def run(repo: Path, now: datetime | None = None) -> int:
         "counts": _counts(inv["models"]),
         "models": inv["models"],
         "mapping_contracts": inv["mapping_contracts"],
+        "documents": docs,
     }
     (out_dir / "plan.json").write_text(
         json.dumps(plan, indent=2, sort_keys=True) + "\n", encoding="utf-8"
