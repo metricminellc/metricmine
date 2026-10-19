@@ -33,7 +33,9 @@ Amendments R through W, and findings F-36 through F-53. Decision Record
 entry point, and findings F-54 and F-55. Decision Record 013 (October 3,
 2026) carries Amendment X to D-04 and D-05 (the dbt Core v2 move),
 Amendment Y to D-20 (gate two as run, then test), the confirmation of
-D-06 under v2, and finding F-66.
+D-06 under v2, and finding F-66. Decision Record 014 (October 17, 2026)
+carries D-43, governed documents, Amendment Z to D-35 (the scan's
+document states), and findings F-68 to F-71.
 
 **Status meanings.** `adopted`: in force. `proposed`: agreed in working
 session, applied by the plans below, formal adoption pending; treat as binding
@@ -77,7 +79,7 @@ unless amended.
 | [D-32](#d-32) | MCP SDK: official mcp as a project dependency | adopted |
 | [D-33](#d-33) | Demo export: content equality by query, never bytes | adopted |
 | [D-34](#d-34) | Proposer model selection: pinned default, allow-listed override | adopted |
-| [D-35](#d-35) | Proposer stances and the adoption scan | adopted |
+| [D-35](#d-35) | Proposer stances and the adoption scan; the scan reports document states (Amendment Z) | adopted |
 | [D-36](#d-36) | The typed surface: a materialized mart by default | adopted |
 | [D-37](#d-37) | Local enforcement hooks in the SDLC layer | adopted |
 | [D-38](#d-38) | Incremental materialization behind engine.materialization | adopted |
@@ -85,6 +87,7 @@ unless amended.
 | [D-40](#d-40) | docs/scale.md and the measurement rule | adopted |
 | [D-41](#d-41) | The multi-source proof and the star trial | adopted |
 | [D-42](#d-42) | Supported platforms: macOS, Linux, Windows x64; the task entry point | adopted |
+| [D-43](#d-43) | Governed documents: the register, the binding, the derived state | adopted |
 
 ## The decisions
 
@@ -881,6 +884,42 @@ are reported, never adopted. Evidence: the August 21 to 22 adoption lab
 ([F-27](../verification/gate_proof_findings.md#f-27),
 [F-28](../verification/gate_proof_findings.md#f-28)). Full text:
 Decision Record 007.
+Amended October 17, 2026 (Record 014, Amendment Z): the adoption scan
+also reports the state of every governed document the register names
+([D-43](#d-43)), derived on every run by the governed documents module,
+written to the outbox with the plan, and never stored. The plan carries
+a Governed documents section beside the queue: the register's standing
+(`conforms`, `nonconforming` with the reason, or `absent`), the state
+counts in a fixed order, and one item per document with its next
+command. The content states are `in_sync` (the text digest equals the
+recorded one and every anchor is present), `changed_anchors_intact` (the
+text changed and every bound quote is still present; nobody is asked to
+re-read the bindings, and an `in_repo` document's pull request refreshes
+its standing row), `anchor_broken` (a bound quote is gone; the item
+names the bindings), `unreachable` (the location cannot be opened here:
+the root is not mapped, no file is at the path, or the path escapes its
+root), `unverified_pointer` (a `public` or `pointer_only` location this
+slice never opens, and no reading copy was given), `unsupported_format`,
+`refused_package` (the extractor refused the file under a safety limit),
+and `no_text_layer`; the flags are `review_overdue`, `pending_changes`
+(a Word file holds unaccepted redlines; the flag names the bindings an
+acceptance would break), `binding_broken` (a binding names a contract or
+column `contracts/` does not carry), and `extractor_changed`. The
+September 19 probe's `document_moved` is retired: identity is the
+extracted text, so a moved or re-saved file whose words are unchanged
+reads `in_sync`. Document items never enter the queue the batch driver
+walks, and a document state's next command never routes a document's
+text into a proposer (D-23 as amended by Amendment H). The plan's
+`scan_schema_version` moves to `1.1.0` for the added `documents` key;
+the model keys are unchanged. The scan reports and never judges: the
+exit code that blocks a merge lives in the module's `verify` command,
+which fails on a register that does not conform, a failing
+error-severity rule, a broken anchor on an `in_repo` document, or a
+binding to a column no contract carries, and reports everything else, an
+overdue review included. The calendar is a parameter: the scan derives
+the states for the run's UTC day, the two commands that read a calendar
+(`bind` and `verify`) take `--today` and default to the same UTC day,
+and every test fixes it.
 
 ### D-36
 **The typed surface: a materialized mart by default.** For every fact
@@ -1163,6 +1202,141 @@ that closes the arc is 1.1.1: the versioning rule of the operator's
 manual follows the contracts, and no contract, model, or demo content
 changes. Adopted September 6, 2026 (Decision Record 012).
 
+### D-43
+**Governed documents: the register, the binding, the derived state.** A
+document a person has certified as the source of a contracted column's
+meaning is governed by one sentence: the contract's sentence is the
+certified claim, the document is its cited source, a small register
+records the binding between them and says where the document's approval
+lives, the scan derives the document's state on every run, and the merge
+stays the only approval this project gives. Two clocks, two lanes: the
+binding changes as rarely as a schema and travels through git; a
+document's versions change on the document's own platform and never
+touch git. **The register** is two tables, held to an ordinary ODCS
+contract (`contracts/documents_register.odcs.yaml`) with no dbt model,
+so the gates that judge every contract judge it, gate three records it
+as having no model, and its quality rules execute in the module's
+`verify` command and the unit lane at the severity each rule declares
+(D-28). `documents_standing` holds one row per document: a stable
+`document_id` (never the path), the title, the governance class, the
+access class, the location, the platform's durable id beside the display
+location, the format, the certification source, the gate's strength, for
+`platform_governed` the role whose approval publishes the location
+(`approver_role`), for `pinned` the platform's label of the certified
+version (`pinned_version`) beside the text digest, who declared the row
+and when, a review date, the text digest and the extractor that measured
+it, what it was verified against and when, and for a committed copy of a
+public document its upstream URL, the upstream bytes' sha256, and the
+license. `documents_bindings` holds one row per
+bound column: the document, the contract id and column, the anchor (a
+verbatim quote from the extraction, validated at bind time and on every
+scan), a locator for people, the person's intent verbatim with its
+sha256 (the Amendment I pattern), and who bound it and when. **The
+classes.** Governance is `in_repo` (the merge certifies the binding; the
+document changes under the repository's own review), `platform_governed`
+(the merge certifies the binding and the arrangement: the location
+publishes only through an approval given by a named role), or `pinned`
+(the merge certifies the binding and one version; a change asks for a
+new pin unless every anchor is intact). Access is independent: `in_repo`
+(code reads it, everywhere, CI included), `public`, `local_path` (a path
+under the root a person maps through `MM_DOCS_ROOT`, stored as
+`${MM_DOCS_ROOT}/...`; a machine without the root reads `unreachable`
+and blocks nothing, CI included), or `pointer_only` (nothing here ever
+opens it). The certification source is a closed field, `git_merge`,
+`platform_approval`, `steward_attestation`, or `none`, and the gate's
+strength is `publication_gate`, `attestation_badge`, or `none`; both,
+like the two classes and `verified_against`, are held closed by the
+contract's own `error` rules, which `verify` and the unit lane execute.
+This project records where an approval lives and does not have to own
+it. A
+row with `none` is allowed and reads as declared (S37 question 3b); the
+served wording, when it comes, says what is declared as declared and
+never that a document is current (Amendment Z; the served list is a
+later D-30 and D-31 matter). **Identity is the extracted text, never the
+bytes** ([F-69](../verification/gate_proof_findings.md#f-69)): the
+digest is over the text after NFKC and whitespace normalization and
+nothing else, and the extractor's id and version travel with it, because
+extraction is part of the record and an extractor change re-verifies
+every anchor. The extractor set and its versions are recorded: this
+slice reads `text`, `markdown`, `docx`, and `pptx` on the standard
+library, reading every text part the extractor names (a Word file's
+body with its tables and text boxes, each header and footer, footnotes,
+endnotes; a deck's slides in presentation order with their tables and
+grouped shapes, and each slide's notes through the package's
+relationships) and never the convenient one; comments, SmartArt, charts,
+layouts, and masters are not read, a Word text box's fallback copy is
+skipped so it is read once, and a deck's field text (slide numbers,
+dates) stays out of the words; PDF, Excel, and RDF each wait on a
+dependency and a pin decision (rule 1). An extractor refuses untrusted input under fixed limits and a refused
+package is a state, never a crash. **Anchors and their limit.** An anchor
+check measures that a quote is still present and nothing more
+([F-71](../verification/gate_proof_findings.md#f-71)): an edit elsewhere
+reads `changed_anchors_intact` and asks nobody to re-read the bindings
+(for an `in_repo` document the pull request that edits it refreshes the
+standing row's `text_sha256` and `verified_on`, which the unit lane
+holds in sync), an edit to the quoted sentence reads `anchor_broken`,
+and a contradiction beside an untouched quote reads as intact, so every
+standing row carries a review date, an overdue review is a derived state and a `warn` rule and never a
+red gate, and the review is what forces a whole-document read. When the
+document and the contract's sentence disagree, the contract's sentence
+is the certified claim and the document its cited source; the
+disagreement is an item for a person, never an automatic override. **Who
+certifies.** A declarer, a binder, or a verifier is a person: code
+refuses what it can check (the two proposers' names, the D-34 model
+identifiers, the repository's resident subagent's name, and any
+`claude-` name), and the rest is the person's own attestation; an
+attestation made by an integration is not a steward's.
+Consent in chat is permission to draft, never certification: the `bind`
+command renders the draft by code into the gitignored outbox and never
+writes the register, and a narrowing is never enabled by something an
+agent can supply alone (the quote is checked against the extraction, the
+column against a committed contract, the binder against the known agent
+and model names). A cited document is data: no agent with tools is
+pointed at a document that arrived in a message; a person opens it. The
+control for a steward, when one exists, is CODEOWNERS on the register's
+path; with one maintainer and `in_repo` documents, this slice adds none.
+**The boundary.** The governed documents module
+(`src/metricmine/documents/`) is deterministic code of the kind D-10 as
+amended by Amendment G names beside the proposers, never a third agent, and a document's text is never a proposer input (D-23 as amended
+by Amendment H). It opens a document only in the repository working tree
+or under the mapped root; it never opens a `public` URL or a
+`pointer_only` location, never follows a path that escapes its root, and
+never extracts a package to disk. A person runs the `local_path`
+commands at a terminal, because the working-tree rule stays in force
+where the D-37 guard cannot see; an agent in this repository works on
+`in_repo` documents or on a reading copy the person staged into the
+gitignored `documents/inbox/`; CI and the demo never map the root. A
+reading copy (an upload saved to disk, a download, a replica) verifies
+anchors and is never the record: `bind` refuses to register one, a
+`public` or `pointer_only` row is declared by hand in the register, and
+the register says what was verified against what. **Register-only first.** No data contract carries
+a pointer in this slice and no data contract moves; the binding lives in
+the register and the compiler, when it harvests bindings, joins them to
+fields at compile time, so no contract bumps per binding. When a
+column-level pointer comes, it never uses a link type the linter resolves
+([F-68](../verification/gate_proof_findings.md#f-68)). The served list
+has a payload budget as a principle (the anchors and locations for the
+fields asked about, never every quote); its number is set with the D-31
+amendment that serves it. **The surface.** The commands are `find`,
+`inspect`, `bind`, and `verify` under `python -m metricmine.documents`
+with one-line Makefile targets, as `make scan` is; no MCP tool is added
+and the `mm` entry point is not widened (D-42). **The first binding**
+(the demo, clean-room and public): the `flights` reference page of
+tidyverse/nycflights13 at the commit the flight samples are pinned to,
+CC0, committed as a byte-for-byte copy under `documents/sources/` with
+its upstream URL and sha256 and held verbatim by `.gitattributes`,
+governance `in_repo`, access `in_repo`, `git_merge`, `publication_gate`,
+a review date one year out, bound to
+`silver_nyc_flights.dep_delay_minutes` by the delay sentence; the file is
+Rd markup read as text. **Not decided here:** what `get_context` serves
+and the budget's number (D-30, D-31), including how the compiled
+artifact's staleness check sees a binding change when no contract
+version moves, and that a served anchor is document text a person bound
+and a merge reviewed; whether ODCS v3.2.0's `context` block changes
+where authored meaning lives (D-05, D-06); an upstream contribution;
+document change kinds in the context proposal path. Full
+text: Decision Record 014.
+
 ## Session-decision and finding IDs
 
 IDs of the form `A<n>` (working-session decisions, e.g. A4) and `F-0x`
@@ -1219,7 +1393,9 @@ August 29, 2026 revision (Decision Record 010), and D-38 through D-40
 revision landed with Arc 5b, and D-41 (with Amendments R through W)
 as of the September 2, 2026 revision (Decision Record 011), and D-42 as
 of the September 6, 2026 revision (Decision Record 012), and Amendments
-X and Y as of the October 3, 2026 revision (Decision Record 013). D-20's
+X and Y as of the October 3, 2026 revision (Decision Record 013), and
+D-43 (with Amendment Z to D-35) as of the October 17, 2026 revision
+(Decision Record 014). D-20's
 substance
 is encoded directly in
 [`.github/workflows/contract-gate.yml`](../../.github/workflows/contract-gate.yml)
