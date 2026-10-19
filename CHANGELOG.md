@@ -43,6 +43,28 @@ measurements.
   and `documents_bindings`, with their quality rules, and no dbt model;
   gate three records it as having no model, and the contract-change
   issue form lists it.
+- Governed documents, slice 1 (D-43; D-35 as amended by Amendment Z):
+  `src/metricmine/documents/`, deterministic code and never an agent,
+  with extractors for text, markdown, Word, and PowerPoint on the
+  standard library that read every text part they name (tables, text
+  boxes, headers, footers, footnotes, endnotes, grouped shapes, and the
+  notes found through the package's relationships; F-70), refuse
+  untrusted input under fixed limits, and give a redlined Word file its
+  standing and accepted views; the register as two YAML tables under
+  `documents/register/` held to `contracts/documents_register.odcs.yaml`
+  by `verify` and the unit lane, with a declarer or binder refused when
+  code can tell it is an agent or a model; the derived states
+  (`in_sync`, `changed_anchors_intact`, `anchor_broken`, `unreachable`,
+  `unverified_pointer`, `unsupported_format`, `refused_package`,
+  `no_text_layer`, with the `review_overdue`, `pending_changes`,
+  `binding_broken`, and `extractor_changed` flags); the `find`,
+  `inspect`, `bind`, and `verify` commands (`make doc-find`,
+  `doc-inspect`, `doc-bind`, `doc-verify`), where `bind` drafts into the
+  outbox and never writes the register; the demo's first binding,
+  `silver_nyc_flights.dep_delay_minutes` to the `flights` help page of
+  nycflights13 at `df98ef21` (CC0), committed under
+  `documents/sources/nycflights13/` with its upstream URL and digest;
+  `docs/documents.md`; and the CLAUDE.md boundary for the module.
 - `.mcp.json` at the repository root registers the gold server as a
   project MCP server for Claude Code, launched with `uv run --no-sync`
   so a clone that was never synced fails fast and installs nothing
@@ -90,6 +112,17 @@ measurements.
   temp half was this mechanism and not the Store build's redirection.
 
 ### Changed
+
+- The scan's plan carries a Governed documents section (D-35 as amended
+  by Amendment Z): the register's standing, the state counts, and one
+  item per document with its next command, derived on every run and
+  never stored; `plan.json` gains the `documents` key and
+  `scan_schema_version` moves to 1.1.0. Document items never enter the
+  queue the batch driver walks. The operating manual's command table,
+  the gates table, and the glossary, the adoption guide's states, and
+  the contract review checklist (item 10's third edge, document to
+  description, and item 11, the link types a column-level pointer may
+  carry; F-68) say so.
 
 - The dbt line is dbt Core v2: `dbt-oss` 2.0.x (resolved 2.0.5) in
   place of `dbt-core` 1.12 and `dbt-duckdb` 1.11 (D-05 as amended by
