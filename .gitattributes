@@ -14,3 +14,8 @@
 # line endings by nature, and the samples' digests are pinned by a gate.
 docs/verification/evidence/** -text
 data/samples/** -text
+
+# Committed copies of governed documents (D-43) keep their bytes verbatim:
+# each standing row records the upstream file's sha256, and a gate holds
+# the copy to it.
+documents/sources/** -text
