@@ -38,6 +38,11 @@ measurements.
   contradiction beside an untouched quote reads as intact. An addendum
   to F-67 records the fix measured on the Windows legs of its own pull
   request.
+- `contracts/documents_register.odcs.yaml`, the governed documents
+  register's contract (D-43): two table objects, `documents_standing`
+  and `documents_bindings`, with their quality rules, and no dbt model;
+  gate three records it as having no model, and the contract-change
+  issue form lists it.
 - `.mcp.json` at the repository root registers the gold server as a
   project MCP server for Claude Code, launched with `uv run --no-sync`
   so a clone that was never synced fails fast and installs nothing
