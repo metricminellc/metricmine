@@ -1,0 +1,289 @@
+# Contract: documents_register v1.0.0 (ODCS v3.1.0), the governed documents
+# register (D-43). Two tables about documents, never the prose inside one:
+# documents_standing (one row per document: where it lives, which gate
+# certifies it, who declared it, until when, and the text identity last
+# verified) and documents_bindings (one row per bound column: the anchor
+# the contract's sentence rests on). The rows live in documents/register/
+# as YAML and are held to this contract by the documents module (verify)
+# and by the unit lane; gate three records the contract as having no
+# model. Hand-authored (rule 16: proposedBy human, no stance keys,
+# provenanceNote because no profile artifact exists for a register).
+apiVersion: v3.1.0
+kind: DataContract
+id: documents_register
+name: Governed documents register
+version: 1.0.0
+status: active
+domain: governance
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: 'The register of documents a person has certified as the source of
+    meaning for contracted columns: one standing row per document and one
+    binding row per bound column (D-43). The register is data about documents.
+    The documents stay where they live; this project opens a document only
+    in the repository or under a root the operator mapped.'
+  usage: 'Read a standing row as a certification record: where the document
+    lives, which approval gate certifies it, who declared that and when,
+    until when, and the digest of its extracted text when it was last
+    verified. Read a binding row as a claim: this contract column rests on
+    this verbatim quote. A row never says a document is current; the scan
+    derives that on every run and stores nothing (D-35 as amended).'
+  limitations: 'A location this project never opens (access public or
+    pointer_only) carries a declared identity, never a measured one. An
+    anchor check is a measurement that a quote is still present, never a
+    certification that the document still means the same thing.'
+servers:
+- server: repository
+  type: local
+  path: documents/register
+  format: yaml
+  description: Where the register rows live; the documents themselves live
+    where each standing row says.
+schema:
+- name: documents_standing
+  physicalName: documents_standing
+  logicalType: object
+  physicalType: table
+  description: One row per governed document.
+  dataGranularityDescription: One row per document_id.
+  properties:
+  - name: document_id
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: Stable id of the document, independent of its location.
+  - name: title
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: The title a person knows the document by.
+  - name: governance
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: in_repo, platform_governed, or pinned (D-43).
+  - name: access
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: in_repo, public, local_path, or pointer_only (D-43).
+  - name: location
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: Where the document lives, as a repository-relative path, a
+      rooted path under ${MM_DOCS_ROOT}, or a display link.
+  - name: durable_id
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: The platform's or publisher's durable identifier beside the
+      display location, so a rename does not break the row.
+  - name: format
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: The extractor the module runs. This slice reads text, markdown,
+      docx, and pptx; any other value is allowed and reads unsupported_format
+      until an extractor and its pin decision land.
+  - name: certification_source
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: git_merge, platform_approval, steward_attestation, or none.
+  - name: gate_strength
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: publication_gate, attestation_badge, or none.
+  - name: approver_role
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: For platform_governed, the role whose approval publishes the
+      location, as the steward declares it; the arrangement the merge certifies.
+  - name: pinned_version
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: For pinned, the platform's or publisher's label of the certified
+      version, beside the text digest; declared, never measured here.
+  - name: declared_by
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: The person who declared the standing row; never an agent or a
+      model name.
+  - name: declared_on
+    logicalType: date
+    physicalType: DATE
+    required: true
+    description: The day the person declared the row. The merge that approves it
+      is in the repository history.
+  - name: review_by
+    logicalType: date
+    physicalType: DATE
+    required: true
+    description: Certify again or expire. After this day the row reads as
+      review_overdue in the scan.
+  - name: text_sha256
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: sha256 of the normalized extracted text at the last
+      verification. Measured for in_repo and local_path, declared otherwise.
+  - name: extractor
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: The extractor that produced text_sha256, as name@version.
+  - name: verified_against
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: location, reading_copy, or none; which copy text_sha256 was
+      measured against.
+  - name: verified_on
+    logicalType: date
+    physicalType: DATE
+    required: false
+    description: The day text_sha256 was measured.
+  - name: upstream_url
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: For a committed copy of a public document, the commit-pinned
+      URL it was taken from.
+  - name: upstream_sha256
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: For a committed copy, the sha256 of the upstream bytes.
+  - name: license
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: The document's license, as its publisher states it.
+  quality:
+  - type: sql
+    description: Governance is one of the three classes.
+    query: SELECT COUNT(*) FROM documents_standing WHERE governance NOT IN ('in_repo', 'platform_governed', 'pinned')
+    mustBe: 0
+    severity: error
+  - type: sql
+    description: Access is one of the four classes.
+    query: SELECT COUNT(*) FROM documents_standing WHERE access NOT IN ('in_repo', 'public', 'local_path', 'pointer_only')
+    mustBe: 0
+    severity: error
+  - type: sql
+    description: The certification source is a closed field.
+    query: SELECT COUNT(*) FROM documents_standing WHERE certification_source NOT IN ('git_merge', 'platform_approval', 'steward_attestation', 'none')
+    mustBe: 0
+    severity: error
+  - type: sql
+    description: The gate's strength is a closed field.
+    query: SELECT COUNT(*) FROM documents_standing WHERE gate_strength NOT IN ('publication_gate', 'attestation_badge', 'none')
+    mustBe: 0
+    severity: error
+  - type: sql
+    description: What a digest was verified against is a closed field.
+    query: SELECT COUNT(*) FROM documents_standing WHERE verified_against IS NOT NULL AND verified_against NOT IN ('location', 'reading_copy', 'none')
+    mustBe: 0
+    severity: error
+  - type: sql
+    description: A document the module reads carries its measured text digest.
+    query: SELECT COUNT(*) FROM documents_standing WHERE access IN ('in_repo', 'local_path') AND text_sha256 IS NULL
+    mustBe: 0
+    severity: error
+  - type: sql
+    description: No standing row is past its review date (a reported state, never a gate).
+    query: SELECT COUNT(*) FROM documents_standing WHERE review_by < current_date
+    mustBe: 0
+    severity: warn
+- name: documents_bindings
+  physicalName: documents_bindings
+  logicalType: object
+  physicalType: table
+  description: One row per bound contract column.
+  dataGranularityDescription: One row per (document_id, contract_id, column_name).
+  properties:
+  - name: document_id
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: The standing row this binding rests on.
+  - name: contract_id
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 2
+    description: The committed contract whose column the document explains.
+  - name: column_name
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 3
+    description: The column of that contract.
+  - name: anchor
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: The verbatim quote, from the extraction, that the contract's
+      sentence rests on; validated at bind time and on every scan.
+  - name: locator
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: Where a person finds the quote (a line, a part, a slide).
+  - name: intent
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: The person's words when the binding was drafted, verbatim.
+  - name: intent_sha256
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: sha256 of the intent, so the record cannot drift from it.
+  - name: bound_by
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: The person who bound the column; never an agent or a model name.
+  - name: bound_on
+    logicalType: date
+    physicalType: DATE
+    required: true
+    description: The day the person bound the column. The merge that approves it
+      is in the repository history.
+  quality:
+  - type: sql
+    description: Every binding rests on a standing row.
+    query: SELECT COUNT(*) FROM documents_bindings b LEFT JOIN documents_standing s USING (document_id) WHERE s.document_id IS NULL
+    mustBe: 0
+    severity: error
+  - type: sql
+    description: A binding's anchor is never empty.
+    query: SELECT COUNT(*) FROM documents_bindings WHERE anchor IS NULL OR length(trim(anchor)) = 0
+    mustBe: 0
+    severity: error
+team:
+  name: metricmine-maintainers
+  members:
+  - username: justinrgoff
+    role: steward
+customProperties:
+- property: proposedBy
+  value: human
+- property: proposedAt
+  value: '2026-10-17'
+- property: provenanceNote
+  value: 'Hand-authored register contract (D-43). No profile artifact exists: the
+    register is data about documents and is never profiled.'
