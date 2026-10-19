@@ -13,6 +13,31 @@ measurements.
 
 ### Added
 
+- Decision D-43, governed documents, in the decision register (Decision
+  Record 014): a document a person certified as the source of a
+  contracted column's meaning is governed through a small register that
+  records the binding and says where the document's approval lives; the
+  governance classes `in_repo`, `platform_governed`, and `pinned`; the
+  access classes `in_repo`, `public`, `local_path`, and `pointer_only`;
+  the certification source as a closed field; identity as the
+  extracted text, never the bytes; anchors and their measured limit; a
+  person as the only declarer or binder; register-only first; and the
+  boundary of the documents module, deterministic code that never opens
+  a private location. Amendment Z to D-35: the scan reports every
+  governed document's state, derived on every run and never stored, in
+  a fixed vocabulary. Findings F-68 through F-71, measured in the prep:
+  the pinned linter resolves a column-level link of type `definition`
+  (an HTTPS fetch) or `semantics` (the vendor's semantics service) and
+  fails the contract when the resolution fails, and the newest linter
+  also fetches `businessDefinition`; a Word or PowerPoint
+  file's bytes change on every save while its words do not, so a byte
+  digest is not a document's identity; the common Python readers'
+  convenient reads miss tables, text boxes, headers, footers, footnotes,
+  endnotes, grouped shapes, and notes, and read a pending redline as
+  neither view; and an anchor check measures presence, so a
+  contradiction beside an untouched quote reads as intact. An addendum
+  to F-67 records the fix measured on the Windows legs of its own pull
+  request.
 - `.mcp.json` at the repository root registers the gold server as a
   project MCP server for Claude Code, launched with `uv run --no-sync`
   so a clone that was never synced fails fast and installs nothing
