@@ -11,6 +11,18 @@ measurements.
 
 ## [Unreleased]
 
+### Added
+
+- `docs/experiments/`, the experiments lane's written records
+  (CLAUDE.md rule 19): the record of E1's canary, measured on Claude
+  Desktop on October 21, 2026 (on Claude Desktop 3.1623.0 with the
+  model measured, the server's `instructions` do not reach the model,
+  so the staged paragraph experiment ends at its canary and the
+  serving layer is unchanged), and the experiments register's
+  deferred design questions (X-01 to X-06), graduated with each
+  item's status measured on main at `2f73dfc`. Nothing in the lane
+  binds; no decision and no finding is minted.
+
 ### Changed
 
 - The digest manifest names the v1.2.0 release asset, `demo.duckdb`
