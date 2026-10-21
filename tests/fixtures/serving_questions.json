@@ -1,5 +1,5 @@
 {
-  "note": "The demo question set (docs/demo.md, Arc 6): each question an agent is expected to answer from the served gold layer, the SQL that answers it on the typed surfaces, and the answer measured at the committed samples. tests/test_serving_questions.py runs every SQL through the serving module's gate and holds the result to the expected rows; the expert_context entries name the registry knowledge the answer also depends on.",
+  "note": "The demo question set (docs/demo.md, Arc 6): each question an agent is expected to answer from the served gold layer, the SQL that answers it on the typed surfaces, and the answer measured at the committed samples. tests/test_serving_questions.py runs every SQL through the serving module's gate and holds the result to the expected rows; the expert_context entries name the registry knowledge the answer also depends on. A context question (Q8, Amendment AA) carries no SQL: it names the tool, the category, the registry entry, and the field that answer it, and the served sources the entry must carry.",
   "questions": [
     {
       "id": "Q1",
@@ -79,6 +79,40 @@
         [97]
       ],
       "expert_context": "airport_weather.limitations: 12 airport-hours between the first and last observation have no row, so 97 flights find no weather; the star's crossCategoryJoins measured completeness 0.9994 says the same number as a rate."
+    },
+    {
+      "id": "Q8",
+      "question": "What does the departure delay definition rest on?",
+      "categories": ["flights"],
+      "tool": "get_context",
+      "context_key": "measures",
+      "field": "dep_delay_minutes",
+      "expected_sources": [
+        {
+          "anchor": "Departure and arrival delays, in minutes. Negative times represent early departures/arrivals.",
+          "document_id": "nycflights13-flights-rd",
+          "locator": "text, line 13"
+        }
+      ],
+      "expected_cited": {
+        "nycflights13-flights-rd": {
+          "title": "Flights data (nycflights13, man/flights.Rd)",
+          "declared": {
+            "access": "in_repo",
+            "certification_source": "git_merge",
+            "gate_strength": "publication_gate",
+            "governance": "in_repo",
+            "location": "documents/sources/nycflights13/flights.Rd",
+            "review_by": "2027-10-17"
+          },
+          "measured": {
+            "state_at_compile": "in_sync",
+            "verified_against": "location",
+            "verified_on": "2026-10-17"
+          }
+        }
+      },
+      "expert_context": "flights measures, fields.dep_delay_minutes.sources: the sentence a person bound from the nycflights13 flights help page (D-43), listed once under documents.cited with its declared fields apart from its measured ones; the note says the server never opens the document and never says it is current. A good answer quotes the anchor, names the document and where its approval lives (the merge; in_repo), and says the contract's own sentence (the field's meaning) is the certified claim the quote supports."
     }
   ]
 }
