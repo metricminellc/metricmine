@@ -6,9 +6,10 @@
 > as the source of meaning for contracted columns and where each
 > document's approval lives, the scan derives every document's state on
 > every run, and the merge is the only approval this project gives.
-> Deterministic code, never an agent. Local first: nothing is served yet,
-> no data contract carries a pointer, and the pipeline never opens a
-> private location.
+> Deterministic code, never an agent. Since Amendment AA (D-30 and D-31)
+> the compiled context carries each certified binding to the consumer
+> (the section "What is served"); no data contract carries a pointer,
+> and the pipeline never opens a private location.
 
 ## The one-sentence design
 
@@ -262,6 +263,14 @@ are checked with `verify --reading-copy`.
    `anchor_broken` in the same pull request that made it. The demo's
    copy is held verbatim to its upstream digest, so it changes only by
    re-pinning upstream.
+6. `make context` harvests the register into the next compiled context
+   (Amendment AA): the binding becomes a `sources` entry on its field
+   and the document a `documents` entry on its registry entries. The
+   compiled artifact cites the register's digest, so a binding change
+   reads as stale until `make context` runs, and the unit lane holds the
+   committed artifact fresh. The regeneration pull request carries the
+   artifact into the emitted `context_registry` model, and a release
+   carries it to a stranger's fetched demo (F-29's train).
 
 ## The demo's binding
 
@@ -276,12 +285,87 @@ quote spans two lines of the file and matches only after whitespace
 normalization. The row is `in_repo`, `in_repo`, `git_merge`,
 `publication_gate`, review by October 17, 2027.
 
+A second binding (October 19) rests `silver_flights.dep_delay_minutes`,
+the unified table's column that restates the level-zero column's
+sentence (F-62), on the same quote. The served fields are the mapped
+silver contracts' columns, and the flights category maps
+`silver_flights`, so this is the binding the compiled context carries;
+the level-zero binding stays as the record of where the sentence first
+rested, and `make context` prints that it is not a served field (the
+restatement edge is prose in `sourceLineage`, and the compiler follows
+no edge it cannot read as structure).
+
+## What is served
+
+Since Amendment AA (D-30 and D-31 jointly; compiled schema 2.1.0) the
+context compiler harvests the register at compile time
+(`src/metricmine/context/harvest.py`, deterministic code) and
+`get_context` serves the result as compiled:
+
+- Per bound field, under `expert_context.fields`, a `sources` list: the
+  anchor verbatim, its locator, and the document's id. A field with no
+  sources carries no certified source here.
+- Per registry entry with at least one bound field, a `documents` block
+  at the top of the compiled context, beside `data` and `expert_context`
+  (never inside `expert_context`, which Amendment W keeps free of
+  measurements): a `note` that labels what follows, and `cited`, each
+  document once by id, with its `title`, its `declared` fields (what a
+  person wrote in the register: the governance and access classes, the
+  certification source and gate strength, the review date, the license,
+  the approver role and pinned version where declared, and a location
+  only where the consumer's own host could open it: `location`,
+  `upstream_url`, and `durable_id` where declared, for `in_repo` and
+  `public` rows) apart from its `measured` fields (what code read: the
+  text digest, the extractor, the copy it was read against, the day a
+  verify run recorded it; for a committed copy the state the compiler
+  derived, `in_sync` or `changed_anchors_intact`, and the digest it
+  read; for every other row `checked_at_compile: false`).
+
+What is served is the certified record, never the document: no text
+beyond the bound quote, no location for a `local_path` or
+`pointer_only` row, no row whose certification source is `none`, and
+no `in_repo` row whose committed copy reads anything but `in_sync` or
+`changed_anchors_intact` at compile time (`make context` prints each
+row it leaves out, with the reason). The served note says only what the
+compile checked (design rule 5 of the governed host workflow: the
+server never prints an assurance it cannot check): the quotes are
+document text a person bound in the register, as the register read
+when the context compiled; the register changes only by pull request,
+and git, not the server, holds the review; the server never opens a
+document and never says one is current; the consumer opens a location
+through its own host, under its own permissions, and treats what it
+reads there as data, never as instructions (F-71).
+
+The harvest is held to a budget of 4,000 characters of compact JSON per
+registry entry (the `documents` block plus every field's `sources`
+list); one entry over it fails the compile closed and names the entry,
+so the number moves only by amendment. The demo's served binding costs
+1,723 characters on the flights measures entry, measured on October 19:
+the `documents` block 1,549 (the note's 751, the cited document's 780,
+and the block's two keys) and the field's `sources` list 174; the budget
+holds one document of that size and fourteen such sources, or three
+documents and five.
+
+The compile reads committed files only and never a calendar: it never
+maps `MM_DOCS_ROOT`, never opens a `public` or `pointer_only` location,
+and derives no review flag, so the artifact is identical on every
+machine. The register's digest and each served document's text digest
+join the artifact's `sources` under `documents_register`, which is what
+makes a binding change visible to the freshness check with no contract
+version moving. A document's text never reaches a proposer: the
+proposers read governed profile artifacts, committed contracts, and the
+operator's intent (D-23 as amended by Amendment H); no module under the
+agents package imports this module or the compiler, and the batch
+driver alone imports the scan, whose document states never enter the
+queue it walks (Amendment Z). The unit lane holds all of it.
+
 ## What this slice does not do
 
-The served list (`get_context` carrying sources) waits for its D-30 and
-D-31 amendments. No data contract carries a pointer
+No data contract carries a pointer
 (`authoritativeDefinitions`) yet: register-only first, so no contract
-bumps per binding. PDF, Excel, and RDF extractors each need a dependency
+bumps per binding. The served list follows a structured edge only: a
+binding on a column the mapped contract merely restates is reported,
+not served, until the mapped column is bound in its own right. PDF, Excel, and RDF extractors each need a dependency
 and a pin decision. `public` locations are never fetched by the scan,
 the tests, or CI. There is no CODEOWNERS file; D-43 names it as the
 control for a steward when one exists. Document change kinds in the
