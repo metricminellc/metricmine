@@ -239,10 +239,17 @@ def test_the_demo_row_is_the_nycflights13_help_page() -> None:
     assert row["declared_by"] == "justinrgoff"
     assert row["upstream_url"].startswith("https://raw.githubusercontent.com/tidyverse/nycflights13/df98ef215aa8216fe0838a0b8ac5bada646d814c/")
     assert row["license"].startswith("CC0")
-    (binding,) = register.bindings_for("nycflights13-flights-rd")
-    assert (binding["contract_id"], binding["column_name"]) == ("silver_nyc_flights", "dep_delay_minutes")
-    assert binding["anchor"] == "Departure and arrival delays, in minutes. Negative times represent early departures/arrivals."
-    assert binding["bound_by"] == "justinrgoff"
+    # Two bindings on the one anchor: the level-zero column, and the mapped
+    # unified table's column that restates it (F-62), which is the column
+    # the compiled context serves (Amendment AA).
+    bindings = register.bindings_for("nycflights13-flights-rd")
+    assert [(b["contract_id"], b["column_name"]) for b in bindings] == [
+        ("silver_nyc_flights", "dep_delay_minutes"),
+        ("silver_flights", "dep_delay_minutes"),
+    ]
+    for binding in bindings:
+        assert binding["anchor"] == "Departure and arrival delays, in minutes. Negative times represent early departures/arrivals."
+        assert binding["bound_by"] == "justinrgoff"
 
 
 def test_every_committed_copy_matches_its_recorded_upstream_digest() -> None:
