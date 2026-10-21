@@ -11,6 +11,14 @@ measurements.
 
 ## [Unreleased]
 
+### Changed
+
+- The digest manifest names the v1.2.0 release asset, `demo.duckdb`
+  built from the tagged commit, so `make demo-fetch` restores the
+  regenerated star with compiled context v0014 and the corrected
+  quantity sentence (F-62; HW-51 closed for anyone who fetches the
+  demo); the front door names v1.2.0 as the current tagged release.
+
 ## [1.2.0] - 2026-10-21
 
 Governed documents, served: the compiled context carries the register's
