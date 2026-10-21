@@ -189,8 +189,13 @@ def _mini_repo(tmp_path: Path, artifact: dict | None) -> Path:
     cfg["context"]["output_dir"] = str(compiled)
     (config / "default.yaml").write_text(yaml.safe_dump(cfg), encoding="utf-8")
     # The reader resolves each silver contract under <repo>/contracts by
-    # convention, so the mini repo carries the real ones.
+    # convention, so the mini repo carries the real ones. The freshness
+    # check also reads the governed documents register and the committed
+    # copies under <repo>/documents (Amendment AA); those are copied, never
+    # linked, because the documents module refuses a path that resolves
+    # outside the repository (D-43) and would read a link as unreachable.
     _contracts_into(tmp_path)
+    shutil.copytree(REPO / "documents", tmp_path / "documents")
     return tmp_path
 
 
