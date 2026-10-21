@@ -324,6 +324,29 @@ and announces truncation. To check a served build against the recorded
 answers, run `uv run pytest -m local -q tests/test_serving_questions.py`
 with the warehouse in `MM_WAREHOUSE_PATH`.
 
+What `query` may read (D-31 as amended by Amendment AB): the gold schema,
+by default. A statement that names a table outside it, `information_schema`
+included, or that calls a table function that takes a table's name or a
+statement as a string (`query`, `query_table`,
+`json_execute_serialized_sql`, `duckdb_table_sample`,
+`pragma_storage_info`; F-72) is refused with the name and the opt-in.
+The opt-in is for your own machine: start
+the server with `MM_SERVE_DB` at a working warehouse and
+`MM_SERVE_SCOPE=all`, and a coding host gets read-only SQL over bronze,
+silver, and gold, which is the modeler's read path (test a join, check a
+grain, read a distribution while you write a silver model). Two things
+to know before you set it. Raw rows leave the machine: through `query`,
+up to 500 rows a call go to the host's model provider, which is fine on
+the demo's public sources and is your choice on your own data; aggregate
+first (counts, rates, distincts) and ask for rows last. And the opt-in
+never travels: the exported demo asset holds gold only, a value other
+than `gold` or `all` fails the server at startup, the server's own
+instructions say which scope it runs with, and the switch is never
+set in a shared or hosted configuration. The five tools declare a title
+and the specification's annotations (read-only, not destructive,
+idempotent, closed world); a client may treat the hints as untrusted, and
+the three layers above are what prove the posture.
+
 ## 10. Releasing
 
 A release is a tag on a clean `main`, an asset built from that commit,
