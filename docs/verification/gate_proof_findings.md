@@ -1537,6 +1537,28 @@ the rewritten one, and the guide has to name the restore between them.
 the Path B notes and the troubleshooting entry in `docs/demo.md` and the
 sentence in `CONTRIBUTING.md`, landed with #202)
 
+**Addendum (Prep C, October 2026): the window's reach in CI.** A
+regeneration that changes gold content must refresh the manifest's
+content block in the same pull request, or the D-33 step goes red; the
+export that refreshes it writes `release: null`, and the release that
+publishes the matching asset needs the tag, which needs main to carry
+the regeneration. So between that merge and the manifest pull request
+the committed manifest names no release: `make demo-fetch` exits 2 with
+its remedy for a stranger, Path B is the demo, and the `demo-windows`
+workflow's Path A steps, which begin with that fetch, cannot pass. The
+workflow now reads which release the manifest names before Path A and
+skips the four fetch-dependent steps with a notice when it names none,
+so the legs still measure Path B (the build, the restored manifest's
+gate, the whole suite) on such a tree and run Path A again as soon as a
+manifest names a release. Measured on October 19, 2026, under
+PowerShell 7.6.3 on Linux with the step's own script: against the
+committed manifest it prints `Path A fetches v1.1.1` and writes
+`release=v1.1.1`; against a manifest naming no release it prints the
+notice and writes `release=`, both without a byte-order mark, through
+the same .NET call the summary step already uses on both shells. (The
+`demo-windows` workflow's manifest step, landed with the pull request
+that carries this addendum.)
+
 ### F-62
 **A governed amendment corrected a silver column's description and left
 its restatement in the mapping contract stale; the served context carried
