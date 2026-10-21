@@ -92,6 +92,30 @@ measurements.
   nycflights13 at `df98ef21` (CC0), committed under
   `documents/sources/nycflights13/` with its upstream URL and digest;
   `docs/documents.md`; and the CLAUDE.md boundary for the module.
+- Governed documents served (D-30 and D-31 as amended by Amendment AA;
+  D-43): the context compiler harvests the register at compile time
+  (`src/metricmine/context/harvest.py`, deterministic code that reads
+  committed files only and never a calendar) and the compiled context
+  carries, per bound field, `sources` (the anchor a person bound,
+  verbatim, with its locator and document id) and, per entry, a
+  top-level `documents` block beside `data` and `expert_context`,
+  listing each cited document once, declared apart from measured, under
+  a note that names it document text a person bound in the register as
+  it read when the context compiled, with git holding the review, and
+  says the server never opens a document and never says one is
+  current; the harvest is held to the
+  amendment's budget of 4,000 characters per entry by the compile
+  failing closed; the register's digest and each served document's
+  text digest join the artifact's `sources`, so a binding change reads
+  as stale until `make context` runs; compiled schema 2.1.0; the
+  artifact moves to v0014 with the golden oracle refreshed beside it
+  (F-21's packaging rule). A second binding rests
+  `silver_flights.dep_delay_minutes`, the mapped column, on the demo's
+  quote, and `make context` prints that the level-zero binding is not a
+  served field. The server's instructions say what the served sources are and
+  are not; `docs/documents.md` gains "What is served"; CLAUDE.md rule
+  18, the context compiler's boundary, and the documents module's
+  boundary say so.
 - `.mcp.json` at the repository root registers the gold server as a
   project MCP server for Claude Code, launched with `uv run --no-sync`
   so a clone that was never synced fails fast and installs nothing

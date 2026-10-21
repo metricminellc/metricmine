@@ -169,11 +169,14 @@ def resolve_location(repo: Path, row: dict, root: Path | None) -> tuple[Path | N
 def derive(
     repo: Path,
     register: Register,
-    today: date,
+    today: date | None,
     root: Path | None = None,
     reading_copies: dict[str, Path] | None = None,
 ) -> list[DocumentReport]:
-    """One report per standing row, in register order."""
+    """One report per standing row, in register order. ``today`` is the
+    day the `review_overdue` flag is derived for; the context compiler
+    passes None, because it reads no calendar (D-30 as amended), and then
+    no review flag is derived."""
     index = contracts_index(repo)
     reading_copies = reading_copies or {}
     reports = []
@@ -182,7 +185,7 @@ def derive(
     return reports
 
 
-def _report(repo: Path, row: dict, bindings: list[dict], index: dict[str, set[str]], today: date,
+def _report(repo: Path, row: dict, bindings: list[dict], index: dict[str, set[str]], today: date | None,
             root: Path | None, reading_copies: dict[str, Path]) -> DocumentReport:
     report = DocumentReport(
         document_id=row["document_id"],
@@ -194,7 +197,7 @@ def _report(repo: Path, row: dict, bindings: list[dict], index: dict[str, set[st
         detail="",
     )
     review_by = row.get("review_by")
-    if isinstance(review_by, date) and today > review_by:
+    if today is not None and isinstance(review_by, date) and today > review_by:
         report.flags.append(f"review_overdue (review_by {review_by.isoformat()})")
     for binding in bindings:
         columns = index.get(binding["contract_id"])

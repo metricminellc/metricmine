@@ -312,7 +312,12 @@ declarations) apart from `expert_context` (what the contracts' authors
 wrote, labeled authored). `list_fact_categories` names each category's
 typed surface, its subject, and its registry keys; analytical questions
 belong to the typed marts (`mart_<category>_typed`), and the star's
-`fact_*` and `dim_*` tables are the provenance layer. String values on
+`fact_*` and `dim_*` tables are the provenance layer. Where the governed
+documents register binds a field, `get_context` carries its `sources`
+(the quote a person bound, verbatim) and lists each cited document once,
+declared apart from measured; the server never opens a document and
+never says one is current ([docs/documents.md](documents.md), "What is
+served"). String values on
 the typed surface are lowercase text: write literals in lowercase. The
 query tool accepts one SELECT, caps rows (default 100, hard cap 500),
 and announces truncation. To check a served build against the recorded

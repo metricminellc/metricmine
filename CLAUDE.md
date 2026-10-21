@@ -217,12 +217,25 @@ approves every contract.
     unchanged and labeled authored) apart by name (D-30 and D-31 as
     amended by Amendment W); never fold prose into data or a
     measurement into expert_context, and never write a description
-    anywhere but the contract it belongs to. String values on the typed
-    surface are canonical lowercase text (D-18 as amended); the
-    registry, the hint, and the server instructions say so. Exactly
-    five tools; never add a sixth without amending the register. Server
-    code never prints to stdout (stdio carries JSON-RPC); diagnostics
-    go to stderr. Spec: docs/spec/serving.md.
+    anywhere but the contract it belongs to. Where the governed
+    documents register binds a field, its expert_context entry carries
+    sources (the quote a person bound, verbatim, with its locator and
+    document id) and the entry lists each cited document once under a
+    top-level documents block beside data and expert_context, declared
+    apart from measured, labeled as document text a person bound in the
+    register as the register read when the context compiled, with git,
+    not the server, holding the review (D-30 and D-31 as amended by
+    Amendment AA): never serve a document's text beyond the bound
+    quote, never serve a location the consumer's own host could not
+    open, never print that a binding was reviewed or a document is
+    current, never put the documents block inside expert_context, and
+    hold the harvest to the amendment's budget (4,000 characters of
+    compact JSON per entry) by failing the compile closed. String
+    values on the typed surface are canonical lowercase text (D-18 as
+    amended); the registry, the hint, and the server instructions say
+    so. Exactly five tools; never add a sixth without amending the
+    register. Server code never prints to stdout (stdio carries
+    JSON-RPC); diagnostics go to stderr. Spec: docs/spec/serving.md.
 19. The stable line began at v1.0.0 (September 2, 2026). The pipeline, the
     engine, the serving layer, the two proposers, and the gates change
     only through the decision register; experiments live on branches or
@@ -250,19 +263,30 @@ approves every contract.
   extracted text, never its bytes. The register
   (documents/register/, under contracts/documents_register.odcs.yaml) is
   the record and changes only by pull request; a declarer or binder is a
-  person, and code refuses the agent and model names it knows. Spec:
-  docs/documents.md.
+  person, and code refuses the agent and model names it knows. A
+  document's text is never a proposer input (D-23 as amended by
+  Amendment H): the served context carries the bound quote and the
+  register's record; no module under src/metricmine/agents/ imports this
+  module or the compiler, and the batch driver's scan never puts a
+  document in the queue it walks. Spec: docs/documents.md.
 - The auto-modeling engine (src/metricmine/engine/) is deterministic code,
   not an agent: approved contracts in, emitted gold dbt models out, per
   docs/spec/engine.md. It never runs at proposer runtime, never executes
   DDL, and never writes outside transform/models/gold/ plus its ownership
   manifest.
 - The context compiler (src/metricmine/context/) is deterministic code,
-  not an agent: approved contracts in, the committed compiled-context
-  artifact out (context/compiled/vNNNN.json + meta sidecar, D-30). It
-  writes nowhere else and never reads the warehouse; the engine carries
-  its newest artifact into the emitted context_registry model as SQL
-  VALUES literals, fail-closed if the artifact is missing or stale.
+  not an agent: approved contracts and the committed governed documents
+  register in, the committed compiled-context artifact out
+  (context/compiled/vNNNN.json + meta sidecar, D-30). It writes nowhere
+  else and never reads the warehouse; the engine carries its newest
+  artifact into the emitted context_registry model as SQL VALUES
+  literals, fail-closed if the artifact is missing or stale. Its
+  harvest of the register (Amendment AA) reads committed files only,
+  never MM_DOCS_ROOT, never a public or pointer_only location, and
+  never a calendar, so the artifact is identical on every machine; the
+  register's digest and each served document's text digest sit in the
+  artifact's sources, so a binding change reads as stale until make
+  context runs.
 - All query, schema, and context-retrieval logic lives in one shared module
   (`src/metricmine/query.py`). The MCP server and the hosted app both import it.
   Neither reimplements it.
