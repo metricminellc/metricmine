@@ -68,7 +68,32 @@ async def _walk(cwd: str) -> dict:
             collected["after_error"] = await session.call_tool(
                 "list_fact_categories", {}
             )
+            # The scope gate at the wire (Amendment AB): the working warehouse
+            # holds silver, and the default scope refuses it as an answer.
+            collected["silver_refused"] = await session.call_tool(
+                "query", {"sql": "SELECT count(*) AS n FROM silver.silver_nyc_flights"}
+            )
             return collected
+
+
+async def _walk_all_scope(cwd: str) -> dict:
+    """A second spawn with the opt-in: every schema in the served file."""
+    params = StdioServerParameters(
+        command=sys.executable,
+        args=["-m", "metricmine.server"],
+        env={**os.environ, "MM_SERVE_DB": str(_WAREHOUSE), "MM_SERVE_SCOPE": "all"},
+        cwd=cwd,
+    )
+    async with stdio_client(params) as (read, write):
+        async with ClientSession(read, write) as session:
+            init = await session.initialize()
+            return {
+                "instructions": init.instructions or "",
+                "tools": (await session.list_tools()).tools,
+                "silver": await session.call_tool(
+                    "query", {"sql": "SELECT count(*) AS n FROM silver.silver_nyc_flights"}
+                ),
+            }
 
 
 @pytest.fixture(scope="module")
@@ -77,6 +102,14 @@ def wire():
         pytest.skip(f"warehouse not built at {_WAREHOUSE}; run `make ingest` first")
     with tempfile.TemporaryDirectory() as cwd:
         return anyio.run(_walk, cwd)
+
+
+@pytest.fixture(scope="module")
+def wire_all_scope():
+    if not _WAREHOUSE.is_file():
+        pytest.skip(f"warehouse not built at {_WAREHOUSE}; run `make ingest` first")
+    with tempfile.TemporaryDirectory() as cwd:
+        return anyio.run(_walk_all_scope, cwd)
 
 
 def test_initialize_reports_the_spec_server_name(wire):
@@ -139,3 +172,30 @@ def test_the_session_survives_an_execution_error(wire):
     assert retail["typed_table"] == "mart_invoice_lines_typed"
     assert retail["typed_columns"][-2:] == ["fact_hash_id", "captured_at"]
     assert "not for analytics" in retail["query_hint"]
+
+
+def test_discovery_carries_the_titles_and_the_annotations(wire):
+    """HW-47 at the wire: tools/list carries each tool's title and its four
+    hints through the pinned SDK (protocol 2025-11-25)."""
+    for tool in wire["tools"]:
+        assert tool.title, tool.name
+        hints = tool.annotations
+        assert (hints.readOnlyHint, hints.destructiveHint, hints.idempotentHint, hints.openWorldHint) == (
+            True, False, True, False,
+        ), tool.name
+
+
+def test_silver_is_refused_by_default_and_served_under_the_opt_in(wire, wire_all_scope):
+    """HR-8 at the wire (Amendment AB): the default scope answers a silver
+    count with a refusal naming the table and the opt-in; the same spawn
+    with MM_SERVE_SCOPE=all answers it with the rows."""
+    refused = wire["silver_refused"].structuredContent["result"]
+    assert refused["refused"] is True
+    assert "'silver.silver_nyc_flights' is outside the gold schema" in refused["reason"]
+    assert "MM_SERVE_SCOPE=all" in refused["reason"]
+    served = wire_all_scope["silver"].structuredContent["result"]
+    assert served["rows"] == [[166158]]
+    # The opt-in process says so in its own instructions and its query title.
+    assert "This server was started with MM_SERVE_SCOPE=all" in " ".join(wire_all_scope["instructions"].split())
+    assert {t.name: t.title for t in wire_all_scope["tools"]}["query"] == "Query the served file"
+
