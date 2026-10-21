@@ -183,6 +183,20 @@ measurements.
 
 ### Changed
 
+- The regeneration (D-09): the emitted gold set under
+  `transform/models/gold/` and its ownership manifest carry
+  `gold_invoice_lines_mapping` v1.1.2 (held since October 3) and
+  compiled context v0014, so the served `context_registry` row for the
+  flights measures entry carries the demo's bound source; the emission
+  oracle and the emitted set are equal again. The digest manifest's
+  content block is refreshed from the regenerated build (the registry's
+  digest moves; every row count and typed view digest stands) and names
+  no release until the manifest pull request after v1.2.0 names its
+  asset (F-61). Demo question Q8, "What does the departure delay
+  definition rest on?", joins `tests/fixtures/serving_questions.json` as
+  a context question answered through `get_context`, the demo guide's
+  "Ask it something" list, and the local lane, which now counts ten
+  demo-question tests.
 - The `demo-windows` workflow reads which release the committed manifest
   names before Path A and skips the four fetch-dependent steps with a
   notice when it names none, so a tree between a regeneration and its

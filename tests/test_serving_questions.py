@@ -11,7 +11,12 @@ so the expected answers in the demo guide are proven, not predicted.
 It also checks that every registry claim a question leans on exists in
 the expert context an agent would read first (Amendment W): the
 cross-category join with its measured completeness, the vintage note
-behind the PBI answer, and the null semantics behind the averages.
+behind the PBI answer, and the null semantics behind the averages. A
+context question (Q8, Amendment AA) carries no SQL: it is answered by
+`get_context` on the registry entry it names, and the test holds the
+served sources (under expert_context) and the cited document (the
+entry's top-level documents block, declared apart from measured) to the
+fixture, through the same module a client reads.
 
 Serving exposes the gold schema only, and string values there are the
 canonical lowercase text (D-18 as amended): the fixture's literals and
@@ -35,6 +40,8 @@ FIXTURE = REPO / "tests" / "fixtures" / "serving_questions.json"
 pytestmark = pytest.mark.local
 
 QUESTIONS = json.loads(FIXTURE.read_text(encoding="utf-8"))["questions"]
+SQL_QUESTIONS = [q for q in QUESTIONS if "sql" in q]
+CONTEXT_QUESTIONS = [q for q in QUESTIONS if "tool" in q]
 
 
 @pytest.fixture(scope="module")
@@ -46,11 +53,37 @@ def gold():
         yield warehouse
 
 
-@pytest.mark.parametrize("question", QUESTIONS, ids=[q["id"] for q in QUESTIONS])
+@pytest.mark.parametrize("question", SQL_QUESTIONS, ids=[q["id"] for q in SQL_QUESTIONS])
 def test_question_answers_as_documented(gold, question):
     result = gold.query(question["sql"], row_cap=100)
     assert result["truncated"] is False
     assert result["rows"] == question["expected_rows"], question["id"]
+
+
+@pytest.mark.parametrize("question", CONTEXT_QUESTIONS, ids=[q["id"] for q in CONTEXT_QUESTIONS])
+def test_context_question_answers_from_the_served_sources(gold, question):
+    """Q8: the served sources on the registry entry the question names,
+    read through get_context as an agent would (Amendment AA), with the
+    cited document's declared fields apart from its measured ones and
+    the note that says what the server never does."""
+    assert question["tool"] == "get_context"
+    (category,) = question["categories"]
+    listing = {c["category"]: c for c in gold.list_fact_categories()["categories"]}
+    key = listing[category]["context_keys"][question["context_key"]]
+    compiled = gold.get_context(key)["compiled_context"]
+    expert = compiled["expert_context"]
+    assert expert["fields"][question["field"]]["sources"] == question["expected_sources"]
+    assert "documents" not in expert  # Amendment W: no measurement inside expert_context
+    cited = compiled["documents"]["cited"]
+    assert list(cited) == list(question["expected_cited"])
+    for document_id, expected in question["expected_cited"].items():
+        served = cited[document_id]
+        assert served["title"] == expected["title"]
+        for part in ("declared", "measured"):
+            for name, value in expected[part].items():
+                assert served[part][name] == value, (document_id, part, name)
+    assert set(compiled["documents"]) == {"note", "cited"}
+    assert "never opens a document and never says one is current" in compiled["documents"]["note"]
 
 
 def test_every_question_names_a_served_category(gold):
@@ -58,9 +91,12 @@ def test_every_question_names_a_served_category(gold):
     for question in QUESTIONS:
         assert set(question["categories"]) <= served, question["id"]
         for category in question["categories"]:
-            assert f"mart_{category}_typed" in question["sql"], (
-                f"{question['id']}: answered on the typed surface, never the star tables"
-            )
+            if "sql" in question:
+                assert f"mart_{category}_typed" in question["sql"], (
+                    f"{question['id']}: answered on the typed surface, never the star tables"
+                )
+            else:
+                assert question["tool"] == "get_context", f"{question['id']}: a context question reads the registry"
 
 
 def test_the_registry_carries_what_the_answers_lean_on(gold):

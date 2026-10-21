@@ -91,7 +91,7 @@ uv run python -c "from metricmine.query import GoldWarehouse; print(GoldWarehous
 
 </details>
 
-`make doctor` (`uv run mm doctor`) is the preflight: eight checks on the
+`make doctor` (`uv run mm doctor`) is the preflight: nine checks on the
 platform, the interpreter, its trust store, uv, the locked toolchain,
 and the artifact, each with the command that fixes it, and exit 0 when
 the demo can run. Read it before the fetch, not after something fails.
@@ -200,7 +200,12 @@ the person testing it) can tell what was measured from what was written:
   declares with a worked example, the decisions taken, and a meaning
   for every field. It opens with a note saying it is authored, not
   measured, and that where a claim and the data disagree, the data is
-  the fact and the claim is what to check.
+  the fact and the claim is what to check. Where the governed documents
+  register binds a field, the entry also carries that field's `sources`
+  (the sentence a person bound, verbatim) and lists the cited document
+  once, what was declared apart from what was measured, under a note
+  that says the server never opens a document and never says one is
+  current (D-43; Amendment AA).
 
 That split is the point of the multi-source demo. The weather table
 says that a null gust means no gust was reported, not zero; the flights
@@ -250,6 +255,17 @@ asking, and what to check for:
 - *"Take one flight_identity from a dimension payload and run
   lookup_record on it."*: the provenance round trip: every payload is
   reachable by content key, in every category.
+- *"What does the departure delay definition rest on?"*: the served
+  source. The flights measures entry carries, under
+  `fields.dep_delay_minutes.sources`, the sentence a person bound from
+  the nycflights13 flights help page ("Departure and arrival delays, in
+  minutes. Negative times represent early departures/arrivals."), and
+  lists the document once under `documents.cited`, what was declared in
+  the register apart from what was measured and when (D-43; Amendment
+  AA). A good answer quotes the sentence, says the contract's own
+  definition is the certified claim the quote supports, and repeats
+  what the note says: the server never opened the document and never
+  says it is current.
 
 ## Path B: replay the whole pipeline (about 8 minutes)
 
@@ -342,8 +358,9 @@ What to expect, step by step:
    `datacontract` tool is not on PATH (F-54), and on Windows the 55
    working-tree guard cases skip as well, because that guard is
    POSIX-only (D-42), so a Windows run reports 70 skipped where a Linux
-   or macOS run without the tool reports 15. The nine demo-question
-   tests read `MM_SERVE_DB`, then `MM_WAREHOUSE_PATH`, then the built
+   or macOS run without the tool reports 15. The ten demo-question
+   tests (seven SQL questions, one context question, and two checks on
+   the set) read `MM_SERVE_DB`, then `MM_WAREHOUSE_PATH`, then the built
    `warehouse/metricmine.duckdb`, and skip until Path B has built it;
    to run them against the fetched asset after Path A alone, point
    `MM_SERVE_DB` at `demo/demo.duckdb` for that one command.
