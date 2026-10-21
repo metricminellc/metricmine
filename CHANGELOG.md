@@ -38,6 +38,33 @@ measurements.
   contradiction beside an untouched quote reads as intact. An addendum
   to F-67 records the fix measured on the Windows legs of its own pull
   request.
+- Amendments AA and AB in the decision register (Decision Record 015),
+  the first lettered past Z under the scheme the register's header now
+  records (two letters in spreadsheet column order). Amendment AA, to
+  D-30 and D-31 jointly: the compiled context carries the governed
+  documents register's certified bindings, per bound field a `sources`
+  list under `expert_context` and per entry a top-level `documents`
+  block beside `data` and `expert_context`, declared apart from
+  measured, labeled as document text a person bound in the register as
+  it read when the context compiled, never a document's text beyond the
+  bound quote, never a location the consumer's own host could not open,
+  never that a binding was reviewed or a document is current;
+  a harvest budget of 4,000 characters per entry, measured and held by
+  the compile failing closed; the register's digest and each served
+  document's text digest join the artifact's freshness check; compiled
+  schema 2.1.0. Amendment AB, to D-31: the five tools declare a title
+  and the MCP specification's annotations (HW-47), which declare and
+  never prove, and `query` reads the gold schema by default with
+  `MM_SERVE_SCOPE=all` as the explicit opt-in for the modeler's read
+  path (HR-8). Finding F-72: DuckDB's `query`, `query_table`, and
+  `json_execute_serialized_sql` table functions evaluate a string as a
+  statement or a table, `duckdb_table_sample` and `pragma_storage_info`
+  take a table's name, and a CTE can shadow its own source, so a scope
+  gate on a statement's base tables alone is open; the served `query`
+  refuses the five functions by name and reads CTE names by scope. The
+  serving spec carries both amendments (§2.2, §3.1, §7)
+  and corrects a §3 example that named a table function the engine does
+  not have.
 - `contracts/documents_register.odcs.yaml`, the governed documents
   register's contract (D-43): two table objects, `documents_standing`
   and `documents_bindings`, with their quality rules, and no dbt model;

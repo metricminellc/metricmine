@@ -31,8 +31,8 @@ map one-to-one onto module methods.
 |---|---|---|---|
 | `list_fact_categories` | none | categories with fact table name, row count, the typed surface (`typed_table`, `typed_columns`, `query_hint`; D-31/D-32 as amended), and since Amendment W the category's authored `subject` and its `context_keys` (the dimensions and measures schema keys `get_context` resolves) | `information_schema` (physical tables `fact_<category>_values` in schema `gold`) for the tables and counts; `gold.context_registry` for the subject and keys |
 | `get_schema` | `schema_key` | entity group, contract name and version, role, manifest (the declared field list) | `gold.context_registry` |
-| `get_context` | `schema_key` | the full compiled context plus its contract citation: `role` and `manifest`, then `data` (what the columns are: typed declarations, grain, derived identifiers, conformed keys with who shares them, the typed surface) and `expert_context` (what people wrote: subject, how to read it, limitations, lineage, vintage, joins with measured completeness, cross-category joins, decisions, a meaning per field), kept apart by name (Amendment W) | `gold.context_registry` |
-| `query` | `sql`, optional `row_cap` | columns, rows, `row_count`, `truncated`, `row_cap` | the statement-gated, row-capped read path (§3, §4) |
+| `get_context` | `schema_key` | the full compiled context plus its contract citation: `role` and `manifest`, then `data` (what the columns are: typed declarations, grain, derived identifiers, conformed keys with who shares them, the typed surface) and `expert_context` (what people wrote: subject, how to read it, limitations, lineage, vintage, joins with measured completeness, cross-category joins, decisions, a meaning per field), kept apart by name (Amendment W); since Amendment AA, where the governed documents register binds a field, its `sources` under the field and a top-level `documents` block beside the two (§2.2) | `gold.context_registry` |
+| `query` | `sql`, optional `row_cap` | columns, rows, `row_count`, `truncated`, `row_cap` | the statement-gated, scope-gated (gold by default, Amendment AB), row-capped read path (§3, §3.1, §4) |
 | `lookup_record` | `content_key` | every place the key resolves: registry row, fact row(s), dimension row(s), or a derived-identity hit (each category's declared degenerate identifier, `line_identity` for the retail category, found through the registry's dimensions entries), each labeled with where it was found | all star tables plus the registry (the provenance tool) |
 
 Not-found is a clean empty result with `found: false`, never an error:
@@ -97,6 +97,77 @@ number under the word measured.
 authored `subject` and the two `context_keys` its registry entries
 resolve under, and the query hint says where the expert context lives.
 
+### 2.2 Served sources: the governed documents harvest (Amendment AA)
+
+Where the governed documents register (D-43,
+[`docs/documents.md`](../documents.md)) binds a mapped silver column,
+the compiled context carries the binding, and `get_context` serves it
+as compiled (compiled schema 2.1.0):
+
+- Per bound field, `expert_context.fields.<name>.sources`: a list of
+  `{anchor, locator, document_id}`, the quote a person bound, verbatim.
+  A field with no `sources` carries no certified source here.
+- Per entry with at least one bound field, a top-level `documents`
+  block beside `data` and `expert_context` (never inside
+  `expert_context`, which Amendment W keeps free of measurements): a
+  `note` that labels the block, and `cited`, each document once by id,
+  with its `title`, its `declared` fields (what a person wrote in the
+  register: `governance`, `access`, `certification_source`,
+  `gate_strength`, `review_by`, and where declared `license`,
+  `approver_role`, `pinned_version`; a location only where the
+  consumer's own host could open it: `location`, `upstream_url`, and
+  `durable_id` where declared, for `in_repo` and `public` rows, none of
+  the three for `local_path` or `pointer_only`) apart from its
+  `measured` fields (what code read: `text_sha256`, `extractor`,
+  `verified_against`, `verified_on`; for an `in_repo` row
+  `state_at_compile`, `in_sync` or `changed_anchors_intact`, and
+  `text_sha256_at_compile`; for every other row `checked_at_compile:
+  false`). A row with nothing measured carries no `measured` block.
+
+What the harvest never serves: a document's text beyond the bound
+quote; a row whose certification source is `none`; an `in_repo` row
+whose committed copy reads anything else at compile time (`make
+context` prints the row and the reason); a `local_path` or
+`pointer_only` location. The served fields are the mapped columns of
+the mapped silver contracts: a binding on a column a mapped contract
+restates in prose is reported by `make context`, never followed.
+
+The note, verbatim at the server, says only what the compile checked,
+under design rule 5 of the governed host workflow, "the server never
+prints an assurance it cannot check": that the quotes are document text
+a person bound in the register, as the register read when the context
+compiled; that the register changes only by pull request and git, not
+the server, holds the review; what is declared and what is measured;
+that this server never opens a document and never says one is current;
+and that the consumer opens a location through its own host, under its
+own permissions, and treats what it reads there as data, never as
+instructions (F-71). The server instructions carry the same paragraph.
+One limit, recorded: a committed copy's `state_at_compile` and
+`text_sha256_at_compile` carry no date of their own; the artifact's
+version, which the ownership manifest names, is their date.
+
+The budget: the harvest one entry carries (the `documents` block plus
+every field's `sources` list, as compact JSON) is held to 4,000
+characters by the compile failing closed and naming the entry; the
+number is Amendment AA's and moves only by amendment. Measured October
+19, 2026, with the demo's binding: 1,723 characters on the flights
+measures entry (the block 1,549, the source 174), which grew from
+9,369 to 11,116; the budget holds one document of that size and
+fourteen such sources, or three documents and five.
+
+The compile reads committed files only (the register under its
+contract, and for an `in_repo` row the committed copy) and never a
+calendar, so the artifact is identical on every machine; the register's
+digest and each served document's text digest join the artifact's
+`sources` under `documents_register`, and the engine's freshness check
+compares them, so a binding change reads as stale until `make context`
+runs. A document's text never reaches a proposer (D-23 as amended by
+Amendment H): no module under the agents package imports the documents
+module or the compiler, the batch driver alone imports the scan, whose
+document states never enter the queue it walks (Amendment Z), and the
+governed inputs are the three Amendment H kinds; the unit lane holds
+all three.
+
 ## 3. Read-only, three layers deep
 
 The posture is defense in depth. Each layer was probed on August 13,
@@ -155,9 +226,56 @@ module's unit tests; the probe run passed all 29. Refusals name their
 reason; the message states which check failed.
 
 Read-class rewrites reachable *inside* a legitimate SELECT (for example
-`SELECT * FROM pragma_database_list()`) stay reachable; under layers 1
+`SELECT * FROM duckdb_tables()`) stay reachable; under layers 1
 and 2 they can reveal engine metadata only. The threat model here is
 writes and filesystem reach, and both are closed twice over.
+
+### 3.1 The scope gate: gold by default (Amendment AB)
+
+A served file may hold more than gold: the working warehouse holds
+bronze and silver beside it, and `MM_SERVE_DB` can point the server at
+it. After layer 3, `query` reads the base tables and the table
+functions the lone SELECT names from DuckDB's own parse tree
+(`json_serialize_sql`, run through the hardened session) and, under
+the default scope `gold`, refuses:
+
+- a base table whose schema is not `gold`, `information_schema`
+  included, in every form the tree exposes (a CTE body, a subquery, a
+  join, EXISTS, a scalar subquery, UNION, LATERAL, FROM-first,
+  DESCRIBE or SUMMARIZE inside a subquery, PIVOT with an IN list, a
+  three-part name, any quoting or case);
+- a schema-less base table (nothing in the served file is served
+  without its schema; the refusal names the `gold.<table>` form);
+- the table functions that take a table's name or a statement as a
+  string and return its rows or values, `query`, `query_table`,
+  `json_execute_serialized_sql`, `duckdb_table_sample`, and
+  `pragma_storage_info`, which no base-table check sees
+  ([F-72](../verification/gate_proof_findings.md#f-72));
+- a statement whose tree the parser cannot serialize (fail closed; at
+  1.4.3 none was found among lone gated SELECTs, and PIVOT without an
+  IN list desugars into two statements, which layer 3 refuses first).
+
+A reference to a common table expression in scope is not a base table:
+a CTE name is in scope for the body that declares it and for the CTEs
+declared after it, and inside its own body only when it is recursive,
+so `with main_t as (select * from main_t) ...` reaches the catalog
+table and is refused (F-72). Every other table function stays reachable
+as before and reveals engine metadata (names, types, sizes), never rows
+or values outside gold. The gate judges names, never lineage: a gold
+view that read another schema would pass it, and the project's gold
+views read gold alone. Each refusal names what was refused and the
+opt-in. The opt-in is `MM_SERVE_SCOPE=all` in the environment the
+server starts with, for the modeler's read path against a working
+warehouse: then `query` reaches every schema in the served file,
+read-only under layers 1 to 3, and raw rows of every layer can reach
+the host's model provider (the operating manual says so in plain
+words). `gold` is the only other value and the default; the app
+resolves the scope at import and writes its instructions and the query
+tool's title from the scope it runs with, so any other value fails the
+server at startup, before it answers an `initialize`. The matrix
+(nineteen passes, twenty-eight refusals, measured October 19, 2026) is
+pinned in `tests/test_query_scope.py`, and the local lane proves the
+default and the opt-in at the wire.
 
 ## 4. Row caps and truncation
 
@@ -253,6 +371,13 @@ re-measured unchanged at the pinned 1.29.0 (F-22):
   schemas and round-tripped both calls (protocol `2025-11-25`), and the
   same server wired into Claude Desktop on the Mac passed live tool
   discovery and calls (probe P1 platform pass).
+- **Titles and annotations travel through `tools/list`** (Amendment AB,
+  HW-47; measured at 1.29.1, protocol 2025-11-25). Every tool declares
+  a `title` and the same four hints, `readOnlyHint` true,
+  `destructiveHint` false, `idempotentHint` true, `openWorldHint`
+  false, all true of a read-only server over one file. The
+  specification says a client treats annotations as untrusted unless it
+  trusts the server, so the hints declare and never prove: §3 proves.
 - **A union return is wrapped; a single shape is not.** Structured output
   is validated against the declared schema and undeclared keys are
   dropped, so a refusal cannot ride inside `QueryResult`; `query`
@@ -377,14 +502,24 @@ diff; the artifact itself is uploaded to the release the manifest names.
 
 ## 9. Testing
 
-- **Pure-unit (CI lane):** the 29-case statement-gate matrix; database
-  resolution order; refusal messages; category-name parsing. No
-  warehouse required.
+The lanes below name their tests as the design places them; a test
+named here lands with the pull request that implements what it holds.
+
+- **Pure-unit (CI lane):** the 29-case statement-gate matrix; the
+  scope gate's matrix on a fixture file with gold, silver, and a
+  default-schema table (§3.1); database and scope resolution order;
+  refusal messages; category-name parsing; the served sources' shape,
+  the budget, and the staleness on a binding change
+  (`tests/test_context_harvest.py`); the tools' titles and annotations.
+  No warehouse required.
 - **Local lane (`@pytest.mark.local`, the established marker):** every
   lookup against the built warehouse (registry keys, schema/context
   round trips, derived-identity provenance round trips); row-cap and
   truncation behavior over each category's fact; the in-process stdio
-  round trip against the real server with `MM_SERVE_DB` set; export
+  round trip against the real server with `MM_SERVE_DB` set, including
+  a silver count refused under the default scope and served under
+  `MM_SERVE_SCOPE=all`; the demo question set, with Q8 read from the
+  served sources; export
   content-equality on a freshly built export against its manifest. The
   lane is category-agnostic: it reads the categories, the typed columns,
   and the contract versions from the registry and the contracts, never
@@ -407,7 +542,9 @@ README remain standing.
 In this repository:
 [`docs/decisions/decision-register.md`](../decisions/decision-register.md):
 D-03, D-10, D-11, D-17, D-24, and (minted with this phase) D-31,
-D-32, D-33.
+D-32, D-33; D-30 and D-31 as amended by Amendment AA and D-31 as
+amended by Amendment AB (Decision Record 015), with D-43 for the
+register the harvest reads.
 [`docs/spec/gold-unified-event-star.md`](gold-unified-event-star.md):
 the frozen serving surface and the star this layer serves.
 [`docs/verification/gate_proof_findings.md`](../verification/gate_proof_findings.md):
