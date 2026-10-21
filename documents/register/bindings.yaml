@@ -12,3 +12,12 @@ bindings:
   intent_sha256: 94d42c3fa3ce4ab7ae03b08638ee984d97edcda6ace859f2e545e891d925bff5
   bound_by: justinrgoff
   bound_on: 2026-10-17
+- document_id: nycflights13-flights-rd
+  contract_id: silver_flights
+  column_name: dep_delay_minutes
+  anchor: Departure and arrival delays, in minutes. Negative times represent early departures/arrivals.
+  locator: text, line 13
+  intent: 'silver_flights.dep_delay_minutes carries silver_nyc_flights.dep_delay_minutes into the unified flights table and restates the help page''s sentence: delays are in minutes, and a negative value is an early departure.'
+  intent_sha256: 0026e05d0f1f3d0398c999f98f5b5c2c03f533e9c852d17d227878a09f4be193
+  bound_by: justinrgoff
+  bound_on: 2026-10-19
