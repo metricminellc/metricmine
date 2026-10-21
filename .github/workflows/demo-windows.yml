@@ -84,18 +84,41 @@ jobs:
       - name: Path A, the preflight
         run: uv run mm doctor
 
+      # Path A fetches the asset the committed manifest names. Between a
+      # regeneration that refreshes the manifest's content block and the
+      # release that publishes the matching asset, the manifest names no
+      # release (F-61: `make demo-fetch` exits 2 and says to build it), so
+      # the four fetch-dependent steps are skipped with a notice and Path B
+      # below proves the build; they run whenever a release is named. The
+      # output is written without a byte-order mark, the way the summary
+      # step writes, so both shells produce the same file.
+      - name: Path A, read which release the manifest names
+        id: manifest
+        run: |
+          $release = (uv run python -c "import json; print(json.load(open('demo/demo.digest.json'))['artifact']['release'] or '')").Trim()
+          [System.IO.File]::AppendAllText($env:GITHUB_OUTPUT, "release=$release`n")
+          if ($release -eq '') {
+            Write-Output "::notice::Path A skipped: the committed manifest names no release (F-61); Path B proves this build"
+          } else {
+            Write-Output "Path A fetches $release"
+          }
+
       - name: Path A, fetch and verify the release asset
+        if: steps.manifest.outputs.release != ''
         run: uv run mm demo-fetch
 
       - name: Path A, list the categories
+        if: steps.manifest.outputs.release != ''
         run: uv run python -c "from metricmine.query import GoldWarehouse; print(GoldWarehouse().list_fact_categories())"
 
       # The command the Claude Desktop config launches, proven over stdio
       # from outside the repository with a minimal environment.
       - name: Path A, the server the desktop config launches
+        if: steps.manifest.outputs.release != ''
         run: uv run python scripts/serve_smoke.py
 
       - name: Path A, a second fetch already matches
+        if: steps.manifest.outputs.release != ''
         run: uv run mm demo-fetch
 
       # Path B, the keyless replay: the connector venv (CPython 3.10,

@@ -183,6 +183,12 @@ measurements.
 
 ### Changed
 
+- The `demo-windows` workflow reads which release the committed manifest
+  names before Path A and skips the four fetch-dependent steps with a
+  notice when it names none, so a tree between a regeneration and its
+  release still measures Path B on both shells (an addendum to F-61
+  records the window's reach); the steps run whenever a release is
+  named.
 - The scan's plan carries a Governed documents section (D-35 as amended
   by Amendment Z): the register's standing, the state counts, and one
   item per document with its next command, derived on every run and
