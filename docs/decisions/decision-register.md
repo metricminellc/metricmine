@@ -35,7 +35,13 @@ entry point, and findings F-54 and F-55. Decision Record 013 (October 3,
 Amendment Y to D-20 (gate two as run, then test), the confirmation of
 D-06 under v2, and finding F-66. Decision Record 014 (October 17, 2026)
 carries D-43, governed documents, Amendment Z to D-35 (the scan's
-document states), and findings F-68 to F-71.
+document states), and findings F-68 to F-71. Decision Record 015
+(October 19, 2026) carries Amendment AA to D-30 and D-31 jointly
+(governed documents served: the compiled-schema bump, the harvest, the
+budget, the staleness check), Amendment AB to D-31 (the tools'
+annotations and the query tool's gold scope), and finding F-72. The
+lettering past Z: amendments take two letters in spreadsheet column
+order (AA, AB, and so on through AZ, then BA).
 
 **Status meanings.** `adopted`: in force. `proposed`: agreed in working
 session, applied by the plans below, formal adoption pending; treat as binding
@@ -74,8 +80,8 @@ unless amended.
 | [D-27](#d-27) | Bronze lands in CI via make ingest | adopted |
 | [D-28](#d-28) | Contract-declared enforcement severity | adopted |
 | [D-29](#d-29) | The auto-modeling engine specification | adopted |
-| [D-30](#d-30) | Registry population: compiled-context artifact, literal-carrying model | adopted |
-| [D-31](#d-31) | Serving layer: one shared query module; thin MCP server | adopted |
+| [D-30](#d-30) | Registry population: compiled-context artifact, literal-carrying model; the governed documents harvest (Amendment AA) | adopted |
+| [D-31](#d-31) | Serving layer: one shared query module; thin MCP server; served sources (Amendment AA); tool annotations and the gold scope (Amendment AB) | adopted |
 | [D-32](#d-32) | MCP SDK: official mcp as a project dependency | adopted |
 | [D-33](#d-33) | Demo export: content equality by query, never bytes | adopted |
 | [D-34](#d-34) | Proposer model selection: pinned default, allow-listed override | adopted |
@@ -719,6 +725,62 @@ description differs. The shared groups carry the same two sections
 framed by the star contract. `role` and `manifest` stay at the top
 level where `get_schema` reads them. Compiled schema stays 2.0.0: the
 split adds keys under it and removes none the serving layer read.
+Amended October 19, 2026 (Record 015, Amendment AA, jointly with D-31):
+compiled schema 2.1.0. The compiler harvests the governed documents
+register (D-43) at compile time and the artifact carries each certified
+binding: per bound field, under `expert_context.fields`, a `sources`
+list (the anchor a person bound, verbatim, its locator, and the
+document's id); per entry whose fields cite at least one document, a
+`documents` block at the top of the compiled context, beside `data` and
+`expert_context` (a `note` that labels it, and `cited`, each document
+once by id, with its title and its `declared` fields apart from its
+`measured` fields). The block sits outside `expert_context` because
+Amendment W keeps a measurement out of it, and `role` and `manifest`
+stay where `get_schema` reads them. The harvest is deterministic code
+inside the compiler
+(`src/metricmine/context/harvest.py`): it reads committed files only,
+the register under its contract and, for an `in_repo` row, the
+committed copy; never `MM_DOCS_ROOT`, never a `public` or
+`pointer_only` location, and never a calendar, so the artifact stays
+identical on every machine. What is served: never a row whose
+certification source is `none`; an `in_repo` row while its committed
+copy reads `in_sync` or `changed_anchors_intact` at compile time, with
+that state and the digest the compiler read beside the digest the
+register records (a merged tree holds both to `in_sync` and equality
+through the unit lane); a `public`, `local_path`, or `pointer_only` row
+as declared, with what a person's verify run recorded as measured and
+`checked_at_compile` false; a location only where the consumer's own
+host could open it (`location`, `upstream_url`, and `durable_id` where
+the register declares them, for `in_repo` and `public` rows: the
+committed copy's path and its commit-pinned upstream URL, or the public
+URL; none of the three for `local_path` or `pointer_only`); and never a
+document's text beyond the bound quote. `make context` prints each row or binding it leaves out
+with the reason; a register that fails its contract's error rules fails
+the compile closed. The served fields are the mapped silver contracts'
+columns: a binding on a column a mapped contract restates in prose (the
+F-62 edge) is reported, never followed, so the mapped column is bound
+in its own right. The freshness check compares, beside every governing
+contract, the register's digest (sha256 over its canonical rows) and
+each served document's text digest, carried under
+`sources.documents_register`, so a binding change or a committed
+copy's change reads as stale until `make context` runs, with no
+contract version moving; an artifact minted before this amendment
+cites no register and reads as stale on a tree that carries one. The
+budget: the harvest one registry entry carries (its `documents` block
+plus every field's `sources` list, as compact JSON) is held to 4,000
+characters; a harvest over it fails the compile closed and names the
+entry, and the number moves only by amendment. Measured October 19,
+2026, at `d53132a` with the demo's binding: the flights measures entry
+grew from 9,369 to 11,116 characters of compact JSON, the harvest
+1,723 of them (the `documents` block 1,549: the note 751, the cited
+document 780, the block's keys the rest; the field's `sources` list
+174), so the budget holds the note, one document, and fourteen sources
+of the demo's size (3,985), or three documents and five (3,977), the
+ten-binding case S37 estimated, about a thousand tokens at four
+characters a token and under a quarter of the largest entry (16,156).
+The minor bump: keys are added (`sources` per bound field, `documents`
+per entry, `documents_register` under `sources`) and none the serving
+layer reads is removed (Amendment W's rule). Every other clause stands.
 
 ### D-31
 **Serving layer: one shared query module; thin MCP server.** All gold
@@ -764,6 +826,76 @@ declared cross-category joins on the typed surfaces as written. The
 D-41 exit measured the need: an agent that writes `origin_airport =
 'JFK'` gets no rows, and none of what a null gust, a null arrival
 delay, or a recoded airport means is in the rows.
+Amended October 19, 2026 (Record 015, Amendment AA, jointly with D-30):
+still five tools, no sixth. `get_context` serves the harvested bindings
+as compiled: the `sources` under a bound field and the entry's
+top-level `documents` block, declared apart from measured, under the
+note that names them document text a person bound in the governed
+documents register, as the register read when the context compiled.
+The note says only what the compile checked (design rule 5 of the
+governed host workflow: the server never prints an assurance it cannot
+check): that the register changes only by pull request and that git,
+not the server, holds the review, never that a binding was reviewed or
+a document is current (D-43, F-71). The served wording says what was
+declared as declared and what was measured with what code read it
+against and the day a verify run recorded it; the compile-time state of
+a committed copy carries no date of its own and is dated by the
+artifact's version, which the ownership manifest names. The server
+never opens a document, the note says so, and it tells the consumer to
+open a location through its own host under its own permissions and to
+treat what it reads there as data, never as instructions; the server
+instructions carry the same paragraph, and a field with no sources
+carries no certified source. A document's text never reaches a
+proposer (D-23 as amended by Amendment H): the harvest has no path into
+a proposal, which the unit lane holds three ways: no module under the
+agents package imports the documents module or the compiler, the batch
+driver alone imports the scan, whose document states never enter the
+queue it walks (Amendment Z), and the governed inputs are the three
+Amendment H kinds. The payload budget D-43 left to this amendment is
+the 4,000 characters recorded under D-30. Full text: Decision Record
+015.
+Amended October 19, 2026 (Record 015, Amendment AB): still five tools,
+no sixth. Two changes at the tool surface. First (HW-47), every tool
+declares a `title` and the specification's annotations (`readOnlyHint`
+true, `destructiveHint` false, `idempotentHint` true, `openWorldHint`
+false), carried through `tools/list` by the pinned SDK (mcp 1.29.1,
+protocol 2025-11-25, measured October 19, 2026). The specification says
+a client treats annotations as untrusted unless it trusts the server, so
+they declare and never prove: the read-only posture stays proven by the
+serving spec's three layers and the gate's matrix, not by a hint, and
+no tool's name, arguments, or return shape moves. Second (HR-8),
+`query` reads gold by default. After the statement gate the module
+reads the base tables and the table functions a statement names from
+DuckDB's own parse tree (`json_serialize_sql`, under the hardened
+session) and refuses a base table outside schema `gold`,
+`information_schema` included, a schema-less name, and the table
+functions that take a table's name or a statement as a string and
+return its rows or values (`query`, `query_table`,
+`json_execute_serialized_sql`, `duckdb_table_sample`,
+`pragma_storage_info`;
+[F-72](../verification/gate_proof_findings.md#f-72)), naming what was
+refused and the opt-in. A reference to a common table expression in
+scope is not a base table, and a CTE's own name is out of scope inside
+its body unless it is recursive; a statement whose tree the parser
+cannot serialize is refused the same way; every other table function
+stays reachable as before, under the three layers, and exposes engine
+metadata, never rows or values outside gold. The gate judges names: a
+gold view that read another schema would pass it, and the project's
+gold views read gold alone. The opt-in is `MM_SERVE_SCOPE=all` in the
+environment the server starts with, for the modeler's read path (S36)
+against a working warehouse through `MM_SERVE_DB`: then `query` reaches
+every schema in the served file, read-only, and raw rows of every layer
+can reach the host's model provider, which the server instructions,
+written from the scope the process runs with, and the operating manual
+say in plain words. `gold` is the only other value and the default; any
+other value fails the server at startup, as a missing database does,
+and the opt-in is never set in a shared or hosted configuration. The
+exported demo asset holds gold only (serving spec §8), so a stranger's
+demo is unchanged. Measured October 19, 2026, on a built working
+warehouse at `d53132a`: `select count(*) from silver.silver_nyc_flights`
+returned the count 166,158 through the server, and under this
+amendment's default it is refused with the table and the opt-in named;
+the gold count path is unchanged. Full text: Decision Record 015.
 
 ### D-32
 **MCP SDK selection and pin.** The official `mcp` package at 2.0.x,
@@ -1373,10 +1505,10 @@ authority. The mapping:
 | 15 (proposer runtime: one structured call; proposal schema projection; allow-listed model override; governed inputs per stance; no tools/MCP/loops; outbox-only; the deterministic code named beside the proposers) | D-21 (Amendment F), D-23 (Amendment H), D-34, D-35, D-43, evidence [F-26](../verification/gate_proof_findings.md#f-26) |
 | 16 (versioned prompts; contract provenance incl. proposerStance and amendsContract; pattern-derived absence rule) | D-22 (Amendment I), D-29 |
 | 17 (human-only draft-to-contract flow; no relaxation without the flag; report-and-stop on fail-closed; keyless make demo) | D-24, D-08, D-10 (Amendment G), D-35 |
-| 18 (serving boundary: shared module, three-layer read-only, capped results, the typed-surface steer; the data and expert-context split; the demo artifact as a release asset) | D-31 (Amendment W), D-32, D-33 (Amendment S), D-03 (Amendment S), D-30 (Amendment W) |
+| 18 (serving boundary: shared module, three-layer read-only, capped results, the typed-surface steer; the data and expert-context split; the served sources and their budget; the gold scope and the tools' annotations; the demo artifact as a release asset) | D-31 (Amendments W, AA, AB), D-32, D-33 (Amendment S), D-03 (Amendment S), D-30 (Amendments W, AA), D-43, evidence [F-72](../verification/gate_proof_findings.md#f-72) |
 | Conventions (never read or write outside the working tree; enforced by the working-tree guard hook; who runs a command over the governed documents root) | D-37, D-13, D-43, evidence [F-32](../verification/gate_proof_findings.md#f-32) |
 | Toolchain (the supported matrix; `make` over `uv run mm`; the Windows text rules; line endings, the committed document copies included) | D-42, D-43 |
-| Architecture boundaries (the governed documents module: deterministic code, identity as extracted text, never a private location, the register changed only by pull request) | D-43, D-35 (Amendment Z), D-10 (Amendment G) |
+| Architecture boundaries (the governed documents module: deterministic code, identity as extracted text, never a private location, the register changed only by pull request; the context compiler's harvest of the register, committed files only and never a calendar) | D-43, D-35 (Amendment Z), D-10 (Amendment G), D-30 (Amendment AA) |
 
 All decisions in this register are adopted: D-01 through D-20 as of the
 July 11, 2026 revision (Decision Record 001 Rev. 3), D-21 through D-25 as
@@ -1396,7 +1528,8 @@ as of the September 2, 2026 revision (Decision Record 011), and D-42 as
 of the September 6, 2026 revision (Decision Record 012), and Amendments
 X and Y as of the October 3, 2026 revision (Decision Record 013), and
 D-43 (with Amendment Z to D-35) as of the October 17, 2026 revision
-(Decision Record 014). D-20's
+(Decision Record 014), and Amendments AA and AB as of the October 19,
+2026 revision (Decision Record 015). D-20's
 substance
 is encoded directly in
 [`.github/workflows/contract-gate.yml`](../../.github/workflows/contract-gate.yml)
