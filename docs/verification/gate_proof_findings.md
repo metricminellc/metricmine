@@ -88,6 +88,7 @@ order by design.
 | [F-69](#f-69) | A Word or PowerPoint file's bytes change on every save while its words do not: only the zip timestamps differ, so a byte digest is not a document's identity and a digest of the normalized extracted text is | Governed documents rung |
 | [F-70](#f-70) | The common Python readers' convenient reads return a Word file's body paragraphs and a deck's text boxes only: tables, text boxes, headers, footers, footnotes, endnotes, grouped shapes, and notes each need a separate call, and a pending redline reads as neither view | Governed documents rung |
 | [F-71](#f-71) | An anchor check measures that a quote is still present: an untouched quote beside a new sentence that contradicts it reads as intact, a whitespace re-wrap reads as unchanged, and a punctuation edit inside the quote reads as broken | Governed documents rung |
+| [F-72](#f-72) | DuckDB's `query`, `query_table`, and `json_execute_serialized_sql` table functions evaluate a string as a statement or a table, `duckdb_table_sample` and `pragma_storage_info` take a table's name, and a flat exclusion of CTE names passes a CTE that shadows its own source, so a scope gate on a statement's base tables alone is open; the served `query` refuses the five functions by name and reads CTE names by scope | Serving rung, continued |
 
 ## Command surface (datacontract-cli 1.0.12)
 
@@ -1991,3 +1992,54 @@ change). The served wording, when it comes, says what was measured and
 when, and never that a document is current (D-43). (Evidence: the Prep
 B probe transcript; measured again in the prep's sandbox by the module's
 tests, which land with its pull request.)
+
+## Serving rung, continued (Prep C, October 2026)
+
+### F-72
+**DuckDB's `query`, `query_table`, and `json_execute_serialized_sql`
+table functions evaluate a string as a statement or a table,
+`duckdb_table_sample` takes a table's name the same way, and
+`pragma_storage_info` returns a named table's per-segment statistics
+with a column's minimum and maximum, so a scope gate that judges only
+the base tables in a statement's parse tree is open to a string that
+names any table in the served file; and a gate that drops every
+schema-less name matching a common table expression is open to a CTE
+that shadows its own source. The served gate refuses the five functions
+by name and reads CTE names by scope.** Measured on October 19, 2026, on
+a fresh clone at `d53132a`, against a built working warehouse through
+the served session (a read-only connection with `enable_external_access`
+off and the configuration locked; duckdb 1.4.3). `json_serialize_sql`
+exposes every base table a lone SELECT names, with its schema, in every
+form tried (a CTE body, a subquery, a join, EXISTS, a scalar subquery,
+UNION, LATERAL, FROM-first, DESCRIBE and SUMMARIZE inside a subquery,
+PIVOT with an IN list, three-part names, quoting, and case), and lists
+a common table expression's own name under `cte_map` while also naming
+it as a schema-less base table; a table function is a `TABLE_FUNCTION`
+node with no base table under it. Through that session, `select
+count(*) from query_table('silver.silver_flights')`, `query('select *
+from silver.silver_flights')`, and `json_execute_serialized_sql(...)` of
+the serialized form each returned the count 166,158;
+`duckdb_table_sample('silver.silver_flights')` returned no rows but took
+the name; `pragma_storage_info('silver.s')` on a fixture table returned
+`[Min: 1, Max: 3]` in its `stats` column; `pragma_table_info` and
+`pragma_show` returned column names and types only. On a fixture file
+with a table in the default schema, `with main_t as (select * from
+main_t) select count(*) from main_t` returned that table's one row: a
+non-recursive CTE cannot see its own name, so the inner reference binds
+to the catalog table, and a flat exclusion by name would have passed it.
+PIVOT without an IN list desugars into two statements before any tree
+is read, so the statement gate refuses it first; PIVOT with an IN list
+inside a gated SELECT is one statement whose `PIVOT` node carries its
+source as a base table (bare, its leading keyword fails the statement
+gate before any tree is read); and no lone gated SELECT tried failed to
+serialize. What this bounds: a
+scope gate on names must also close the functions that take names and
+must read a CTE name in its scope, so the served `query` under its
+default scope (D-31 as amended by Amendment AB) refuses a base table
+outside schema `gold`, a schema-less name out of scope, and these five
+functions by name, and a duckdb pin move re-measures the list, since
+the next engine may add another. The gate judges names, never lineage:
+a gold view that read another schema would pass it, and the project's
+gold views read gold alone. (Evidence: the Prep C probe transcript;
+`tests/test_query_scope.py`, which lands with the implementing pull
+request.)
