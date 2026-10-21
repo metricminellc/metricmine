@@ -8,7 +8,7 @@ server entirely through its environment.
 
 from __future__ import annotations
 
-from metricmine.server.app import server
+from metricmine.server.app import server, warehouse
 
 
 def _warm_native_imports() -> None:
@@ -39,6 +39,12 @@ def _warm_native_imports() -> None:
 
 def main() -> None:
     _warm_native_imports()
+    # Open the served database before the transport starts, so a missing
+    # file fails the process at startup with its message, as the serving
+    # spec (§5) and CLAUDE.md rule 18 say, and never after a client's first
+    # tool call (the scope value fails earlier still, at the app's import).
+    # Importing the app opens nothing; this is the entry point's step.
+    warehouse()
     server.run(transport="stdio")
 
 

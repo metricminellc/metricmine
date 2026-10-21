@@ -116,6 +116,25 @@ measurements.
   are not; `docs/documents.md` gains "What is served"; CLAUDE.md rule
   18, the context compiler's boundary, and the documents module's
   boundary say so.
+- The tool surface's hints and the query tool's scope (D-31 as amended
+  by Amendment AB): every tool declares a title and the MCP
+  specification's annotations (read-only, not destructive, idempotent,
+  closed world; HW-47), which declare and never prove, the three layers
+  proving the posture; and `query` reads the gold schema by default
+  (HR-8), refusing a base table outside it, `information_schema`
+  included, a schema-less name out of a CTE's scope, and the table
+  functions that take a table's name or a statement as a string
+  (`query`, `query_table`, `json_execute_serialized_sql`,
+  `duckdb_table_sample`, `pragma_storage_info`; finding F-72), naming
+  what was refused and the opt-in, `MM_SERVE_SCOPE=all`, for the
+  modeler's read path against a working warehouse; the server writes
+  its instructions and the query tool's title from the scope it runs
+  with, opens the served database at startup, and fails there on any
+  other value or a missing file. The
+  server instructions, the operating manual (the paragraph HW-58 b
+  owed: raw rows reach the host's model provider under the opt-in), and
+  CLAUDE.md rule 18 say so; the scope matrix lives in
+  `tests/test_query_scope.py`.
 - `.mcp.json` at the repository root registers the gold server as a
   project MCP server for Claude Code, launched with `uv run --no-sync`
   so a clone that was never synced fails fast and installs nothing

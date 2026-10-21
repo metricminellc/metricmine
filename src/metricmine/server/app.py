@@ -25,9 +25,12 @@ from importlib.metadata import PackageNotFoundError, version as package_version
 from typing import TypedDict
 
 from mcp.server.fastmcp import FastMCP
+from mcp.types import ToolAnnotations
 
 from metricmine.query import (
     ROW_CAP_DEFAULT,
+    SCOPE_ALL,
+    SCOPE_GOLD,
     CategoryList,
     ContextResult,
     GoldWarehouse,
@@ -35,9 +38,34 @@ from metricmine.query import (
     QueryRefused,
     QueryResult,
     SchemaResult,
+    resolve_scope,
 )
 
 SERVER_NAME = "metricmine-gold"
+
+# What `query` may read, resolved once at import from MM_SERVE_SCOPE (D-31
+# as amended by Amendment AB): a value that is neither `gold` nor `all`
+# raises here, so `python -m metricmine.server` fails at startup and
+# never answers an `initialize`. The instructions below state the scope
+# this process actually runs with, never a default it may not have.
+SCOPE = resolve_scope()
+
+SCOPE_PARAGRAPHS = {
+    SCOPE_GOLD: (
+        "query reads the gold schema: a statement that names a table outside it, "
+        "or calls a table function that takes a table's name or a statement as a "
+        "string, is refused with the table or function named; the operator who "
+        "starts this server against a working warehouse opts in to every schema "
+        "in the served file with MM_SERVE_SCOPE=all, and then raw rows of every "
+        "layer can reach you."
+    ),
+    SCOPE_ALL: (
+        "This server was started with MM_SERVE_SCOPE=all: query reads every "
+        "schema in the served file, read-only, bronze and silver included, and "
+        "raw rows of every layer can reach you. The default, without that "
+        "setting, reads the gold schema alone."
+    ),
+}
 
 INSTRUCTIONS = """\
 Read-only access to the MetricMine gold layer: a unified event star of
@@ -88,16 +116,17 @@ Five tools, all reads:
 - get_context: a schema key's full compiled context, data and
   expert_context apart, with the bound fields' sources and the cited
   documents where the register binds them.
-- query: one SELECT statement, row-capped, against the gold schema.
+- query: one SELECT statement, row-capped, under the scope stated below.
 - lookup_record: every place a content key resolves, with its provenance.
 
 The connection is read-only three layers deep: the database opens read-only,
 external filesystem access is disabled and the configuration locked, and
 query accepts exactly one statement that is literally a SELECT. Anything
-else is refused with the reason named. Results are row-capped and say so:
-a truncated result carries truncated=true. Unknown keys are a clean empty
-answer with found=false, not an error.\
-"""
+else is refused with the reason named. SCOPE-PARAGRAPH
+Results are row-capped and say so: a truncated result carries
+truncated=true. Unknown keys are a clean empty answer with found=false,
+not an error.\
+""".replace("SCOPE-PARAGRAPH", SCOPE_PARAGRAPHS[SCOPE])
 
 
 class QueryRefusal(TypedDict):
@@ -121,6 +150,16 @@ def _project_version() -> str:
         return "0.0.0"
 
 
+# Every tool declares the same truthful hints (HW-47; D-31 as amended by
+# Amendment AB): it reads and never writes, it never destroys, calling it
+# twice changes nothing, and its world is the one served file, never an
+# open one. The specification says a client treats annotations as untrusted
+# unless the server is, so these declare and never prove: the read-only
+# posture is proven by the query module's three layers, not by a hint.
+READ_ONLY = ToolAnnotations(
+    readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False
+)
+
 server = FastMCP(name=SERVER_NAME, instructions=INSTRUCTIONS)
 # FastMCP on the 1.x line takes no `version` argument, but the lowlevel
 # server it wraps does, and that field is what a client reads back from
@@ -140,11 +179,11 @@ def warehouse() -> GoldWarehouse:
     """
     global _warehouse
     if _warehouse is None:
-        _warehouse = GoldWarehouse()
+        _warehouse = GoldWarehouse(scope=SCOPE)
     return _warehouse
 
 
-@server.tool()
+@server.tool(title="List fact categories", annotations=READ_ONLY)
 def list_fact_categories() -> CategoryList:
     """List the gold fact categories: fact table, row count, typed table and
     columns, the category's authored subject, and the registry keys
@@ -152,7 +191,7 @@ def list_fact_categories() -> CategoryList:
     return warehouse().list_fact_categories()
 
 
-@server.tool()
+@server.tool(title="Get schema", annotations=READ_ONLY)
 def get_schema(schema_key: str) -> SchemaResult:
     """Look up a schema key's entity group, contract, role, and manifest.
 
@@ -162,7 +201,7 @@ def get_schema(schema_key: str) -> SchemaResult:
     return warehouse().get_schema(schema_key)
 
 
-@server.tool()
+@server.tool(title="Get context", annotations=READ_ONLY)
 def get_context(schema_key: str) -> ContextResult:
     """Return a schema key's full compiled context and its contract citation.
 
@@ -181,16 +220,20 @@ def get_context(schema_key: str) -> ContextResult:
     return warehouse().get_context(schema_key)
 
 
-@server.tool()
+@server.tool(title="Query gold" if SCOPE == SCOPE_GOLD else "Query the served file", annotations=READ_ONLY)
 def query(sql: str, row_cap: int = ROW_CAP_DEFAULT) -> QueryResult | QueryRefusal:
-    """Run one read-only SELECT against gold, row-capped.
+    """Run one read-only SELECT, row-capped, under the server's scope.
 
     Accepts exactly one statement that parses as a SELECT and leads with
     select, with, or from. Anything else (DDL, DML, multiple statements,
     PRAGMA, SHOW, DESCRIBE, ATTACH, COPY) comes back as
     {"refused": true, "reason": ...} naming the check that failed, rather
-    than as an error. Results are capped at row_cap rows (default 100,
-    maximum 500) and set truncated=true when more rows existed.
+    than as an error. Under the default scope it reads the gold schema: a
+    table outside it, or a table function that takes a table's name or a
+    statement as a string, is refused the same way; a server started with
+    MM_SERVE_SCOPE=all reads every schema in the served file. Results are
+    capped at row_cap rows (default 100, maximum 500) and set
+    truncated=true when more rows existed.
     """
     try:
         return warehouse().query(sql, row_cap)
@@ -198,7 +241,7 @@ def query(sql: str, row_cap: int = ROW_CAP_DEFAULT) -> QueryResult | QueryRefusa
         return {"refused": True, "reason": str(exc)}
 
 
-@server.tool()
+@server.tool(title="Look up a record", annotations=READ_ONLY)
 def lookup_record(content_key: str) -> LookupResult:
     """Find every place a content key resolves, labeled with where it was found.
 

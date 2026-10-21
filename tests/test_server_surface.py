@@ -83,6 +83,7 @@ def test_importing_the_app_opens_no_database():
     # calls a tool never opens a database, and this lane has no warehouse.
     assert app._warehouse is None
 
+
 def test_instructions_say_what_the_served_documents_are_and_are_not():
     """Design rule 5 and D-43 at the server's own door (Amendment AA): the
     instructions name the served sources as document text a person bound
@@ -103,3 +104,39 @@ def test_instructions_say_what_the_served_documents_are_and_are_not():
     ):
         assert phrase in text, phrase
 
+
+def test_every_tool_declares_a_title_and_the_read_only_annotations():
+    """HW-47 (D-31 as amended by Amendment AB): the five tools declare a
+    display title and the specification's four hints, all truthful for a
+    read-only server over one file: read-only, not destructive, idempotent,
+    closed world. They declare; the query module's three layers prove."""
+    tools = _list_tools()
+    assert {tool.name: tool.title for tool in tools} == {
+        "list_fact_categories": "List fact categories",
+        "get_schema": "Get schema",
+        "get_context": "Get context",
+        "query": "Query gold",
+        "lookup_record": "Look up a record",
+    }
+    for tool in tools:
+        hints = tool.annotations
+        assert hints is not None, tool.name
+        assert (hints.readOnlyHint, hints.destructiveHint, hints.idempotentHint, hints.openWorldHint) == (
+            True, False, True, False,
+        ), tool.name
+
+
+def test_instructions_state_the_scope_this_process_runs_with():
+    """The instructions name the resolved scope, never a default the
+    process may not have (design rule 5): the surface lane imports the
+    app with MM_SERVE_SCOPE unset, so it reads the gold paragraph; the
+    opt-in paragraph is held here by text, and at the wire by the local
+    lane's second spawn."""
+    text = " ".join(app.INSTRUCTIONS.split())
+    assert app.SCOPE == "gold"
+    assert "query reads the gold schema" in text
+    assert "MM_SERVE_SCOPE=all" in text
+    assert "raw rows of every layer can reach you" in text
+    opt_in = app.SCOPE_PARAGRAPHS["all"]
+    assert opt_in.startswith("This server was started with MM_SERVE_SCOPE=all")
+    assert "bronze and silver included" in opt_in
