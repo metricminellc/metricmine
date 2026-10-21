@@ -305,7 +305,7 @@ and in findings
 
 ## Status and roadmap
 
-[v1.1.3](https://github.com/metricminellc/metricmine/releases/tag/v1.1.3)
+[v1.2.0](https://github.com/metricminellc/metricmine/releases/tag/v1.2.0)
 is the current tagged release; v1.0.0 (September 2, 2026) began the
 stable line. v0.1.0 shipped Phases 0
 through 5: the scaffold and pinned toolchain, bronze ingestion, the
@@ -333,7 +333,14 @@ fresh clone fetches on a Python whose trust store is empty (F-58).
 v1.1.3 is the first-run arc: the front door, the demo guide, the
 operator's manual and its companions, and the preflight carry what a
 stranger on any supported platform needs to reach a served star on the
-first attempt, and the two exit records the Windows arc owed land. The
+first attempt, and the two exit records the Windows arc owed land.
+v1.2.0 serves governed documents: a small register records which
+document a person certified as the source of a contracted column's
+meaning, the compiled context carries each certified binding into
+`get_context` as document text a person bound in the register, the
+query tool reads gold by default with an explicit opt-in, the star is
+rebuilt on dbt Core v2, and the refreshed demo asset carries the
+corrected quantity sentence. The
 live roadmap is the
 [Issues tab](https://github.com/metricminellc/metricmine/issues); the
 [changelog](CHANGELOG.md) records what landed in each release.
