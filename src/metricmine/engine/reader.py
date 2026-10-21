@@ -25,6 +25,7 @@ from pathlib import Path
 import jsonschema
 import yaml
 
+from metricmine.context.harvest import register_source
 from metricmine.profiling.writer import latest_version
 
 # Every emitted model carries one of these prefixes or the reserved name,
@@ -159,9 +160,9 @@ def load_compiled_context(repo_root: Path) -> tuple[str, dict]:
     """The newest committed compiled-context artifact, fail-closed (D-30).
 
     Resolves the context: block of config/default.yaml, picks the newest
-    vNNNN, and refuses an artifact whose cited contract versions diverge
-    from the loaded contracts; the registry must never embed stale
-    context.
+    vNNNN, and refuses an artifact whose cited contract versions, or whose
+    cited governed documents register, diverge from the tree; the
+    registry must never embed stale context.
     """
     config_path = Path(repo_root) / "config" / "default.yaml"
     cfg = yaml.safe_load(config_path.read_text(encoding="utf-8"))
@@ -197,6 +198,13 @@ def load_compiled_context(repo_root: Path) -> tuple[str, dict]:
         stale.append("mapping_contracts")
     if _id_versions(cited.get("silver_contracts")) != expected["silver_contracts"]:
         stale.append("silver_contracts")
+    # The governed documents register joins the comparison (D-30 as amended
+    # by Amendment AA): its digest and each served document's text digest,
+    # read from the tree, so a new or changed binding reads as stale with
+    # no contract version moving. An artifact minted before the amendment
+    # cites no register and reads as stale on a tree that carries one.
+    if cited.get("documents_register") != register_source(repo_root):
+        stale.append("documents_register")
     if stale:
         raise EngineContractError(
             f"compiled-context artifact {version} is stale on"
