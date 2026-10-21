@@ -233,9 +233,25 @@ approves every contract.
     compact JSON per entry) by failing the compile closed. String
     values on the typed surface are canonical lowercase text (D-18 as
     amended); the registry, the hint, and the server instructions say
-    so. Exactly five tools; never add a sixth without amending the
-    register. Server code never prints to stdout (stdio carries
-    JSON-RPC); diagnostics go to stderr. Spec: docs/spec/serving.md.
+    so. The query tool reads the gold schema by default (D-31 as
+    amended by Amendment AB, HR-8): after the statement gate it refuses
+    a base table outside schema gold, information_schema included, a
+    schema-less name out of a CTE's scope, and the table functions that
+    take a table's name or a statement as a string (query, query_table,
+    json_execute_serialized_sql, duckdb_table_sample,
+    pragma_storage_info; F-72), naming the table or function and the
+    opt-in; MM_SERVE_SCOPE=all at startup opens every schema in the
+    served file for the modeler's read path and the instructions say
+    so, gold is the only other value, and anything else fails the
+    server at startup. Never widen the scope by default, never set the
+    opt-in in a shared or hosted configuration, and never add a table
+    function to the served path without measuring whether it takes a
+    name. Every tool declares a title and the specification's
+    annotations (read-only, not destructive, idempotent, closed world;
+    HW-47); the annotations declare and the three layers prove. Exactly
+    five tools; never add a sixth without amending the register. Server
+    code never prints to stdout (stdio carries JSON-RPC); diagnostics
+    go to stderr. Spec: docs/spec/serving.md.
 19. The stable line began at v1.0.0 (September 2, 2026). The pipeline, the
     engine, the serving layer, the two proposers, and the gates change
     only through the decision register; experiments live on branches or
