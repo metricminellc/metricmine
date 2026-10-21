@@ -256,10 +256,13 @@ class RuleResult:
         return self.actual == self.expected
 
 
-def run_rules(register: Register, today: date) -> list[RuleResult]:
+def run_rules(register: Register, today: date | None) -> list[RuleResult]:
     """Run every sql quality rule the contract declares over the register's
     rows in an in-memory DuckDB. `current_date` in a rule reads as `today`,
-    so a caller fixes the calendar and no test turns red on a date."""
+    so a caller fixes the calendar and no test turns red on a date. With
+    ``today`` None the rules that read `current_date` are not run: the
+    context compiler holds the register to the contract's other rules and
+    reads no calendar (D-30 as amended by Amendment AA)."""
     con = duckdb.connect()
     try:
         for table, rows in ((STANDING_TABLE, register.standing), (BINDINGS_TABLE, register.bindings)):
@@ -274,7 +277,12 @@ def run_rules(register: Register, today: date) -> list[RuleResult]:
                 )
         results = []
         for rule in register.contract.rules:
-            query = _CURRENT_DATE.sub(f"DATE '{today.isoformat()}'", rule.query)
+            if today is None:
+                if _CURRENT_DATE.search(rule.query):
+                    continue
+                query = rule.query
+            else:
+                query = _CURRENT_DATE.sub(f"DATE '{today.isoformat()}'", rule.query)
             actual = con.execute(query).fetchone()[0]
             results.append(RuleResult(rule.table, rule.description, rule.severity, int(actual), rule.must_be))
         return results
