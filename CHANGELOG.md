@@ -11,6 +11,17 @@ measurements.
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-21
+
+Governed documents, served: the compiled context carries the register's
+certified bindings into `get_context`, labeled as document text a
+person bound in the register, under a measured budget, and the
+regenerated star behind it is the first built on dbt Core v2. The
+refreshed demo asset carries the corrected quantity sentence (F-62), so
+a stranger who fetches the demo reads one sentence where two could not
+both be true (HW-51). The query tool reads gold by default with an
+explicit opt-in, and the five tools declare their annotations.
+
 ### Added
 
 - Decision D-43, governed documents, in the decision register (Decision
@@ -183,6 +194,9 @@ measurements.
 
 ### Changed
 
+- `pyproject.toml` carries the release line, `1.2.0`, in place of
+  `1.1.3`, with `uv.lock`'s own `metricmine` entry; the server reports
+  it to every client as `serverInfo.version`.
 - The regeneration (D-09): the emitted gold set under
   `transform/models/gold/` and its ownership manifest carry
   `gold_invoice_lines_mapping` v1.1.2 (held since October 3) and
@@ -868,7 +882,8 @@ tags.
 - The decision register, the findings register, the layer specs, and the
   diagrams with their Mermaid twins.
 
-[Unreleased]: https://github.com/metricminellc/metricmine/compare/v1.1.3...HEAD
+[Unreleased]: https://github.com/metricminellc/metricmine/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/metricminellc/metricmine/compare/v1.1.3...v1.2.0
 [1.1.3]: https://github.com/metricminellc/metricmine/compare/v1.1.2...v1.1.3
 [1.1.2]: https://github.com/metricminellc/metricmine/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/metricminellc/metricmine/compare/v1.1.0...v1.1.1
