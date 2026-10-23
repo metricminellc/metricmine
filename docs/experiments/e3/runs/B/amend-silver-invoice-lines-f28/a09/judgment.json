@@ -1,0 +1,38 @@
+{
+  "stance": "amend",
+  "column_prose": [],
+  "added_columns": [],
+  "grain_keys": [
+    "invoice_id",
+    "stock_code",
+    "quantity",
+    "unit_price"
+  ],
+  "quality_rules": [],
+  "changes": [
+    {
+      "kind": "required_change",
+      "column": "captured_at",
+      "before": "false",
+      "after": "true",
+      "rationale": "Fresh profile measures captured_at null_rate 0.0 (null_count 0) over row_count 44721, confirming the incremental path has landed and every surviving row carries a captured_at value, satisfying the F-28 follow-up the committed description already named."
+    },
+    {
+      "kind": "description_change",
+      "column": "captured_at",
+      "before": "Capture timestamp carried forward from the bronze landing (_airbyte_extracted_at): when the surviving line's earliest capture entered the pipeline. The incremental watermark the gold layer builds on (Record 008 part two, D-38). Enters optional under the F-28 rule; the declared follow-up tightens it to required once the incremental path lands and the column is proven populated. v1.2.0 adds this column and changes nothing else.",
+      "after": "Capture timestamp carried forward from the bronze landing (_airbyte_extracted_at): when the surviving line's earliest capture entered the pipeline. The incremental watermark the gold layer builds on. Required: the incremental capture path has landed and every surviving line now carries a populated captured_at value, so consumers can rely on its presence without a null check.",
+      "rationale": "Operator intent states the incremental path has landed; fresh profile confirms null_rate 0.0 and 44,721 rows all populated, so the prior F-28 caveat about optionality no longer applies and the description is restated to reflect the now-settled required status rather than the prior pending state."
+    }
+  ],
+  "decisions": [
+    {
+      "key": "decisionCapturedAtRequired",
+      "value": "tightened-to-required",
+      "rationale": "Fresh profile measures captured_at null_rate 0.0 over 44721 rows, fulfilling the F-28 follow-up condition the committed contract recorded (tighten once the incremental path lands and the column is proven populated); operator intent confirms the incremental path has landed."
+    }
+  ],
+  "purpose": "",
+  "usage": "",
+  "limitations": ""
+}

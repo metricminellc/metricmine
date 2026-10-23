@@ -1,0 +1,33 @@
+{
+  "stance": "amend",
+  "column_prose": [],
+  "added_columns": [],
+  "grain_keys": [],
+  "quality_rules": [],
+  "changes": [
+    {
+      "kind": "required_change",
+      "column": "captured_at",
+      "before": "false",
+      "after": "true",
+      "rationale": "Committed contract left captured_at optional under F-28, with a declared follow-up to tighten once the incremental path lands and the column is proven populated. The fresh profile measures null_rate 0.0 (null_count 0) across all 44,721 rows for captured_at, confirming full population now that the incremental path has landed, so the declared follow-up applies."
+    },
+    {
+      "kind": "description_change",
+      "column": "captured_at",
+      "before": "Capture timestamp carried forward from the bronze landing (_airbyte_extracted_at): when the surviving line's earliest capture entered the pipeline. The incremental watermark the gold layer builds on (Record 008 part two, D-38). Enters optional under the F-28 rule; the declared follow-up tightens it to required once the incremental path lands and the column is proven populated. v1.2.0 adds this column and changes nothing else.",
+      "after": "Capture timestamp carried forward from the bronze landing (_airbyte_extracted_at): when the surviving line's earliest capture entered the pipeline. The incremental watermark the gold layer builds on (Record 008 part two, D-38). Required: the incremental path now populates this column on every surviving line, so consumers can rely on it always being present.",
+      "rationale": "The description must state current meaning, not the now-superseded optional status; the F-28 follow-up language is replaced because the fresh profile confirms the condition it named (incremental path landed, column fully populated) has been met."
+    }
+  ],
+  "decisions": [
+    {
+      "key": "decisionCapturedAtRequired",
+      "value": "tightened-to-required",
+      "rationale": "Fresh profile measures captured_at null_rate 0.0 over 44,721 rows, fulfilling the F-28 follow-up recorded in the prior contract version; the operator intent confirms the incremental path has landed."
+    }
+  ],
+  "purpose": "",
+  "usage": "",
+  "limitations": ""
+}

@@ -1,0 +1,33 @@
+{
+  "stance": "amend",
+  "column_prose": [],
+  "added_columns": [],
+  "grain_keys": [],
+  "quality_rules": [],
+  "changes": [
+    {
+      "kind": "required_change",
+      "column": "captured_at",
+      "before": "false",
+      "after": "true",
+      "rationale": "Committed v1.2.0 left captured_at optional as the declared F-28 follow-up, pending proof the incremental path populates it. The fresh profile measures null_count 0 and null_rate 0.0 for captured_at across all 44721 rows (distinct_count 4, timestamps 2026-09-02T22:36:17 through 2026-09-02T22:36:20), confirming the incremental path has landed and every row carries a capture timestamp. Required: false to true is the widening direction per rule 7, so no relaxation flag is needed."
+    },
+    {
+      "kind": "description_change",
+      "column": "captured_at",
+      "before": "Capture timestamp carried forward from the bronze landing (_airbyte_extracted_at): when the surviving line's earliest capture entered the pipeline. The incremental watermark the gold layer builds on (Record 008 part two, D-38). Enters optional under the F-28 rule; the declared follow-up tightens it to required once the incremental path lands and the column is proven populated. v1.2.0 adds this column and changes nothing else.",
+      "after": "Capture timestamp carried forward from the bronze landing (_airbyte_extracted_at): when the surviving line's earliest capture entered the pipeline, and the incremental watermark the gold layer builds on. Required: the incremental path populates this on every row, so a consumer can rely on it being present and use it to drive incremental reads.",
+      "rationale": "The F-28 follow-up promised in the v1.2.0 description has now been fulfilled: the fresh profile measures null_rate 0.0 and null_count 0 for captured_at over 44721 rows, proving the incremental path lands a capture timestamp on every row. The description is rewritten to state the current meaning and requiredness rather than the prior conditional follow-up language; the measured proof point moves to this rationale per rule 5."
+    }
+  ],
+  "decisions": [
+    {
+      "key": "decisionCapturedAtRequired",
+      "value": "tightened-to-required",
+      "rationale": "Fresh profile measures captured_at null_rate 0.0 (null_count 0) over 44721 rows, with the incremental path confirmed landed per operator intent; the declared F-28 follow-up from v1.2.0 is exercised in this amendment."
+    }
+  ],
+  "purpose": "",
+  "usage": "",
+  "limitations": ""
+}

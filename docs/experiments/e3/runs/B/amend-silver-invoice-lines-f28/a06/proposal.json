@@ -1,0 +1,121 @@
+{
+  "stance": "amend",
+  "target_schema": "silver",
+  "target_table": "silver_invoice_lines",
+  "proposed_version": "1.3.0",
+  "columns": [
+    {
+      "name": "invoice_id",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "description": "Invoice number, kept as text (identifiers are text; Session D rule). A leading C marks a cancellation invoice; see is_cancellation.",
+      "rationale": "Carried from the committed contract by code (E3b)."
+    },
+    {
+      "name": "is_cancellation",
+      "logical_type": "boolean",
+      "physical_type": "BOOLEAN",
+      "required": true,
+      "description": "True when invoice_id carries the C cancellation prefix. Decision: cancellations are retained and flagged, not dropped, so conservation arithmetic against bronze stays auditable; exclusion is a consumer decision made at the mapping contract, not silently here.",
+      "rationale": "Carried from the committed contract by code (E3b)."
+    },
+    {
+      "name": "stock_code",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "description": "Product code as landed, kept as text; alphanumeric suffixes and non-product adjustment codes (for example POST, M) occur.",
+      "rationale": "Carried from the committed contract by code (E3b)."
+    },
+    {
+      "name": "product_description",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "description": "Product description, whitespace-trimmed. Null rate 0.005041 at profile v0001; nulls retained rather than imputed.",
+      "rationale": "Carried from the committed contract by code (E3b)."
+    },
+    {
+      "name": "quantity",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "description": "Units on the line, cast from DECIMAL(38,9) to INTEGER. Negative values occur both on cancellation-invoice lines and on zero-unit-price stock-adjustment lines; consumers must not infer cancellation from negative quantity alone.",
+      "rationale": "Carried from the committed contract by code (E3b)."
+    },
+    {
+      "name": "invoiced_at",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": true,
+      "description": "Invoice timestamp. Decision: strict cast from the VARCHAR landing (\"YYYY-MM-DD HH:MM:SS\"); an unparseable value fails the build loudly rather than becoming a silent null. On within-invoice clock-drift duplicates the earliest scan tick wins (min).",
+      "rationale": "Carried from the committed contract by code (E3b)."
+    },
+    {
+      "name": "unit_price",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(10,2)",
+      "required": true,
+      "description": "Unit price in sterling, cast from DECIMAL(38,9). Observed range 0.00 to 1998.49 at v0001. Decision: zero-price lines (freebies and adjustments) are retained; negative prices are contract-invalid.",
+      "rationale": "Carried from the committed contract by code (E3b)."
+    },
+    {
+      "name": "customer_id",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "description": "Customer identifier, cast DECIMAL(38,9) to INTEGER (integral min, max, and samples, 12346 to 18287 at v0001). Decision: the 0.29778 bronze null rate is retained as null (guest or unregistered checkouts), not dropped and not imputed.",
+      "rationale": "Carried from the committed contract by code (E3b)."
+    },
+    {
+      "name": "country",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "description": "Customer country as landed (24 distinct at v0001).",
+      "rationale": "Carried from the committed contract by code (E3b)."
+    },
+    {
+      "name": "captured_at",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": true,
+      "description": "Capture timestamp carried forward from the bronze landing (_airbyte_extracted_at): the time the surviving line's earliest capture entered the pipeline. It is the incremental watermark the gold layer builds on, and it is required because the incremental capture path is now live and populates every row; consumers may rely on it without null-handling.",
+      "rationale": "Carried from the committed contract by code (E3b)."
+    }
+  ],
+  "grain_keys": [
+    "invoice_id",
+    "stock_code",
+    "quantity",
+    "unit_price"
+  ],
+  "quality_rules": [],
+  "changes": [
+    {
+      "kind": "required_change",
+      "column": "captured_at",
+      "before": "false",
+      "after": "true",
+      "rationale": "Fresh profile measures captured_at at null_rate 0.0 (null_count 0) across all 44,721 rows, with distinct_count 4 and a tight timestamp range (2026-09-02T22:36:17 to 2026-09-02T22:36:20), confirming the incremental path has landed and every surviving row now carries a populated captured_at value. This fulfills the F-28 follow-up the v1.2.0 contract declared when the column entered optional: tighten to required once the incremental path lands and the column is proven populated. This is a widening direction per rule 7 (required_change false to true), so no relaxation flag is needed."
+    },
+    {
+      "kind": "description_change",
+      "column": "captured_at",
+      "before": "Capture timestamp carried forward from the bronze landing (_airbyte_extracted_at): when the surviving line's earliest capture entered the pipeline. The incremental watermark the gold layer builds on (Record 008 part two, D-38). Enters optional under the F-28 rule; the declared follow-up tightens it to required once the incremental path lands and the column is proven populated. v1.2.0 adds this column and changes nothing else.",
+      "after": "Capture timestamp carried forward from the bronze landing (_airbyte_extracted_at): the time the surviving line's earliest capture entered the pipeline. It is the incremental watermark the gold layer builds on, and it is required because the incremental capture path is now live and populates every row; consumers may rely on it without null-handling.",
+      "rationale": "The fresh profile shows null_rate 0.0 and null_count 0 over 44,721 rows for captured_at, evidence that the F-28 follow-up condition (incremental path landed, column proven populated) is now met, so the description is updated to state the column's settled, required meaning rather than its prior provisional optional status."
+    }
+  ],
+  "decisions": [
+    {
+      "key": "decisionCapturedAtRequired",
+      "value": "tightened-per-incremental-landing",
+      "rationale": "Fresh profile measures captured_at null_rate 0.0 over the full 44,721-row sample, the condition the v1.2.0 contract's F-28 follow-up named for tightening captured_at from optional to required; this amendment applies that follow-up."
+    }
+  ],
+  "purpose": "The cleaned, typed, one-row-per-invoice-line view of the Online Retail II sample: the first contracted silver table and the sole silver input to the gold unified event star.\n",
+  "usage": "Read silver.silver_invoice_lines for line-level retail sales analysis. Cancellation lines are RETAINED and flagged (is_cancellation); consumers aggregating revenue must filter or net them deliberately. Zero-price lines are retained.\n",
+  "limitations": "Exact duplicate bronze rows (rate 0.011188 at profile v0001) are treated as capture artifacts and excluded, so identical legitimate re-scans are indistinguishable and also excluded; the residual grain is the distinct line. Rows identical in every business column except invoicedate are the same capture artifact seen across a register clock tick (one pair at v0001, invoice 492807, one minute apart); they collapse to one line and the earliest timestamp is retained. customer_id is null on 29.778% of bronze rows at v0001 (guest or unregistered checkouts); those rows are retained with customer_id null.\n"
+}

@@ -1,0 +1,33 @@
+{
+  "stance": "amend",
+  "column_prose": [],
+  "added_columns": [],
+  "grain_keys": [],
+  "quality_rules": [],
+  "changes": [
+    {
+      "kind": "required_change",
+      "column": "captured_at",
+      "before": "false",
+      "after": "true",
+      "rationale": "Fresh profile measures captured_at null_rate 0.0 (null_count 0 of 44721 rows), confirming the F-28 follow-up condition the committed contract named: the incremental path has landed and the column is fully populated. Operator intent confirms this and requests the tightening. This is a widening direction (false to true) per rule 7, requiring no relaxation flag."
+    },
+    {
+      "kind": "description_change",
+      "column": "captured_at",
+      "before": "Capture timestamp carried forward from the bronze landing (_airbyte_extracted_at): when the surviving line's earliest capture entered the pipeline. The incremental watermark the gold layer builds on (Record 008 part two, D-38). Enters optional under the F-28 rule; the declared follow-up tightens it to required once the incremental path lands and the column is proven populated. v1.2.0 adds this column and changes nothing else.",
+      "after": "Capture timestamp carried forward from the bronze landing (_airbyte_extracted_at): the moment the surviving line's earliest capture entered the pipeline. It is the incremental watermark the gold layer builds on. Required: the incremental capture path now populates it on every row, so consumers may rely on it always being present and must treat a missing value as a pipeline defect rather than an expected gap.",
+      "rationale": "Fresh profile shows captured_at null_rate 0.0 over 44721 rows (null_count 0), satisfying the condition the prior description deferred on (incremental path landed, column proven populated). The stale follow-up language and the v1.2.0 changelog note are removed since they no longer describe current reality; the F-28 deferral and the strict-timestamp drift are left to the rationale, not the description, per rule 5."
+    }
+  ],
+  "decisions": [
+    {
+      "key": "decisionCapturedAtRequiredNow",
+      "value": "tightened-to-required",
+      "rationale": "Fresh profile null_rate 0.0 over 44721 rows plus the operator's confirmation that the incremental path has landed satisfies the F-28 declared follow-up condition recorded in the prior contract version, so captured_at moves from optional to required in this amendment."
+    }
+  ],
+  "purpose": "",
+  "usage": "",
+  "limitations": ""
+}

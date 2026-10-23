@@ -1,0 +1,33 @@
+{
+  "stance": "amend",
+  "column_prose": [],
+  "added_columns": [],
+  "grain_keys": [],
+  "quality_rules": [],
+  "changes": [
+    {
+      "kind": "required_change",
+      "column": "captured_at",
+      "before": "false",
+      "after": "true",
+      "rationale": "Fresh profile measures captured_at null_rate 0.0 over 44721 rows (null_count 0), confirming the incremental path now populates every row as the operator intent states; the declared F-28 follow-up tightens it from optional to required."
+    },
+    {
+      "kind": "description_change",
+      "column": "captured_at",
+      "before": "Capture timestamp carried forward from the bronze landing (_airbyte_extracted_at): when the surviving line's earliest capture entered the pipeline. The incremental watermark the gold layer builds on (Record 008 part two, D-38). Enters optional under the F-28 rule; the declared follow-up tightens it to required once the incremental path lands and the column is proven populated. v1.2.0 adds this column and changes nothing else.\n",
+      "after": "Capture timestamp carried forward from the bronze landing (_airbyte_extracted_at), marking when the surviving line's earliest capture entered the pipeline. It is required: the incremental path populates this column on every row, and it is the incremental watermark the gold layer builds on (Record 008 part two, D-38).",
+      "rationale": "Operator intent states the incremental path has landed and every row carries captured_at; fresh profile confirms null_rate 0.0 over 44721 rows, so the description now states the committed requiredness rather than the prior F-28 optional caveat."
+    }
+  ],
+  "decisions": [
+    {
+      "key": "decisionCapturedAtRequired",
+      "value": "tightened-after-incremental-landing",
+      "rationale": "Fresh profile shows captured_at null_count 0 and null_rate 0.0 across 44721 rows, matching the operator's statement that the incremental path has landed; this records the tightening decision for this amendment."
+    }
+  ],
+  "purpose": "",
+  "usage": "",
+  "limitations": ""
+}

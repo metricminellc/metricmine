@@ -1,0 +1,355 @@
+# Draft proposed by silver-cleanup-proposer v0.1.0 at 2026-10-23T21:04:19.954685+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_airport_weather
+name: Silver airport weather
+version: 1.1.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: This table holds hourly weather observations for three New York-area airports (EWR,
+    JFK, LGA) from January through June 2013, combining time-varying weather measurements
+    (temperature, dewpoint, humidity, wind, precipitation, pressure, visibility) with static
+    airport reference attributes (name, municipality, elevation, longest runway) and a pipeline
+    capture timestamp.
+  usage: Read the table at the grain of one row per airport per UTC observation hour (airport_code,
+    observed_hour_utc); filter or join on airport_code to isolate a single airport's time
+    series, and use observed_date_local and observed_hour_local for local-time reporting.
+    Expect wind_gust_mph, pressure_mb, and wind_dir_degrees to be frequently null and handle
+    missing values accordingly.
+  limitations: The profile cannot confirm that (airport_code, observed_hour_utc) uniquely
+    identifies each row; only a deterministic grain measurement can verify this, since 3 airports
+    times 4341 distinct hours (~13023) does not exactly match the 13014 row_count. wind_gust_mph
+    is missing in roughly 74.5% of rows and pressure_mb in about 11.5%, limiting their reliability
+    for aggregate analysis. captured_at behaves like pipeline or ingestion metadata (only
+    3 distinct values clustered in 2026, long after the 2013 observation window) despite not
+    being flagged is_airbyte_metadata in the profile; its exact pipeline role should be confirmed
+    by a reviewer. wind_speed_mph's max of 1048.36 mph is implausible for a surface wind reading
+    and may indicate a data quality issue the profile cannot resolve.
+schema:
+- name: silver_airport_weather
+  physicalName: silver_airport_weather
+  logicalType: object
+  physicalType: table
+  description: 'One row per distinct (airport_code, observed_hour_utc). The 2 grain columns
+    are flagged primaryKey so sync generates the composite uniqueness test; that generated
+    test is warn-severity by tool design at datacontract-cli 1.0.12, and the error-severity
+    grain rule below is the enforcing twin (rule 5: uniqueness as a test, never a trusted
+    constraint).'
+  dataGranularityDescription: One row per distinct (airport_code, observed_hour_utc).
+  properties:
+  - name: airport_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: Three-letter code identifying which New York-area airport the weather observation
+      was recorded at (EWR, JFK, or LGA).
+    quality:
+    - type: sql
+      description: airport_code is never null
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_airport_weather WHERE airport_code IS NULL
+      mustBe: 0
+    - type: sql
+      description: airport_code stays inside the accepted value set
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_airport_weather WHERE airport_code NOT IN ('EWR', 'JFK', 'LGA')
+      mustBe: 0
+  - name: observed_hour_utc
+    logicalType: date
+    physicalType: TIMESTAMP
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 2
+    description: Timestamp, in UTC, of the hourly weather observation.
+    quality:
+    - type: sql
+      description: observed_hour_utc is never null
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_airport_weather WHERE observed_hour_utc IS NULL
+      mustBe: 0
+  - name: observed_date_local
+    logicalType: date
+    physicalType: DATE
+    required: true
+    description: Calendar date, in local time, on which the observation was taken.
+    quality:
+    - type: sql
+      description: observed_date_local is never null
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_airport_weather WHERE observed_date_local IS NULL
+      mustBe: 0
+  - name: observed_hour_local
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: Hour of day (0-23), in local time, at which the observation was taken.
+    quality:
+    - type: sql
+      description: observed_hour_local is never null
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_airport_weather WHERE observed_hour_local IS NULL
+      mustBe: 0
+  - name: temp_f
+    logicalType: number
+    physicalType: DOUBLE
+    required: true
+    description: Air temperature at the time of observation, in degrees Fahrenheit.
+    quality:
+    - type: sql
+      description: temp_f is never null
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_airport_weather WHERE temp_f IS NULL
+      mustBe: 0
+  - name: dewpoint_f
+    logicalType: number
+    physicalType: DOUBLE
+    required: true
+    description: Dew point temperature at the time of observation, in degrees Fahrenheit.
+    quality:
+    - type: sql
+      description: dewpoint_f is never null
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_airport_weather WHERE dewpoint_f IS NULL
+      mustBe: 0
+  - name: humidity_pct
+    logicalType: number
+    physicalType: DOUBLE
+    required: true
+    description: Relative humidity at the time of observation, expressed as a percentage.
+    quality:
+    - type: sql
+      description: humidity_pct is never null
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_airport_weather WHERE humidity_pct IS NULL
+      mustBe: 0
+    - type: sql
+      description: humidity_pct is never negative
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_airport_weather WHERE humidity_pct < 0
+      mustBe: 0
+  - name: wind_dir_degrees
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: Wind direction at the time of observation, in compass degrees from 0 to 360.
+    quality:
+    - type: sql
+      description: wind_dir_degrees is never negative
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_airport_weather WHERE wind_dir_degrees < 0
+      mustBe: 0
+  - name: wind_speed_mph
+    logicalType: number
+    physicalType: DOUBLE
+    required: false
+    description: Wind speed at the time of observation, in miles per hour.
+    quality:
+    - type: sql
+      description: wind_speed_mph is never negative
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_airport_weather WHERE wind_speed_mph < 0
+      mustBe: 0
+  - name: wind_gust_mph
+    logicalType: number
+    physicalType: DOUBLE
+    required: false
+    description: Peak wind gust speed at the time of observation, in miles per hour, present
+      only when a gust is reported.
+    quality:
+    - type: sql
+      description: wind_gust_mph is never negative
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_airport_weather WHERE wind_gust_mph < 0
+      mustBe: 0
+  - name: precip_inches
+    logicalType: number
+    physicalType: DOUBLE
+    required: true
+    description: Precipitation accumulated at the time of observation, in inches.
+    quality:
+    - type: sql
+      description: precip_inches is never null
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_airport_weather WHERE precip_inches IS NULL
+      mustBe: 0
+    - type: sql
+      description: precip_inches is never negative
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_airport_weather WHERE precip_inches < 0
+      mustBe: 0
+  - name: pressure_mb
+    logicalType: number
+    physicalType: DOUBLE
+    required: false
+    description: Barometric pressure at the time of observation, in millibars.
+    quality:
+    - type: sql
+      description: pressure_mb is never negative
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_airport_weather WHERE pressure_mb < 0
+      mustBe: 0
+  - name: visibility_miles
+    logicalType: number
+    physicalType: DOUBLE
+    required: true
+    description: Visibility distance at the time of observation, in miles.
+    quality:
+    - type: sql
+      description: visibility_miles is never negative
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_airport_weather WHERE visibility_miles < 0
+      mustBe: 0
+  - name: airport_name
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: Full name of the airport corresponding to airport_code.
+    quality:
+    - type: sql
+      description: airport_name is never null
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_airport_weather WHERE airport_name IS NULL
+      mustBe: 0
+    - type: sql
+      description: airport_name stays inside the accepted value set
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_airport_weather WHERE airport_name NOT IN ('John F. Kennedy International Airport', 'LaGuardia Airport', 'Newark Liberty International Airport')
+      mustBe: 0
+  - name: airport_municipality
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: City or municipality in which the airport is located.
+    quality:
+    - type: sql
+      description: airport_municipality is never null
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_airport_weather WHERE airport_municipality IS NULL
+      mustBe: 0
+    - type: sql
+      description: airport_municipality stays inside the accepted value set
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_airport_weather WHERE airport_municipality NOT IN ('New York', 'Newark')
+      mustBe: 0
+  - name: airport_elevation_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: Elevation of the airport above sea level, in feet.
+    quality:
+    - type: sql
+      description: airport_elevation_ft is never null
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_airport_weather WHERE airport_elevation_ft IS NULL
+      mustBe: 0
+    - type: sql
+      description: airport_elevation_ft is never negative
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_airport_weather WHERE airport_elevation_ft < 0
+      mustBe: 0
+  - name: airport_longest_runway_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: Length of the airport's longest runway, in feet.
+    quality:
+    - type: sql
+      description: airport_longest_runway_ft is never null
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_airport_weather WHERE airport_longest_runway_ft IS NULL
+      mustBe: 0
+    - type: sql
+      description: airport_longest_runway_ft is never negative
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_airport_weather WHERE airport_longest_runway_ft < 0
+      mustBe: 0
+  - name: captured_at
+    logicalType: date
+    physicalType: TIMESTAMP
+    required: true
+    description: Timestamp recording when this row's data was captured or loaded by the ingestion
+      pipeline.
+    quality:
+    - type: sql
+      description: captured_at is never null
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_airport_weather WHERE captured_at IS NULL
+      mustBe: 0
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (airport_code, observed_hour_utc) combinations'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT airport_code, observed_hour_utc
+        FROM silver.silver_airport_weather
+        GROUP BY airport_code, observed_hour_utc
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: silver-cleanup-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.1.0
+- property: modelId
+  value: claude-sonnet-5
+- property: profileHash
+  value: sha256:70cb304edcaa97a18aa7411d2ed8b68a860627c53342343a78b87fa306345567
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: describe
+- property: decisionGrainKeys
+  value: airport-code-plus-observed-hour-utc
+- property: decisionSparseColumns
+  value: wind-pressure-columns-retained-nullable
+- property: decisionMetadataColumn
+  value: captured-at-retained-as-pipeline-metadata
+- property: decisionReferenceColumns
+  value: airport-reference-attributes-inferred-from-samples
+- property: grain
+  value: airport_code, observed_hour_utc

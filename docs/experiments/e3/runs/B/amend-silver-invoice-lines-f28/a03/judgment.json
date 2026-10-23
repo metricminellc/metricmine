@@ -1,0 +1,33 @@
+{
+  "stance": "amend",
+  "column_prose": [],
+  "added_columns": [],
+  "grain_keys": [],
+  "quality_rules": [],
+  "changes": [
+    {
+      "kind": "required_change",
+      "column": "captured_at",
+      "before": "false",
+      "after": "true",
+      "rationale": "Committed v1.2.0 added captured_at optional under F-28 with a declared follow-up to tighten once the incremental path lands and the column is proven populated. The fresh profile measures null_count 0 and null_rate 0.0 for captured_at across all 44,721 rows, and the operator intent confirms the incremental path has landed, satisfying that follow-up condition."
+    },
+    {
+      "kind": "description_change",
+      "column": "captured_at",
+      "before": "Capture timestamp carried forward from the bronze landing (_airbyte_extracted_at): when the surviving line's earliest capture entered the pipeline. The incremental watermark the gold layer builds on (Record 008 part two, D-38). Enters optional under the F-28 rule; the declared follow-up tightens it to required once the incremental path lands and the column is proven populated. v1.2.0 adds this column and changes nothing else.\n",
+      "after": "Capture timestamp carried forward from the bronze landing (_airbyte_extracted_at): the moment the surviving line's earliest capture entered the pipeline. The incremental watermark the gold layer builds on (Record 008 part two, D-38). Now required: the incremental path populates this column on every row, so consumers can rely on it being non-null when joining or watermarking.",
+      "rationale": "The fresh profile shows null_rate 0.0 (0 nulls of 44,721 rows) for captured_at, confirming the F-28 follow-up condition is met; the description is rewritten to state the now-required status and drop the stale optional/follow-up language, per the operator's instruction to say why it is required now."
+    }
+  ],
+  "decisions": [
+    {
+      "key": "decisionCapturedAtRequired",
+      "value": "tightened-after-incremental-landing",
+      "rationale": "Fresh profile measures captured_at null_rate 0.0 over 44,721 rows, and the operator confirms the incremental path has landed, so the F-28 follow-up declared at v1.2.0 is now applied."
+    }
+  ],
+  "purpose": "",
+  "usage": "",
+  "limitations": ""
+}

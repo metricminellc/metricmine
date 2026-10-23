@@ -1,0 +1,33 @@
+{
+  "stance": "amend",
+  "column_prose": [],
+  "added_columns": [],
+  "grain_keys": [],
+  "quality_rules": [],
+  "changes": [
+    {
+      "kind": "required_change",
+      "column": "captured_at",
+      "before": "false",
+      "after": "true",
+      "rationale": "The incremental path has landed; the fresh profile measures captured_at at null_rate 0.0 (null_count 0) over the full 44,721-row sample, proving the column is now always populated. This applies the declared F-28 follow-up recorded in the committed description ('the declared follow-up tightens it to required once the incremental path lands and the column is proven populated'). required_change false-to-true is a widening direction per rule 7, so it is permitted without a relaxation flag."
+    },
+    {
+      "kind": "description_change",
+      "column": "captured_at",
+      "before": "Capture timestamp carried forward from the bronze landing (_airbyte_extracted_at): when the surviving line's earliest capture entered the pipeline. The incremental watermark the gold layer builds on (Record 008 part two, D-38). Enters optional under the F-28 rule; the declared follow-up tightens it to required once the incremental path lands and the column is proven populated. v1.2.0 adds this column and changes nothing else.",
+      "after": "Capture timestamp carried forward from the bronze landing (_airbyte_extracted_at): when the surviving line's earliest capture entered the pipeline. The incremental watermark the gold layer builds on (Record 008 part two, D-38). Required: the incremental path populates this column for every row, so consumers can rely on it being present for watermark logic.",
+      "rationale": "The profile measures null_rate 0.0 across all 44,721 rows at this version, confirming the incremental path now always populates captured_at; the description is updated to state the present-tense meaning and requirement rather than the prior optional-pending-proof language, per the operator's instruction to say why it is required now."
+    }
+  ],
+  "decisions": [
+    {
+      "key": "decisionCapturedAtTightening",
+      "value": "required-after-incremental-landing",
+      "rationale": "Fresh profile shows captured_at null_rate 0.0 over 44,721 rows, fulfilling the F-28 follow-up condition recorded in the committed contract's description for this column; the operator confirms the incremental path has landed."
+    }
+  ],
+  "purpose": "",
+  "usage": "",
+  "limitations": ""
+}

@@ -1,0 +1,78 @@
+{
+  "agent": {
+    "name": "silver-cleanup-proposer",
+    "version": "0.1.0"
+  },
+  "api_error": null,
+  "context": null,
+  "context_path": null,
+  "cost_usd_estimate": 0.042256,
+  "created_at": "2026-10-23T21:12:32.713020+00:00",
+  "disposition": "draft_written",
+  "draft_path": "proposals/silver-cleanup-proposer/20261023T211232713020Z_370393a8/draft.odcs.yaml",
+  "inputs": [
+    {
+      "content_hash": "sha256:370393a87ea4a38250b5f44122cd688052d69a7218f8486ce3d09b262975302e",
+      "kind": "profile_artifact",
+      "path": "profiles/silver.silver_invoice_lines/v0002.json",
+      "schema_version": "1.0.0"
+    },
+    {
+      "content_hash": "sha256:65c6ffd6dc4668cf94c502a9dc39b912603d73d635d95fea820865b099404391",
+      "kind": "committed_contract",
+      "path": "docs/experiments/e3/fixtures/silver_invoice_lines@1.2.0.odcs.yaml",
+      "schema_version": "1.2.0"
+    },
+    {
+      "content_hash": "sha256:061b542d9d18441ef39af79062a54a39ea0718a53f6760a25ac86a5d3c86d0d8",
+      "kind": "operator_intent",
+      "path": "",
+      "schema_version": ""
+    }
+  ],
+  "intent": "The incremental path has landed and every row carries captured_at; the fresh profile measures it at null rate 0.0 over 44,721 rows. Tighten captured_at to required and say in its description why it is required now. Change nothing else.",
+  "model_id": "claude-sonnet-5",
+  "model_source": "default",
+  "profile_hash": "sha256:370393a87ea4a38250b5f44122cd688052d69a7218f8486ce3d09b262975302e",
+  "profile_path": "profiles/silver.silver_invoice_lines/v0002.json",
+  "profile_schema_version": "1.0.0",
+  "prompt_path": "src/metricmine/agents/prompts/e3/silver_amend.md",
+  "prompt_version": "1.1.0",
+  "rates": {
+    "input_per_mtok": 2.0,
+    "output_per_mtok": 10.0
+  },
+  "request_params": {
+    "effort": "high",
+    "max_tokens": 16384
+  },
+  "response_id": "msg_011CgKriaX8wKLfKNvXwB1U6",
+  "sdk_version": "1.0.0",
+  "skeleton": true,
+  "stance": "amend",
+  "stop_reason": "end_turn",
+  "usage": {
+    "input_tokens": 10558,
+    "output_tokens": 2114
+  },
+  "validation": {
+    "attempt_log": [
+      {
+        "completeness_pass": true,
+        "errors": [],
+        "groundedness_pass": true,
+        "lint_pass": true,
+        "schema_pass": true,
+        "staleness_pass": true,
+        "stop_reason": "end_turn"
+      }
+    ],
+    "attempts": 1,
+    "completeness_pass": true,
+    "errors": [],
+    "groundedness_pass": true,
+    "lint_pass": true,
+    "schema_pass": true,
+    "staleness_pass": true
+  }
+}

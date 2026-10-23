@@ -1,0 +1,547 @@
+# Draft proposed by silver-cleanup-proposer v0.1.0 at 2026-10-23T20:48:31.441033+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_flights
+name: Silver flights
+version: 1.1.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: silver_flights holds one row per scheduled commercial flight departing from a New
+    York City area airport (EWR, JFK, or LGA) between 2013-01-01 and 2013-06-30, combining
+    carrier identity, scheduled and actual departure/arrival times, delay and cancellation
+    status, aircraft attributes looked up by tail number, and origin/destination airport reference
+    attributes.
+  usage: 'Read the table at the grain of (flight_date, carrier_code, flight_number, origin_airport):
+    each row is one scheduled flight. Check is_cancelled before interpreting dep_hhmm, arr_hhmm,
+    dep_delay_minutes, arr_delay_minutes, and air_time_minutes, since these carry nulls (roughly
+    2.9% to 3.3% null) when a flight did not complete. Aircraft attribute columns (aircraft_manufacturer,
+    aircraft_model, aircraft_manufacture_year, aircraft_seat_count, aircraft_engine_type)
+    are null for about 16-18% of rows where the tail_number lookup did not resolve. Destination
+    airport reference columns are null for about 2.1% of rows.'
+  limitations: The profile cannot independently confirm that (flight_date, carrier_code, flight_number,
+    origin_airport) uniquely identifies a row; only a deterministic grain measurement against
+    the warehouse can confirm this, and tail_number, which would narrow the grain further,
+    is itself 0.9154% null. The relationship between sched_dep_hour_local/sched_dep_minute_local
+    and sched_dep_hhmm, and between departure_hour_utc and the local schedule fields, is inferred
+    from samples and not verified by the profile. The captured_at column's values (dated 2026-09-02,
+    a narrow 16-second span) are inconsistent with the 2013 flight data and look like a pipeline
+    load timestamp even though the profile marks is_airbyte_metadata false; a reviewer should
+    confirm its intended meaning and whether it belongs in this table's business grain.
+schema:
+- name: silver_flights
+  physicalName: silver_flights
+  logicalType: object
+  physicalType: table
+  description: 'One row per distinct (flight_date, carrier_code, flight_number, origin_airport).
+    The 4 grain columns are flagged primaryKey so sync generates the composite uniqueness
+    test; that generated test is warn-severity by tool design at datacontract-cli 1.0.12,
+    and the error-severity grain rule below is the enforcing twin (rule 5: uniqueness as a
+    test, never a trusted constraint).'
+  dataGranularityDescription: One row per distinct (flight_date, carrier_code, flight_number,
+    origin_airport).
+  properties:
+  - name: flight_date
+    logicalType: date
+    physicalType: DATE
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: Calendar date on which the flight was scheduled to operate.
+    quality:
+    - type: sql
+      description: flight_date is never null
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_flights WHERE flight_date IS NULL
+      mustBe: 0
+  - name: carrier_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 2
+    description: Two-letter IATA code identifying the operating carrier for the flight.
+    quality:
+    - type: sql
+      description: carrier_code is never null
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_flights WHERE carrier_code IS NULL
+      mustBe: 0
+    - type: sql
+      description: carrier_code stays inside the accepted value set
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_flights WHERE carrier_code NOT IN ('9E', 'AA', 'AS', 'B6', 'DL', 'EV', 'F9', 'FL', 'HA', 'MQ', 'OO', 'UA', 'US', 'VX', 'WN', 'YV')
+      mustBe: 0
+  - name: flight_number
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 3
+    description: Flight number assigned by the carrier to this flight.
+    quality:
+    - type: sql
+      description: flight_number is never null
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_flights WHERE flight_number IS NULL
+      mustBe: 0
+    - type: sql
+      description: flight_number is never negative
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_flights WHERE flight_number < 0
+      mustBe: 0
+  - name: origin_airport
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 4
+    description: Three-letter IATA code of the New York area airport the flight departed from.
+    quality:
+    - type: sql
+      description: origin_airport is never null
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_flights WHERE origin_airport IS NULL
+      mustBe: 0
+    - type: sql
+      description: origin_airport stays inside the accepted value set
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_flights WHERE origin_airport NOT IN ('EWR', 'JFK', 'LGA')
+      mustBe: 0
+  - name: sched_dep_hhmm
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: Scheduled departure time expressed as an HHMM integer (e.g. 530 for 5:30
+      AM).
+    quality:
+    - type: sql
+      description: sched_dep_hhmm is never null
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_flights WHERE sched_dep_hhmm IS NULL
+      mustBe: 0
+    - type: sql
+      description: sched_dep_hhmm is never negative
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_flights WHERE sched_dep_hhmm < 0
+      mustBe: 0
+  - name: dest_airport
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: Three-letter IATA code of the destination airport.
+    quality:
+    - type: sql
+      description: dest_airport is never null
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_flights WHERE dest_airport IS NULL
+      mustBe: 0
+  - name: tail_number
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: Registration tail number of the specific aircraft that operated the flight.
+  - name: is_cancelled
+    logicalType: boolean
+    physicalType: BOOLEAN
+    required: true
+    description: Flag indicating whether the flight was cancelled.
+    quality:
+    - type: sql
+      description: is_cancelled is never null
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_flights WHERE is_cancelled IS NULL
+      mustBe: 0
+  - name: dep_hhmm
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: Actual departure time expressed as an HHMM integer; absent when the flight
+      did not depart.
+    quality:
+    - type: sql
+      description: dep_hhmm is never negative
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_flights WHERE dep_hhmm < 0
+      mustBe: 0
+  - name: dep_delay_minutes
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: Minutes the flight departed late relative to schedule; negative values indicate
+      an early departure.
+  - name: arr_hhmm
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: Actual arrival time expressed as an HHMM integer; absent when the flight
+      did not complete.
+    quality:
+    - type: sql
+      description: arr_hhmm is never negative
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_flights WHERE arr_hhmm < 0
+      mustBe: 0
+  - name: sched_arr_hhmm
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: Scheduled arrival time expressed as an HHMM integer.
+    quality:
+    - type: sql
+      description: sched_arr_hhmm is never null
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_flights WHERE sched_arr_hhmm IS NULL
+      mustBe: 0
+    - type: sql
+      description: sched_arr_hhmm is never negative
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_flights WHERE sched_arr_hhmm < 0
+      mustBe: 0
+  - name: arr_delay_minutes
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: Minutes the flight arrived late relative to schedule; negative values indicate
+      an early arrival.
+  - name: air_time_minutes
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: Total minutes the aircraft spent airborne for the flight.
+    quality:
+    - type: sql
+      description: air_time_minutes is never negative
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_flights WHERE air_time_minutes < 0
+      mustBe: 0
+  - name: distance_miles
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: Great-circle distance between origin and destination airports, in miles.
+    quality:
+    - type: sql
+      description: distance_miles is never null
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_flights WHERE distance_miles IS NULL
+      mustBe: 0
+    - type: sql
+      description: distance_miles is never negative
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_flights WHERE distance_miles < 0
+      mustBe: 0
+  - name: sched_dep_hour_local
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: Local hour component of the scheduled departure time.
+    quality:
+    - type: sql
+      description: sched_dep_hour_local is never null
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_flights WHERE sched_dep_hour_local IS NULL
+      mustBe: 0
+    - type: sql
+      description: sched_dep_hour_local is never negative
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_flights WHERE sched_dep_hour_local < 0
+      mustBe: 0
+    - type: sql
+      description: sched_dep_hour_local stays inside the accepted value set
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_flights WHERE sched_dep_hour_local NOT IN ('5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23')
+      mustBe: 0
+  - name: sched_dep_minute_local
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: Local minute component of the scheduled departure time.
+    quality:
+    - type: sql
+      description: sched_dep_minute_local is never null
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_flights WHERE sched_dep_minute_local IS NULL
+      mustBe: 0
+    - type: sql
+      description: sched_dep_minute_local is never negative
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_flights WHERE sched_dep_minute_local < 0
+      mustBe: 0
+  - name: departure_hour_utc
+    logicalType: date
+    physicalType: TIMESTAMP
+    required: true
+    description: Departure time truncated to the hour and expressed as a UTC timestamp.
+    quality:
+    - type: sql
+      description: departure_hour_utc is never null
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_flights WHERE departure_hour_utc IS NULL
+      mustBe: 0
+  - name: carrier_name
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: Full legal name of the operating carrier corresponding to carrier_code.
+    quality:
+    - type: sql
+      description: carrier_name is never null
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_flights WHERE carrier_name IS NULL
+      mustBe: 0
+    - type: sql
+      description: carrier_name stays inside the accepted value set
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_flights WHERE carrier_name NOT IN ('AirTran Airways Corporation', 'Alaska Airlines Inc.', 'American Airlines Inc.', 'Delta Air Lines Inc.', 'Endeavor Air Inc.', 'Envoy Air', 'ExpressJet Airlines Inc.', 'Frontier Airlines Inc.', 'Hawaiian Airlines Inc.', 'JetBlue Airways', 'Mesa Airlines Inc.', 'SkyWest Airlines Inc.', 'Southwest Airlines Co.', 'US Airways Inc.', 'United Air Lines Inc.', 'Virgin America')
+      mustBe: 0
+  - name: aircraft_manufacturer
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: Manufacturer of the aircraft that operated the flight, resolved from the
+      tail number.
+  - name: aircraft_model
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: Model designation of the aircraft that operated the flight.
+  - name: aircraft_manufacture_year
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: Year the operating aircraft was manufactured.
+    quality:
+    - type: sql
+      description: aircraft_manufacture_year is never negative
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_flights WHERE aircraft_manufacture_year < 0
+      mustBe: 0
+  - name: aircraft_seat_count
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: Number of passenger seats on the operating aircraft.
+    quality:
+    - type: sql
+      description: aircraft_seat_count is never negative
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_flights WHERE aircraft_seat_count < 0
+      mustBe: 0
+  - name: aircraft_engine_type
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: Category of engine fitted to the operating aircraft.
+    quality:
+    - type: sql
+      description: aircraft_engine_type stays inside the accepted value set
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_flights WHERE aircraft_engine_type NOT IN ('4 Cycle', 'Reciprocating', 'Turbo-fan', 'Turbo-jet', 'Turbo-prop', 'Turbo-shaft')
+      mustBe: 0
+  - name: origin_airport_name
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: Full name of the origin airport.
+    quality:
+    - type: sql
+      description: origin_airport_name is never null
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_flights WHERE origin_airport_name IS NULL
+      mustBe: 0
+    - type: sql
+      description: origin_airport_name stays inside the accepted value set
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_flights WHERE origin_airport_name NOT IN ('John F. Kennedy International Airport', 'LaGuardia Airport', 'Newark Liberty International Airport')
+      mustBe: 0
+  - name: origin_municipality
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: City in which the origin airport is located.
+    quality:
+    - type: sql
+      description: origin_municipality is never null
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_flights WHERE origin_municipality IS NULL
+      mustBe: 0
+    - type: sql
+      description: origin_municipality stays inside the accepted value set
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_flights WHERE origin_municipality NOT IN ('New York', 'Newark')
+      mustBe: 0
+  - name: origin_elevation_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: Elevation of the origin airport above sea level, in feet.
+    quality:
+    - type: sql
+      description: origin_elevation_ft is never null
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_flights WHERE origin_elevation_ft IS NULL
+      mustBe: 0
+    - type: sql
+      description: origin_elevation_ft is never negative
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_flights WHERE origin_elevation_ft < 0
+      mustBe: 0
+  - name: origin_longest_runway_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: Length of the longest runway at the origin airport, in feet.
+    quality:
+    - type: sql
+      description: origin_longest_runway_ft is never null
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_flights WHERE origin_longest_runway_ft IS NULL
+      mustBe: 0
+    - type: sql
+      description: origin_longest_runway_ft is never negative
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_flights WHERE origin_longest_runway_ft < 0
+      mustBe: 0
+  - name: dest_airport_name
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: Full name of the destination airport.
+  - name: dest_municipality
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: City in which the destination airport is located.
+  - name: dest_iso_region
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: ISO region code (state or territory) of the destination airport.
+  - name: dest_elevation_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: Elevation of the destination airport above sea level, in feet.
+    quality:
+    - type: sql
+      description: dest_elevation_ft is never negative
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_flights WHERE dest_elevation_ft < 0
+      mustBe: 0
+  - name: dest_longest_runway_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: Length of the longest runway at the destination airport, in feet.
+    quality:
+    - type: sql
+      description: dest_longest_runway_ft is never negative
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_flights WHERE dest_longest_runway_ft < 0
+      mustBe: 0
+  - name: captured_at
+    logicalType: date
+    physicalType: TIMESTAMP
+    required: true
+    description: Timestamp recorded when this row was captured or loaded by the ingestion
+      pipeline.
+    quality:
+    - type: sql
+      description: captured_at is never null
+      severity: error
+      query: |
+        SELECT COUNT(*) FROM silver.silver_flights WHERE captured_at IS NULL
+      mustBe: 0
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (flight_date, carrier_code, flight_number,
+      origin_airport) combinations'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT flight_date, carrier_code, flight_number, origin_airport
+        FROM silver.silver_flights
+        GROUP BY flight_date, carrier_code, flight_number, origin_airport
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: silver-cleanup-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.1.0
+- property: modelId
+  value: claude-sonnet-5
+- property: profileHash
+  value: sha256:2d19b75b44c2aa680549789ba634ee35b281fe90233870346553b2b1fc571e8b
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: describe
+- property: decisionGrainKeys
+  value: flight-date-carrier-flight-number-origin
+- property: decisionSparseColumns
+  value: aircraft-lookup-columns-nullable
+- property: decisionDestAttributesNullable
+  value: dest-airport-attributes-nullable
+- property: decisionMetadataColumn
+  value: captured-at-pipeline-timestamp
+- property: decisionDerivedLocalTime
+  value: sched-dep-local-fields-derived
+- property: grain
+  value: flight_date, carrier_code, flight_number, origin_airport

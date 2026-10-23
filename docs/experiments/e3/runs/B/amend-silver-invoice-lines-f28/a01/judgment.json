@@ -1,0 +1,33 @@
+{
+  "stance": "amend",
+  "column_prose": [],
+  "added_columns": [],
+  "grain_keys": [],
+  "quality_rules": [],
+  "changes": [
+    {
+      "kind": "required_change",
+      "column": "captured_at",
+      "before": "false",
+      "after": "true",
+      "rationale": "Committed v1.2.0 description flagged captured_at as entering optional under F-28 with a declared follow-up to tighten once the incremental path lands and the column is proven populated. The fresh profile measures null_rate 0.0 (null_count 0) over the full 44721-row table, with distinct_count 4 and all sampled values populated timestamps, confirming the column is now fully populated. The operator intent confirms the incremental path has landed. This satisfies the declared follow-up condition exactly; required_change false-to-true is a widening (tightening) direction, not narrowing, so no relaxation flag is needed."
+    },
+    {
+      "kind": "description_change",
+      "column": "captured_at",
+      "before": "Capture timestamp carried forward from the bronze landing (_airbyte_extracted_at): when the surviving line's earliest capture entered the pipeline. The incremental watermark the gold layer builds on (Record 008 part two, D-38). Enters optional under the F-28 rule; the declared follow-up tightens it to required once the incremental path lands and the column is proven populated. v1.2.0 adds this column and changes nothing else.",
+      "after": "Capture timestamp carried forward from the bronze landing (_airbyte_extracted_at), marking when the surviving line's earliest capture entered the pipeline. It is the incremental watermark the gold layer builds on. Required: the incremental capture path populates this column on every row, so consumers can depend on its presence for watermark-based incremental processing.",
+      "rationale": "The prior description stated measured, dated evidence (null rate, F-28 follow-up framing) appropriate to the optional-entry amendment; now that the follow-up condition is met and the column is required, the description is restated to say what the column is and why it is now dependable, moving the dated evidence here into the rationale instead: profile measures null_rate 0.0 over 44721 rows at this amendment, consistent with the operator's statement that the incremental path has landed."
+    }
+  ],
+  "decisions": [
+    {
+      "key": "decisionCapturedAtTightened",
+      "value": "required-after-incremental-landed",
+      "rationale": "Fresh profile measures captured_at null_rate 0.0 over 44721 rows (null_count 0, distinct_count 4), and the operator intent confirms the incremental path has landed; this fulfills the F-28 follow-up declared in the committed v1.2.0 contract, so captured_at is tightened from optional to required in this amendment."
+    }
+  ],
+  "purpose": "",
+  "usage": "",
+  "limitations": ""
+}

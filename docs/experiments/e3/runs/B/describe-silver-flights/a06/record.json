@@ -1,0 +1,77 @@
+{
+  "agent": {
+    "name": "silver-cleanup-proposer",
+    "version": "0.1.0"
+  },
+  "api_error": null,
+  "context": null,
+  "context_path": null,
+  "cost_usd_estimate": 0.29215599999999997,
+  "created_at": "2026-10-23T20:42:37.008901+00:00",
+  "disposition": "draft_written",
+  "draft_path": "proposals/silver-cleanup-proposer/20261023T204237008901Z_2d19b75b/draft.odcs.yaml",
+  "inputs": [
+    {
+      "content_hash": "sha256:2d19b75b44c2aa680549789ba634ee35b281fe90233870346553b2b1fc571e8b",
+      "kind": "profile_artifact",
+      "path": "profiles/silver.silver_flights/v0001.json",
+      "schema_version": "1.0.0"
+    }
+  ],
+  "intent": null,
+  "model_id": "claude-sonnet-5",
+  "model_source": "default",
+  "profile_hash": "sha256:2d19b75b44c2aa680549789ba634ee35b281fe90233870346553b2b1fc571e8b",
+  "profile_path": "profiles/silver.silver_flights/v0001.json",
+  "profile_schema_version": "1.0.0",
+  "prompt_path": "src/metricmine/agents/prompts/e3/silver_describe.md",
+  "prompt_version": "1.1.0",
+  "rates": {
+    "input_per_mtok": 2.0,
+    "output_per_mtok": 10.0
+  },
+  "request_params": {
+    "effort": "high",
+    "max_tokens": 16384
+  },
+  "response_id": "msg_011CgKpbZvEwc1jpytMht9jb",
+  "sdk_version": "1.0.0",
+  "skeleton": true,
+  "stance": "describe",
+  "stop_reason": "end_turn",
+  "usage": {
+    "input_tokens": 29798,
+    "output_tokens": 23256
+  },
+  "validation": {
+    "attempt_log": [
+      {
+        "completeness_pass": false,
+        "errors": [
+          "response stopped on 'max_tokens', not end_turn; the proposal is incomplete"
+        ],
+        "groundedness_pass": false,
+        "lint_pass": false,
+        "schema_pass": false,
+        "staleness_pass": false,
+        "stop_reason": "max_tokens"
+      },
+      {
+        "completeness_pass": true,
+        "errors": [],
+        "groundedness_pass": true,
+        "lint_pass": true,
+        "schema_pass": true,
+        "staleness_pass": true,
+        "stop_reason": "end_turn"
+      }
+    ],
+    "attempts": 2,
+    "completeness_pass": true,
+    "errors": [],
+    "groundedness_pass": true,
+    "lint_pass": true,
+    "schema_pass": true,
+    "staleness_pass": true
+  }
+}
