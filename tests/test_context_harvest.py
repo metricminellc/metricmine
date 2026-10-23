@@ -409,4 +409,9 @@ def test_the_harvest_reaches_no_proposer() -> None:
         if any(m.startswith("metricmine.adoption") for m in imported)
     )
     assert scan_importers == ["propose_queue.py"]
-    assert kinds == {"profile_artifact", "committed_contract", "operator_intent"}
+    # Amendment H's three kinds, plus the one the experiment branch adds
+    # (E3a, docs/experiments/e3/KEY.md): the operator's context, a string
+    # or a committed context file, never a document and never retrieved.
+    # On main the set is the three; the fourth joins the list only by an
+    # amendment to D-23, which is what a graduation would mint.
+    assert kinds == {"profile_artifact", "committed_contract", "operator_intent", "operator_context"}
