@@ -1,0 +1,57 @@
+{
+  "columns": {
+    "draft": 34,
+    "oracle": 34,
+    "ordinal_order_equal": true,
+    "shared": 34
+  },
+  "first_class_checks": {
+    "agree": 168,
+    "checked": 170,
+    "per_field": {
+      "logicalType": "34/34",
+      "physicalType": "34/34",
+      "primaryKey": "33/34",
+      "primaryKeyPosition": "33/34",
+      "required": "34/34"
+    }
+  },
+  "grain": {
+    "draft": [
+      "flight_date",
+      "carrier_code",
+      "flight_number",
+      "origin_airport"
+    ],
+    "oracle": [
+      "flight_date",
+      "carrier_code",
+      "flight_number",
+      "origin_airport",
+      "sched_dep_hhmm"
+    ],
+    "order_equal": false,
+    "set_equal": false
+  },
+  "mismatches": [
+    "sched_dep_hhmm.primaryKey: oracle=True draft=False",
+    "sched_dep_hhmm.primaryKeyPosition: oracle=5 draft=None"
+  ],
+  "oracle_id": "silver_flights",
+  "rule_types": {
+    "column_equal": false,
+    "table_draft": [
+      "library:rowCount",
+      "sql"
+    ],
+    "table_equal": false,
+    "table_oracle": [
+      "library:rowCount",
+      "sql",
+      "sql",
+      "sql",
+      "sql",
+      "sql"
+    ]
+  }
+}

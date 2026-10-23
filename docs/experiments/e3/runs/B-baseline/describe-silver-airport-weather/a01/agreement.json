@@ -1,0 +1,46 @@
+{
+  "columns": {
+    "draft": 18,
+    "oracle": 18,
+    "ordinal_order_equal": true,
+    "shared": 18
+  },
+  "first_class_checks": {
+    "agree": 90,
+    "checked": 90,
+    "per_field": {
+      "logicalType": "18/18",
+      "physicalType": "18/18",
+      "primaryKey": "18/18",
+      "primaryKeyPosition": "18/18",
+      "required": "18/18"
+    }
+  },
+  "grain": {
+    "draft": [
+      "airport_code",
+      "observed_hour_utc"
+    ],
+    "oracle": [
+      "airport_code",
+      "observed_hour_utc"
+    ],
+    "order_equal": true,
+    "set_equal": true
+  },
+  "mismatches": [],
+  "oracle_id": "silver_airport_weather",
+  "rule_types": {
+    "column_equal": false,
+    "table_draft": [
+      "library:rowCount",
+      "sql"
+    ],
+    "table_equal": false,
+    "table_oracle": [
+      "library:rowCount",
+      "sql",
+      "sql"
+    ]
+  }
+}

@@ -1,0 +1,422 @@
+{
+  "stance": "describe",
+  "target_schema": "silver",
+  "target_table": "silver_airport_weather",
+  "proposed_version": "1.0.0",
+  "columns": [
+    {
+      "name": "airport_code",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "description": "Three-letter IATA code identifying the NYC-area airport the observation was taken at.",
+      "rationale": "null_rate 0.0 across 13014 rows and distinct_count 3 with values EWR, JFK, LGA confirm a complete, closed airport identifier."
+    },
+    {
+      "name": "observed_hour_utc",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": true,
+      "description": "UTC timestamp marking the hour the weather observation was recorded.",
+      "rationale": "null_rate 0.0, distinct_count 4341 spanning min 2013-01-01T06:00:00 to max 2013-07-01T03:00:00, consistent with hourly observations across six months."
+    },
+    {
+      "name": "observed_date_local",
+      "logical_type": "date",
+      "physical_type": "DATE",
+      "required": true,
+      "description": "Local calendar date of the observation at the airport.",
+      "rationale": "null_rate 0.0, distinct_count 181 spanning min 2013-01-01 to max 2013-06-30, matching the roughly 181-day span of six months."
+    },
+    {
+      "name": "observed_hour_local",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "description": "Local hour of day (0-23) the observation was recorded.",
+      "rationale": "null_rate 0.0, distinct_count 24 with min 0 and max 23, matching the 24 hours of a day."
+    },
+    {
+      "name": "temp_f",
+      "logical_type": "number",
+      "physical_type": "DOUBLE",
+      "required": true,
+      "description": "Air temperature in degrees Fahrenheit at observation time.",
+      "rationale": "null_rate 0.0, distinct_count 130, range 10.94 to 93.92 consistent with a year-round temperature series."
+    },
+    {
+      "name": "dewpoint_f",
+      "logical_type": "number",
+      "physical_type": "DOUBLE",
+      "required": true,
+      "description": "Dew point temperature in degrees Fahrenheit at observation time.",
+      "rationale": "null_rate 0.0, distinct_count 119, range -9.94 to 73.94 showing the column can be negative, so no non_negative rule applies."
+    },
+    {
+      "name": "humidity_pct",
+      "logical_type": "number",
+      "physical_type": "DOUBLE",
+      "required": true,
+      "description": "Relative humidity percentage at observation time.",
+      "rationale": "null_rate 0.0, distinct_count 2178, range 12.74 to 100.0 consistent with a percentage measure bounded at 100."
+    },
+    {
+      "name": "wind_dir_degrees",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "description": "Wind direction in compass degrees (0-360) at observation time.",
+      "rationale": "null_count 219 giving null_rate 0.016828 makes the column optional; distinct_count 37 with min 0 and max 360 matches a compass-degree domain."
+    },
+    {
+      "name": "wind_speed_mph",
+      "logical_type": "number",
+      "physical_type": "DOUBLE",
+      "required": false,
+      "description": "Wind speed in miles per hour at observation time.",
+      "rationale": "null_count 2 giving null_rate 0.000154 makes the column optional; min 0.0 and max 1048.36058 show it is non-negative."
+    },
+    {
+      "name": "wind_gust_mph",
+      "logical_type": "number",
+      "physical_type": "DOUBLE",
+      "required": false,
+      "description": "Peak wind gust speed in miles per hour at observation time, recorded only when gusts occur.",
+      "rationale": "null_count 9702 giving null_rate 0.745505 shows most observations have no recorded gust, so the column is optional; min 16.11092 confirms it is non-negative when present."
+    },
+    {
+      "name": "precip_inches",
+      "logical_type": "number",
+      "physical_type": "DOUBLE",
+      "required": true,
+      "description": "Precipitation accumulation in inches at observation time.",
+      "rationale": "null_rate 0.0, min 0.0 and max 1.06 consistent with a non-negative precipitation measure."
+    },
+    {
+      "name": "pressure_mb",
+      "logical_type": "number",
+      "physical_type": "DOUBLE",
+      "required": false,
+      "description": "Barometric pressure in millibars at observation time.",
+      "rationale": "null_count 1496 giving null_rate 0.114953 makes the column optional; min 983.8 and max 1038.4 confirm it is non-negative."
+    },
+    {
+      "name": "visibility_miles",
+      "logical_type": "number",
+      "physical_type": "DOUBLE",
+      "required": true,
+      "description": "Visibility distance in miles at observation time, reported in fixed increments.",
+      "rationale": "null_rate 0.0, distinct_count 20 at the profiler's cap with the full distinct_values list enumerated from 0.0 to 10.0, showing a closed set of reporting increments."
+    },
+    {
+      "name": "airport_name",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "description": "Full name of the airport corresponding to airport_code.",
+      "rationale": "null_rate 0.0, distinct_count 3 matching the three airport_code values, confirming a closed, one-to-one name mapping."
+    },
+    {
+      "name": "airport_municipality",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "description": "Municipality where the airport is located.",
+      "rationale": "null_rate 0.0, distinct_count 2 with values New York and Newark, confirming a closed municipality set."
+    },
+    {
+      "name": "airport_elevation_ft",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "description": "Elevation of the airport above sea level, in feet.",
+      "rationale": "null_rate 0.0, distinct_count 3 with values 13, 18, 21 matching the three airports."
+    },
+    {
+      "name": "airport_longest_runway_ft",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "description": "Length of the airport's longest runway, in feet.",
+      "rationale": "null_rate 0.0, distinct_count 3 with values 7002, 11000, 14511 matching the three airports."
+    },
+    {
+      "name": "captured_at",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": true,
+      "description": "Timestamp recording when this row was captured into the pipeline.",
+      "rationale": "null_rate 0.0, distinct_count 3 with a narrow one-second range from 2026-09-02T23:26:11 to 2026-09-02T23:26:13, consistent with a batch load timestamp rather than an observation attribute."
+    }
+  ],
+  "grain_keys": [
+    "airport_code",
+    "observed_hour_utc"
+  ],
+  "quality_rules": [
+    {
+      "kind": "row_count_positive",
+      "column": "",
+      "values": [],
+      "rationale": "row_count 13014 confirms the table holds data and should never be empty."
+    },
+    {
+      "kind": "grain_unique",
+      "column": "",
+      "values": [],
+      "rationale": "duplicate_row_rate 0.0 combined with airport_code distinct_count 3 and observed_hour_utc distinct_count 4341 (product 13023 close to row_count 13014) supports a unique (airport_code, observed_hour_utc) grain."
+    },
+    {
+      "kind": "not_null",
+      "column": "airport_code",
+      "values": [],
+      "rationale": "null_rate 0.0 across 13014 rows shows airport_code is always populated."
+    },
+    {
+      "kind": "not_null",
+      "column": "observed_hour_utc",
+      "values": [],
+      "rationale": "null_rate 0.0 across 13014 rows shows observed_hour_utc is always populated."
+    },
+    {
+      "kind": "not_null",
+      "column": "observed_date_local",
+      "values": [],
+      "rationale": "null_rate 0.0 across 13014 rows shows observed_date_local is always populated."
+    },
+    {
+      "kind": "not_null",
+      "column": "observed_hour_local",
+      "values": [],
+      "rationale": "null_rate 0.0 across 13014 rows shows observed_hour_local is always populated."
+    },
+    {
+      "kind": "not_null",
+      "column": "temp_f",
+      "values": [],
+      "rationale": "null_rate 0.0 across 13014 rows shows temp_f is always populated."
+    },
+    {
+      "kind": "not_null",
+      "column": "dewpoint_f",
+      "values": [],
+      "rationale": "null_rate 0.0 across 13014 rows shows dewpoint_f is always populated."
+    },
+    {
+      "kind": "not_null",
+      "column": "humidity_pct",
+      "values": [],
+      "rationale": "null_rate 0.0 across 13014 rows shows humidity_pct is always populated."
+    },
+    {
+      "kind": "not_null",
+      "column": "precip_inches",
+      "values": [],
+      "rationale": "null_rate 0.0 across 13014 rows shows precip_inches is always populated."
+    },
+    {
+      "kind": "not_null",
+      "column": "visibility_miles",
+      "values": [],
+      "rationale": "null_rate 0.0 across 13014 rows shows visibility_miles is always populated."
+    },
+    {
+      "kind": "not_null",
+      "column": "airport_name",
+      "values": [],
+      "rationale": "null_rate 0.0 across 13014 rows shows airport_name is always populated."
+    },
+    {
+      "kind": "not_null",
+      "column": "airport_municipality",
+      "values": [],
+      "rationale": "null_rate 0.0 across 13014 rows shows airport_municipality is always populated."
+    },
+    {
+      "kind": "not_null",
+      "column": "airport_elevation_ft",
+      "values": [],
+      "rationale": "null_rate 0.0 across 13014 rows shows airport_elevation_ft is always populated."
+    },
+    {
+      "kind": "not_null",
+      "column": "airport_longest_runway_ft",
+      "values": [],
+      "rationale": "null_rate 0.0 across 13014 rows shows airport_longest_runway_ft is always populated."
+    },
+    {
+      "kind": "not_null",
+      "column": "captured_at",
+      "values": [],
+      "rationale": "null_rate 0.0 across 13014 rows shows captured_at is always populated."
+    },
+    {
+      "kind": "non_negative",
+      "column": "observed_hour_local",
+      "values": [],
+      "rationale": "profiled min 0 is at or above zero, so a negative value would be invalid."
+    },
+    {
+      "kind": "non_negative",
+      "column": "temp_f",
+      "values": [],
+      "rationale": "profiled min 10.94 is at or above zero, so a negative value would be invalid."
+    },
+    {
+      "kind": "non_negative",
+      "column": "humidity_pct",
+      "values": [],
+      "rationale": "profiled min 12.74 is at or above zero, so a negative value would be invalid."
+    },
+    {
+      "kind": "non_negative",
+      "column": "wind_dir_degrees",
+      "values": [],
+      "rationale": "profiled min 0 is at or above zero, so a negative value would be invalid."
+    },
+    {
+      "kind": "non_negative",
+      "column": "wind_speed_mph",
+      "values": [],
+      "rationale": "profiled min 0.0 is at or above zero, so a negative value would be invalid."
+    },
+    {
+      "kind": "non_negative",
+      "column": "wind_gust_mph",
+      "values": [],
+      "rationale": "profiled min 16.11092 is at or above zero, so a negative value would be invalid."
+    },
+    {
+      "kind": "non_negative",
+      "column": "precip_inches",
+      "values": [],
+      "rationale": "profiled min 0.0 is at or above zero, so a negative value would be invalid."
+    },
+    {
+      "kind": "non_negative",
+      "column": "pressure_mb",
+      "values": [],
+      "rationale": "profiled min 983.8 is at or above zero, so a negative value would be invalid."
+    },
+    {
+      "kind": "non_negative",
+      "column": "visibility_miles",
+      "values": [],
+      "rationale": "profiled min 0.0 is at or above zero, so a negative value would be invalid."
+    },
+    {
+      "kind": "non_negative",
+      "column": "airport_elevation_ft",
+      "values": [],
+      "rationale": "profiled min 13 is at or above zero, so a negative value would be invalid."
+    },
+    {
+      "kind": "non_negative",
+      "column": "airport_longest_runway_ft",
+      "values": [],
+      "rationale": "profiled min 7002 is at or above zero, so a negative value would be invalid."
+    },
+    {
+      "kind": "accepted_values_subset",
+      "column": "airport_code",
+      "values": [
+        "EWR",
+        "JFK",
+        "LGA"
+      ],
+      "rationale": "distinct_count 3 with the full distinct_values list EWR, JFK, LGA shows a closed airport-code domain."
+    },
+    {
+      "kind": "accepted_values_subset",
+      "column": "airport_name",
+      "values": [
+        "John F. Kennedy International Airport",
+        "LaGuardia Airport",
+        "Newark Liberty International Airport"
+      ],
+      "rationale": "distinct_count 3 with the full distinct_values list shows a closed airport-name domain matching airport_code."
+    },
+    {
+      "kind": "accepted_values_subset",
+      "column": "airport_municipality",
+      "values": [
+        "New York",
+        "Newark"
+      ],
+      "rationale": "distinct_count 2 with the full distinct_values list New York, Newark shows a closed municipality domain."
+    },
+    {
+      "kind": "accepted_values_subset",
+      "column": "airport_elevation_ft",
+      "values": [
+        "13",
+        "18",
+        "21"
+      ],
+      "rationale": "distinct_count 3 with the full distinct_values list 13, 18, 21 shows a closed elevation domain tied to the three airports."
+    },
+    {
+      "kind": "accepted_values_subset",
+      "column": "airport_longest_runway_ft",
+      "values": [
+        "7002",
+        "11000",
+        "14511"
+      ],
+      "rationale": "distinct_count 3 with the full distinct_values list 7002, 11000, 14511 shows a closed runway-length domain tied to the three airports."
+    },
+    {
+      "kind": "accepted_values_subset",
+      "column": "visibility_miles",
+      "values": [
+        "0.0",
+        "0.06",
+        "0.12",
+        "0.25",
+        "0.5",
+        "0.75",
+        "1.0",
+        "1.25",
+        "1.5",
+        "1.75",
+        "2.0",
+        "2.5",
+        "3.0",
+        "4.0",
+        "5.0",
+        "6.0",
+        "7.0",
+        "8.0",
+        "9.0",
+        "10.0"
+      ],
+      "rationale": "distinct_count 20 at the profiler's cap with the full distinct_values list enumerated shows a closed set of fixed visibility-reporting increments."
+    }
+  ],
+  "changes": [],
+  "decisions": [
+    {
+      "key": "decisionGrainKeys",
+      "value": "airport-code-observed-hour-utc",
+      "rationale": "row_count 13014 with duplicate_row_rate 0.0 and the product of airport_code distinct_count 3 and observed_hour_utc distinct_count 4341 (13023) nearly matching row_count indicates each airport-hour combination appears at most once, so (airport_code, observed_hour_utc) is the most defensible grain pending measurement."
+    },
+    {
+      "key": "decisionSparseColumns",
+      "value": "wind-gust-pressure-wind-dir-wind-speed-nullable",
+      "rationale": "wind_gust_mph (null_rate 0.745505), pressure_mb (null_rate 0.114953), wind_dir_degrees (null_rate 0.016828), and wind_speed_mph (null_rate 0.000154) all show nonzero null rates and are retained as nullable rather than required."
+    },
+    {
+      "key": "decisionCapturedAtRetained",
+      "value": "captured-at-retained-as-load-timestamp",
+      "rationale": "captured_at has only 3 distinct values within a one-second span (2026-09-02T23:26:11 to 2026-09-02T23:26:13), inconsistent with a per-observation attribute and consistent with a pipeline load timestamp, so it is retained and flagged for reviewer attention rather than dropped."
+    },
+    {
+      "key": "decisionVisibilityAcceptedValues",
+      "value": "visibility-miles-closed-increment-set",
+      "rationale": "visibility_miles distinct_count 20 is at the profiler's cap with the full distinct_values list enumerated (0.0 through 10.0 in fixed increments), supporting an accepted_values_subset rule."
+    }
+  ],
+  "purpose": "silver_airport_weather holds hourly weather observations for the three NYC-area airports (EWR, JFK, LGA) from January through June 2013, combining meteorological readings (temperature, dewpoint, humidity, wind, precipitation, pressure, visibility) with static airport reference attributes (name, municipality, elevation, longest runway).",
+  "usage": "Read the table at the (airport_code, observed_hour_utc) grain: each row is one airport's weather observation for one UTC hour. Consumers joining on airport_code can treat airport_name, airport_municipality, airport_elevation_ft, and airport_longest_runway_ft as denormalized, repeating reference attributes. Consumers must handle nulls in wind_dir_degrees, wind_speed_mph, wind_gust_mph, and pressure_mb, which are not always reported.",
+  "limitations": "The profile cannot confirm the declared grain beyond row-count and distinct-count arithmetic; a deterministic measurement must verify (airport_code, observed_hour_utc) uniqueness before the grain rule is trusted. wind_gust_mph is null in roughly 75% of rows and should not be treated as consistently available. captured_at is retained as profiled with is_airbyte_metadata false, but its narrow, low-cardinality timestamp range (3 distinct values in a one-second span) suggests it is a pipeline load timestamp rather than an observation attribute, and reviewers should confirm its intended meaning. observed_date_local and observed_hour_local are locally derived fields whose relationship to observed_hour_utc, including timezone offset and DST handling, is not verified by this profile."
+}
