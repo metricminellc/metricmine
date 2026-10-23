@@ -1,0 +1,101 @@
+{
+  "category_name": "invoice_lines",
+  "entity_group": "invoice_lines",
+  "source_table": "silver.silver_invoice_lines",
+  "time_column": "invoiced_at",
+  "time_grain": "minute",
+  "grain_type": "transaction",
+  "degenerate_identifiers": [
+    {
+      "source": "derived",
+      "name": "line_identity",
+      "of": [
+        "invoice_id",
+        "stock_code",
+        "invoiced_at",
+        "quantity",
+        "unit_price"
+      ]
+    }
+  ],
+  "aggregations": [],
+  "grain_rationale": "One source row is one invoice line event: 44721 rows spread across 2330 distinct invoice_id values and 3141 distinct stock_code values, so each row is a product line within an invoice rather than a pre-rolled summary, which makes grain_type transaction correct. No single profiled column is unique on its own (the largest distinct_count is 3141 for stock_code, far below row_count 44721), so a column identifier is not available and identity is derived over the ordered tuple invoice_id, stock_code, invoiced_at, quantity, unit_price. duplicate_row_rate is 0.0, so the source carries no exact duplicate rows and the identity tuple has no duplicates to absorb; every row resolves to a distinct line identity under canonical-key-v2.",
+  "fields": [
+    {
+      "name": "invoice_id",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "mapping_role": "dimension",
+      "description": "Identifier of the invoice the line belongs to, profiled as VARCHAR with 2330 distinct values and null_rate 0.0 and samples such as 489434 and 489435, so it labels rather than measures and is a dimension."
+    },
+    {
+      "name": "is_cancellation",
+      "logical_type": "boolean",
+      "physical_type": "BOOLEAN",
+      "required": true,
+      "mapping_role": "dimension",
+      "description": "Flag marking a line as a cancellation or return, profiled as BOOLEAN with exactly the two distinct values false and true and null_rate 0.0, so it is a dimension consumers filter on."
+    },
+    {
+      "name": "stock_code",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "mapping_role": "dimension",
+      "description": "Product stock code sold on the line, profiled as VARCHAR with 3141 distinct values and null_rate 0.0 and samples such as 10002, 10002R and 10123C, so it is an identifying code and therefore a dimension."
+    },
+    {
+      "name": "product_description",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "mapping_role": "dimension",
+      "description": "Free-text product name for the stock code, profiled with 3034 distinct values and samples such as 12 DAISY PEGS IN WOOD BOX; it is nullable with null_rate 0.005098 (228 rows), consistent with adjustment or unlabelled lines carrying no description."
+    },
+    {
+      "name": "quantity",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "mapping_role": "measure",
+      "description": "Number of units on the line, profiled as INTEGER with null_rate 0.0 and a range from min -1395 to max 5184, where the negative samples correspond to cancellation lines, so it is additive across rows and is a measure."
+    },
+    {
+      "name": "invoiced_at",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": true,
+      "mapping_role": "time",
+      "description": "Timestamp the invoice line was raised, profiled as TIMESTAMP with null_rate 0.0 spanning min 2009-12-01T07:45:00 to max 2009-12-23T16:58:00, and samples resolving to whole minutes with zero seconds, so it is the event time column at minute grain."
+    },
+    {
+      "name": "unit_price",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(10,2)",
+      "required": true,
+      "mapping_role": "measure",
+      "description": "Price per unit on the line, profiled as DECIMAL(10,2) with null_rate 0.0 and a range from min 0.0 to max 1998.49, a numeric amount compared and aggregated across rows, so it is a measure."
+    },
+    {
+      "name": "customer_id",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "mapping_role": "dimension",
+      "description": "Numeric identifier of the purchasing customer with 1045 distinct values ranging from 12346 to 18287; it labels rather than measures so it is a dimension, and it is nullable with null_rate 0.300664 (13446 rows), consistent with anonymous or unattributed sales."
+    },
+    {
+      "name": "country",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "mapping_role": "dimension",
+      "description": "Country associated with the sale, profiled as VARCHAR with only 24 distinct values and null_rate 0.0 and samples such as Australia, EIRE and Germany, so it is a low-cardinality descriptive dimension."
+    }
+  ],
+  "category_description": "One row is one invoice line: a single product (stock_code, product_description) sold or returned on a single invoice (invoice_id) at a given minute (invoiced_at), with the quantity and unit_price for that line and the customer and country context around it. Cancellation lines appear in the same grain, flagged by is_cancellation and typically carrying negative quantity values down to -1395.",
+  "purpose": "This mapping declares how silver.silver_invoice_lines enters the gold unified event star as the invoice_lines fact category: it names the event time column and its grain, fixes the fact grain as one row per invoice line identified by the derived line_identity tuple, and assigns every mapped silver column a dimension, measure, or time role. Its consumer is the deterministic modeling engine, which reads the contract and emits the gold models; no human or query reads this contract as data.",
+  "usage": "The proposal is rendered into an ODCS mapping contract draft, validated against the frozen mapping-contract schema, checked by the mapping validator and datacontract lint, and then reviewed and edited by a human before approval. Once approved, the modeling engine derives the gold fact and its conformed context from this declaration alone, so column names here must continue to match the contracted silver table exactly.",
+  "limitations": "The mapping only names and classifies columns; it declares no quality rules, severities, classifications, ownership, service levels, or access policies, and it creates no table, view, or transformation. It does not filter or net out cancellation lines: rows where is_cancellation is true (and the negative quantity values down to -1395) remain in the fact, and excluding or offsetting them is left to consumers. It does not substitute a value for the 30.0664 percent of rows with a null customer_id nor for the 228 rows with a null product_description, so consumers must handle those nulls. No revenue or line-total column is derived from quantity and unit_price, because the mapping declares no computed columns beyond the line_identity the grain requires."
+}

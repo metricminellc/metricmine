@@ -1,0 +1,161 @@
+# Draft proposed by silver-cleanup-proposer v0.1.0 at 2026-10-23T18:16:30.391334+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_nyc_planes
+name: Silver nyc planes
+version: 1.1.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: 'silver_nyc_planes is the cleaned aircraft registry for the NYC flights dataset:
+    one row per FAA tail number carrying airframe attributes (manufacture year, airframe type,
+    manufacturer, model, engine count, seat count, cruising speed, and engine type). It feeds
+    joins from flight-level fact tables that need aircraft characteristics such as capacity
+    or engine class.'
+  usage: 'Join on tailnum, which is the declared grain and is fully populated. Read year,
+    engines, seats and speed as integers after the DECIMAL to INTEGER cast. Treat speed as
+    optional analysis input only: it is populated for roughly 0.7 percent of rows, so any
+    aggregate over it must be computed deliberately on the non-null subset. Use is_rotorcraft
+    to exclude helicopters when an analysis assumes fixed-wing commercial aircraft.'
+  limitations: Cleanup removed only the three Airbyte metadata columns and narrowed numeric
+    types; no row was dropped or imputed. speed is effectively unusable for population-level
+    statistics with null_rate 0.993076, and year is missing for 70 rows (null_rate 0.021072).
+    manufacturer is kept verbatim and still contains near-duplicate vendor spellings visible
+    in the samples ('AIRBUS' and 'AIRBUS INDUSTRIE'), which this layer does not reconcile.
+    The declared grain on tailnum is inferred from distinct_count 3322 matching row_count
+    3322 in a single profile snapshot and should be verified against the live warehouse.
+schema:
+- name: silver_nyc_planes
+  physicalName: silver_nyc_planes
+  logicalType: object
+  physicalType: table
+  description: 'silver_nyc_planes is the cleaned aircraft registry for the NYC flights dataset:
+    one row per FAA tail number carrying airframe attributes (manufacture year, airframe type,
+    manufacturer, model, engine count, seat count, cruising speed, and engine type). It feeds
+    joins from flight-level fact tables that need aircraft characteristics such as capacity
+    or engine class.'
+  properties:
+  - name: tailnum
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: distinct_count 3322 equals row_count 3322 with null_rate 0.0, so the FAA
+      tail number uniquely identifies every row; samples such as 'N10156' and 'N102UW' show
+      a consistent alphanumeric registration format.
+  - name: year
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: min 1956.0 and max 2013.0 with every sample integral (1956.0, 1959.0, 1963.0)
+      supports a DECIMAL(38,9) to INTEGER cast; null_count 70 (null_rate 0.021072) is retained
+      because manufacture year is genuinely unknown for some airframes.
+  - name: type
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: null_rate 0.0 and distinct_count 3 with distinct_values 'Fixed wing multi
+      engine', 'Fixed wing single engine', 'Rotorcraft' make this a fully populated low-cardinality
+      category.
+  - name: manufacturer
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: null_rate 0.0 across distinct_count 35 manufacturer names such as 'AIRBUS',
+      'AIRBUS INDUSTRIE' and 'BOEING'; the names are kept verbatim because the profile shows
+      no canonical spelling to normalise to.
+  - name: model
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: null_rate 0.0 with distinct_count 127; samples mix digits and letters ('150',
+      '172E', '210-5(205)'), so the column stays text rather than being cast to a number.
+  - name: engines
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: null_rate 0.0 and distinct_values 1.0, 2.0, 3.0, 4.0 (min 1.0, max 4.0) are
+      all integral, so DECIMAL(38,9) is narrowed to INTEGER without loss.
+  - name: seats
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: null_rate 0.0 with min 2.0, max 450.0 and all sampled values integral (2.0,
+      4.0, 5.0, 6.0), supporting an INTEGER cast of the landed DECIMAL(38,9).
+  - name: speed
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: 'Sparsely populated: null_count 3299 of 3322 rows (null_rate 0.993076), leaving
+      only distinct_count 13 integral values between min 90.0 and max 432.0, which justifies
+      the INTEGER cast while all nulls are retained.'
+  - name: engine
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: null_rate 0.0 and distinct_count 6 with distinct_values '4 Cycle', 'Reciprocating',
+      'Turbo-fan', 'Turbo-jet', 'Turbo-prop', 'Turbo-shaft' make this a complete controlled
+      vocabulary.
+  - name: is_rotorcraft
+    logicalType: boolean
+    physicalType: BOOLEAN
+    required: true
+    description: The distinct_values of type include 'Rotorcraft' alongside the two fixed-wing
+      categories, so a boolean derived from that exact value lets consumers separate helicopters
+      from fixed-wing aircraft without string matching; type has null_rate 0.0 so the flag
+      is always determinable.
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (tailnum) combinations'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT tailnum
+        FROM silver.silver_nyc_planes
+        GROUP BY tailnum
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: silver-cleanup-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.0.0
+- property: modelId
+  value: claude-opus-5
+- property: profileHash
+  value: sha256:d775f9080fcb9731f1489bfc4933efc20b764c7dff57f90224131c77ea50b3f5
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: cleanup
+- property: decisionExactDuplicates
+  value: no-dedupe-required
+- property: decisionGrain
+  value: one-row-per-tailnum
+- property: decisionDroppedMetadata
+  value: excluded-as-capture-artifacts
+- property: decisionNumericCasts
+  value: decimal-narrowed-to-integer
+- property: decisionNullSpeed
+  value: retained-nullable
+- property: decisionNullYear
+  value: retained-nullable
+- property: decisionRotorcraftFlag
+  value: derived-from-type

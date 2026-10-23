@@ -1,0 +1,228 @@
+# Draft proposed by silver-cleanup-proposer v0.1.0 at 2026-10-23T18:23:05.726663+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_ourairports_airports
+name: Silver ourairports airports
+version: 1.1.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: 'silver_ourairports_airports is the cleaned airport reference table built from
+    bronze.ourairports_airports (9057 rows): one row per airport identifier, with capture
+    metadata removed, coordinates and elevation typed as numbers, and scheduled-service recorded
+    as a boolean. It feeds geographic joins, airport lookups by ICAO/IATA/GPS code, and downstream
+    gold aggregates by country, region and airport type.'
+  usage: 'Join or look up on id (the declared grain, 9057 distinct values over 9057 rows);
+    iata_code and ident are equally unique in this snapshot and can serve as secondary lookups.
+    Filter on type (five values: heliport, large_airport, medium_airport, seaplane_base, small_airport)
+    and has_scheduled_service to isolate commercially served airports. Consumers must handle
+    NULLs deliberately in the code and link columns: icao_code, gps_code, local_code, home_link,
+    wikipedia_link, keywords, municipality and elevation_ft are all partially populated, so
+    inner joins on those columns will silently reduce row counts.'
+  limitations: 'No deduplication is applied because duplicate_row_rate is 0.0; uniqueness
+    of id is asserted from profile distinct counts only and must be measured against the warehouse
+    before approval. elevation_ft is missing for 335 rows (3.7%) and is not imputed; local_code
+    (63.7% null), keywords (68.0% null) and home_link (74.9% null) are sparsely populated
+    and kept as-is. keywords remains unparsed free text of mixed shape rather than a normalized
+    list, and the id cast from VARCHAR to INTEGER is strict: a non-numeric id outside the
+    ten observed samples would fail the build. Link columns are not validated as reachable
+    URLs.'
+schema:
+- name: silver_ourairports_airports
+  physicalName: silver_ourairports_airports
+  logicalType: object
+  physicalType: table
+  description: 'silver_ourairports_airports is the cleaned airport reference table built from
+    bronze.ourairports_airports (9057 rows): one row per airport identifier, with capture
+    metadata removed, coordinates and elevation typed as numbers, and scheduled-service recorded
+    as a boolean. It feeds geographic joins, airport lookups by ICAO/IATA/GPS code, and downstream
+    gold aggregates by country, region and airport type.'
+  properties:
+  - name: id
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: Landed as VARCHAR with null_rate 0.0 and distinct_count 9057 equal to row_count
+      9057, and every sample value ('10309', '10366', '10532', '1058', '111') is a plain integral
+      string, so the cast to INTEGER is supported by all observed samples.
+  - name: ident
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: null_rate 0.0 and distinct_count 9057 matches row_count 9057, and samples
+      mix letters and digits ('03N', '07FA', '0CO2', '19AK'), so the alphanumeric identifier
+      stays text.
+  - name: type
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: null_rate 0.0 with distinct_count 5 and the full distinct_values set listed
+      ('heliport', 'large_airport', 'medium_airport', 'seaplane_base', 'small_airport'), a
+      stable low-cardinality category kept as text.
+  - name: name
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: null_rate 0.0 and distinct_count 9006 against row_count 9057, with free-text
+      samples such as '28 de Noviembre Airport' and 'A Coruña Airport' that include accented
+      characters, so it stays unconstrained text.
+  - name: latitude_deg
+    logicalType: number
+    physicalType: DECIMAL(9,6)
+    required: true
+    description: null_rate 0.0, distinct_count 9047, min -79.777778 and max 82.517263 fit
+      within three integer digits, and samples carry at most six decimal places (-79.777778,
+      -54.931099), so DECIMAL(38,9) is narrowed to DECIMAL(9,6) without losing observed precision.
+  - name: longitude_deg
+    logicalType: number
+    physicalType: DECIMAL(10,6)
+    required: true
+    description: null_rate 0.0, distinct_count 9050, min -179.876999 and max 179.9757 fit
+      within three integer digits and six decimals, so the landed DECIMAL(38,9) is narrowed
+      to DECIMAL(10,6).
+  - name: elevation_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: Every sample is integral (-1266.0, -210.0, -84.0, -70.0) and min -1266.0
+      / max 14472.0 fit INTEGER, while null_count 335 (null_rate 0.036988) means missing elevations
+      are retained as NULL rather than imputed.
+  - name: continent
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: null_rate 0.0 and distinct_count 7 with the complete distinct_values set
+      ('AF', 'AN', 'AS', 'EU', 'NA', 'OC', 'SA'), a closed two-letter code kept as text.
+  - name: iso_country
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: null_rate 0.0 and distinct_count 239 with two-letter samples ('AD', 'AE',
+      'AF', 'AQ', 'AR'), an ISO country code kept as text.
+  - name: iso_region
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: null_rate 0.0 and distinct_count 2169 with hyphenated samples ('AD-08', 'AE-AZ',
+      'AF-BDS'), a composite ISO region code kept as text.
+  - name: municipality
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_count 360 (null_rate 0.039748) over row_count 9057 with distinct_count
+      8049 and place-name samples ('108 Mile', 'Aachen', 'Abakan'), so missing municipalities
+      are retained as NULL.
+  - name: has_scheduled_service
+    logicalType: boolean
+    physicalType: BOOLEAN
+    required: true
+    description: distinct_count 2 with the complete distinct_values set ('no', 'yes') and
+      null_rate 0.0, so the yes/no text maps cleanly to BOOLEAN and the name is clarified
+      to has_scheduled_service.
+  - name: icao_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_count 1237 (null_rate 0.136579) with distinct_count 7820 and four-character
+      samples ('AGAF', 'AGGB', 'AGGC'), so the code stays text and missing ICAO codes are
+      retained as NULL.
+  - name: iata_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: null_rate 0.0 and distinct_count 9057 equal to row_count 9057, with three-letter
+      samples ('AAA', 'AAB', 'AAE'), so it is a fully populated unique code kept as text.
+  - name: gps_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_count 488 (null_rate 0.053881) with distinct_count 8569 and alphanumeric
+      samples ('03N', '05AA', '0NM0'), so it stays text with nulls retained.
+  - name: local_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: 'Sparsely populated: null_count 5766 (null_rate 0.636635) with distinct_count
+      3193 and alphanumeric samples (''00C'', ''05AA'', ''0AA1''); the column is retained
+      as nullable text rather than dropped.'
+  - name: home_link
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: 'Sparsely populated: null_count 6784 (null_rate 0.749034) with distinct_count
+      2272 and URL samples (''http://GillespieField.com/'', ''http://aai.aero/allAirports/bhavnagar.jsp'');
+      retained as nullable text.'
+  - name: wikipedia_link
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_count 1185 (null_rate 0.130838) with distinct_count 7870 and URL samples
+      ('http://en.wikipedia.org/wiki/Khasab_Airport'), so the reference link is kept as nullable
+      text.
+  - name: keywords
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: 'Sparsely populated: null_count 6155 (null_rate 0.679585) with distinct_count
+      2883, and samples hold comma-separated free text of varying shape (''06AZ'', ''119th
+      Wing, Happy Hooligans''), so it is kept as unparsed nullable text.'
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (id) combinations'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT id
+        FROM silver.silver_ourairports_airports
+        GROUP BY id
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: silver-cleanup-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.0.0
+- property: modelId
+  value: claude-opus-5
+- property: profileHash
+  value: sha256:113a01272f19c485ada9b62583be7449fbfd55b60fb304b18139a17614cf0ec2
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: cleanup
+- property: decisionGrain
+  value: one-row-per-airport-id
+- property: decisionExactDuplicates
+  value: no-dedupe-required
+- property: decisionAirbyteMetadata
+  value: excluded-as-capture-artifacts
+- property: decisionIdCast
+  value: cast-varchar-to-integer
+- property: decisionElevationCast
+  value: cast-decimal-to-integer
+- property: decisionCoordinatePrecision
+  value: narrowed-decimal-precision
+- property: decisionScheduledServiceBoolean
+  value: cast-yes-no-to-boolean
+- property: decisionSparseColumns
+  value: retained-nullable
+- property: decisionCodeColumnsNullable
+  value: retained-nullable

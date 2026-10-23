@@ -1,0 +1,143 @@
+# Draft proposed by gold-mapping-proposer v0.1.0 at 2026-10-23T17:58:17.566539+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: gold_invoice_lines_mapping
+name: Gold mapping, invoice_lines category
+version: 1.2.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: This mapping declares how silver.silver_invoice_lines enters the gold unified event
+    star as the invoice_lines fact category, naming the event timestamp and its grain, the
+    identity tuple that makes each line addressable, and the role of every mapped column.
+    Its consumer is the deterministic modeling engine, which reads the approved contract and
+    emits the gold models; no table or view is proposed here.
+  usage: The proposal is rendered into an ODCS mapping contract draft, validated against the
+    frozen mapping-contract schema, gated by the validator and datacontract lint, and then
+    reviewed and edited by a human before approval. Once approved, the modeling engine consumes
+    it to generate the invoice_lines fact category; downstream consumers read the generated
+    gold models, not this contract.
+  limitations: 'The mapping maps the table as profiled and transforms nothing: it does not
+    compute line revenue from quantity and unit_price, does not filter out cancellation lines
+    (is_cancellation carries both false and true) or negative quantities (quantity reaches
+    min -1395), and does not resolve the 30.0664 percent of rows where customer_id is null
+    or the 228 rows missing product_description. Exclusion, net-versus-gross treatment, and
+    anonymous-customer handling are left to consumers. No quality rules, classifications,
+    service levels, ownership, or access policies are declared here, and the profiled window
+    covers only 2009-12-01 to 2009-12-23, so the grain evidence reflects that window alone.'
+schema:
+- name: invoice_lines
+  logicalType: object
+  physicalType: mapping
+  description: 'One row is one invoice line: a single product, at a single quantity and unit
+    price, on one invoice issued at one timestamp, for one customer and country. Cancellation
+    lines are present in the same grain and are marked by the is_cancellation flag rather
+    than removed.'
+  entityGroup: invoice_lines
+  sourceTable: silver.silver_invoice_lines
+  timeColumn: invoiced_at
+  timeGrain: minute
+  grain:
+    type: transaction
+    degenerateIdentifiers:
+    - source: derived
+      name: line_identity
+      derivation: canonical-key-v2
+      of:
+      - invoice_id
+      - stock_code
+      - invoiced_at
+      - quantity
+      - unit_price
+  properties:
+  - name: invoice_id
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    mappingRole: dimension
+    description: The invoice document the line belongs to, stored as a numeric-looking string
+      such as 489434 or 489435 with 2330 distinct values over 44721 rows and null_rate 0.0,
+      so it labels and groups lines rather than measuring anything.
+  - name: is_cancellation
+    logicalType: boolean
+    physicalType: BOOLEAN
+    required: true
+    mappingRole: dimension
+    description: Flag marking a line as a cancellation or return, with distinct_values of
+      exactly false and true and null_rate 0.0, used to segment rather than to sum.
+  - name: stock_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    mappingRole: dimension
+    description: The product code sold on the line, with 3141 distinct codes such as 10002,
+      10002R and 10123C and null_rate 0.0, identifying the item and therefore a dimension.
+  - name: product_description
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    mappingRole: dimension
+    description: Human-readable product name such as 12 DAISY PEGS IN WOOD BOX across 3034
+      distinct values; it is nullable with null_rate 0.005098 (228 rows), consistent with
+      lines whose stock code carries no catalogue description.
+  - name: quantity
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    mappingRole: measure
+    description: Units transacted on the line, ranging from min -1395 to max 5184 with null_rate
+      0.0, additive across rows and negative where the line reverses a sale.
+  - name: invoiced_at
+    logicalType: date
+    physicalType: TIMESTAMP
+    required: true
+    mappingRole: time
+    description: Timestamp the invoice line was issued, spanning 2009-12-01T07:45:00 to 2009-12-23T16:58:00
+      with null_rate 0.0 and samples that resolve to whole minutes, so it timestamps every
+      event.
+  - name: unit_price
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: true
+    mappingRole: measure
+    description: Price charged per unit on the line, from min 0.0 to max 1998.49 with null_rate
+      0.0, a numeric value compared and weighted across rows.
+  - name: customer_id
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    mappingRole: dimension
+    description: Account identifier of the purchasing customer, with 1045 distinct values
+      between 12346 and 18287; it is numeric but identifies rather than measures, and is nullable
+      with null_rate 0.300664 (13446 rows), consistent with lines captured without a registered
+      customer.
+  - name: country
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    mappingRole: dimension
+    description: Country associated with the line, with 24 distinct values such as Australia,
+      EIRE and Germany and null_rate 0.0, a categorical label for geography.
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: gold
+customProperties:
+- property: proposedBy
+  value: gold-mapping-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.0.0
+- property: modelId
+  value: claude-opus-5
+- property: profileHash
+  value: sha256:e65bee8117b65958b8c4741b43509ece19a581dd1d6bad9a7e1da9b67b0b5fcd
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: propose

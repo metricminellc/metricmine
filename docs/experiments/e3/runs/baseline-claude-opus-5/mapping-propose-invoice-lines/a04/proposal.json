@@ -1,0 +1,101 @@
+{
+  "category_name": "invoice_lines",
+  "entity_group": "invoice_lines",
+  "source_table": "silver.silver_invoice_lines",
+  "time_column": "invoiced_at",
+  "time_grain": "minute",
+  "grain_type": "transaction",
+  "degenerate_identifiers": [
+    {
+      "source": "derived",
+      "name": "line_identity",
+      "of": [
+        "invoice_id",
+        "stock_code",
+        "invoiced_at",
+        "quantity",
+        "unit_price"
+      ]
+    }
+  ],
+  "aggregations": [],
+  "grain_rationale": "The profile reports row_count 44721 with duplicate_row_rate 0.0, so every source row is already distinct and each row is one event: a single product line on a single invoice. No single column is unique on its own (the largest distinct_count is stock_code at 3141 and invoice_id covers only 2330 distinct values across 44721 rows), so a column identifier is not available and a derived identity is used instead. The identity tuple invoice_id plus stock_code plus invoiced_at plus quantity plus unit_price pins down one line; because duplicate_row_rate is 0.0 there are no exact duplicate rows for the tuple to absorb, and no aggregation of measures is required to reach the grain.",
+  "fields": [
+    {
+      "name": "invoice_id",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "mapping_role": "dimension",
+      "description": "The invoice document the line belongs to, stored as a numeric-looking string such as 489434 or 489435 with 2330 distinct values over 44721 rows and null_rate 0.0, so it labels and groups lines rather than measuring anything."
+    },
+    {
+      "name": "is_cancellation",
+      "logical_type": "boolean",
+      "physical_type": "BOOLEAN",
+      "required": true,
+      "mapping_role": "dimension",
+      "description": "Flag marking a line as a cancellation or return, with distinct_values of exactly false and true and null_rate 0.0, used to segment rather than to sum."
+    },
+    {
+      "name": "stock_code",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "mapping_role": "dimension",
+      "description": "The product code sold on the line, with 3141 distinct codes such as 10002, 10002R and 10123C and null_rate 0.0, identifying the item and therefore a dimension."
+    },
+    {
+      "name": "product_description",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "mapping_role": "dimension",
+      "description": "Human-readable product name such as 12 DAISY PEGS IN WOOD BOX across 3034 distinct values; it is nullable with null_rate 0.005098 (228 rows), consistent with lines whose stock code carries no catalogue description."
+    },
+    {
+      "name": "quantity",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "mapping_role": "measure",
+      "description": "Units transacted on the line, ranging from min -1395 to max 5184 with null_rate 0.0, additive across rows and negative where the line reverses a sale."
+    },
+    {
+      "name": "invoiced_at",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": true,
+      "mapping_role": "time",
+      "description": "Timestamp the invoice line was issued, spanning 2009-12-01T07:45:00 to 2009-12-23T16:58:00 with null_rate 0.0 and samples that resolve to whole minutes, so it timestamps every event."
+    },
+    {
+      "name": "unit_price",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(10,2)",
+      "required": true,
+      "mapping_role": "measure",
+      "description": "Price charged per unit on the line, from min 0.0 to max 1998.49 with null_rate 0.0, a numeric value compared and weighted across rows."
+    },
+    {
+      "name": "customer_id",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "mapping_role": "dimension",
+      "description": "Account identifier of the purchasing customer, with 1045 distinct values between 12346 and 18287; it is numeric but identifies rather than measures, and is nullable with null_rate 0.300664 (13446 rows), consistent with lines captured without a registered customer."
+    },
+    {
+      "name": "country",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "mapping_role": "dimension",
+      "description": "Country associated with the line, with 24 distinct values such as Australia, EIRE and Germany and null_rate 0.0, a categorical label for geography."
+    }
+  ],
+  "category_description": "One row is one invoice line: a single product, at a single quantity and unit price, on one invoice issued at one timestamp, for one customer and country. Cancellation lines are present in the same grain and are marked by the is_cancellation flag rather than removed.",
+  "purpose": "This mapping declares how silver.silver_invoice_lines enters the gold unified event star as the invoice_lines fact category, naming the event timestamp and its grain, the identity tuple that makes each line addressable, and the role of every mapped column. Its consumer is the deterministic modeling engine, which reads the approved contract and emits the gold models; no table or view is proposed here.",
+  "usage": "The proposal is rendered into an ODCS mapping contract draft, validated against the frozen mapping-contract schema, gated by the validator and datacontract lint, and then reviewed and edited by a human before approval. Once approved, the modeling engine consumes it to generate the invoice_lines fact category; downstream consumers read the generated gold models, not this contract.",
+  "limitations": "The mapping maps the table as profiled and transforms nothing: it does not compute line revenue from quantity and unit_price, does not filter out cancellation lines (is_cancellation carries both false and true) or negative quantities (quantity reaches min -1395), and does not resolve the 30.0664 percent of rows where customer_id is null or the 228 rows missing product_description. Exclusion, net-versus-gross treatment, and anonymous-customer handling are left to consumers. No quality rules, classifications, service levels, ownership, or access policies are declared here, and the profiled window covers only 2009-12-01 to 2009-12-23, so the grain evidence reflects that window alone."
+}

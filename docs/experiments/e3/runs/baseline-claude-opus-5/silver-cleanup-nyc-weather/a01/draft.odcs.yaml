@@ -1,0 +1,196 @@
+# Draft proposed by silver-cleanup-proposer v0.1.0 at 2026-10-23T18:09:47.649308+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_nyc_weather
+name: Silver nyc weather
+version: 1.1.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: silver_nyc_weather is the cleaned hourly weather observation table for the three
+    New York airports (EWR, JFK, LGA) derived from bronze.nyc_weather, with capture metadata
+    removed, calendar parts typed as integers, and the observation timestamp typed as a real
+    TIMESTAMP. It feeds flight-delay and operations analytics that join weather conditions
+    to departures by airport and hour.
+  usage: 'Join to flight data on origin and time_hour, which together form the declared grain
+    of one observation per airport per hour; year, month, day and hour are redundant calendar
+    parts of time_hour and are kept for convenient filtering. Readings are stored in their
+    landed units (temperature and dew point in degrees Fahrenheit, wind in mph, pressure in
+    millibars, visibility in miles) with no unit conversion applied. Consumers must handle
+    nulls deliberately: wind_gust is null for roughly three quarters of rows and pressure
+    for about one in nine, so aggregate with explicit null handling rather than assuming a
+    zero.'
+  limitations: 'The cleanup is type- and metadata-only: no rows are dropped, no values are
+    imputed, and no outliers are corrected. wind_speed carries a max of 1048.36058 against
+    a sampled range starting at 0.0, which is almost certainly a bad reading left in place
+    for the consumer to filter. Sparse columns remain sparse (wind_gust null_rate 0.745505,
+    pressure null_rate 0.114953, wind_dir null_rate 0.016828, wind_speed null_rate 0.000154).
+    The bronze profile shows duplicate_row_rate 0.0 over 13014 rows so no dedupe was applied,
+    but the proposed grain of origin plus time_hour is inferred from distinct_count 4341 times
+    3 origins and has not been measured against the warehouse; a reviewer must confirm it
+    before approval. The profile covers only months 1 through 6 of 2013, so the table is a
+    partial year.'
+schema:
+- name: silver_nyc_weather
+  physicalName: silver_nyc_weather
+  logicalType: object
+  physicalType: table
+  description: silver_nyc_weather is the cleaned hourly weather observation table for the
+    three New York airports (EWR, JFK, LGA) derived from bronze.nyc_weather, with capture
+    metadata removed, calendar parts typed as integers, and the observation timestamp typed
+    as a real TIMESTAMP. It feeds flight-delay and operations analytics that join weather
+    conditions to departures by airport and hour.
+  properties:
+  - name: origin
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: null_rate is 0.0 with distinct_count 3 and distinct_values EWR, JFK, LGA,
+      so the airport code is always populated and forms part of the hourly grain.
+  - name: year
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: null_rate is 0.0 and the single distinct value 2013.0 is integral, so the
+      landed DECIMAL(38,9) casts safely to INTEGER.
+  - name: month
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: null_rate is 0.0 and all 6 distinct_values (1.0 through 6.0) are integral
+      between min 1.0 and max 6.0, supporting an INTEGER cast.
+  - name: day
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: null_rate is 0.0, distinct_count is 31, and sample_values 1.0 through 10.0
+      within min 1.0 and max 31.0 are all integral, so INTEGER is safe.
+  - name: hour
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: null_rate is 0.0, distinct_count is 24, and sample_values 0.0 through 9.0
+      with min 0.0 and max 23.0 are integral clock hours, so INTEGER is safe.
+  - name: temp
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: true
+    description: null_rate is 0.0 with 130 distinct fractional values such as 10.94 and 12.02
+      between min 10.94 and max 93.92, so it stays numeric at two decimal places.
+  - name: dewp
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: true
+    description: null_rate is 0.0 with 119 distinct fractional values and min -9.94, max 73.94,
+      including negatives, so a signed decimal is retained.
+  - name: humid
+    logicalType: number
+    physicalType: DECIMAL(10,5)
+    required: true
+    description: null_rate is 0.0 with 2178 distinct values between min 12.74 and max 100.0
+      and samples such as 13.95 and 15.47, so full decimal precision is kept.
+  - name: wind_dir
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: false
+    description: null_count is 219 (null_rate 0.016828), so nulls are retained; samples 0.0
+      through 90.0 step by ten degrees between min 0.0 and max 360.0.
+  - name: wind_speed
+    logicalType: number
+    physicalType: DECIMAL(12,5)
+    required: false
+    description: null_count is 2 (null_rate 0.000154) so nulls are retained; samples such
+      as 3.45234 and 4.60312 carry five decimals and max is 1048.36058, which looks like an
+      outlier worth a consumer check.
+  - name: wind_gust
+    logicalType: number
+    physicalType: DECIMAL(12,5)
+    required: false
+    description: null_count is 9702 (null_rate 0.745505), so this column is sparsely populated
+      and the nulls are retained unimputed; populated samples run 16.11092 to max 62.14212.
+  - name: precip
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: true
+    description: null_rate is 0.0 with 50 distinct values between min 0.0 and max 1.06 and
+      samples stepping by 0.01, so two decimal places suffice.
+  - name: pressure
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: false
+    description: null_count is 1496 (null_rate 0.114953), so nulls are retained; the 430 distinct
+      values run from min 983.8 to max 1038.4 with one decimal place in samples.
+  - name: visib
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: true
+    description: null_rate is 0.0 and the 20 distinct_values include fractional steps such
+      as 0.06, 0.12 and 1.75 between min 0.0 and max 10.0, so it must stay numeric rather
+      than integer.
+  - name: time_hour
+    logicalType: date
+    physicalType: TIMESTAMP
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 2
+    description: null_rate is 0.0 and all 10 sample_values are ISO-8601 UTC instants such
+      as 2013-01-01T06:00:00Z, so the landed VARCHAR casts to TIMESTAMP; distinct_count 4341
+      is consistent with hourly observations.
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (origin, time_hour) combinations'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT origin, time_hour
+        FROM silver.silver_nyc_weather
+        GROUP BY origin, time_hour
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: silver-cleanup-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.0.0
+- property: modelId
+  value: claude-opus-5
+- property: profileHash
+  value: sha256:1dee708bb140addbdb172a3727f79d85a2d7a611bd9c191d56d3e433a8c5777b
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: cleanup
+- property: decisionExactDuplicates
+  value: no-dedupe-required
+- property: decisionGrain
+  value: origin-and-time-hour
+- property: decisionAirbyteMetadata
+  value: excluded-as-capture-artifacts
+- property: decisionDecimalToInteger
+  value: cast-calendar-parts-to-integer
+- property: decisionTimeHourCast
+  value: cast-varchar-to-timestamp
+- property: decisionNullWindGust
+  value: retained-nullable-sparse
+- property: decisionNullPressureWindDir
+  value: retained-nullable
+- property: decisionVisibStaysNumeric
+  value: retained-as-decimal

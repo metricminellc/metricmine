@@ -1,0 +1,90 @@
+{
+  "target_table": "silver_nyc_airlines",
+  "columns": [
+    {
+      "source_column": "carrier",
+      "action": "keep",
+      "target_name": "carrier",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "Two-letter IATA carrier code with null_rate 0.0 and distinct_count 16 across 16 rows (values such as \"9E\", \"AA\", \"DL\", \"WN\"), so it is fully populated and unique per row."
+    },
+    {
+      "source_column": "name",
+      "action": "rename",
+      "target_name": "carrier_name",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "Full airline name with null_rate 0.0 and distinct_count 16 (for example \"Delta Air Lines Inc.\", \"Virgin America\"); renamed from the generic \"name\" to carrier_name so consumers can tell which entity it names."
+    },
+    {
+      "source_column": "_airbyte_raw_id",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata: true; a capture-tool surrogate key with distinct_count 16 and null_rate 0.0 that carries no business meaning."
+    },
+    {
+      "source_column": "_airbyte_extracted_at",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata: true; a single extraction timestamp (distinct_count 1, min = max = \"2026-09-02T23:26:17\") describing the load, not the airline."
+    },
+    {
+      "source_column": "_airbyte_meta",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "JSON",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata: true; constant empty JSON payload (distinct_count 1, only value \"{}\") emitted by the capture tool."
+    }
+  ],
+  "dedupe_strategy": "none",
+  "dedupe_keys": [],
+  "grain_keys": [
+    "carrier"
+  ],
+  "decisions": [
+    {
+      "key": "decisionExactDuplicates",
+      "value": "no-dedupe-needed",
+      "rationale": "dataset.duplicate_row_rate is 0.0 over dataset.row_count 16, so bronze carries no exact duplicate rows and no dedupe step is proposed."
+    },
+    {
+      "key": "decisionGrain",
+      "value": "carrier",
+      "rationale": "carrier has distinct_count 16 over row_count 16 with null_rate 0.0, so a single column identifies one row; carrier_name is equally distinct but codes are the stable join key used by flight tables, and a human should confirm uniqueness in the warehouse."
+    },
+    {
+      "key": "decisionAirbyteMetadata",
+      "value": "excluded-as-capture-artifacts",
+      "rationale": "_airbyte_raw_id, _airbyte_extracted_at, and _airbyte_meta all carry is_airbyte_metadata: true and describe the load (constant timestamp, constant \"{}\"), so they are dropped from silver."
+    },
+    {
+      "key": "decisionRenameName",
+      "value": "renamed-to-carrier-name",
+      "rationale": "The bronze column \"name\" is ambiguous in a joined model; its 16 distinct values are airline names such as \"Southwest Airlines Co.\", so it becomes carrier_name."
+    },
+    {
+      "key": "decisionNoCasts",
+      "value": "types-retained-as-landed",
+      "rationale": "Both retained columns landed as VARCHAR and their distinct_values are free text codes and names with no numeric or ISO-timestamp shape, so no cast is proposed."
+    }
+  ],
+  "purpose": "silver_nyc_airlines is the cleaned airline reference dimension for the NYC flights model: one row per operating carrier, giving the two-letter carrier code and its full airline name for joins from flight-level fact tables.",
+  "usage": "Join fact tables on carrier, the declared grain, and read carrier_name for display. Both columns are fully populated (null_rate 0.0), so no null filtering is required; the table is a small reference list of 16 rows and should be treated as a lookup, not a fact source.",
+  "limitations": "The cleanup only renames \"name\" to carrier_name and drops the three Airbyte metadata columns; because _airbyte_extracted_at is dropped and its single value (distinct_count 1) was the only load timestamp, silver carries no load lineage column. No historical or effective-dating information exists in bronze, so retired carriers cannot be distinguished from active ones, and the declared grain on carrier rests on distinct_count 16 over row_count 16 in this single snapshot."
+}

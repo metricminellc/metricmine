@@ -1,0 +1,302 @@
+{
+  "category_name": "flights",
+  "entity_group": "flights",
+  "source_table": "silver.silver_flights",
+  "time_column": "departure_hour_utc",
+  "time_grain": "hour",
+  "grain_type": "transaction",
+  "degenerate_identifiers": [
+    {
+      "source": "derived",
+      "name": "flight_identity",
+      "of": [
+        "flight_date",
+        "carrier_code",
+        "flight_number",
+        "origin_airport",
+        "dest_airport",
+        "sched_dep_hhmm"
+      ]
+    }
+  ],
+  "aggregations": [],
+  "grain_rationale": "One source row is one scheduled flight departure from a New York airport, so the grain is transaction. The profile reports row_count 166158 and duplicate_row_rate 0.0, so no exact duplicate rows exist and no roll-up is required to make rows distinct. No single column is unique on its own (the largest distinct_count among candidate keys is tail_number at 3825 and flight_number at 2994, both far below row_count), so identity is declared as a derived key over flight_date, carrier_code, flight_number, origin_airport, dest_airport and sched_dep_hhmm: together these name the operating carrier's numbered flight on a given calendar day, between a given origin (3 distinct: EWR, JFK, LGA) and destination (100 distinct), at a given scheduled departure clock time (969 distinct values from 500 to 2359). Because duplicate_row_rate is 0.0, the identity tuple has no exact duplicates to absorb.",
+  "fields": [
+    {
+      "name": "flight_date",
+      "logical_type": "date",
+      "physical_type": "DATE",
+      "required": true,
+      "mapping_role": "dimension",
+      "description": "Calendar date of the scheduled flight, with 181 distinct values spanning min 2013-01-01 to max 2013-06-30 and null_rate 0.0, used as a day-level label and as part of the flight identity."
+    },
+    {
+      "name": "carrier_code",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "mapping_role": "dimension",
+      "description": "Two-letter operating carrier code with 16 distinct values (9E, AA, AS, B6, DL, EV, F9, FL, HA, MQ, OO, UA, US, VX, WN, YV) and null_rate 0.0, identifying the airline operating the flight."
+    },
+    {
+      "name": "flight_number",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "mapping_role": "dimension",
+      "description": "Carrier-assigned flight number, an identifier stored as a number (2994 distinct values from 1 to 8500, null_rate 0.0) that labels rather than measures the event."
+    },
+    {
+      "name": "origin_airport",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "mapping_role": "dimension",
+      "description": "IATA code of the departure airport, restricted to the three New York area fields EWR, JFK and LGA with null_rate 0.0."
+    },
+    {
+      "name": "sched_dep_hhmm",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "mapping_role": "dimension",
+      "description": "Scheduled local departure time encoded as an HHMM clock value (969 distinct values from 500 to 2359, null_rate 0.0); it is a time label, not a quantity, so it is a dimension."
+    },
+    {
+      "name": "dest_airport",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "mapping_role": "dimension",
+      "description": "IATA code of the arrival airport, with 100 distinct values sampled as ABQ, ACK, ALB, ATL and similar, and null_rate 0.0."
+    },
+    {
+      "name": "tail_number",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "mapping_role": "dimension",
+      "description": "Registration mark of the airframe that operated the flight (3825 distinct values sampled as N10156, N102UW); nullable at null_rate 0.009154, typically where no airframe was assigned or reported, such as cancelled flights."
+    },
+    {
+      "name": "is_cancelled",
+      "logical_type": "boolean",
+      "physical_type": "BOOLEAN",
+      "required": false,
+      "mapping_role": "dimension",
+      "description": "Flag with distinct values false and true and null_rate 0.0 marking whether the scheduled flight was cancelled; it is a status flag, so it is a dimension."
+    },
+    {
+      "name": "dep_hhmm",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "mapping_role": "dimension",
+      "description": "Actual local departure time as an HHMM clock value (1291 distinct values from 1 to 2400); nullable at null_rate 0.029388, consistent with flights that never departed."
+    },
+    {
+      "name": "dep_delay_minutes",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "mapping_role": "measure",
+      "description": "Departure delay in minutes, ranging from -33 (early) to 1301, an additive and comparable quantity; nullable at null_rate 0.029388 where no actual departure was recorded."
+    },
+    {
+      "name": "arr_hhmm",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "mapping_role": "dimension",
+      "description": "Actual local arrival time as an HHMM clock value (1392 distinct values from 1 to 2400); nullable at null_rate 0.0307 where the flight did not arrive as scheduled."
+    },
+    {
+      "name": "sched_arr_hhmm",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "mapping_role": "dimension",
+      "description": "Scheduled local arrival time as an HHMM clock value (1134 distinct values from 1 to 2359, null_rate 0.0), a time label rather than a measured quantity."
+    },
+    {
+      "name": "arr_delay_minutes",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "mapping_role": "measure",
+      "description": "Arrival delay in minutes, ranging from -86 (early) to 1272, averaged and compared across flights; nullable at null_rate 0.032981 for flights with no recorded arrival."
+    },
+    {
+      "name": "air_time_minutes",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "mapping_role": "measure",
+      "description": "Minutes spent airborne, ranging from 20 to 695, summed and averaged across flights; nullable at null_rate 0.032981, matching the flights with no recorded arrival."
+    },
+    {
+      "name": "distance_miles",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "mapping_role": "measure",
+      "description": "Great-circle distance flown in statute miles, ranging from 80 to 4983 with null_rate 0.0, summed to give total miles scheduled or flown."
+    },
+    {
+      "name": "sched_dep_hour_local",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "mapping_role": "dimension",
+      "description": "Local scheduled departure hour with 19 distinct values from 5 through 23 and null_rate 0.0, a time-of-day bucket used for grouping rather than a measured quantity."
+    },
+    {
+      "name": "sched_dep_minute_local",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "mapping_role": "dimension",
+      "description": "Local scheduled departure minute with 60 distinct values from 0 to 59 and null_rate 0.0, a clock component label rather than a measure."
+    },
+    {
+      "name": "departure_hour_utc",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": true,
+      "mapping_role": "time",
+      "description": "Scheduled departure instant normalised to UTC and truncated to the hour (3439 distinct values from 2013-01-01T10:00:00 to 2013-07-01T03:00:00, all samples at :00:00, null_rate 0.0); it timestamps each flight event."
+    },
+    {
+      "name": "carrier_name",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "mapping_role": "dimension",
+      "description": "Full legal name of the operating carrier with 16 distinct values such as Delta Air Lines Inc. and JetBlue Airways and null_rate 0.0, the descriptive label paired with carrier_code."
+    },
+    {
+      "name": "aircraft_manufacturer",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "mapping_role": "dimension",
+      "description": "Manufacturer of the airframe (34 distinct values sampled as AIRBUS, BOEING, BOMBARDIER INC); nullable at null_rate 0.160426 where the tail number has no matching registry record."
+    },
+    {
+      "name": "aircraft_model",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "mapping_role": "dimension",
+      "description": "Registry model designation of the airframe (121 distinct values sampled as 172N, 310Q, 550); nullable at null_rate 0.160426 for the same unmatched registrations as aircraft_manufacturer."
+    },
+    {
+      "name": "aircraft_manufacture_year",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "mapping_role": "dimension",
+      "description": "Year the airframe was built, from 1956 to 2013, a year label used for grouping rather than a summable quantity; nullable at null_rate 0.176531 where registry data is missing."
+    },
+    {
+      "name": "aircraft_seat_count",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "mapping_role": "measure",
+      "description": "Registered seat capacity of the airframe, ranging from 2 to 450, summed across flights to express seats offered; nullable at null_rate 0.160426 where the airframe is unmatched in the registry."
+    },
+    {
+      "name": "aircraft_engine_type",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "mapping_role": "dimension",
+      "description": "Engine family of the airframe with 6 distinct values including Turbo-fan, Turbo-jet and Turbo-prop; nullable at null_rate 0.160426 where registry data is missing."
+    },
+    {
+      "name": "origin_airport_name",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "mapping_role": "dimension",
+      "description": "Full name of the departure airport, restricted to the three distinct values John F. Kennedy International Airport, LaGuardia Airport and Newark Liberty International Airport, with null_rate 0.0."
+    },
+    {
+      "name": "origin_municipality",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "mapping_role": "dimension",
+      "description": "City of the departure airport, with the two distinct values New York and Newark and null_rate 0.0."
+    },
+    {
+      "name": "origin_elevation_ft",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "mapping_role": "dimension",
+      "description": "Field elevation of the departure airport in feet, taking only the three distinct values 13, 18 and 21 with null_rate 0.0; it describes the airport rather than measuring the flight."
+    },
+    {
+      "name": "origin_longest_runway_ft",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "mapping_role": "dimension",
+      "description": "Longest runway at the departure airport in feet, taking only the three distinct values 7002, 11000 and 14511 with null_rate 0.0, a descriptive airport attribute."
+    },
+    {
+      "name": "dest_airport_name",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "mapping_role": "dimension",
+      "description": "Full name of the arrival airport (99 distinct values sampled as Albany International Airport, Boston Logan International Airport); nullable at null_rate 0.02089 where the destination code has no airport reference record."
+    },
+    {
+      "name": "dest_municipality",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "mapping_role": "dimension",
+      "description": "City of the arrival airport (95 distinct values sampled as Atlanta, Austin, Baltimore); nullable at null_rate 0.02089 for the same unmatched destinations."
+    },
+    {
+      "name": "dest_iso_region",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "mapping_role": "dimension",
+      "description": "ISO region code of the arrival airport (45 distinct values sampled as US-CA, US-FL, PR-U-A); nullable at null_rate 0.02089 where destination reference data is missing."
+    },
+    {
+      "name": "dest_elevation_ft",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "mapping_role": "dimension",
+      "description": "Field elevation of the arrival airport in feet, from 3 to 6606 across 90 distinct values, describing the airport rather than measuring the flight; nullable at null_rate 0.02089."
+    },
+    {
+      "name": "dest_longest_runway_ft",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "mapping_role": "dimension",
+      "description": "Longest runway at the arrival airport in feet, from 5076 to 16000 across 84 distinct values, a descriptive airport attribute; nullable at null_rate 0.02089."
+    },
+    {
+      "name": "captured_at",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": false,
+      "mapping_role": "dimension",
+      "description": "Ingestion capture instant with 16 distinct values between 2026-09-02T23:25:51 and 2026-09-02T23:26:06 and null_rate 0.0; it stamps the load batch, not the flight, so it is kept as a dimension rather than the time column."
+    }
+  ],
+  "category_description": "One row is one scheduled flight departure from a New York area airport (EWR, JFK or LGA) on a given day, identified by operating carrier, flight number, origin, destination and scheduled departure clock time, and timestamped by its scheduled departure hour in UTC. The row carries the flight's operational outcome (cancellation flag, actual departure and arrival clock times, departure and arrival delay minutes, air time, distance) alongside denormalised carrier, airframe and airport descriptors.",
+  "purpose": "This mapping declares how silver.silver_flights enters the gold unified event star as the flights fact category: which column timestamps the event (departure_hour_utc at hour grain), what identifies a single flight row, which columns are measures of flight performance and which are descriptive dimensions. Its consumer is the deterministic modeling engine, which reads the approved contract and generates the gold models; no table, view or transformation is proposed here.",
+  "usage": "The proposal is rendered into an ODCS mapping contract draft, validated against the frozen mapping-contract schema, linted and checked by the validator, and then reviewed and edited by a human before approval. Once approved, the modeling engine uses it to emit the flights fact and to bind its fields into the shared event star; analysts consume the generated models, not this document.",
+  "limitations": "The mapping names silver columns as profiled and renames nothing, so clock-time columns stay as HHMM integers (sched_dep_hhmm, dep_hhmm, arr_hhmm, sched_arr_hhmm) and are mapped as dimensions rather than converted into timestamps. It declares no filtering: cancelled flights (is_cancelled has distinct values false and true) remain in the fact and consumers must exclude them when measuring delays, since dep_delay_minutes is null at rate 0.029388 and arr_delay_minutes and air_time_minutes at 0.032981. Denormalised airframe attributes are null for roughly one row in six (null_rate 0.160426 to 0.176531) and destination airport reference attributes for about one row in fifty (null_rate 0.02089), and this mapping neither imputes nor resolves those gaps. It also proposes no quality rules, severities, classifications, service levels or ownership, which review owns.  Airport elevation and runway attributes are mapped as dimensions because they describe airports rather than quantify the flight event."
+}

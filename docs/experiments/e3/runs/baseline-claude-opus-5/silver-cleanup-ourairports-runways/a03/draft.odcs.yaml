@@ -1,0 +1,251 @@
+# Draft proposed by silver-cleanup-proposer v0.1.0 at 2026-10-23T18:26:44.787599+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_ourairports_runways
+name: Silver ourairports runways
+version: 1.1.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: silver_ourairports_runways is the cleaned, one-row-per-runway view of bronze.ourairports_runways
+    (10760 rows), carrying runway geometry, surface, lighting and closure status keyed by
+    id and linked to airports via airport_ref and airport_ident. It feeds airport capability
+    and runway-dimension analysis downstream.
+  usage: Read one row per runway id; join to the airport dimension on airport_ref or airport_ident.
+    Lengths, widths, elevations and displaced thresholds are integers in feet, coordinates
+    are DECIMAL(9,6) degrees, and lighting and closure are booleans (is_lighted, is_closed).
+    Consumers must deliberately filter rows where le_ident_is_placeholder or he_ident_is_placeholder
+    is true before treating runway-end designators as real, and must handle nulls in every
+    geometry column rather than assuming zero.
+  limitations: 'Only Airbyte capture columns were removed; no rows were dropped and no values
+    imputed, and duplicate_row_rate is 0.0 so no dedupe was applied. Runway-end geometry is
+    incomplete: latitudes and longitudes are null for about 22 percent of rows (null_rate
+    0.220911 to 0.222212), elevations for about 28 percent (0.276208 and 0.276301), headings
+    for about 23 percent, and displaced thresholds for 88 to 90 percent (0.884201 and 0.899907).
+    surface is left unnormalised across 239 distinct spellings, he_heading_degt includes an
+    out-of-range max of 362.0, and id, airport_ref and airport_ident remain text because sampling
+    covered only 10 of 10760 values.'
+schema:
+- name: silver_ourairports_runways
+  physicalName: silver_ourairports_runways
+  logicalType: object
+  physicalType: table
+  description: silver_ourairports_runways is the cleaned, one-row-per-runway view of bronze.ourairports_runways
+    (10760 rows), carrying runway geometry, surface, lighting and closure status keyed by
+    id and linked to airports via airport_ref and airport_ident. It feeds airport capability
+    and runway-dimension analysis downstream.
+  properties:
+  - name: id
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: null_rate is 0.0 and distinct_count 10760 equals the dataset row_count 10760,
+      so this is a complete unique key; the 10 sample values ('232758','232759','232770')
+      are numeric text but cover only 10 of 10760 rows, so it is retained as VARCHAR rather
+      than cast.
+  - name: airport_ref
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: null_rate is 0.0 with distinct_count 7591, a foreign reference to the airport
+      table; sample values such as '10309' and '1058' are numeric text but the 10-value sample
+      does not justify a numeric cast across 10760 rows.
+  - name: airport_ident
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: null_rate is 0.0 and distinct_count 7591 matches airport_ref; sample values
+      '03N', '07FA', '19AK' are alphanumeric codes, so the column stays text.
+  - name: length_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: All 10 sample values (0.0, 2.0, 20.0, 44.0) are integral and min 0.0 / max
+      16798.0 fit a 32-bit integer, so the landed DECIMAL(38,9) is cast to INTEGER; null_count
+      86 (null_rate 0.007993) is retained.
+  - name: width_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: Samples 1.0 through 26.0 are integral and min 1.0 / max 7000.0 fit INTEGER,
+      so the DECIMAL(38,9) is narrowed; null_count 888 (null_rate 0.082528) is retained as
+      null.
+  - name: surface
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: Free-text surface codes with distinct_count 239 and inconsistent spellings
+      in the samples ('ASP', 'ASPH', 'ASP/CON', 'ASPH-CONC'), so no normalisation is proposed;
+      null_count 247 (null_rate 0.022955) is retained.
+  - name: is_lighted
+    logicalType: boolean
+    physicalType: BOOLEAN
+    required: true
+    description: distinct_values are exactly [0.0, 1.0] with min 0.0, max 1.0 and null_rate
+      0.0, so the DECIMAL(38,9) is a boolean indicator and is renamed to the is_ convention
+      and cast to BOOLEAN.
+  - name: is_closed
+    logicalType: boolean
+    physicalType: BOOLEAN
+    required: true
+    description: distinct_values are exactly [0.0, 1.0] with null_rate 0.0, so the column
+      is a closed-runway indicator cast to BOOLEAN and renamed to is_closed.
+  - name: le_ident
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: Low-end runway designators with distinct_count 199 and null_count 11 (null_rate
+      0.001022); samples include alphanumeric designators ('01L', '01R', '02') alongside placeholder-looking
+      values ('.', '-12'), so the column stays text and unmodified.
+  - name: le_ident_is_placeholder
+    logicalType: boolean
+    physicalType: BOOLEAN
+    required: true
+    description: Derived marker because the le_ident sample values include non-designator
+      placeholders '.' and '-12' among 199 distinct values; the flag lets consumers exclude
+      those rows without parsing the text themselves.
+  - name: le_latitude_deg
+    logicalType: number
+    physicalType: DECIMAL(9,6)
+    required: false
+    description: min -62.187801 and max 82.512802 with samples carrying at most six decimal
+      places, so DECIMAL(38,9) is narrowed to DECIMAL(9,6); null_count 2377 (null_rate 0.220911)
+      is retained as null.
+  - name: le_longitude_deg
+    logicalType: number
+    physicalType: DECIMAL(9,6)
+    required: false
+    description: min -179.881256 and max 179.338837 with six-decimal samples fit DECIMAL(9,6);
+      null_count 2381 (null_rate 0.221283) is retained.
+  - name: le_elevation_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: All samples (-1246.0, -184.0, -69.0) are integral and min -1246.0 / max 13202.0
+      fit INTEGER; null_count 2973 (null_rate 0.276301) is retained as null.
+  - name: le_heading_degt
+    logicalType: number
+    physicalType: DECIMAL(6,2)
+    required: false
+    description: min 0.0 and max 360.0 with samples carrying at most two decimal places (0.2,
+      1.12, 2.1), so DECIMAL(38,9) is narrowed to DECIMAL(6,2); null_count 2457 (null_rate
+      0.228346) is retained.
+  - name: le_displaced_threshold_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: Samples 1.0 to 57.0 are integral and min 1.0 / max 4250.0 fit INTEGER; the
+      column is sparsely populated with null_count 9514 (null_rate 0.884201) and those nulls
+      are retained, not imputed.
+  - name: he_ident
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: High-end runway designators with distinct_count 177 and null_count 53 (null_rate
+      0.004926); samples mix real designators ('01L', '10', '11') with placeholders ('-',
+      '.'), so the text is kept as landed.
+  - name: he_ident_is_placeholder
+    logicalType: boolean
+    physicalType: BOOLEAN
+    required: true
+    description: Derived marker because the he_ident sample values include the non-designator
+      placeholders '-' and '.' among 177 distinct values, mirroring le_ident_is_placeholder
+      so both runway ends can be filtered the same way.
+  - name: he_latitude_deg
+    logicalType: number
+    physicalType: DECIMAL(9,6)
+    required: false
+    description: min -62.193901 and max 82.522797 with six-decimal samples fit DECIMAL(9,6);
+      null_count 2391 (null_rate 0.222212) is retained as null.
+  - name: he_longitude_deg
+    logicalType: number
+    physicalType: DECIMAL(9,6)
+    required: false
+    description: min -179.873184 and max 179.343002 with six-decimal samples fit DECIMAL(9,6);
+      null_count 2391 (null_rate 0.222212) is retained.
+  - name: he_elevation_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: All samples (-1210.0, -181.0, -69.0) are integral and min -1210.0 / max 13314.0
+      fit INTEGER; null_count 2972 (null_rate 0.276208) is retained.
+  - name: he_heading_degt
+    logicalType: number
+    physicalType: DECIMAL(6,2)
+    required: false
+    description: Samples carry at most one or two decimal places (0.1 to 0.9) and min 0.0
+      / max 362.0 fit DECIMAL(6,2); note the max of 362.0 exceeds a 360-degree compass range,
+      and the value is retained unmodified. null_count 2444 (null_rate 0.227138) is retained.
+  - name: he_displaced_threshold_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: Samples 10.0 to 76.0 are integral and min 10.0 / max 4790.0 fit INTEGER;
+      the column is sparsely populated with null_count 9683 (null_rate 0.899907) and those
+      nulls are retained.
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (id) combinations'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT id
+        FROM silver.silver_ourairports_runways
+        GROUP BY id
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: silver-cleanup-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.0.0
+- property: modelId
+  value: claude-opus-5
+- property: profileHash
+  value: sha256:02990e96b848ac4edf287fdcca8136ca6b04008ab98d2a2f5287e450b0eecb33
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: cleanup
+- property: decisionExactDuplicates
+  value: no-dedupe-required
+- property: decisionGrain
+  value: one-row-per-runway-id
+- property: decisionAirbyteMetadata
+  value: excluded-as-capture-artifacts
+- property: decisionIdentifiersAsText
+  value: retained-as-text
+- property: decisionIntegralDecimalCasts
+  value: decimal-to-integer
+- property: decisionBooleanFlagCasts
+  value: decimal-to-boolean
+- property: decisionCoordinatePrecision
+  value: narrowed-to-decimal-9-6
+- property: decisionSparseThresholdColumns
+  value: retained-nullable
+- property: decisionSparseGeometryColumns
+  value: retained-nullable
+- property: decisionHeadingOutOfRange
+  value: retained-unmodified
+- property: decisionPlaceholderIdentFlags
+  value: flagged-not-filtered
+- property: decisionSurfaceNotNormalised
+  value: retained-as-landed

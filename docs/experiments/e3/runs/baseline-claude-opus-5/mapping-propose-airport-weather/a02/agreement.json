@@ -1,0 +1,47 @@
+{
+  "first_class_checks": {
+    "agree": 56,
+    "checked": 68,
+    "per_field": {
+      "logicalType": "17/17",
+      "mappingRole": "16/17",
+      "physicalType": "17/17",
+      "required": "6/17"
+    }
+  },
+  "header": {
+    "entityGroup": false,
+    "grainType": true,
+    "sourceTable": true,
+    "timeColumn": true,
+    "timeGrain": true
+  },
+  "identifiers_equal": true,
+  "mismatches": [
+    "captured_at: extra in the draft",
+    "observed_date_local.required: oracle=True draft=False",
+    "observed_hour_local.required: oracle=True draft=False",
+    "temp_f.required: oracle=True draft=False",
+    "dewpoint_f.required: oracle=True draft=False",
+    "humidity_pct.required: oracle=True draft=False",
+    "wind_dir_degrees.mappingRole: oracle='measure' draft='dimension'",
+    "precip_inches.required: oracle=True draft=False",
+    "visibility_miles.required: oracle=True draft=False",
+    "airport_name.required: oracle=True draft=False",
+    "airport_municipality.required: oracle=True draft=False",
+    "airport_elevation_ft.required: oracle=True draft=False",
+    "airport_longest_runway_ft.required: oracle=True draft=False",
+    "entityGroup: oracle='airport_weather' draft='airport_weather_observations'"
+  ],
+  "oracle_id": "gold_airport_weather_mapping",
+  "properties": {
+    "draft": 18,
+    "oracle": 17,
+    "ordinal_order_equal": false,
+    "shared": 17
+  },
+  "roles": {
+    "dimensions_equal": false,
+    "measures_equal": false
+  }
+}

@@ -1,0 +1,90 @@
+{
+  "target_table": "silver_nyc_airlines",
+  "columns": [
+    {
+      "source_column": "carrier",
+      "action": "keep",
+      "target_name": "carrier",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 across 16 rows and distinct_count is 16, so every row carries a unique two-letter IATA carrier code such as '9E', 'AA', and 'WN'; retained as text because the codes are alphanumeric."
+    },
+    {
+      "source_column": "name",
+      "action": "keep",
+      "target_name": "name",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 and distinct_count is 16, matching the row_count of 16; distinct_values such as 'Delta Air Lines Inc.' and 'Virgin America' are free-text carrier names kept as VARCHAR."
+    },
+    {
+      "source_column": "_airbyte_raw_id",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Profile marks this column is_airbyte_metadata: true; its 16 distinct UUID-shaped values are capture-tool identifiers, not business data."
+    },
+    {
+      "source_column": "_airbyte_extracted_at",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Profile marks this column is_airbyte_metadata: true and distinct_count is 1 with min equal to max ('2026-09-02T23:26:17'), so it records a single capture moment rather than business content."
+    },
+    {
+      "source_column": "_airbyte_meta",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "JSON",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Profile marks this column is_airbyte_metadata: true and distinct_count is 1 with the only value '{}', so it carries no business information."
+    }
+  ],
+  "dedupe_strategy": "none",
+  "dedupe_keys": [],
+  "grain_keys": [
+    "carrier"
+  ],
+  "decisions": [
+    {
+      "key": "decisionExactDuplicates",
+      "value": "no-dedupe-needed",
+      "rationale": "dataset.duplicate_row_rate is 0.0 over a row_count of 16, so bronze holds no exact duplicate rows and no dedupe step is proposed."
+    },
+    {
+      "key": "decisionGrain",
+      "value": "carrier-code",
+      "rationale": "carrier has distinct_count 16 equal to row_count 16 with null_rate 0.0, so the IATA code identifies one row per airline; name is equally distinct but codes are the stable join key to flight data."
+    },
+    {
+      "key": "decisionAirbyteMetadata",
+      "value": "excluded-as-capture-artifacts",
+      "rationale": "_airbyte_raw_id, _airbyte_extracted_at, and _airbyte_meta all carry is_airbyte_metadata: true and are dropped as pipeline capture columns."
+    },
+    {
+      "key": "decisionNoCasts",
+      "value": "retained-landed-types",
+      "rationale": "Both business columns landed as VARCHAR and their distinct_values are alphanumeric codes and free-text names, so no cast to a numeric or temporal type is supported by the evidence."
+    },
+    {
+      "key": "decisionRequiredColumns",
+      "value": "both-non-null",
+      "rationale": "carrier and name each report null_count 0 and null_rate 0.0, so both are proposed required with null_handling not_applicable."
+    }
+  ],
+  "purpose": "silver_nyc_airlines is the cleaned airline reference dimension derived from bronze.nyc_airlines: one row per IATA carrier code with its full airline name, feeding joins from flight-level fact tables that carry only the two-letter carrier code.",
+  "usage": "Join on carrier to resolve a two-letter code to a display name. The table is a small static lookup of 16 rows, so consumers should expect it to change only when the upstream carrier list changes; read name as the human-facing label and carrier as the key.",
+  "limitations": "The profile covers only 16 rows with duplicate_row_rate 0.0, so uniqueness of carrier is asserted from that small snapshot and must be re-measured in the warehouse before approval. No capture timestamp is retained because the only available one (_airbyte_extracted_at, distinct_count 1) is pipeline metadata, so this table carries no load-time lineage column and no historical versioning of airline names."
+}

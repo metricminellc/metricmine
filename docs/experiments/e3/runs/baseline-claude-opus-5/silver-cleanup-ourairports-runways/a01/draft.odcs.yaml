@@ -1,0 +1,237 @@
+# Draft proposed by silver-cleanup-proposer v0.1.0 at 2026-10-23T18:24:12.716442+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_ourairports_runways
+name: Silver ourairports runways
+version: 1.1.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: silver_ourairports_runways is the cleaned, one-row-per-runway view of bronze.ourairports_runways
+    (10760 rows), carrying runway identity, the parent airport reference, physical dimensions
+    and surface, lighted and closed indicators, and the low-end and high-end threshold geometry.
+    It feeds airport and runway analytics downstream and is the join partner for airport-level
+    silver tables via airport_ref or airport_ident.
+  usage: 'Read one row per runway, keyed by id (distinct_count 10760 equals row_count 10760).
+    Join to airport tables on airport_ref or airport_ident, both of which repeat across the
+    7591 distinct airports in this table. Use is_closed deliberately: closed runways are retained,
+    so filter them out for operational analysis. Coordinate, elevation and heading columns
+    are null for roughly 22 to 28 percent of rows and the displaced threshold columns for
+    roughly 88 to 90 percent, so always guard aggregations against nulls rather than assuming
+    full coverage.'
+  limitations: 'Cleanup is structural only: no value was imputed and no row was removed, since
+    duplicate_row_rate is 0.0. The surface vocabulary is unnormalised (239 distinct values
+    with variants like "ASP", "ASPH" and "ASPH-CONC"), and le_ident and he_ident contain non-designator
+    entries such as "." and "-12" that were left as-is. Range anomalies survive the cleanup:
+    length_ft and width_ft have minima of 0.0 and 1.0 respectively and he_heading_degt has
+    a max of 362.0 beyond the 360-degree compass range. The casts of id and airport_ref from
+    VARCHAR to INTEGER rest on the 10 sampled values per column allowed by the profiler cap
+    and should be verified against the full column before approval.'
+schema:
+- name: silver_ourairports_runways
+  physicalName: silver_ourairports_runways
+  logicalType: object
+  physicalType: table
+  description: silver_ourairports_runways is the cleaned, one-row-per-runway view of bronze.ourairports_runways
+    (10760 rows), carrying runway identity, the parent airport reference, physical dimensions
+    and surface, lighted and closed indicators, and the low-end and high-end threshold geometry.
+    It feeds airport and runway analytics downstream and is the join partner for airport-level
+    silver tables via airport_ref or airport_ident.
+  properties:
+  - name: id
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: distinct_count 10760 equals the dataset row_count 10760 and null_rate is
+      0.0, so this is the per-runway identifier; every sample value ("232758", "232759", "232770")
+      is an integral digit string, which supports the VARCHAR to INTEGER cast.
+  - name: airport_ref
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: null_rate 0.0 with distinct_count 7591 across 10760 rows, consistent with
+      a many-runways-per-airport foreign key; all samples ("10309", "1058", "111") are integral
+      digit strings, supporting the cast to INTEGER.
+  - name: airport_ident
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: null_rate 0.0 and distinct_count 7591, matching airport_ref one-for-one;
+      samples such as "03N", "07FA" and "19AK" are alphanumeric codes, so the column stays
+      text.
+  - name: length_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: null_count 86 (null_rate 0.007993) so nulls are retained; min 0.0, max 16798.0
+      and every sample (0.0, 2.0, 44.0) is integral, so DECIMAL(38,9) narrows safely to INTEGER.
+  - name: width_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: null_count 888 (null_rate 0.082528) is retained as null; min 1.0, max 7000.0
+      with only 204 distinct values and all samples integral (1.0, 15.0, 26.0), so the cast
+      to INTEGER is supported.
+  - name: surface
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_count 247 (null_rate 0.022955) is retained; distinct_count 239 with
+      samples like "ASP", "ASPH", "ASP/CONC" and "ASPH 71/F/C/X/T" shows an uncontrolled free-text
+      vocabulary that cleanup does not normalise.
+  - name: is_lighted
+    logicalType: boolean
+    physicalType: BOOLEAN
+    required: true
+    description: distinct_values are exactly [0.0, 1.0] with min 0.0, max 1.0 and null_rate
+      0.0, so the DECIMAL(38,9) flag casts cleanly to BOOLEAN and is renamed to the is_ prefix
+      used for booleans.
+  - name: is_closed
+    logicalType: boolean
+    physicalType: BOOLEAN
+    required: true
+    description: distinct_values are exactly [0.0, 1.0] with null_rate 0.0, a two-valued indicator
+      that casts to BOOLEAN; renamed to is_closed so consumers can see it marks runways that
+      are out of service.
+  - name: le_ident
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_count 11 (null_rate 0.001022) is retained; distinct_count 199 with samples
+      "01L", "01R", "009" but also "-12" and "." shows dirty designator text, so it stays
+      VARCHAR without parsing.
+  - name: le_latitude_deg
+    logicalType: number
+    physicalType: DECIMAL(9,6)
+    required: false
+    description: null_count 2377 (null_rate 0.220911) is retained; min -62.187801 and max
+      82.512802 with six-decimal samples fit DECIMAL(9,6), narrowing the landed DECIMAL(38,9)
+      without loss.
+  - name: le_longitude_deg
+    logicalType: number
+    physicalType: DECIMAL(9,6)
+    required: false
+    description: null_count 2381 (null_rate 0.221283) is retained; min -179.881256 and max
+      179.338837 with six-decimal samples fit DECIMAL(9,6).
+  - name: le_elevation_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: null_count 2973 (null_rate 0.276301) is retained; min -1246.0, max 13202.0
+      and every sample is integral (-184.0, -69.0), so the cast to INTEGER holds and negative
+      elevations are legitimate.
+  - name: le_heading_degt
+    logicalType: number
+    physicalType: DECIMAL(6,3)
+    required: false
+    description: null_count 2457 (null_rate 0.228346) is retained; samples include fractional
+      headings (0.2, 1.12, 2.1) between min 0.0 and max 360.0, so the column stays numeric
+      at DECIMAL(6,3) rather than becoming an integer.
+  - name: le_displaced_threshold_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: null_count 9514 (null_rate 0.884201) makes this a sparsely populated column
+      that is still retained in full; min 1.0, max 4250.0 and all samples integral support
+      the INTEGER cast.
+  - name: he_ident
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_count 53 (null_rate 0.004926) is retained; distinct_count 177 with samples
+      "01L", "04R", "10" alongside "-" and "." shows the same dirty designator text as le_ident,
+      so it stays VARCHAR.
+  - name: he_latitude_deg
+    logicalType: number
+    physicalType: DECIMAL(9,6)
+    required: false
+    description: null_count 2391 (null_rate 0.222212) is retained; min -62.193901 and max
+      82.522797 with six-decimal samples fit DECIMAL(9,6).
+  - name: he_longitude_deg
+    logicalType: number
+    physicalType: DECIMAL(9,6)
+    required: false
+    description: null_count 2391 (null_rate 0.222212) is retained; min -179.873184 and max
+      179.343002 with six-decimal samples fit DECIMAL(9,6).
+  - name: he_elevation_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: null_count 2972 (null_rate 0.276208) is retained; min -1210.0, max 13314.0
+      and every sample is integral (-181.0, -69.0), supporting the INTEGER cast.
+  - name: he_heading_degt
+    logicalType: number
+    physicalType: DECIMAL(6,3)
+    required: false
+    description: null_count 2444 (null_rate 0.227138) is retained; fractional samples (0.1
+      through 0.9) between min 0.0 and max 362.0 keep the column numeric at DECIMAL(6,3);
+      note max 362.0 exceeds a 360-degree compass range and is left unaltered.
+  - name: he_displaced_threshold_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: null_count 9683 (null_rate 0.899907) makes this the sparsest column in the
+      table and it is retained rather than dropped; min 10.0, max 4790.0 and all samples integral
+      support the INTEGER cast.
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (id) combinations'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT id
+        FROM silver.silver_ourairports_runways
+        GROUP BY id
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: silver-cleanup-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.0.0
+- property: modelId
+  value: claude-opus-5
+- property: profileHash
+  value: sha256:02990e96b848ac4edf287fdcca8136ca6b04008ab98d2a2f5287e450b0eecb33
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: cleanup
+- property: decisionExactDuplicates
+  value: no-dedupe-needed
+- property: decisionGrain
+  value: one-row-per-runway-id
+- property: decisionAirbyteMetadata
+  value: excluded-as-capture-artifacts
+- property: decisionIdentifierCasts
+  value: cast-text-ids-to-integer
+- property: decisionBooleanFlags
+  value: cast-decimal-to-boolean
+- property: decisionMeasureCasts
+  value: narrow-decimal-to-integer-where-integral
+- property: decisionSparseThresholds
+  value: retained-nullable
+- property: decisionRunwayEndCoordinates
+  value: retained-nullable
+- property: decisionSurfaceVocabulary
+  value: retained-as-text
+- property: decisionDesignatorText
+  value: retained-as-text

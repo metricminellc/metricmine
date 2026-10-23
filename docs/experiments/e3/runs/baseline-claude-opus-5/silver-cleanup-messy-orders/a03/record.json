@@ -1,0 +1,66 @@
+{
+  "agent": {
+    "name": "silver-cleanup-proposer",
+    "version": "0.1.0"
+  },
+  "api_error": null,
+  "context": null,
+  "context_path": null,
+  "cost_usd_estimate": 0.200635,
+  "created_at": "2026-10-23T18:01:09.589716+00:00",
+  "disposition": "draft_written",
+  "draft_path": "proposals/silver-cleanup-proposer/20261023T180109589716Z_d1da76a8/draft.odcs.yaml",
+  "inputs": [
+    {
+      "content_hash": "sha256:d1da76a822e52f615a30282b009dcd11643e0c6a9a98c3ff0dcaaa057b946286",
+      "kind": "profile_artifact",
+      "path": "tests/agents/fixtures/profiles/bronze.messy_orders/v0001.json",
+      "schema_version": "1.0.0"
+    }
+  ],
+  "intent": null,
+  "model_id": "claude-opus-5",
+  "model_source": "flag",
+  "profile_hash": "sha256:d1da76a822e52f615a30282b009dcd11643e0c6a9a98c3ff0dcaaa057b946286",
+  "profile_path": "tests/agents/fixtures/profiles/bronze.messy_orders/v0001.json",
+  "profile_schema_version": "1.0.0",
+  "prompt_path": "src/metricmine/agents/prompts/silver_cleanup.md",
+  "prompt_version": "1.0.0",
+  "rates": {
+    "input_per_mtok": 5.0,
+    "output_per_mtok": 25.0
+  },
+  "request_params": {
+    "effort": "high",
+    "max_tokens": 16384
+  },
+  "response_id": "msg_011CgKc86bnc5KF2qJjaRuFs",
+  "sdk_version": "1.0.0",
+  "skeleton": false,
+  "stance": "cleanup",
+  "stop_reason": "end_turn",
+  "usage": {
+    "input_tokens": 7452,
+    "output_tokens": 6535
+  },
+  "validation": {
+    "attempt_log": [
+      {
+        "completeness_pass": true,
+        "errors": [],
+        "groundedness_pass": true,
+        "lint_pass": true,
+        "schema_pass": true,
+        "staleness_pass": true,
+        "stop_reason": "end_turn"
+      }
+    ],
+    "attempts": 1,
+    "completeness_pass": true,
+    "errors": [],
+    "groundedness_pass": true,
+    "lint_pass": true,
+    "schema_pass": true,
+    "staleness_pass": true
+  }
+}

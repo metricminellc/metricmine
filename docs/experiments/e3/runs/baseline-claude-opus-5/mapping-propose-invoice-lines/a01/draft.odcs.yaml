@@ -1,0 +1,151 @@
+# Draft proposed by gold-mapping-proposer v0.1.0 at 2026-10-23T17:56:59.949753+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: gold_invoice_lines_mapping
+name: Gold mapping, invoice_lines category
+version: 1.2.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: 'This mapping declares how silver.silver_invoice_lines enters the gold unified
+    event star as the invoice_lines fact category: it names the event time column and its
+    grain, fixes the fact grain as one row per invoice line identified by the derived line_identity
+    tuple, and assigns every mapped silver column a dimension, measure, or time role. Its
+    consumer is the deterministic modeling engine, which reads the contract and emits the
+    gold models; no human or query reads this contract as data.'
+  usage: The proposal is rendered into an ODCS mapping contract draft, validated against the
+    frozen mapping-contract schema, checked by the mapping validator and datacontract lint,
+    and then reviewed and edited by a human before approval. Once approved, the modeling engine
+    derives the gold fact and its conformed context from this declaration alone, so column
+    names here must continue to match the contracted silver table exactly.
+  limitations: 'The mapping only names and classifies columns; it declares no quality rules,
+    severities, classifications, ownership, service levels, or access policies, and it creates
+    no table, view, or transformation. It does not filter or net out cancellation lines: rows
+    where is_cancellation is true (and the negative quantity values down to -1395) remain
+    in the fact, and excluding or offsetting them is left to consumers. It does not substitute
+    a value for the 30.0664 percent of rows with a null customer_id nor for the 228 rows with
+    a null product_description, so consumers must handle those nulls. No revenue or line-total
+    column is derived from quantity and unit_price, because the mapping declares no computed
+    columns beyond the line_identity the grain requires.'
+schema:
+- name: invoice_lines
+  logicalType: object
+  physicalType: mapping
+  description: 'One row is one invoice line: a single product (stock_code, product_description)
+    sold or returned on a single invoice (invoice_id) at a given minute (invoiced_at), with
+    the quantity and unit_price for that line and the customer and country context around
+    it. Cancellation lines appear in the same grain, flagged by is_cancellation and typically
+    carrying negative quantity values down to -1395.'
+  entityGroup: invoice_lines
+  sourceTable: silver.silver_invoice_lines
+  timeColumn: invoiced_at
+  timeGrain: minute
+  grain:
+    type: transaction
+    degenerateIdentifiers:
+    - source: derived
+      name: line_identity
+      derivation: canonical-key-v2
+      of:
+      - invoice_id
+      - stock_code
+      - invoiced_at
+      - quantity
+      - unit_price
+  properties:
+  - name: invoice_id
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    mappingRole: dimension
+    description: Identifier of the invoice the line belongs to, profiled as VARCHAR with 2330
+      distinct values and null_rate 0.0 and samples such as 489434 and 489435, so it labels
+      rather than measures and is a dimension.
+  - name: is_cancellation
+    logicalType: boolean
+    physicalType: BOOLEAN
+    required: true
+    mappingRole: dimension
+    description: Flag marking a line as a cancellation or return, profiled as BOOLEAN with
+      exactly the two distinct values false and true and null_rate 0.0, so it is a dimension
+      consumers filter on.
+  - name: stock_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    mappingRole: dimension
+    description: Product stock code sold on the line, profiled as VARCHAR with 3141 distinct
+      values and null_rate 0.0 and samples such as 10002, 10002R and 10123C, so it is an identifying
+      code and therefore a dimension.
+  - name: product_description
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    mappingRole: dimension
+    description: Free-text product name for the stock code, profiled with 3034 distinct values
+      and samples such as 12 DAISY PEGS IN WOOD BOX; it is nullable with null_rate 0.005098
+      (228 rows), consistent with adjustment or unlabelled lines carrying no description.
+  - name: quantity
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    mappingRole: measure
+    description: Number of units on the line, profiled as INTEGER with null_rate 0.0 and a
+      range from min -1395 to max 5184, where the negative samples correspond to cancellation
+      lines, so it is additive across rows and is a measure.
+  - name: invoiced_at
+    logicalType: date
+    physicalType: TIMESTAMP
+    required: true
+    mappingRole: time
+    description: Timestamp the invoice line was raised, profiled as TIMESTAMP with null_rate
+      0.0 spanning min 2009-12-01T07:45:00 to max 2009-12-23T16:58:00, and samples resolving
+      to whole minutes with zero seconds, so it is the event time column at minute grain.
+  - name: unit_price
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: true
+    mappingRole: measure
+    description: Price per unit on the line, profiled as DECIMAL(10,2) with null_rate 0.0
+      and a range from min 0.0 to max 1998.49, a numeric amount compared and aggregated across
+      rows, so it is a measure.
+  - name: customer_id
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    mappingRole: dimension
+    description: Numeric identifier of the purchasing customer with 1045 distinct values ranging
+      from 12346 to 18287; it labels rather than measures so it is a dimension, and it is
+      nullable with null_rate 0.300664 (13446 rows), consistent with anonymous or unattributed
+      sales.
+  - name: country
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    mappingRole: dimension
+    description: Country associated with the sale, profiled as VARCHAR with only 24 distinct
+      values and null_rate 0.0 and samples such as Australia, EIRE and Germany, so it is a
+      low-cardinality descriptive dimension.
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: gold
+customProperties:
+- property: proposedBy
+  value: gold-mapping-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.0.0
+- property: modelId
+  value: claude-opus-5
+- property: profileHash
+  value: sha256:e65bee8117b65958b8c4741b43509ece19a581dd1d6bad9a7e1da9b67b0b5fcd
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: propose

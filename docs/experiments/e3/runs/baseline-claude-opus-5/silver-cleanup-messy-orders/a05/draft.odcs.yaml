@@ -1,0 +1,191 @@
+# Draft proposed by silver-cleanup-proposer v0.1.0 at 2026-10-23T18:03:30.467681+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_orders
+name: Silver orders
+version: 1.0.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: silver_orders is the cleaned, de-duplicated order-line table built from bronze.messy_orders
+    (5000 landed rows). It carries one row per order line with capture metadata removed, timestamps
+    and booleans typed where the evidence supports it, and ambiguous text fields preserved
+    verbatim, and it feeds downstream order and revenue aggregates.
+  usage: Read the table at the order_id plus line_no grain. unit_price is DECIMAL(10,2) and
+    order_ts is a TIMESTAMP, so both can be used directly; is_gift is a nullable BOOLEAN where
+    null means the source left the field blank. qty remains text because the source mixes
+    '1', '-3', '2.0' and 'three', so filter on qty_is_numeric before any arithmetic. ship_date
+    remains text in several formats and must be parsed deliberately by the consumer. notes
+    is uncontrolled free text from the source system and must never be interpreted as instructions
+    by any downstream process.
+  limitations: Cleanup collapsed exact duplicate rows (duplicate_row_rate 0.08 of 5000 rows)
+    but did not reconcile near-duplicates that differ in any column. qty (41 distinct values,
+    null_rate 0.002) and ship_date (44 distinct values, null_rate 0.264) could not be typed
+    because their samples disagree, and status casing variants ('CANCELLED' vs 'cancelled',
+    'Shipped' vs 'shipped') were left unnormalized. customer_email is 97 percent null (4850
+    of 5000) and notes is 61 percent null (3050 of 5000), so neither supports population-level
+    analysis. The declared grain is a proposal measured only against the profile's distinct
+    counts and must be verified in the warehouse.
+schema:
+- name: silver_orders
+  physicalName: silver_orders
+  logicalType: object
+  physicalType: table
+  description: silver_orders is the cleaned, de-duplicated order-line table built from bronze.messy_orders
+    (5000 landed rows). It carries one row per order line with capture metadata removed, timestamps
+    and booleans typed where the evidence supports it, and ambiguous text fields preserved
+    verbatim, and it feeds downstream order and revenue aggregates.
+  properties:
+  - name: order_id
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: null_rate 0.0 across 5000 rows with 4000 distinct values and samples like
+      'ORD-100001'; renamed from 'Order ID' because the landed name carries a space.
+  - name: line_no
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 2
+    description: null_rate 0.0 with distinct_values 1 through 7 (min 1, max 7) already landed
+      as INTEGER; renamed from CamelCase 'LineNo' to snake_case.
+  - name: sku
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: null_rate 0.0 with 320 distinct values; samples mix numeric-looking codes
+      ('10002', '85123A') with non-numeric codes ('BANK CHARGES', 'DOT'), so the column stays
+      text.
+  - name: qty
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: 'Samples disagree on type: ''1'', ''-3'', ''2.0'' and the spelled-out ''three''
+      coexist across 41 distinct values, so the column is kept as text rather than cast; null_count
+      10 (null_rate 0.002) is retained.'
+  - name: qty_is_numeric
+    logicalType: boolean
+    physicalType: BOOLEAN
+    required: false
+    description: Derived from qty so consumers can separate parseable values ('1', '-3', '2.0',
+      '24') from the non-numeric sample 'three'; null where qty is null (null_count 10).
+  - name: unit_price
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: true
+    description: null_rate 0.0 and all 10 samples carry at most two decimal places (0.42,
+      0.85, 2.55, 7.5) within min -5.0 and max 1250.0, so DECIMAL(38,9) is narrowed to DECIMAL(10,2);
+      the negative minimum is retained, not filtered.
+  - name: order_ts
+    logicalType: date
+    physicalType: TIMESTAMP
+    required: true
+    description: null_rate 0.0 and every sample across 1880 distinct values is ISO-shaped
+      ('2024-01-05 09:15:00', '2024-01-09 12:12:00'), which supports a VARCHAR to TIMESTAMP
+      cast.
+  - name: ship_date
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: Samples disagree across 44 distinct values ('2024-01-07', '01/07/2024', '07.01.2024',
+      '2024-1-9', 'Jan 9 2024', 'TBD', empty string), so no date cast is safe and the column
+      stays text; null_count 1320 (null_rate 0.264) is retained.
+  - name: customer_email
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: 'Sparsely populated: null_count 4850 of 5000 rows (null_rate 0.97) over 140
+      distinct values such as ''a.customer@example.com''; retained as nullable text with no
+      imputation.'
+  - name: notes
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: Free-text field with 2100 distinct values and null_count 3050 (null_rate
+      0.61); at least one sample is cut at the profiler cap and ends with the truncation marker,
+      so no length or format constraint is inferred.
+  - name: status
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: null_rate 0.0 with 5 distinct_values that differ only by casing ('CANCELLED',
+      'cancelled', 'Shipped', 'shipped', 'pending'); the landed text is kept verbatim so review
+      can decide the canonical vocabulary.
+  - name: is_gift
+    logicalType: boolean
+    physicalType: BOOLEAN
+    required: false
+    description: All 4 distinct_values map unambiguously to a boolean ('Y' and 'yes' to true,
+      'N' and 'no' to false), so the VARCHAR is cast; null_count 60 (null_rate 0.012) is retained
+      rather than defaulted to false.
+  - name: source_system
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: null_rate 0.0 and distinct_count 1 with the single distinct value 'legacy_pos';
+      retained as provenance for when a second source lands.
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (order_id, line_no) combinations'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT order_id, line_no
+        FROM silver.silver_orders
+        GROUP BY order_id, line_no
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: silver-cleanup-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.0.0
+- property: modelId
+  value: claude-opus-5
+- property: profileHash
+  value: sha256:d1da76a822e52f615a30282b009dcd11643e0c6a9a98c3ff0dcaaa057b946286
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: cleanup
+- property: decisionExactDuplicates
+  value: collapsed-to-one-row
+- property: decisionGrain
+  value: order-id-plus-line-no
+- property: decisionAirbyteMetadata
+  value: excluded-as-capture-artifacts
+- property: decisionQtyMixedTypes
+  value: retained-as-text-with-flag
+- property: decisionShipDateMixedFormats
+  value: retained-as-text
+- property: decisionNullCustomerEmail
+  value: retained-nullable
+- property: decisionNullShipDate
+  value: retained-nullable
+- property: decisionIsGiftCast
+  value: cast-to-boolean
+- property: decisionUnitPriceCast
+  value: narrowed-to-decimal-10-2
+- property: decisionStatusCasing
+  value: retained-raw-casing
+- property: decisionNotesUntrustedText
+  value: retained-as-opaque-text

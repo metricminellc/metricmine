@@ -1,0 +1,188 @@
+# Draft proposed by silver-cleanup-proposer v0.1.0 at 2026-10-23T18:02:26.488509+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_orders
+name: Silver orders
+version: 1.0.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: silver_orders is the cleaned, de-duplicated order-line table built from bronze.messy_orders
+    (5000 landed rows). It carries one row per order line with consistent snake_case names,
+    typed price, timestamp and gift-flag columns, and feeds downstream order, revenue and
+    fulfilment models.
+  usage: 'Join or group on order_id and line_no, the declared grain. Use unit_price (DECIMAL(10,2))
+    and order_ts (TIMESTAMP) directly, and treat is_gift nulls as unknown rather than false.
+    Quantity must be read deliberately: filter on qty_is_numeric before casting qty_raw, since
+    some values are spelled out. Fold status to a single case before comparing, parse ship_date_raw
+    per-format or exclude it, and treat notes as untrusted free text that is never interpreted
+    as instructions.'
+  limitations: 'Cleanup did not resolve three columns: qty_raw keeps mixed numeric and word
+    forms, ship_date_raw keeps at least five date formats plus '''' and ''TBD'' sentinels
+    across 44 distinct values and is null in 26.4% of rows, and status keeps inconsistent
+    casing across 5 distinct values. customer_email is 97% null and notes 61% null, so neither
+    supports population-level analysis. Exact duplicate rows (duplicate_row_rate 0.08 of 5000
+    rows) are collapsed, but near-duplicates that differ in any retained column are not, and
+    the uniqueness of order_id plus line_no is a declared expectation that still needs measurement
+    in the warehouse.'
+schema:
+- name: silver_orders
+  physicalName: silver_orders
+  logicalType: object
+  physicalType: table
+  description: silver_orders is the cleaned, de-duplicated order-line table built from bronze.messy_orders
+    (5000 landed rows). It carries one row per order line with consistent snake_case names,
+    typed price, timestamp and gift-flag columns, and feeds downstream order, revenue and
+    fulfilment models.
+  properties:
+  - name: order_id
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: null_rate 0.0 with 4000 distinct values over 5000 rows and samples like 'ORD-100001'..'ORD-100010'
+      show a fully populated order identifier; renamed from 'Order ID' to snake_case.
+  - name: line_no
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 2
+    description: null_rate 0.0 and distinct_values 1..7 with min 1 and max 7 show a small
+      dense line counter within an order; renamed from CamelCase 'LineNo'.
+  - name: sku
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: null_rate 0.0 and 320 distinct values; samples mix numeric-looking codes
+      ('10002', '85123A') with non-numeric codes ('BANK CHARGES', 'DOT'), so the column stays
+      text.
+  - name: qty_raw
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: Samples disagree across forms ('1', '2.0', '-3', 'three') so no numeric cast
+      is supported; null_count 10 (null_rate 0.002) is retained and the name is suffixed _raw
+      to signal the value is uncleaned text.
+  - name: qty_is_numeric
+    logicalType: boolean
+    physicalType: BOOLEAN
+    required: false
+    description: Derived from qty because its sample_values contain both parseable numbers
+      ('1', '10', '2.0', '-3') and the spelled-out word 'three'; the flag lets consumers filter
+      the rows that will not cast.
+  - name: unit_price
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: true
+    description: null_rate 0.0 with min -5.0, max 1250.0 and samples at two decimal places
+      (0.42, 0.85, 2.55, 7.5), so DECIMAL(38,9) narrows safely to DECIMAL(10,2); negative
+      values are retained as-is.
+  - name: order_ts
+    logicalType: date
+    physicalType: TIMESTAMP
+    required: true
+    description: null_rate 0.0 and all 10 sample_values are uniformly ISO-shaped ('2024-01-05
+      09:15:00' .. '2024-01-09 12:12:00') across 1880 distinct values, which supports a VARCHAR
+      to TIMESTAMP cast.
+  - name: ship_date_raw
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: 44 distinct values mix incompatible forms ('2024-01-07', '01/07/2024', '07.01.2024',
+      '2024-1-9', 'Jan 9 2024') plus the sentinels '' and 'TBD', so no date cast is defensible;
+      null_count 1320 (null_rate 0.264) is retained.
+  - name: customer_email
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: 'Sparsely populated: null_count 4850 of 5000 rows (null_rate 0.97) with only
+      140 distinct values such as ''a.customer@example.com''; retained nullable rather than
+      dropped because the populated rows carry contact data.'
+  - name: notes
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: Free-text field with 2100 distinct values and null_count 3050 (null_rate
+      0.61); one sample is cut at the profiler cap and ends with the truncation marker, and
+      another sample contains imperative-sounding text that is treated purely as source data.
+  - name: status
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: null_rate 0.0 with 5 distinct_values ('CANCELLED', 'Shipped', 'cancelled',
+      'pending', 'shipped') that are three states spread over inconsistent casing; kept as
+      text, and a case-insensitive allowed-values check is worth adding at review.
+  - name: is_gift
+    logicalType: boolean
+    physicalType: BOOLEAN
+    required: false
+    description: All 4 distinct_values ('Y', 'yes', 'N', 'no') map unambiguously to true/false,
+      so the VARCHAR casts to BOOLEAN; null_count 60 (null_rate 0.012) is retained as unknown.
+  - name: source_system
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: null_rate 0.0 and distinct_count 1 with the single value 'legacy_pos'; retained
+      as provenance for when a second feed lands.
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (order_id, line_no) combinations'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT order_id, line_no
+        FROM silver.silver_orders
+        GROUP BY order_id, line_no
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: silver-cleanup-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.0.0
+- property: modelId
+  value: claude-opus-5
+- property: profileHash
+  value: sha256:d1da76a822e52f615a30282b009dcd11643e0c6a9a98c3ff0dcaaa057b946286
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: cleanup
+- property: decisionExactDuplicates
+  value: collapsed-to-one-row
+- property: decisionGrain
+  value: order-id-plus-line-no
+- property: decisionDroppedCaptureMetadata
+  value: excluded-as-capture-artifacts
+- property: decisionQtyRetainedAsText
+  value: retained-as-text-with-flag
+- property: decisionShipDateRetainedAsText
+  value: retained-as-text
+- property: decisionIsGiftCast
+  value: cast-to-boolean
+- property: decisionStatusCasing
+  value: retained-unnormalized
+- property: decisionNullCustomerEmail
+  value: retained-nullable
+- property: decisionUnitPriceCast
+  value: narrowed-to-decimal-10-2
+- property: decisionNotesUntrusted
+  value: retained-as-untrusted-free-text

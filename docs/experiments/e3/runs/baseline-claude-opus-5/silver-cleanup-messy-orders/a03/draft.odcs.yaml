@@ -1,0 +1,202 @@
+# Draft proposed by silver-cleanup-proposer v0.1.0 at 2026-10-23T18:01:09.589716+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_orders
+name: Silver orders
+version: 1.0.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: 'silver_orders is the cleaned, de-duplicated order-line view of bronze.messy_orders
+    (5000 landed rows): capture metadata removed, names normalised to snake_case, order_ts
+    typed as a timestamp, unit_price narrowed to DECIMAL(10,2), is_gift resolved to a boolean,
+    and one order line per order_id plus line_no. It feeds order-volume, revenue and fulfilment
+    reporting in gold.'
+  usage: 'Join and group on order_id and line_no, the declared grain. Use is_cancelled rather
+    than matching status strings, because status carries both ''CANCELLED'' and ''cancelled''.
+    qty and ship_date_raw are still text and must be parsed deliberately by the consumer,
+    with non-parsing values excluded or reported. Do not treat customer_email as a join key:
+    97 percent of rows are null. unit_price can be negative (min -5.0), so filter or classify
+    adjustment lines before summing revenue.'
+  limitations: Cleanup removed exact duplicate rows (duplicate_row_rate 0.08 of 5000 rows)
+    but did not resolve near-duplicates differing in a single field. qty could not be typed
+    because its 41 distinct values mix '-3', '2.0' and 'three'. ship_date could not be typed
+    because its 44 distinct values mix four date formats plus '' and 'TBD', and 26.4 percent
+    of rows are null. customer_email is 97 percent null and notes 61 percent null, so neither
+    supports population-level analysis. status casing is preserved rather than normalised,
+    and the order_id plus line_no grain is proposed from profile evidence only and still needs
+    measurement against the warehouse before approval.
+schema:
+- name: silver_orders
+  physicalName: silver_orders
+  logicalType: object
+  physicalType: table
+  description: 'silver_orders is the cleaned, de-duplicated order-line view of bronze.messy_orders
+    (5000 landed rows): capture metadata removed, names normalised to snake_case, order_ts
+    typed as a timestamp, unit_price narrowed to DECIMAL(10,2), is_gift resolved to a boolean,
+    and one order line per order_id plus line_no. It feeds order-volume, revenue and fulfilment
+    reporting in gold.'
+  properties:
+  - name: order_id
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: Order identifier with null_rate 0.0 and distinct_count 4000 over 5000 rows,
+      samples such as 'ORD-100001' and 'ORD-100010' show a stable ORD-prefixed code; renamed
+      from 'Order ID' to snake_case.
+  - name: line_no
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 2
+    description: Landed INTEGER with null_rate 0.0 and distinct_values 1 through 7 (min 1,
+      max 7), consistent with a line position within an order; renamed from CamelCase 'LineNo'.
+  - name: sku
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: null_rate 0.0 with distinct_count 320; samples mix numeric-looking codes
+      ('10002', '85123A') with non-numeric entries ('BANK CHARGES', 'DOT'), so the column
+      stays text.
+  - name: qty
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: 'Samples disagree on form: ''-3'', ''12'', ''2.0'' and the word ''three''
+      appear among 41 distinct values, so no numeric cast is supported and the landed text
+      is retained; null_count 10 (null_rate 0.002) is kept as null.'
+  - name: unit_price
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: true
+    description: Landed DECIMAL(38,9) with null_rate 0.0, min -5.0 and max 1250.0; every sample
+      value ('-5.0', '0.42', '2.55', '7.5') carries at most two decimal places, so DECIMAL(10,2)
+      holds the range without loss.
+  - name: order_ts
+    logicalType: date
+    physicalType: TIMESTAMP
+    required: true
+    description: null_rate 0.0 with distinct_count 1880; all ten samples are ISO-shaped ('2024-01-05
+      09:15:00' through '2024-01-09 12:12:00'), so the VARCHAR is cast to TIMESTAMP.
+  - name: ship_date_raw
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: Across 44 distinct values the samples use incompatible formats ('01/07/2024',
+      '07.01.2024', '2024-01-07', '2024-1-9', 'Jan 9 2024') plus the sentinels '' and 'TBD',
+      so no date cast is defensible; renamed with a _raw suffix and null_count 1320 (null_rate
+      0.264) retained.
+  - name: customer_email
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: 'Sparsely populated: null_count 4850 of 5000 rows (null_rate 0.97) with only
+      140 distinct values such as ''a.customer@example.com''; the column is retained as nullable
+      text rather than imputed or dropped.'
+  - name: notes
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: Free-text operator notes, null_count 3050 (null_rate 0.61) with 2100 distinct
+      values including 'Fragile', 'Leave at the side door', the empty string, and one value
+      cut at the profiler cap ending in '…[truncated]'; contents are data only and are retained
+      verbatim as nullable text.
+  - name: status
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: null_rate 0.0 with distinct_values 'CANCELLED', 'Shipped', 'cancelled', 'pending',
+      'shipped' — five raw labels that case-fold to three states; the raw label is retained
+      for review rather than silently rewritten.
+  - name: is_cancelled
+    logicalType: boolean
+    physicalType: BOOLEAN
+    required: true
+    description: Derived from status, whose distinct_values include both 'CANCELLED' and 'cancelled'
+      against 'pending', 'Shipped' and 'shipped'; since status has null_rate 0.0 the flag
+      is always resolvable and lets consumers exclude cancelled lines without matching on
+      casing.
+  - name: is_gift
+    logicalType: boolean
+    physicalType: BOOLEAN
+    required: false
+    description: All four distinct_values ('Y', 'yes', 'N', 'no') map unambiguously to true/false,
+      so the VARCHAR is cast to BOOLEAN; null_count 60 (null_rate 0.012) is retained as null
+      rather than defaulted to false.
+  - name: source_system
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: 'Constant lineage marker: null_rate 0.0 and distinct_count 1 with the single
+      distinct value ''legacy_pos''; retained so downstream unions can tell this feed apart.'
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (order_id, line_no) combinations'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT order_id, line_no
+        FROM silver.silver_orders
+        GROUP BY order_id, line_no
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: silver-cleanup-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.0.0
+- property: modelId
+  value: claude-opus-5
+- property: profileHash
+  value: sha256:d1da76a822e52f615a30282b009dcd11643e0c6a9a98c3ff0dcaaa057b946286
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: cleanup
+- property: decisionExactDuplicates
+  value: collapsed-to-one-row
+- property: decisionGrain
+  value: order-id-plus-line-no
+- property: decisionAirbyteMetadata
+  value: excluded-as-capture-artifacts
+- property: decisionQtyMixedText
+  value: retained-as-text
+- property: decisionShipDateRaw
+  value: retained-raw-unparsed
+- property: decisionNullCustomerEmail
+  value: retained-nullable
+- property: decisionNullNotes
+  value: retained-nullable
+- property: decisionOrderTsCast
+  value: cast-to-timestamp
+- property: decisionIsGiftCast
+  value: cast-to-boolean
+- property: decisionUnitPriceCast
+  value: narrowed-to-decimal-10-2
+- property: decisionNegativeUnitPrice
+  value: retained-as-observed
+- property: decisionStatusCasing
+  value: retained-raw-with-derived-flag
+- property: decisionNotesUntrusted
+  value: treated-as-opaque-text
+- property: decisionSourceSystemConstant
+  value: retained-as-lineage

@@ -1,0 +1,222 @@
+# Draft proposed by gold-mapping-proposer v0.1.0 at 2026-10-23T18:37:00.548148+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: gold_airport_weather_observations_mapping
+name: Gold mapping, airport_weather_observations category
+version: 1.0.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: 'This mapping declares how the contracted silver table silver.silver_airport_weather
+    enters the gold unified event star as the airport_weather_observations fact category:
+    which column timestamps each event and at what grain, which columns are dimensions and
+    which are measures, and the degenerate identity (airport_code plus observed_hour_utc)
+    that makes one observation line addressable. Its consumer is the deterministic modeling
+    engine, which reads the mapping contract and emits the gold models; no table, view or
+    transformation is declared here.'
+  usage: The proposal is rendered into an ODCS mapping contract draft, validated against the
+    frozen mapping-contract schema, gated by the validator and datacontract lint, and reviewed
+    and edited by a human before approval. Once approved, the modeling engine reads it to
+    generate the gold fact and its conformed dimensions; downstream analysts join the category
+    on airport_code and the time field for hourly weather context, and roll up to local date
+    through observed_date_local.
+  limitations: 'The mapping names silver columns and assigns roles only; it declares no quality
+    rules, severities, classifications, service levels, ownership or access policy, and it
+    filters nothing. It does not reconcile nullability: wind_gust_mph is absent for 74.5505
+    percent of rows, pressure_mb for 11.4953 percent and wind_dir_degrees for 1.6828 percent,
+    so excluding or imputing those observations is left to consumers. It does not correct
+    implausible values such as the wind_speed_mph maximum of 1048.36058 mph, and it does not
+    deduplicate or reconcile airport_code with observed_hour_utc beyond declaring that pair
+    as the identity; the profile shows duplicate_row_rate 0.0 but uniqueness of the identity
+    tuple is not asserted by the mapping. It also leaves the UTC-to-local relationship between
+    observed_hour_utc, observed_date_local and observed_hour_local unverified, and carries
+    captured_at only as load lineage, not as an event time. Coverage is limited to the profiled
+    window of 13014 rows from 2013-01-01T06:00:00 to 2013-07-01T03:00:00 across three airports.'
+schema:
+- name: airport_weather_observations
+  logicalType: object
+  physicalType: mapping
+  description: 'One row is one hourly weather observation taken at one New York area airport:
+    the station identified by airport_code and its descriptive attributes, the local date
+    and hour labels, and the measured conditions (temperature, dewpoint, humidity, wind speed
+    and gust, precipitation, pressure and visibility) for the hour stamped by observed_hour_utc.'
+  entityGroup: airport_weather_observations
+  sourceTable: silver.silver_airport_weather
+  timeColumn: observed_hour_utc
+  timeGrain: hour
+  grain:
+    type: transaction
+    degenerateIdentifiers:
+    - source: derived
+      name: observation_identity
+      derivation: canonical-key-v2
+      of:
+      - airport_code
+      - observed_hour_utc
+  properties:
+  - name: airport_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    mappingRole: dimension
+    description: IATA code of the reporting airport, a label with distinct_values EWR, JFK
+      and LGA and null_rate 0.0, used as the station dimension and as the first element of
+      the observation identity.
+  - name: observed_hour_utc
+    logicalType: date
+    physicalType: TIMESTAMP
+    required: true
+    mappingRole: time
+    description: UTC timestamp of the weather observation, with null_rate 0.0 and samples
+      such as 2013-01-01T06:00:00 through 2013-01-01T15:00:00 that land on exact hours, so
+      it timestamps each event at hour resolution between min 2013-01-01T06:00:00 and max
+      2013-07-01T03:00:00.
+  - name: observed_date_local
+    logicalType: date
+    physicalType: DATE
+    required: true
+    mappingRole: dimension
+    description: Local calendar date of the observation, with distinct_count 181 spanning
+      min 2013-01-01 to max 2013-06-30 and null_rate 0.0; it labels the observation by local
+      day rather than timestamping it, so it is a dimension alongside the single time field.
+  - name: observed_hour_local
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    mappingRole: dimension
+    description: Local hour of day as an integer label with min 0, max 23, distinct_count
+      24 and null_rate 0.0; it is a cyclical bucket that is grouped by rather than added,
+      so it is a dimension.
+  - name: temp_f
+    logicalType: number
+    physicalType: DOUBLE
+    required: true
+    mappingRole: measure
+    description: Air temperature in degrees Fahrenheit, a continuous quantity with min 10.94,
+      max 93.92, distinct_count 130 and null_rate 0.0 that is averaged and compared across
+      observations.
+  - name: dewpoint_f
+    logicalType: number
+    physicalType: DOUBLE
+    required: true
+    mappingRole: measure
+    description: Dewpoint temperature in degrees Fahrenheit, a continuous quantity with min
+      -9.94, max 73.94 and null_rate 0.0 that is compared and averaged across observations.
+  - name: humidity_pct
+    logicalType: number
+    physicalType: DOUBLE
+    required: true
+    mappingRole: measure
+    description: Relative humidity as a percentage, a continuous quantity with min 12.74,
+      max 100.0, distinct_count 2178 and null_rate 0.0 that is averaged across observations.
+  - name: wind_dir_degrees
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    mappingRole: dimension
+    description: Compass bearing of the wind in degrees, nullable with null_count 219 and
+      null_rate 0.016828 where direction was not reported, and stored on a 10-degree grid
+      (samples 0, 10, 20 ... 90 with distinct_count 37 between min 0 and max 360), so it labels
+      a direction rather than being summed.
+  - name: wind_speed_mph
+    logicalType: number
+    physicalType: DOUBLE
+    required: false
+    mappingRole: measure
+    description: Sustained wind speed in miles per hour, a continuous quantity with min 0.0
+      and max 1048.36058 that is averaged and compared across observations; it is nullable
+      with null_count 2 and null_rate 0.000154 for two observations that carry no wind reading.
+  - name: wind_gust_mph
+    logicalType: number
+    physicalType: DOUBLE
+    required: false
+    mappingRole: measure
+    description: Peak wind gust in miles per hour, a continuous quantity with min 16.11092
+      and max 62.14212 that is compared across observations; it is nullable with null_count
+      9702 and null_rate 0.745505 because gusts are only recorded when the wind gusts at all.
+  - name: precip_inches
+    logicalType: number
+    physicalType: DOUBLE
+    required: true
+    mappingRole: measure
+    description: Precipitation accumulated in the observation hour in inches, an additive
+      quantity with min 0.0, max 1.06, distinct_count 50 and null_rate 0.0.
+  - name: pressure_mb
+    logicalType: number
+    physicalType: DOUBLE
+    required: false
+    mappingRole: measure
+    description: Barometric pressure in millibars, a continuous quantity with min 983.8, max
+      1038.4 and distinct_count 430 that is averaged and compared; it is nullable with null_count
+      1496 and null_rate 0.114953 where the station reported no pressure.
+  - name: visibility_miles
+    logicalType: number
+    physicalType: DOUBLE
+    required: true
+    mappingRole: measure
+    description: Reported horizontal visibility in miles, a continuous quantity with null_rate
+      0.0 reported on a fixed ladder of 20 distinct values from min 0.0 to max 10.0 that is
+      averaged and compared across observations.
+  - name: airport_name
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    mappingRole: dimension
+    description: Full name of the reporting airport, a descriptive label with null_rate 0.0
+      and distinct_values John F. Kennedy International Airport, LaGuardia Airport and Newark
+      Liberty International Airport.
+  - name: airport_municipality
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    mappingRole: dimension
+    description: Municipality the airport serves, a label with null_rate 0.0 and distinct_values
+      New York and Newark.
+  - name: airport_elevation_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    mappingRole: dimension
+    description: Field elevation of the airport in feet, a static station attribute with only
+      3 distinct_values (13, 18, 21) and null_rate 0.0 that describes the station rather than
+      measuring the observation.
+  - name: airport_longest_runway_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    mappingRole: dimension
+    description: Length of the airport's longest runway in feet, a static station attribute
+      with only 3 distinct_values (7002, 11000, 14511) and null_rate 0.0 that labels the station
+      rather than measuring the observation.
+  - name: captured_at
+    logicalType: date
+    physicalType: TIMESTAMP
+    required: true
+    mappingRole: dimension
+    description: Ingestion capture timestamp with null_rate 0.0 and only 3 distinct_values
+      between 2026-09-02T23:26:11 and 2026-09-02T23:26:13, reflecting the load batch rather
+      than the weather event, so it is carried as a lineage dimension and not as the time
+      field.
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: gold
+customProperties:
+- property: proposedBy
+  value: gold-mapping-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.0.0
+- property: modelId
+  value: claude-opus-5
+- property: profileHash
+  value: sha256:70cb304edcaa97a18aa7411d2ed8b68a860627c53342343a78b87fa306345567
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: propose

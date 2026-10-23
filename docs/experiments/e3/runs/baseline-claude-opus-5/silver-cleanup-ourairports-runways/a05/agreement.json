@@ -1,0 +1,62 @@
+{
+  "columns": {
+    "draft": 20,
+    "oracle": 10,
+    "ordinal_order_equal": false,
+    "shared": 6
+  },
+  "first_class_checks": {
+    "agree": 30,
+    "checked": 30,
+    "per_field": {
+      "logicalType": "6/6",
+      "physicalType": "6/6",
+      "primaryKey": "6/6",
+      "primaryKeyPosition": "6/6",
+      "required": "6/6"
+    }
+  },
+  "grain": {
+    "draft": [
+      "id"
+    ],
+    "oracle": [
+      "runway_id"
+    ],
+    "order_equal": false,
+    "set_equal": false
+  },
+  "mismatches": [
+    "runway_id: missing from the draft",
+    "low_end_ident: missing from the draft",
+    "high_end_ident: missing from the draft",
+    "captured_at: missing from the draft",
+    "id: extra in the draft",
+    "airport_ref: extra in the draft",
+    "le_ident: extra in the draft",
+    "le_latitude_deg: extra in the draft",
+    "le_longitude_deg: extra in the draft",
+    "le_elevation_ft: extra in the draft",
+    "le_heading_degt: extra in the draft",
+    "le_displaced_threshold_ft: extra in the draft",
+    "he_ident: extra in the draft",
+    "he_latitude_deg: extra in the draft",
+    "he_longitude_deg: extra in the draft",
+    "he_elevation_ft: extra in the draft",
+    "he_heading_degt: extra in the draft",
+    "he_displaced_threshold_ft: extra in the draft"
+  ],
+  "oracle_id": "silver_ourairports_runways",
+  "rule_types": {
+    "column_equal": false,
+    "table_draft": [
+      "library:rowCount",
+      "sql"
+    ],
+    "table_equal": true,
+    "table_oracle": [
+      "library:rowCount",
+      "sql"
+    ]
+  }
+}

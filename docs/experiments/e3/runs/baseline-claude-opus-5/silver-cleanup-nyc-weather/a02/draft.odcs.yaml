@@ -1,0 +1,201 @@
+# Draft proposed by silver-cleanup-proposer v0.1.0 at 2026-10-23T18:10:31.982563+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_nyc_weather
+name: Silver nyc weather
+version: 1.1.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: silver_nyc_weather is the cleaned hourly weather observation table for the three
+    New York area airports (EWR, JFK, LGA) landed in bronze.nyc_weather, typed from DECIMAL(38,9)
+    and VARCHAR to narrow numeric and timestamp types and stripped of capture metadata. It
+    feeds flight delay and operations analytics that join weather conditions to departures
+    by airport and observation hour.
+  usage: 'Read one row per origin airport per time_hour; join to flight data on origin plus
+    the truncated-to-hour departure timestamp. time_hour is UTC (every sample ends in Z) and
+    is authoritative; year, month, day and hour are convenience parts derived from the same
+    observation. Filter or coalesce deliberately on the nullable measures: check is_wind_gust_reported
+    before averaging wind_gust, and expect missing pressure for roughly 11.5% of rows.'
+  limitations: 'The declared grain of origin plus time_hour is inferred from distinct_count
+    3 and 4341 against row_count 13014 and has not been measured in the warehouse; a reviewer
+    must confirm uniqueness before approval. Coverage is partial: year has a single distinct
+    value (2013) and month only 1.0 through 6.0, so this is a half-year extract, not a full
+    year. Sparse measures are retained without imputation: wind_gust is null for 74.55% of
+    rows, pressure for 11.50%, wind_dir for 1.68% and wind_speed for 2 rows. The cleanup does
+    not validate physical plausibility, for example the wind_speed max of 1048.36058 is far
+    outside expected surface wind ranges and is left as landed.'
+schema:
+- name: silver_nyc_weather
+  physicalName: silver_nyc_weather
+  logicalType: object
+  physicalType: table
+  description: silver_nyc_weather is the cleaned hourly weather observation table for the
+    three New York area airports (EWR, JFK, LGA) landed in bronze.nyc_weather, typed from
+    DECIMAL(38,9) and VARCHAR to narrow numeric and timestamp types and stripped of capture
+    metadata. It feeds flight delay and operations analytics that join weather conditions
+    to departures by airport and observation hour.
+  properties:
+  - name: origin
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: null_rate is 0.0 with distinct_count 3 and distinct_values EWR, JFK, LGA,
+      so the airport code is a complete, closed-set identifier.
+  - name: year
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: null_rate is 0.0 and distinct_count is 1 with the only value 2013.0, an integral
+      value, so DECIMAL(38,9) casts safely to INTEGER.
+  - name: month
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: null_rate is 0.0 and all six distinct_values (1.0 through 6.0) are integral
+      between min 1.0 and max 6.0, supporting an INTEGER cast.
+  - name: day
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: null_rate is 0.0, distinct_count is 31 and min 1.0 / max 31.0 with integral
+      sample_values 1.0 through 10.0, so INTEGER is the correct target.
+  - name: hour
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: null_rate is 0.0, distinct_count is 24 spanning min 0.0 to max 23.0 with
+      integral sample_values, consistent with an hour-of-day INTEGER.
+  - name: temp
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: true
+    description: null_rate is 0.0 with min 10.94 and max 93.92 and sample_values carrying
+      two decimal places (10.94, 12.02, 13.1), so DECIMAL(10,2) preserves every observed value.
+  - name: dewp
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: true
+    description: null_rate is 0.0 with min -9.94 and max 73.94 and two-decimal sample_values
+      (-9.04, -7.96, -0.94), including negatives, so a signed DECIMAL(10,2) fits.
+  - name: humid
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: true
+    description: null_rate is 0.0 with distinct_count 2178 between min 12.74 and max 100.0
+      and two-decimal sample_values (13.95, 14.51), so DECIMAL(10,2) is sufficient precision.
+  - name: wind_dir
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: sample_values are integral multiples of ten (0.0, 10.0, 20.0 ... 90.0) between
+      min 0.0 and max 360.0, so INTEGER is safe; null_count 219 (null_rate 0.016828) is retained
+      as unrecorded wind direction.
+  - name: wind_speed
+    logicalType: number
+    physicalType: DECIMAL(12,5)
+    required: false
+    description: sample_values carry five decimal places (3.45234, 4.60312) between min 0.0
+      and max 1048.36058, so DECIMAL(12,5) preserves them; null_count 2 (null_rate 0.000154)
+      is retained rather than imputed.
+  - name: wind_gust
+    logicalType: number
+    physicalType: DECIMAL(12,5)
+    required: false
+    description: sample_values show five decimals (16.11092, 17.2617) between min 16.11092
+      and max 62.14212; the column is sparsely populated with null_count 9702 (null_rate 0.745505)
+      because gusts are only recorded when they occur, and nulls are retained.
+  - name: precip
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: true
+    description: null_rate is 0.0 with min 0.0 and max 1.06 and two-decimal sample_values
+      (0.01, 0.02 ... 0.09), so DECIMAL(10,2) is exact.
+  - name: pressure
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: false
+    description: sample_values carry one decimal (983.8, 985.0, 992.1) between min 983.8 and
+      max 1038.4, so DECIMAL(10,2) covers them; null_count 1496 (null_rate 0.114953) is retained
+      as missing barometric readings.
+  - name: visib
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: true
+    description: null_rate is 0.0 and the 20 distinct_values include fractional steps (0.06,
+      0.12, 0.25, 1.75) between min 0.0 and max 10.0, so a decimal type is required rather
+      than an integer cast.
+  - name: time_hour
+    logicalType: date
+    physicalType: TIMESTAMP WITH TIME ZONE
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 2
+    description: null_rate is 0.0 and every sample value is ISO-8601 with a Z offset (2013-01-01T06:00:00Z
+      through 2013-01-01T15:00:00Z), so the VARCHAR casts cleanly to a timestamp with time
+      zone.
+  - name: is_wind_gust_reported
+    logicalType: boolean
+    physicalType: BOOLEAN
+    required: true
+    description: Marks observations where wind_gust is populated, since wind_gust has null_count
+      9702 of 13014 rows (null_rate 0.745505) and consumers must distinguish calm hours from
+      missing readings; derived per observation hour, which has null_rate 0.0.
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (origin, time_hour) combinations'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT origin, time_hour
+        FROM silver.silver_nyc_weather
+        GROUP BY origin, time_hour
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: silver-cleanup-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.0.0
+- property: modelId
+  value: claude-opus-5
+- property: profileHash
+  value: sha256:1dee708bb140addbdb172a3727f79d85a2d7a611bd9c191d56d3e433a8c5777b
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: cleanup
+- property: decisionExactDuplicates
+  value: no-dedupe-required
+- property: decisionGrain
+  value: origin-and-time-hour
+- property: decisionAirbyteMetadata
+  value: excluded-as-capture-artifacts
+- property: decisionDecimalCasts
+  value: narrowed-from-decimal-38-9
+- property: decisionTimeHourCast
+  value: cast-to-timestamptz
+- property: decisionNullWindGust
+  value: retained-nullable-and-flagged
+- property: decisionNullPressureWindDir
+  value: retained-nullable
+- property: decisionDateParts
+  value: retained-alongside-timestamp

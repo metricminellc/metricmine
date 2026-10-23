@@ -1,0 +1,172 @@
+# Draft proposed by silver-cleanup-proposer v0.1.0 at 2026-10-23T17:55:59.065975+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_online_retail_ii
+name: Silver online retail ii
+version: 1.0.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: 'silver_online_retail_ii is the cleaned, typed line-item table for the online retail
+    transaction feed landed in bronze.online_retail_ii: one row per invoiced product line,
+    with capture-tool columns removed, numeric and timestamp columns cast from their landed
+    text and DECIMAL(38,9) forms, and exact duplicate rows collapsed. It feeds downstream
+    revenue, basket, and customer-level aggregates.'
+  usage: 'Read one row as one invoice line: multiply quantity by price for line value. Returns
+    and cancellations are present in the same table and carry negative quantity; filter on
+    is_return_line deliberately, either excluding it for gross sales or keeping it for net
+    figures. customer_id is null on roughly 30 percent of rows, so any customer-level aggregate
+    must filter nulls explicitly rather than relying on a join to silently drop them. invoice_date
+    is a timestamp in the source''s local clock as landed; country is the free-text country
+    label, not an ISO code.'
+  limitations: 'The declared grain of invoice plus stockcode is a proposal, not a measured
+    fact: the profile reports per-column distinct counts only, so a reviewer must confirm
+    no invoice repeats a stockcode before the uniqueness rule is approved. Exact duplicate
+    removal addresses the 0.011188 duplicate_row_rate but cannot distinguish a true repeated
+    line from a double-landed row. description is retained as landed, with untrimmed whitespace
+    and mixed casing visible in the samples, and 228 nulls (null_rate 0.005041) are kept rather
+    than filled. customer_id is sparsely populated at null_rate 0.29778. Zero-price lines
+    (price min 0.0) and negative quantities (quantity min -1395.0) are retained, not corrected,
+    and invoice is kept as text because only 10 of its 2330 distinct values were sampled.'
+schema:
+- name: silver_online_retail_ii
+  physicalName: silver_online_retail_ii
+  logicalType: object
+  physicalType: table
+  description: 'silver_online_retail_ii is the cleaned, typed line-item table for the online
+    retail transaction feed landed in bronze.online_retail_ii: one row per invoiced product
+    line, with capture-tool columns removed, numeric and timestamp columns cast from their
+    landed text and DECIMAL(38,9) forms, and exact duplicate rows collapsed. It feeds downstream
+    revenue, basket, and customer-level aggregates.'
+  properties:
+  - name: invoice
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: null_rate 0.0 across 45228 rows with 2330 distinct values, so the column
+      is fully populated; the 10 sampled values ('489434'..'489443') are numeric text but
+      cover only a fraction of the 2330 distinct values, so the column is retained as VARCHAR
+      rather than cast to an integer.
+  - name: stockcode
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 2
+    description: null_rate 0.0 with distinct_count 3141, and the sample_values mix pure digits
+      ('10002', '10080') with alphanumeric codes ('10002R', '10123C'), so no numeric cast
+      is supportable and the landed VARCHAR is kept.
+  - name: description
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_count 228 of 45228 (null_rate 0.005041) across 3045 distinct values,
+      so nulls are retained rather than imputed; several sample_values carry leading or trailing
+      spaces (' ANIMAL STICKERS', ' BROWN  PIRATE TREASURE CHEST '), which this cleanup does
+      not normalise.
+  - name: quantity
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: null_rate 0.0 and every sampled value is integral (-1395.0, -1043.0, -504.0)
+      with min -1395.0 and max 5184.0, all inside INTEGER range, so the landed DECIMAL(38,9)
+      is cast to INTEGER without loss.
+  - name: is_return_line
+    logicalType: boolean
+    physicalType: BOOLEAN
+    required: true
+    description: quantity has min -1395.0 and the first ten sample_values are all negative
+      (-1395.0 through -504.0), evidencing return or cancellation lines; the flag is true
+      when quantity is negative so consumers can separate them deterministically.
+  - name: invoice_date
+    logicalType: date
+    physicalType: TIMESTAMP
+    required: true
+    description: null_rate 0.0 and all 10 sample_values are ISO-shaped timestamps ('2009-12-01
+      07:45:00' .. '2009-12-01 09:50:00'), supporting a VARCHAR to TIMESTAMP cast; the landed
+      name is renamed to snake_case invoice_date.
+  - name: price
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: true
+    description: null_rate 0.0 with min 0.0 and max 1998.49 over 295 distinct values, and
+      every sample_value carries at most two decimal places (0.04, 0.06, 0.18), so DECIMAL(38,9)
+      is narrowed to DECIMAL(10,2) with room to spare.
+  - name: customer_id
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: null_count 13468 of 45228 (null_rate 0.29778) so the column is only partly
+      populated and nulls are retained; the populated values are integral (12346.0, 12349.0,
+      12437.0) with min 12346.0 and max 18287.0, supporting a DECIMAL to INTEGER cast.
+  - name: country
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: null_rate 0.0 with a small distinct_count of 24 and free-text country names
+      in sample_values ('Australia', 'Channel Islands', 'EIRE'), so the VARCHAR is kept as
+      landed with no code mapping applied.
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (invoice, stockcode) combinations'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT invoice, stockcode
+        FROM silver.silver_online_retail_ii
+        GROUP BY invoice, stockcode
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: silver-cleanup-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.0.0
+- property: modelId
+  value: claude-opus-5
+- property: profileHash
+  value: sha256:79f801e1d8182ee55a32a0e3323134a27fec839c5a5478edfb8f5683cf5221f0
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: cleanup
+- property: decisionExactDuplicates
+  value: collapsed-to-distinct-rows
+- property: decisionGrain
+  value: invoice-plus-stockcode
+- property: decisionAirbyteMetadata
+  value: excluded-as-capture-artifacts
+- property: decisionNullCustomerId
+  value: retained-nullable
+- property: decisionQuantityCast
+  value: cast-decimal-to-integer
+- property: decisionPriceCast
+  value: narrowed-to-decimal-10-2
+- property: decisionInvoiceDateCast
+  value: cast-varchar-to-timestamp
+- property: decisionInvoiceAsText
+  value: retained-as-text
+- property: decisionReturnFlag
+  value: derived-is-return-line
+- property: decisionDescriptionWhitespace
+  value: left-unnormalised
+- property: decisionZeroPrice
+  value: retained-as-observed
