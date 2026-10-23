@@ -1,0 +1,180 @@
+{
+  "target_table": "silver_planes",
+  "columns": [
+    {
+      "source_column": "tailnum",
+      "action": "keep",
+      "target_name": "tailnum",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 and distinct_count is 3322, equal to the table's row_count of 3322, so tailnum is a fully populated, apparently unique aircraft identifier (samples like N10156, N102UW)."
+    },
+    {
+      "source_column": "year",
+      "action": "cast",
+      "target_name": "year",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "Landed as DECIMAL(38,9) but every sample (1956.0, 1959.0, 1963.0, ... 2013.0) is integral, so it casts cleanly to INTEGER; null_rate 0.021072 (70 nulls) means manufacture year is sometimes missing and must stay nullable."
+    },
+    {
+      "source_column": "type",
+      "action": "keep",
+      "target_name": "type",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 and the column has only 3 distinct_values (Fixed wing multi engine, Fixed wing single engine, Rotorcraft), a low-cardinality fully-populated category."
+    },
+    {
+      "source_column": "manufacturer",
+      "action": "keep",
+      "target_name": "manufacturer",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 with 35 distinct values (e.g. AIRBUS, BOEING, BEECH, BELL), a fully populated manufacturer label."
+    },
+    {
+      "source_column": "model",
+      "action": "keep",
+      "target_name": "model",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 with 127 distinct values and alphanumeric samples (150, 172E, 310Q, 550), retained as text since model codes are not numeric in a consistent sense."
+    },
+    {
+      "source_column": "engines",
+      "action": "cast",
+      "target_name": "engines",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "Landed as DECIMAL(38,9) but distinct_values are exactly {1.0, 2.0, 3.0, 4.0}, a clean integral engine count with null_rate 0.0, so it casts safely to INTEGER."
+    },
+    {
+      "source_column": "seats",
+      "action": "cast",
+      "target_name": "seats",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "Landed as DECIMAL(38,9) with min 2.0 and max 450.0 and all 10 samples integral (2.0, 4.0, 5.0 ... 12.0), null_rate 0.0, so it casts cleanly to INTEGER."
+    },
+    {
+      "source_column": "speed",
+      "action": "cast",
+      "target_name": "speed",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "Landed as DECIMAL(38,9) with all 13 distinct_values integral (90.0 through 432.0), so it casts to INTEGER, but null_rate is 0.993076 (3299 of 3322 rows null) making this an extremely sparse attribute that must remain nullable."
+    },
+    {
+      "source_column": "engine",
+      "action": "keep",
+      "target_name": "engine",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 with 6 distinct_values (4 Cycle, Reciprocating, Turbo-fan, Turbo-jet, Turbo-prop, Turbo-shaft), a fully populated low-cardinality category."
+    },
+    {
+      "source_column": "_airbyte_raw_id",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata: true, a capture-tool identifier (sample 06a98b09-e416-768b-8000-98ab33fe23c0), not a business column."
+    },
+    {
+      "source_column": "_airbyte_extracted_at",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata: true with a single distinct_value (2026-09-02T23:26:22), the ingestion timestamp of the capture tool, not business data."
+    },
+    {
+      "source_column": "_airbyte_meta",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "JSON",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata: true with a single distinct_value of an empty JSON object ({}), a capture-tool artifact carrying no business information."
+    }
+  ],
+  "dedupe_strategy": "none",
+  "dedupe_keys": [],
+  "grain_keys": [
+    "tailnum"
+  ],
+  "decisions": [
+    {
+      "key": "decisionExactDuplicates",
+      "value": "no-duplicates-found",
+      "rationale": "duplicate_row_rate is 0.0 across row_count 3322, so no exact-duplicate removal step is needed."
+    },
+    {
+      "key": "decisionGrain",
+      "value": "tailnum-grain",
+      "rationale": "tailnum has null_rate 0.0 and distinct_count 3322 exactly equal to row_count 3322, making it the only column that plausibly identifies one row per plane."
+    },
+    {
+      "key": "decisionCastYear",
+      "value": "cast-decimal-to-integer",
+      "rationale": "All sampled year values (1956.0 ... 2013.0) are integral with no fractional component, justifying a cast from DECIMAL(38,9) to INTEGER."
+    },
+    {
+      "key": "decisionCastEngines",
+      "value": "cast-decimal-to-integer",
+      "rationale": "distinct_values for engines are exactly {1.0, 2.0, 3.0, 4.0}, an integral count justifying a cast to INTEGER."
+    },
+    {
+      "key": "decisionCastSeats",
+      "value": "cast-decimal-to-integer",
+      "rationale": "seats ranges from min 2.0 to max 450.0 with all samples integral, justifying a cast to INTEGER."
+    },
+    {
+      "key": "decisionCastSpeed",
+      "value": "cast-decimal-to-integer-sparse",
+      "rationale": "speed's 13 distinct_values are all integral (90.0 to 432.0) so it casts to INTEGER, but null_rate 0.993076 means it is retained nullable rather than imputed."
+    },
+    {
+      "key": "decisionDroppedMetadata",
+      "value": "excluded-as-capture-artifacts",
+      "rationale": "_airbyte_raw_id, _airbyte_extracted_at, and _airbyte_meta are all flagged is_airbyte_metadata: true and carry no business meaning."
+    },
+    {
+      "key": "decisionNullYear",
+      "value": "retained-nullable",
+      "rationale": "year has null_rate 0.021072 (70 of 3322 rows), a modest but real gap that must not be imputed or dropped."
+    },
+    {
+      "key": "decisionNullSpeed",
+      "value": "retained-nullable-sparse",
+      "rationale": "speed has null_rate 0.993076 (3299 of 3322 rows null), so the column is kept but flagged as sparsely populated rather than dropped or imputed."
+    }
+  ],
+  "purpose": "This table provides a cleaned registry of aircraft (one row per tail number) with physical and manufacturing attributes, feeding downstream flight-analysis joins that need plane characteristics such as manufacturer, model, engine type, and seating capacity.",
+  "usage": "Join on tailnum to enrich flight records with aircraft attributes; treat year and speed as nullable and filter or coalesce them explicitly before aggregation, since speed is populated for well under 1% of rows.",
+  "limitations": "Three Airbyte capture-metadata columns were dropped entirely; year is missing for about 2.1% of rows and speed is missing for about 99.3% of rows and neither gap was imputed, so any analysis depending on those fields will be based on a small, non-random subset of planes."
+}

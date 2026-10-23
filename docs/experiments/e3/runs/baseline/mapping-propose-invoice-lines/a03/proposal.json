@@ -1,0 +1,98 @@
+{
+  "category_name": "invoice_lines",
+  "entity_group": "invoice_lines",
+  "source_table": "silver.silver_invoice_lines",
+  "time_column": "invoiced_at",
+  "time_grain": "minute",
+  "grain_type": "transaction",
+  "degenerate_identifiers": [
+    {
+      "source": "derived",
+      "name": "invoice_line_identity",
+      "of": [
+        "invoice_id",
+        "stock_code"
+      ]
+    }
+  ],
+  "aggregations": [],
+  "grain_rationale": "row_count is 44721 and duplicate_row_rate is 0.0, so the silver table carries no exact-duplicate rows; invoice_id alone has only 2330 distinct values against 44721 rows so it cannot identify a line on its own, but combining invoice_id with stock_code yields a tuple that uniquely tags each line item within an invoice, and since duplicate_row_rate is 0.0 that tuple fully absorbs the row population with no residual duplicates requiring aggregation, so grain_type is transaction with one derived identifier.",
+  "fields": [
+    {
+      "name": "invoice_id",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "mapping_role": "dimension",
+      "description": "Invoice number such as 489434 with null_rate 0.0 and distinct_count 2330, identifying the parent invoice that groups line items."
+    },
+    {
+      "name": "is_cancellation",
+      "logical_type": "boolean",
+      "physical_type": "BOOLEAN",
+      "required": true,
+      "mapping_role": "dimension",
+      "description": "Boolean flag with distinct_values false and true and null_rate 0.0, marking whether the line represents a cancellation rather than a sale."
+    },
+    {
+      "name": "stock_code",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "mapping_role": "dimension",
+      "description": "Product stock code such as 10002 or 10123C with null_rate 0.0 and distinct_count 3141, identifying the product on the line."
+    },
+    {
+      "name": "product_description",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "mapping_role": "dimension",
+      "description": "Free-text product description such as '12 PENCIL SMALL TUBE WOODLAND'; null_rate is 0.005098 so the field is nullable, likely from unmatched or delisted stock codes."
+    },
+    {
+      "name": "quantity",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "mapping_role": "measure",
+      "description": "Units transacted on the line, ranging from -1395 to 5184 per the profiled min and max with null_rate 0.0; negative values represent returns and the measure is summed across lines."
+    },
+    {
+      "name": "invoiced_at",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": true,
+      "mapping_role": "time",
+      "description": "Timestamp of the invoice line ranging from 2009-12-01T07:45:00 to 2009-12-23T16:58:00 with null_rate 0.0; sample values resolve to whole minutes, so minute is the finest grain the data supports."
+    },
+    {
+      "name": "unit_price",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(10,2)",
+      "required": true,
+      "mapping_role": "measure",
+      "description": "Per-unit price ranging from 0.0 to 1998.49 per the profiled min and max with null_rate 0.0, compared and aggregated across lines as revenue input."
+    },
+    {
+      "name": "customer_id",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "mapping_role": "dimension",
+      "description": "Numeric customer identifier ranging from 12346 to 18287 that labels rather than measures; null_rate is 0.300664 so the field is nullable, consistent with unidentified or guest transactions."
+    },
+    {
+      "name": "country",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "mapping_role": "dimension",
+      "description": "Customer country such as Australia or Germany with null_rate 0.0 and distinct_count 24, describing the geographic origin of the invoice line."
+    }
+  ],
+  "category_description": "One row represents a single invoice line item: a product and quantity billed or cancelled on a given invoice at a point in time, as profiled from silver.silver_invoice_lines.",
+  "purpose": "This mapping declares how the contracted silver_invoice_lines table enters the gold unified event star as the invoice_lines fact category, stating its grain, time column, and field roles for the deterministic modeling engine that renders the gold models.",
+  "usage": "The rendered draft is validated against the frozen mapping-contract schema, gated by the mapping validator and datacontract lint, and then reviewed and edited by a human before the modeling engine consumes it to emit gold models; it is not itself executable.",
+  "limitations": "The mapping does not filter is_cancellation rows, resolve the 30.0664% null_rate on customer_id, or interpret negative quantity values as returns; it also does not deduplicate beyond the invoice_id plus stock_code identity, leaving any such business logic to downstream consumers."
+}

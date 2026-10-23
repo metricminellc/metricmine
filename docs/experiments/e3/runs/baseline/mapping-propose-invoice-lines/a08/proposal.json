@@ -1,0 +1,98 @@
+{
+  "category_name": "invoice_lines",
+  "entity_group": "invoice_lines",
+  "source_table": "silver.silver_invoice_lines",
+  "time_column": "invoiced_at",
+  "time_grain": "minute",
+  "grain_type": "transaction",
+  "degenerate_identifiers": [
+    {
+      "source": "derived",
+      "name": "invoice_line_identity",
+      "of": [
+        "invoice_id",
+        "stock_code"
+      ]
+    }
+  ],
+  "aggregations": [],
+  "grain_rationale": "row_count is 44721 and duplicate_row_rate is 0.0, so the source carries no exact duplicate rows and each row is a distinct transaction; invoice_id (distinct_count 2330) and stock_code (distinct_count 3141) are each non-unique on their own, but their combination forms a derived identity that identifies each invoice line, and since duplicate_row_rate is 0.0 there are no exact duplicates for that identity to absorb, so no aggregation is needed.",
+  "fields": [
+    {
+      "name": "invoice_id",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "mapping_role": "dimension",
+      "description": "Non-null VARCHAR invoice document code (samples '489434'-'489443') with distinct_count 2330 across 44721 rows, identifying the invoice a line belongs to; it is a dimension because it is not unique per row."
+    },
+    {
+      "name": "is_cancellation",
+      "logical_type": "boolean",
+      "physical_type": "BOOLEAN",
+      "required": true,
+      "mapping_role": "dimension",
+      "description": "Non-null BOOLEAN flag with distinct_values [false, true] marking whether the line is a cancellation record; it labels rows rather than measuring them, so it is a dimension."
+    },
+    {
+      "name": "stock_code",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "mapping_role": "dimension",
+      "description": "Non-null VARCHAR product code (samples '10002', '10080', '10123G') with distinct_count 3141, identifying the stock item on the line; a dimension."
+    },
+    {
+      "name": "product_description",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "mapping_role": "dimension",
+      "description": "Nullable (null_rate 0.5098%) VARCHAR free-text product description (samples such as '12 PENCIL SMALL TUBE WOODLAND'); a dimension that is occasionally missing in the source."
+    },
+    {
+      "name": "quantity",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "mapping_role": "measure",
+      "description": "Non-null INTEGER quantity transacted on the line, ranging from -1395 to 5184 in profile samples, with negative values plausibly corresponding to cancellations; it is added across rows and is therefore a measure."
+    },
+    {
+      "name": "invoiced_at",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": true,
+      "mapping_role": "time",
+      "description": "Non-null TIMESTAMP recording when the line was invoiced, with samples resolving to the minute (e.g. 2009-12-01T07:45:00 then 07:46:00); this is the time column for the category, at minute grain."
+    },
+    {
+      "name": "unit_price",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(10,2)",
+      "required": true,
+      "mapping_role": "measure",
+      "description": "Non-null DECIMAL(10,2) unit price ranging from 0.0 to 1998.49 in samples; it is compared and aggregated across lines, so it is a measure."
+    },
+    {
+      "name": "customer_id",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "mapping_role": "dimension",
+      "description": "Nullable (null_rate 30.0664%) INTEGER identifier of the purchasing customer (samples 12346, 12349, 12358); it labels the line rather than being summed, so it is a dimension, and is missing for roughly a third of lines likely reflecting unidentified or guest purchases."
+    },
+    {
+      "name": "country",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "mapping_role": "dimension",
+      "description": "Non-null VARCHAR country associated with the invoice line (samples 'Australia', 'Belgium', 'Germany') with distinct_count 24; a dimension."
+    }
+  ],
+  "category_description": "One row represents a single invoice line item: a stock-coded product entry recorded against an invoice, capturing the quantity and unit price transacted at a specific minute-resolution timestamp.",
+  "purpose": "This mapping declares how the silver.silver_invoice_lines table enters the gold unified event star as the invoice_lines fact category, for consumption by the deterministic modeling engine that builds the gold models from approved mapping contracts.",
+  "usage": "The mapping contract proposal is rendered to an ODCS mapping draft, validated against the frozen mapping-contract schema, checked by datacontract lint, and reviewed and edited by a human before approval; only then does the deterministic modeling engine use the approved contract to emit the gold invoice_lines fact.",
+  "limitations": "The mapping does not filter, exclude, or reclassify cancellation lines flagged by is_cancellation or the negative quantities observed in samples (as low as -1395), nor does it resolve or impute the 30.0664% null rate on customer_id; such exclusions and resolutions are left to downstream consumers of the gold fact."
+}

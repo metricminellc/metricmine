@@ -1,0 +1,85 @@
+{
+  "target_table": "silver_nyc_airlines",
+  "columns": [
+    {
+      "source_column": "carrier",
+      "action": "keep",
+      "target_name": "carrier",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 across all 16 rows and distinct_count equals 16, matching row_count 16, with samples like AA, DL, UA, WN showing a two-letter IATA carrier code."
+    },
+    {
+      "source_column": "name",
+      "action": "rename",
+      "target_name": "airline_name",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 with 16 distinct values such as Delta Air Lines Inc. and Southwest Airlines Co.; renamed from the generic 'name' to 'airline_name' for clarity since it holds the full carrier legal name."
+    },
+    {
+      "source_column": "_airbyte_raw_id",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata true; this UUID is a capture-tool artifact with no business meaning, so it is dropped."
+    },
+    {
+      "source_column": "_airbyte_extracted_at",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata true; min and max are both 2026-09-02T23:26:17, a single ingestion timestamp with no row-level business value, so it is dropped."
+    },
+    {
+      "source_column": "_airbyte_meta",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "JSON",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata true; the sole distinct value is the empty object '{}', confirming it carries no usable information, so it is dropped."
+    }
+  ],
+  "dedupe_strategy": "none",
+  "dedupe_keys": [],
+  "grain_keys": [
+    "carrier"
+  ],
+  "decisions": [
+    {
+      "key": "decisionExactDuplicates",
+      "value": "no-duplicates-found",
+      "rationale": "duplicate_row_rate is 0.0 across row_count 16, so no exact-duplicate removal logic is proposed."
+    },
+    {
+      "key": "decisionGrain",
+      "value": "carrier-code-is-unique-identifier",
+      "rationale": "carrier has distinct_count 16 equal to row_count 16 and null_rate 0.0, so it alone identifies one row per airline and is declared the grain."
+    },
+    {
+      "key": "decisionDropAirbyteMetadata",
+      "value": "excluded-as-capture-artifacts",
+      "rationale": "_airbyte_raw_id, _airbyte_extracted_at, and _airbyte_meta are all flagged is_airbyte_metadata true and carry only ingestion-tool values (a UUID, a single timestamp, and an empty JSON object), so all three are dropped."
+    },
+    {
+      "key": "decisionRenameName",
+      "value": "renamed-to-airline-name",
+      "rationale": "the bronze column 'name' is ambiguous outside its table context; it is renamed to 'airline_name' to clarify it holds the 16 distinct full carrier legal names such as Delta Air Lines Inc."
+    }
+  ],
+  "purpose": "This table is a small reference dimension mapping each two-letter IATA carrier code to its full airline legal name, intended to feed joins against flight or booking fact tables elsewhere in the warehouse.",
+  "usage": "Join on carrier to enrich fact tables with the full airline_name; both columns are fully populated and unique per the 16-row reference set, so no null handling or deduplication logic is needed at query time.",
+  "limitations": "The profile shows only 16 rows with zero nulls and zero duplicate rows, so this cleanup could not surface any data quality issues to resolve; if the source list of carriers grows or carrier codes are reused across years, this table would need re-profiling since the current uniqueness assumption rests entirely on the observed 16-row snapshot."
+}

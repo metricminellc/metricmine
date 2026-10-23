@@ -1,0 +1,208 @@
+# Draft proposed by silver-cleanup-proposer v0.1.0 at 2026-10-23T13:05:35.353636+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_ourairports_airports
+name: Silver ourairports airports
+version: 1.1.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: This silver table cleans the bronze ourairports_airports capture into a validated,
+    deduplicated airport reference table for analytics, geocoding joins, and downstream services
+    keyed by airport identifier.
+  usage: Consumers should join on the id grain key, treat has_scheduled_service as the authoritative
+    boolean scheduled-service indicator, and must explicitly handle nulls in elevation_ft,
+    municipality, icao_code, gps_code, local_code, home_link, wikipedia_link, and keywords
+    rather than assuming completeness.
+  limitations: 'Several fields remain sparsely populated and were retained rather than dropped
+    or imputed: local_code (null_rate 0.636635), home_link (null_rate 0.749034), keywords
+    (null_rate 0.679585), icao_code (null_rate 0.136579), wikipedia_link (null_rate 0.130838),
+    gps_code (null_rate 0.053881), elevation_ft (null_rate 0.036988), and municipality (null_rate
+    0.039748); the profile shows duplicate_row_rate 0.0 so no row-level deduplication was
+    needed, and free-text fields such as name and keywords were not parsed into structured
+    subfields.'
+schema:
+- name: silver_ourairports_airports
+  physicalName: silver_ourairports_airports
+  logicalType: object
+  physicalType: table
+  description: This silver table cleans the bronze ourairports_airports capture into a validated,
+    deduplicated airport reference table for analytics, geocoding joins, and downstream services
+    keyed by airport identifier.
+  properties:
+  - name: id
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: All sampled id values are purely numeric strings (e.g. '10309','10366','1058','111')
+      with distinct_count 9057 equal to row_count 9057 and null_rate 0.0, supporting a safe
+      cast to INTEGER as the unique identifier.
+  - name: ident
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: ident holds alphanumeric airport codes (e.g. '03N','07FA','19AK') with distinct_count
+      9057 matching row_count and null_rate 0.0, so it stays VARCHAR as a secondary unique
+      code.
+  - name: type
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: type is a closed enumeration of 5 distinct_values (heliport, large_airport,
+      medium_airport, seaplane_base, small_airport) with null_rate 0.0.
+  - name: name
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: name holds free-text airport names (e.g. 'Aalborg Airport','A Coruña Airport')
+      with distinct_count 9006 of 9057 rows and null_rate 0.0.
+  - name: latitude_deg
+    logicalType: number
+    physicalType: DECIMAL(10,6)
+    required: true
+    description: latitude_deg ranges from min -79.777778 to max 82.517263 across 9047 distinct
+      values with null_rate 0.0, fitting a DECIMAL(10,6) geographic field.
+  - name: longitude_deg
+    logicalType: number
+    physicalType: DECIMAL(10,6)
+    required: true
+    description: longitude_deg ranges from min -179.876999 to max 179.9757 across 9050 distinct
+      values with null_rate 0.0, fitting a DECIMAL(10,6) geographic field.
+  - name: elevation_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: elevation_ft samples are all integral values (e.g. -1266.0, -210.0, max 14472.0)
+      with null_rate 0.036988 (335 of 9057 nulls), so it is cast to INTEGER while retaining
+      nulls.
+  - name: continent
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: continent is a closed enumeration of 7 distinct_values (AF, AN, AS, EU, NA,
+      OC, SA) with null_rate 0.0.
+  - name: iso_country
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: iso_country has distinct_count 239 (e.g. 'AD','AE','AF') with null_rate 0.0.
+  - name: iso_region
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: iso_region has distinct_count 2169 (e.g. 'AD-08','AE-AZ') with null_rate
+      0.0.
+  - name: municipality
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: municipality has null_rate 0.039748 (360 of 9057 nulls) alongside distinct_count
+      8049, so it is retained as nullable text.
+  - name: has_scheduled_service
+    logicalType: boolean
+    physicalType: BOOLEAN
+    required: true
+    description: scheduled_service has exactly two distinct_values, 'yes' and 'no', with null_rate
+      0.0, supporting a direct BOOLEAN cast.
+  - name: icao_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: icao_code has null_rate 0.136579 (1237 of 9057 nulls) with distinct_count
+      7820, so it is retained as nullable.
+  - name: iata_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: iata_code has distinct_count 9057 matching row_count and null_rate 0.0, making
+      it a unique populated business code.
+  - name: gps_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: gps_code has null_rate 0.053881 (488 of 9057 nulls) with distinct_count 8569,
+      so it is retained as nullable.
+  - name: local_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: local_code has null_rate 0.636635 (5766 of 9057 nulls), making it sparsely
+      populated but retained as nullable rather than dropped.
+  - name: home_link
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: home_link has null_rate 0.749034 (6784 of 9057 nulls), making it sparsely
+      populated free-text URLs retained as nullable.
+  - name: wikipedia_link
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: wikipedia_link has null_rate 0.130838 (1185 of 9057 nulls) with distinct_count
+      7870, retained as nullable text.
+  - name: keywords
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: keywords has null_rate 0.679585 (6155 of 9057 nulls), making it sparsely
+      populated free text retained as nullable.
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (id) combinations'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT id
+        FROM silver.silver_ourairports_airports
+        GROUP BY id
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: silver-cleanup-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.0.0
+- property: modelId
+  value: claude-sonnet-5
+- property: profileHash
+  value: sha256:113a01272f19c485ada9b62583be7449fbfd55b60fb304b18139a17614cf0ec2
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: cleanup
+- property: decisionDedupe
+  value: no-duplicates-found
+- property: decisionGrain
+  value: id-is-primary-key
+- property: decisionDropMetadata
+  value: airbyte-columns-excluded
+- property: decisionCastId
+  value: id-cast-to-integer
+- property: decisionCastElevation
+  value: elevation-cast-to-integer
+- property: decisionScheduledServiceFlag
+  value: cast-to-boolean
+- property: decisionSparseLocalCode
+  value: retained-nullable-sparse
+- property: decisionSparseHomeLink
+  value: retained-nullable-sparse
+- property: decisionSparseKeywords
+  value: retained-nullable-sparse

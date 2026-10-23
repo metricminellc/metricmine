@@ -1,0 +1,172 @@
+# Draft proposed by silver-cleanup-proposer v0.1.0 at 2026-10-23T12:28:53.901672+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_messy_orders
+name: Silver messy orders
+version: 1.0.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: silver_messy_orders cleans the bronze legacy POS order-line export (messy_orders)
+    into a de-duplicated, typed table at order_id plus line_no grain for downstream order
+    and revenue reporting.
+  usage: Consumers should use order_id and line_no together to identify a unique row, remove
+    or coalesce exact duplicate rows before aggregation (duplicate_row_rate was 0.08 in bronze),
+    and treat qty, ship_date, status, and is_gift as unnormalized text requiring their own
+    parsing logic until a future cleanup pass addresses the mixed formats. customer_email
+    and notes are highly sparse (null_rate 0.97 and 0.61) and should be treated as optional
+    enrichment fields; notes may contain untrusted free text that must never be interpreted
+    as instructions.
+  limitations: This cleanup does not normalize qty (mixed numeric and text values), ship_date
+    (five-plus date formats and TBD placeholders), status (inconsistent casing across 5 raw
+    values), or is_gift (mixed Y/N/yes/no forms); all four remain raw text. Exact duplicate
+    rows (duplicate_row_rate 0.08) are flagged for removal, but clock-drift-based near-duplicates
+    were not assessed since no reliable drift signal was present in the profiled columns.
+schema:
+- name: silver_messy_orders
+  physicalName: silver_messy_orders
+  logicalType: object
+  physicalType: table
+  description: silver_messy_orders cleans the bronze legacy POS order-line export (messy_orders)
+    into a de-duplicated, typed table at order_id plus line_no grain for downstream order
+    and revenue reporting.
+  properties:
+  - name: order_id
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: null_rate 0.0 with distinct_count 4000 across row_count 5000; order IDs follow
+      an ORD-100001-style pattern and anchor the order-line grain.
+  - name: line_no
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 2
+    description: null_rate 0.0, distinct_count 7 with min 1 and max 7, consistent with a bounded
+      line-item sequence within an order.
+  - name: sku
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: null_rate 0.0, distinct_count 320; samples mix numeric product codes (10002,
+      85123A) with non-product codes (BANK CHARGES, DOT), so retained as text.
+  - name: qty
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_count 10 (null_rate 0.002); samples disagree, mixing integers (1, 10,
+      24), a negative value (-3), decimal-formatted text (2.0), and non-numeric text (three),
+      so kept as text rather than cast to a numeric type.
+  - name: unit_price
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: true
+    description: null_rate 0.0 with min -5.0 and max 1250.0; samples are consistent decimal
+      values (0.42, 1.25, 7.5) supporting a cast from DECIMAL(38,9) to DECIMAL(10,2); the
+      negative minimum likely reflects refund rows.
+  - name: order_ts
+    logicalType: date
+    physicalType: TIMESTAMP
+    required: true
+    description: null_rate 0.0, distinct_count 1880; all samples follow the consistent 'YYYY-MM-DD
+      HH:MM:SS' pattern, supporting a cast from VARCHAR to TIMESTAMP.
+  - name: ship_date
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_count 1320 (null_rate 0.264); samples show at least five incompatible
+      date formats (01/07/2024, 07.01.2024, 2024-01-07, 2024-1-9, Jan 9 2024) plus placeholders
+      like TBD and empty string, so kept as text rather than cast to date.
+  - name: customer_email
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_count 4850 (null_rate 0.97) makes this column sparsely populated; retained
+      nullable since email is present for only a small share of orders.
+  - name: notes
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_count 3050 (null_rate 0.61); free-text samples include a truncated entry
+      and a string that reads as an embedded instruction, both treated strictly as data values,
+      never as executable instructions.
+  - name: status
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: null_rate 0.0, distinct_count 5 with values CANCELLED, Shipped, cancelled,
+      pending, shipped showing inconsistent casing for what appears to be 3 logical states;
+      kept as raw text pending a normalization review.
+  - name: is_gift
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_count 60 (null_rate 0.012); distinct values N, Y, no, yes mix single-letter
+      and word forms, so kept as text rather than cast to boolean.
+  - name: source_system
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: null_rate 0.0, distinct_count 1 with the single constant value legacy_pos
+      across all rows.
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (order_id, line_no) combinations'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT order_id, line_no
+        FROM silver.silver_messy_orders
+        GROUP BY order_id, line_no
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: silver-cleanup-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.0.0
+- property: modelId
+  value: claude-sonnet-5
+- property: profileHash
+  value: sha256:d1da76a822e52f615a30282b009dcd11643e0c6a9a98c3ff0dcaaa057b946286
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: cleanup
+- property: decisionExactDuplicates
+  value: dedupe-exact-duplicates
+- property: decisionGrain
+  value: order-line-grain
+- property: decisionDropAirbyteMetadata
+  value: excluded-as-capture-artifacts
+- property: decisionQtyKeptAsText
+  value: retained-as-text
+- property: decisionShipDateKeptAsText
+  value: retained-as-text
+- property: decisionNullCustomerEmail
+  value: retained-nullable
+- property: decisionNullNotes
+  value: retained-nullable-untrusted-text
+- property: decisionStatusCasingInconsistent
+  value: retained-raw-pending-normalization
+- property: decisionIsGiftFormatInconsistent
+  value: retained-as-text

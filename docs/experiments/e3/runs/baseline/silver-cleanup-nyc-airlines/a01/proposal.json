@@ -1,0 +1,85 @@
+{
+  "target_table": "silver_nyc_airlines",
+  "columns": [
+    {
+      "source_column": "carrier",
+      "action": "keep",
+      "target_name": "carrier",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 with null_count 0, and distinct_count 16 matches the 16-row table exactly (e.g. '9E','AA','DL','UA'), making this a clean non-null identifier code."
+    },
+    {
+      "source_column": "name",
+      "action": "rename",
+      "target_name": "airline_name",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 with 16 distinct full carrier names (e.g. 'Delta Air Lines Inc.','Southwest Airlines Co.') one-to-one with carrier codes; renamed from the generic 'name' to the descriptive 'airline_name' for clarity in a dedicated airlines table."
+    },
+    {
+      "source_column": "_airbyte_raw_id",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata true; this is a capture-tool row identifier (sample '06a98b09-9d5f-7d1f-8000-66033e8441d3') with no business meaning."
+    },
+    {
+      "source_column": "_airbyte_extracted_at",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata true; single constant value 2026-09-02T23:26:17 across all 16 rows confirms it is a batch extraction timestamp, not business data."
+    },
+    {
+      "source_column": "_airbyte_meta",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "JSON",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata true; the single distinct value '{}' across all rows confirms it carries no business content."
+    }
+  ],
+  "dedupe_strategy": "none",
+  "dedupe_keys": [],
+  "grain_keys": [
+    "carrier"
+  ],
+  "decisions": [
+    {
+      "key": "decisionGrain",
+      "value": "carrier-as-grain",
+      "rationale": "carrier has distinct_count 16 against row_count 16 with null_rate 0.0, giving a one-to-one mapping that plausibly identifies each row after metadata columns are dropped."
+    },
+    {
+      "key": "decisionExactDuplicates",
+      "value": "no-duplicates-found",
+      "rationale": "dataset.duplicate_row_rate is 0.0 across 16 rows, so no exact-duplicate removal logic is required; dedupe_strategy is set to none."
+    },
+    {
+      "key": "decisionDropAirbyteMetadata",
+      "value": "excluded-as-capture-artifacts",
+      "rationale": "_airbyte_raw_id, _airbyte_extracted_at, and _airbyte_meta are all flagged is_airbyte_metadata true and carry constant or purely technical values, so they are dropped from silver."
+    },
+    {
+      "key": "decisionRenameName",
+      "value": "renamed-for-clarity",
+      "rationale": "The bronze column 'name' is ambiguous outside context; renamed to 'airline_name' since its 16 distinct values are full carrier names like 'JetBlue Airways' and 'United Air Lines Inc.'."
+    }
+  ],
+  "purpose": "This table provides a clean, deduplicated reference mapping of two-letter airline carrier codes to their full legal airline names, intended to feed joins against flight or ticketing fact tables keyed by carrier code.",
+  "usage": "Consumers should join on the 'carrier' grain key to enrich flight records with human-readable airline names; both columns are fully populated (null_rate 0.0) and require no null handling.",
+  "limitations": "The source profile covers only 16 rows representing a fixed reference set of carrier codes as of the extraction snapshot (2026-09-02); no duplicate rows were found (duplicate_row_rate 0.0), and all pipeline metadata columns were excluded as they carried no business value."
+}

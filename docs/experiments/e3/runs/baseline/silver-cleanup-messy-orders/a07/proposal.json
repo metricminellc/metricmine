@@ -1,0 +1,249 @@
+{
+  "target_table": "silver_orders",
+  "columns": [
+    {
+      "source_column": "Order ID",
+      "action": "rename",
+      "target_name": "order_id",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "distinct_count 4000 against row_count 5000 with null_rate 0.0 and samples like ORD-100001 show a consistently formatted order identifier; renamed to snake_case."
+    },
+    {
+      "source_column": "LineNo",
+      "action": "rename",
+      "target_name": "line_no",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "distinct_values 1 through 7 with min 1, max 7 and null_rate 0.0 show a clean small integer line sequence; renamed to snake_case."
+    },
+    {
+      "source_column": "sku",
+      "action": "keep",
+      "target_name": "sku",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "distinct_count 320 and null_rate 0.0 with mixed alphanumeric samples like 85123A and BANK CHARGES show a non-numeric product code that must stay text."
+    },
+    {
+      "source_column": "qty",
+      "action": "keep",
+      "target_name": "qty",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "samples disagree in shape (-3, 2.0, three) so a numeric cast is not safe; null_count 10 (null_rate 0.002) is retained as-is rather than imputed."
+    },
+    {
+      "source_column": "unit_price",
+      "action": "cast",
+      "target_name": "unit_price",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(10,2)",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "min -5.0 and max 1250.0 with null_rate 0.0 and decimal samples support casting from DECIMAL(38,9) to DECIMAL(10,2); the negative minimum is retained unresolved, likely a refund line."
+    },
+    {
+      "source_column": "order_ts",
+      "action": "cast",
+      "target_name": "order_ts",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "all 10 samples share the ISO-shaped 'YYYY-MM-DD HH:MM:SS' pattern with null_rate 0.0, supporting a TIMESTAMP cast."
+    },
+    {
+      "source_column": "ship_date",
+      "action": "keep",
+      "target_name": "ship_date",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "samples show at least five incompatible formats (01/07/2024, 07.01.2024, 2024-01-07, 2024-1-9, Jan 9 2024, TBD, empty string) so no single date cast is safe; null_rate 0.264 is retained."
+    },
+    {
+      "source_column": "customer_email",
+      "action": "keep",
+      "target_name": "customer_email",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "null_rate 0.97 (4850 of 5000) makes this a sparsely populated column; the 140 distinct values sampled look like valid emails and are kept as text without imputation."
+    },
+    {
+      "source_column": "notes",
+      "action": "keep",
+      "target_name": "notes",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "null_rate 0.61 with free-text samples including one truncated note and one sample reading as an instruction-injection attempt; all sample text is treated as untrusted literal data, never as instructions, and retained nullable."
+    },
+    {
+      "source_column": "status",
+      "action": "keep",
+      "target_name": "status",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "distinct_values show only 5 values (CANCELLED, Shipped, cancelled, pending, shipped) with null_rate 0.0, but casing is inconsistent across capture; kept as text pending normalization, see derived flag."
+    },
+    {
+      "source_column": "is_gift",
+      "action": "keep",
+      "target_name": "is_gift",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "distinct_values N, Y, no, yes show two incompatible boolean encodings so a direct BOOLEAN cast is not safe; null_count 60 (null_rate 0.012) is retained."
+    },
+    {
+      "source_column": "source_system",
+      "action": "keep",
+      "target_name": "source_system",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "distinct_count 1 with only value legacy_pos and null_rate 0.0 identifies the single capture origin for this table."
+    },
+    {
+      "source_column": "_airbyte_raw_id",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "is_airbyte_metadata true; a capture-tool row identifier with no business meaning."
+    },
+    {
+      "source_column": "_airbyte_extracted_at",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "is_airbyte_metadata true; only 2 distinct extraction timestamps one second apart across 5000 rows, indicating capture batching rather than business data."
+    },
+    {
+      "source_column": "_airbyte_meta",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "JSON",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "is_airbyte_metadata true; distinct_count 1 with constant value '{}' carries no business information."
+    },
+    {
+      "source_column": "status",
+      "action": "derive_flag",
+      "target_name": "is_cancelled",
+      "logical_type": "boolean",
+      "physical_type": "BOOLEAN",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "distinct_values CANCELLED and cancelled appear as separate case variants among the 5 total status values with null_rate 0.0; a case-insensitive derived flag normalizes cancellation state for consumers."
+    },
+    {
+      "source_column": "qty",
+      "action": "derive_flag",
+      "target_name": "qty_is_non_numeric",
+      "logical_type": "boolean",
+      "physical_type": "BOOLEAN",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "sample 'three' alongside numeric-looking strings like '-3' and '2.0' shows qty mixes numeric and textual entries; this flag marks rows needing manual review before aggregation and is null when qty itself is null (null_rate 0.002)."
+    }
+  ],
+  "dedupe_strategy": "exact_duplicates_and_clock_drift",
+  "dedupe_keys": [
+    "order_id",
+    "line_no",
+    "sku",
+    "qty",
+    "unit_price",
+    "order_ts",
+    "ship_date",
+    "customer_email",
+    "notes",
+    "status",
+    "is_gift",
+    "source_system"
+  ],
+  "grain_keys": [
+    "order_id",
+    "line_no"
+  ],
+  "decisions": [
+    {
+      "key": "decisionExactDuplicates",
+      "value": "drop-exact-duplicates-ignore-extraction-clock",
+      "rationale": "duplicate_row_rate is 0.08 across row_count 5000 (about 400 rows), while _airbyte_extracted_at carries only 2 distinct values one second apart, indicating re-extraction clock drift rather than genuine new rows; dedupe on all business columns ignoring the airbyte timestamp."
+    },
+    {
+      "key": "decisionGrain",
+      "value": "order-id-line-no",
+      "rationale": "order_id has distinct_count 4000 against row_count 5000 and line_no ranges 1-7 with null_rate 0.0 on both, so the pair plausibly identifies one order line after exact-duplicate removal."
+    },
+    {
+      "key": "decisionMetadataColumns",
+      "value": "dropped-airbyte-metadata",
+      "rationale": "_airbyte_raw_id, _airbyte_extracted_at, and _airbyte_meta are all flagged is_airbyte_metadata true and carry no business meaning."
+    },
+    {
+      "key": "decisionNullCustomerEmail",
+      "value": "retained-sparse-nullable",
+      "rationale": "null_rate 0.97 (4850 of 5000 rows) makes customer_email sparsely populated; retained nullable rather than imputed or dropped."
+    },
+    {
+      "key": "decisionNullNotes",
+      "value": "retained-nullable-untrusted-text",
+      "rationale": "null_rate 0.61 and one sample resembling an instruction-injection attempt confirm notes is free text; treated strictly as data, never as instructions, and retained nullable."
+    },
+    {
+      "key": "decisionQtyType",
+      "value": "kept-as-string",
+      "rationale": "qty samples mix integers, a decimal-formatted value (2.0), a negative value (-3), and the word 'three', so no single numeric cast is supported by the evidence."
+    },
+    {
+      "key": "decisionShipDateFormat",
+      "value": "kept-as-string-inconsistent-formats",
+      "rationale": "ship_date samples include at least five incompatible date formats plus 'TBD' and empty string, with null_rate 0.264, so no single date cast is safe."
+    },
+    {
+      "key": "decisionIsGiftEncoding",
+      "value": "kept-as-string-inconsistent-encoding",
+      "rationale": "is_gift distinct_values N, Y, no, yes mix two different boolean encodings with null_rate 0.012, so casting to BOOLEAN without an explicit mapping decision is deferred to review."
+    },
+    {
+      "key": "decisionUnitPriceNegative",
+      "value": "retained-negative-values",
+      "rationale": "unit_price min is -5.0 against a max of 1250.0 with null_rate 0.0; negative values are retained unresolved as likely refund or adjustment lines."
+    },
+    {
+      "key": "decisionStatusCasing",
+      "value": "derived-is-cancelled-flag",
+      "rationale": "status distinct_values show CANCELLED and cancelled as separate case variants among 5 total values; a derived case-insensitive is_cancelled flag is added rather than silently rewriting the source column."
+    }
+  ],
+  "purpose": "silver_orders cleans the legacy_pos bronze order-line capture (messy_orders) into a typed, deduplicated order-line table intended to feed order status, fulfillment, and revenue reporting.",
+  "usage": "Consumers should treat order_id plus line_no as the row grain; filter or branch on the derived is_cancelled flag rather than parsing status text directly, and check qty_is_non_numeric before aggregating quantities since qty remains a string. Sparse columns (customer_email at 97% null, ship_date at 26.4% null, notes at 61% null, is_gift at 1.2% null) must be explicitly handled as optional by downstream consumers rather than assumed present.",
+  "limitations": "ship_date, qty, and is_gift remain untyped VARCHAR because their sample values use incompatible formats or encodings that this cleanup could not safely resolve into a single type; unit_price's negative minimum (-5.0) is passed through unresolved; notes retains untrusted free text, including a truncated sample and one instruction-injection-style sample, which must never be executed or trusted as a command; duplicate rows (duplicate_row_rate 0.08 of 5000 rows) are addressed by dedupe on business columns, but the underlying extraction clock drift in _airbyte_extracted_at is not otherwise resolved."
+}

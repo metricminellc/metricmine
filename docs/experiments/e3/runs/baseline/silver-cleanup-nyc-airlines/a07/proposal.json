@@ -1,0 +1,85 @@
+{
+  "target_table": "silver_nyc_airlines",
+  "columns": [
+    {
+      "source_column": "carrier",
+      "action": "keep",
+      "target_name": "carrier",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 across 16 rows and distinct_count is 16, matching row_count, so carrier is a complete two-letter IATA code (e.g. 9E, AA, DL) suitable as the grain key."
+    },
+    {
+      "source_column": "name",
+      "action": "rename",
+      "target_name": "airline_name",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 and distinct_count is 16 with values like 'Delta Air Lines Inc.' and 'JetBlue Airways'; renamed from the generic 'name' to 'airline_name' for clarity since it describes the carrier, not a person or other entity."
+    },
+    {
+      "source_column": "_airbyte_raw_id",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "is_airbyte_metadata is true; this is a capture-tool surrogate id (sample '06a98b09-9d5f-7d1f-8000-66033e8441d3') with no business meaning and must be dropped in silver."
+    },
+    {
+      "source_column": "_airbyte_extracted_at",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "is_airbyte_metadata is true; a single distinct_value '2026-09-02T23:26:17' confirms this is the ingestion-run timestamp, not a business attribute, so it is dropped."
+    },
+    {
+      "source_column": "_airbyte_meta",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "JSON",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "is_airbyte_metadata is true; the sole distinct_value is the empty JSON object '{}', a capture-tool artifact carrying no business data, so it is dropped."
+    }
+  ],
+  "dedupe_strategy": "none",
+  "dedupe_keys": [],
+  "grain_keys": [
+    "carrier"
+  ],
+  "decisions": [
+    {
+      "key": "decisionGrain",
+      "value": "carrier-is-grain",
+      "rationale": "carrier has null_rate 0.0, distinct_count 16 equal to row_count 16, making it the natural unique identifier for a static airline reference table."
+    },
+    {
+      "key": "decisionExactDuplicates",
+      "value": "no-duplicates-found",
+      "rationale": "dataset.row_count is 16 and dataset.duplicate_row_rate is 0.0, so no exact duplicate rows exist in bronze and no dedupe strategy is required."
+    },
+    {
+      "key": "decisionDropAirbyteMetadata",
+      "value": "excluded-as-capture-artifacts",
+      "rationale": "_airbyte_raw_id, _airbyte_extracted_at, and _airbyte_meta all carry is_airbyte_metadata: true and are capture-tool fields with no business meaning, so they are dropped from silver."
+    },
+    {
+      "key": "decisionRenameName",
+      "value": "renamed-for-clarity",
+      "rationale": "the bronze column 'name' is ambiguous outside its table context; it holds the carrier's full legal name (distinct_count 16, e.g. 'Southwest Airlines Co.') and is renamed to 'airline_name' in silver."
+    }
+  ],
+  "purpose": "This table is a small, static reference dataset mapping two-letter airline carrier codes to their full legal airline names, intended to feed joins against flight-level fact tables that record only the carrier code.",
+  "usage": "Consumers should join on the carrier column (the declared grain) to enrich flight records with a human-readable airline_name; both columns are fully populated (null_rate 0.0) so no null-handling logic is required for this table.",
+  "limitations": "The profile shows only 16 rows with no duplicates and no nulls, so no cleanup beyond dropping Airbyte capture metadata and renaming 'name' to 'airline_name' was needed; consumers should be aware this reference table may need periodic refresh if new carriers enter the source system."
+}

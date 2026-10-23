@@ -1,0 +1,213 @@
+# Draft proposed by silver-cleanup-proposer v0.1.0 at 2026-10-23T13:12:17.242522+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_runways
+name: Silver runways
+version: 1.0.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: This table provides cleaned runway reference data sourced from the ourairports_runways
+    bronze capture, describing each runway's physical dimensions, surface, lighting/closure
+    status, and end-point geolocation and heading, keyed by runway id, to feed downstream
+    airport infrastructure and flight-planning analyses.
+  usage: Consumers should join on the 'id' primary key or on 'airport_ref' to the airports
+    table; latitude, longitude, elevation, heading, and displaced-threshold fields are populated
+    only when the corresponding runway end was surveyed (null rates range from about 22% to
+    90%, with displaced-threshold fields the sparsest), so downstream queries must explicitly
+    handle nulls rather than assume completeness.
+  limitations: Length, width, elevation, and displaced-threshold measures were narrowed from
+    DECIMAL(38,9) to INTEGER based on whole-number samples, discarding any fractional precision
+    that might exist beyond the sampled rows; heading fields retained two-decimal precision
+    instead. Latitude, longitude, elevation, heading, and displaced-threshold fields carry
+    null rates from roughly 22% up to 90%, reflecting incomplete historical surveys, and were
+    retained as nullable rather than imputed or row-dropped; airport_ref and airport_ident
+    were not validated against the airports table in this cleanup.
+schema:
+- name: silver_runways
+  physicalName: silver_runways
+  logicalType: object
+  physicalType: table
+  description: This table provides cleaned runway reference data sourced from the ourairports_runways
+    bronze capture, describing each runway's physical dimensions, surface, lighting/closure
+    status, and end-point geolocation and heading, keyed by runway id, to feed downstream
+    airport infrastructure and flight-planning analyses.
+  properties:
+  - name: id
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: null_count 0, null_rate 0.0, and distinct_count 10760 equals row_count 10760;
+      all sampled values ('232758','232759',...,'232770') are numeric strings with no leading
+      zeros, supporting cast from VARCHAR to INTEGER.
+  - name: airport_ref
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: null_count 0, null_rate 0.0; all 10 sampled values ('10309','10366','1058','111',...)
+      are numeric strings, supporting cast to INTEGER as the foreign key to the airports table.
+  - name: airport_ident
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: null_count 0, null_rate 0.0, distinct_count 7591; samples ('03N','07FA','0CO2','16A')
+      are alphanumeric airport codes, not safely castable to a numeric type.
+  - name: length_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: null_rate 0.007993 (86 nulls); all sampled values (0.0,2.0,20.0,...,44.0)
+      and max 16798.0 are whole numbers, supporting cast from DECIMAL(38,9) to INTEGER with
+      nulls retained.
+  - name: width_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: null_rate 0.082528 (888 nulls); sampled values (1.0,10.0,15.0,...,26.0) and
+      max 7000.0 are whole numbers, supporting cast to INTEGER with nulls retained.
+  - name: surface
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_rate 0.022955 (247 nulls), distinct_count 239; free-text surface codes
+      such as 'ASP-G' and 'ASP/CONC' are retained as string.
+  - name: lighted
+    logicalType: boolean
+    physicalType: BOOLEAN
+    required: true
+    description: distinct_count 2 with distinct_values [0.0,1.0] and null_count 0, a binary
+      indicator cast from DECIMAL(38,9) to BOOLEAN.
+  - name: closed
+    logicalType: boolean
+    physicalType: BOOLEAN
+    required: true
+    description: distinct_count 2 with distinct_values [0.0,1.0] and null_count 0, a binary
+      indicator cast from DECIMAL(38,9) to BOOLEAN.
+  - name: le_ident
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_rate 0.001022 (11 nulls); samples include non-numeric tokens ('-12','.','00','009'),
+      so the column is kept as VARCHAR.
+  - name: le_latitude_deg
+    logicalType: number
+    physicalType: DECIMAL(9,6)
+    required: false
+    description: null_rate 0.220911 (2377 nulls) reflects sparse end-point survey data; values
+      range from min -62.187801 to max 82.512802, fitting DECIMAL(9,6).
+  - name: le_longitude_deg
+    logicalType: number
+    physicalType: DECIMAL(9,6)
+    required: false
+    description: null_rate 0.221283 (2381 nulls); values range from min -179.881256 to max
+      179.338837, fitting DECIMAL(9,6).
+  - name: le_elevation_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: null_rate 0.276301 (2973 nulls); sampled values (-1246.0,-184.0,...,-69.0)
+      and range min -1246.0 to max 13202.0 are whole numbers, supporting cast to INTEGER.
+  - name: le_heading_degt
+    logicalType: number
+    physicalType: DECIMAL(5,2)
+    required: false
+    description: null_rate 0.228346 (2457 nulls); samples include fractional values (0.2,0.4,0.7,1.12),
+      so a two-decimal DECIMAL(5,2) is used rather than INTEGER.
+  - name: le_displaced_threshold_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: null_rate 0.884201 (9514 nulls) is very sparse; sampled values (1.0,2.0,10.0,...,57.0)
+      are whole numbers, supporting cast to INTEGER.
+  - name: he_ident
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_rate 0.004926 (53 nulls); samples include non-numeric tokens ('-','.','00','01L'),
+      so the column is kept as VARCHAR.
+  - name: he_latitude_deg
+    logicalType: number
+    physicalType: DECIMAL(9,6)
+    required: false
+    description: null_rate 0.222212 (2391 nulls); values range from min -62.193901 to max
+      82.522797, fitting DECIMAL(9,6).
+  - name: he_longitude_deg
+    logicalType: number
+    physicalType: DECIMAL(9,6)
+    required: false
+    description: null_rate 0.222212 (2391 nulls); values range from min -179.873184 to max
+      179.343002, fitting DECIMAL(9,6).
+  - name: he_elevation_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: null_rate 0.276208 (2972 nulls); sampled values (-1210.0,-181.0,...,-69.0)
+      and range min -1210.0 to max 13314.0 are whole numbers, supporting cast to INTEGER.
+  - name: he_heading_degt
+    logicalType: number
+    physicalType: DECIMAL(5,2)
+    required: false
+    description: null_rate 0.227138 (2444 nulls); samples (0.1,0.2,...,0.9) are fractional,
+      so DECIMAL(5,2) is used rather than INTEGER.
+  - name: he_displaced_threshold_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: null_rate 0.899907 (9683 nulls) is extremely sparse; sampled values (10.0,30.0,33.0,...,76.0)
+      are whole numbers, supporting cast to INTEGER.
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (id) combinations'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT id
+        FROM silver.silver_runways
+        GROUP BY id
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: silver-cleanup-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.0.0
+- property: modelId
+  value: claude-sonnet-5
+- property: profileHash
+  value: sha256:02990e96b848ac4edf287fdcca8136ca6b04008ab98d2a2f5287e450b0eecb33
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: cleanup
+- property: decisionGrain
+  value: id-as-primary-key
+- property: decisionExactDuplicates
+  value: no-duplicates-found
+- property: decisionDroppedAirbyteColumns
+  value: excluded-as-capture-artifacts
+- property: decisionCastIntegralDecimals
+  value: cast-decimal-to-integer
+- property: decisionBooleanFlags
+  value: cast-decimal-to-boolean
+- property: decisionLatLonPrecision
+  value: cast-to-decimal-9-6
+- property: decisionNullSparseGeoFields
+  value: retained-nullable-sparse

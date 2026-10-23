@@ -1,0 +1,85 @@
+{
+  "target_table": "silver_nyc_airlines",
+  "columns": [
+    {
+      "source_column": "carrier",
+      "action": "keep",
+      "target_name": "carrier",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 with distinct_count 16 equal to the row_count of 16, and distinct_values show short IATA-style codes (e.g. 9E, AA, DL, UA), so carrier is a fully populated, apparently unique identifier."
+    },
+    {
+      "source_column": "name",
+      "action": "rename",
+      "target_name": "airline_name",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 with 16 distinct values that are full airline company names (e.g. 'Delta Air Lines Inc.', 'Southwest Airlines Co.'); renamed from the generic 'name' to 'airline_name' for clarity since it describes the carrier, not a person or other entity."
+    },
+    {
+      "source_column": "_airbyte_raw_id",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata true; this is a capture-tool surrogate id with no business meaning, dropped per convention."
+    },
+    {
+      "source_column": "_airbyte_extracted_at",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata true with a single constant value '2026-09-02T23:26:17' across all 16 rows, confirming it is a load-time stamp rather than business data; dropped per convention."
+    },
+    {
+      "source_column": "_airbyte_meta",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "JSON",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata true with the single distinct value '{}' across all rows, carrying no usable information; dropped per convention."
+    }
+  ],
+  "dedupe_strategy": "none",
+  "dedupe_keys": [],
+  "grain_keys": [
+    "carrier"
+  ],
+  "decisions": [
+    {
+      "key": "decisionGrain",
+      "value": "carrier-code",
+      "rationale": "carrier has distinct_count 16 exactly matching dataset.row_count of 16 with null_rate 0.0, making it the smallest column set that plausibly identifies one row."
+    },
+    {
+      "key": "decisionExactDuplicates",
+      "value": "none-detected",
+      "rationale": "dataset.duplicate_row_rate is 0.0 against a row_count of 16, so no exact duplicate rows exist in bronze and no dedupe step is required."
+    },
+    {
+      "key": "decisionDropAirbyteMetadata",
+      "value": "excluded-as-capture-artifacts",
+      "rationale": "_airbyte_raw_id, _airbyte_extracted_at, and _airbyte_meta are each marked is_airbyte_metadata true in the profile and carry only capture-tool bookkeeping (a surrogate id, a constant extraction timestamp, and an empty JSON object), so they are dropped."
+    },
+    {
+      "key": "decisionRenameName",
+      "value": "renamed-to-airline-name",
+      "rationale": "The bronze column 'name' holds full airline company names (16 distinct values, null_rate 0.0) and is renamed to 'airline_name' in silver so consumers do not mistake it for a person or generic entity name."
+    }
+  ],
+  "purpose": "This table is a small reference dataset mapping airline carrier codes to their full airline company names, intended to feed carrier/airline dimension lookups in downstream analytics on NYC flight data.",
+  "usage": "Join other flight fact tables to this table on the carrier code to resolve the human-readable airline_name for display or grouping; both columns are fully populated (null_rate 0.0) so no null-handling logic is required by consumers.",
+  "limitations": "The table is tiny (row_count 16) and duplicate_row_rate is 0.0 so no deduplication logic was needed; uniqueness of carrier as a grain key is inferred from distinct_count matching row_count rather than from an explicit profiled constraint, so a human should confirm this against the full warehouse history before relying on it as a primary key."
+}

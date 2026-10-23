@@ -1,0 +1,138 @@
+# Draft proposed by silver-cleanup-proposer v0.1.0 at 2026-10-23T12:59:38.189782+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_nyc_planes
+name: Silver nyc planes
+version: 1.1.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: silver_nyc_planes provides cleaned aircraft registration reference data (tail number,
+    manufacturer, model, engine configuration, and capacity) intended to be joined against
+    flight fact tables for downstream analytics on aircraft characteristics.
+  usage: Join downstream flight tables to this table on tailnum to enrich records with aircraft
+    attributes; consumers should expect and explicitly handle nulls in year (about 2.1% of
+    rows) and should treat speed as largely unavailable since 99.3% of rows have a null speed
+    value.
+  limitations: 'Cleanup could not resolve the null rates present in bronze: year is null for
+    2.1% of rows and speed is null for 99.3% of rows, both retained as nullable rather than
+    imputed; the three Airbyte capture metadata columns were dropped and are not available
+    in this table.'
+schema:
+- name: silver_nyc_planes
+  physicalName: silver_nyc_planes
+  logicalType: object
+  physicalType: table
+  description: silver_nyc_planes provides cleaned aircraft registration reference data (tail
+    number, manufacturer, model, engine configuration, and capacity) intended to be joined
+    against flight fact tables for downstream analytics on aircraft characteristics.
+  properties:
+  - name: tailnum
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: distinct_count 3322 equals the table's row_count 3322 and null_rate is 0.0,
+      indicating tailnum uniquely identifies each aircraft record.
+  - name: year
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: Sample values (1956.0, 1959.0 ... up to max 2013.0) are all integral decimals
+      representing manufacture year, so DECIMAL(38,9) can be cast to INTEGER; null_rate is
+      0.021072 (70 nulls) so the column stays nullable.
+  - name: type
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: Exactly 3 distinct_values (Fixed wing multi engine, Fixed wing single engine,
+      Rotorcraft) with null_rate 0.0.
+  - name: manufacturer
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: 35 distinct manufacturer names (e.g. AIRBUS, BOEING, BEECH) sampled with
+      null_rate 0.0.
+  - name: model
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: 127 distinct model values (e.g. 172E, 310Q, 550) with null_rate 0.0.
+  - name: engines
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: distinct_values are exactly 1.0, 2.0, 3.0, 4.0 - integral engine counts -
+      with null_rate 0.0, so DECIMAL(38,9) can be safely cast to INTEGER.
+  - name: seats
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: 48 distinct integral values ranging from min 2.0 to max 450.0 with null_rate
+      0.0 support casting DECIMAL(38,9) to INTEGER.
+  - name: speed
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: 13 distinct integral values (90.0 to 432.0) support an INTEGER cast, but
+      null_rate is 0.993076 (3299 of 3322 rows null) so the column is sparsely populated and
+      must remain nullable.
+  - name: engine
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: 6 distinct engine types (4 Cycle, Reciprocating, Turbo-fan, Turbo-jet, Turbo-prop,
+      Turbo-shaft) with null_rate 0.0.
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (tailnum) combinations'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT tailnum
+        FROM silver.silver_nyc_planes
+        GROUP BY tailnum
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: silver-cleanup-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.0.0
+- property: modelId
+  value: claude-sonnet-5
+- property: profileHash
+  value: sha256:d775f9080fcb9731f1489bfc4933efc20b764c7dff57f90224131c77ea50b3f5
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: cleanup
+- property: decisionGrain
+  value: tailnum-is-unique-key
+- property: decisionExactDuplicates
+  value: no-duplicates-found
+- property: decisionDroppedMetadata
+  value: excluded-as-capture-artifacts
+- property: decisionCastDecimalColumns
+  value: decimal-to-integer-cast
+- property: decisionNullYear
+  value: retained-nullable
+- property: decisionNullSpeed
+  value: retained-nullable-sparse

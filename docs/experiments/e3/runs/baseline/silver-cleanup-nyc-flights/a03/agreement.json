@@ -1,0 +1,90 @@
+{
+  "columns": {
+    "draft": 19,
+    "oracle": 19,
+    "ordinal_order_equal": false,
+    "shared": 0
+  },
+  "first_class_checks": {
+    "agree": 0,
+    "checked": 0,
+    "per_field": {
+      "logicalType": "0/0",
+      "physicalType": "0/0",
+      "primaryKey": "0/0",
+      "primaryKeyPosition": "0/0",
+      "required": "0/0"
+    }
+  },
+  "grain": {
+    "draft": [
+      "year",
+      "month",
+      "day",
+      "carrier",
+      "flight"
+    ],
+    "oracle": [
+      "flight_date",
+      "carrier_code",
+      "flight_number",
+      "origin_airport",
+      "sched_dep_hhmm"
+    ],
+    "order_equal": false,
+    "set_equal": false
+  },
+  "mismatches": [
+    "flight_date: missing from the draft",
+    "carrier_code: missing from the draft",
+    "flight_number: missing from the draft",
+    "origin_airport: missing from the draft",
+    "sched_dep_hhmm: missing from the draft",
+    "dest_airport: missing from the draft",
+    "tail_number: missing from the draft",
+    "is_cancelled: missing from the draft",
+    "dep_hhmm: missing from the draft",
+    "dep_delay_minutes: missing from the draft",
+    "arr_hhmm: missing from the draft",
+    "sched_arr_hhmm: missing from the draft",
+    "arr_delay_minutes: missing from the draft",
+    "air_time_minutes: missing from the draft",
+    "distance_miles: missing from the draft",
+    "sched_dep_hour_local: missing from the draft",
+    "sched_dep_minute_local: missing from the draft",
+    "departure_hour_utc: missing from the draft",
+    "captured_at: missing from the draft",
+    "year: extra in the draft",
+    "month: extra in the draft",
+    "day: extra in the draft",
+    "dep_time: extra in the draft",
+    "sched_dep_time: extra in the draft",
+    "dep_delay: extra in the draft",
+    "arr_time: extra in the draft",
+    "sched_arr_time: extra in the draft",
+    "arr_delay: extra in the draft",
+    "carrier: extra in the draft",
+    "flight: extra in the draft",
+    "tailnum: extra in the draft",
+    "origin: extra in the draft",
+    "dest: extra in the draft",
+    "air_time: extra in the draft",
+    "distance: extra in the draft",
+    "hour: extra in the draft",
+    "minute: extra in the draft",
+    "time_hour: extra in the draft"
+  ],
+  "oracle_id": "silver_nyc_flights",
+  "rule_types": {
+    "column_equal": false,
+    "table_draft": [
+      "library:rowCount",
+      "sql"
+    ],
+    "table_equal": true,
+    "table_oracle": [
+      "library:rowCount",
+      "sql"
+    ]
+  }
+}

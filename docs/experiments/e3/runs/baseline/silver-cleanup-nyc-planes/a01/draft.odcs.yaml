@@ -1,0 +1,141 @@
+# Draft proposed by silver-cleanup-proposer v0.1.0 at 2026-10-23T12:56:45.645873+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_nyc_planes
+name: Silver nyc planes
+version: 1.1.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: This table provides cleaned, typed reference data on individual aircraft (by tail
+    number) including manufacturer, model, engine configuration, and capacity, intended to
+    feed downstream flight-analytics joins that enrich flight records with aircraft characteristics.
+  usage: Join to flight fact tables on tailnum, the declared grain; expect year and speed
+    to be nullable (year ~2% null, speed ~99% null) so handle missing values explicitly rather
+    than assuming presence, and treat engines/seats/year as INTEGER after the DECIMAL-to-INTEGER
+    cast.
+  limitations: speed is populated for only about 0.7% of rows (null_rate 0.993076) so it is
+    unreliable for broad analysis; year is missing for about 2.1% of rows; no duplicate rows
+    were found (duplicate_row_rate 0.0) so no dedupe logic was applied; all airbyte capture-metadata
+    columns were dropped and are unavailable downstream.
+schema:
+- name: silver_nyc_planes
+  physicalName: silver_nyc_planes
+  logicalType: object
+  physicalType: table
+  description: This table provides cleaned, typed reference data on individual aircraft (by
+    tail number) including manufacturer, model, engine configuration, and capacity, intended
+    to feed downstream flight-analytics joins that enrich flight records with aircraft characteristics.
+  properties:
+  - name: tailnum
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: distinct_count 3322 equals the table's row_count 3322 and null_rate is 0.0,
+      so tailnum uniquely identifies each aircraft record (e.g. N10156, N102UW, N103US).
+  - name: year
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: All sample_values (1956.0, 1959.0, 1963.0, ...) are integral despite the
+      DECIMAL(38,9) landed type, so cast to INTEGER; null_rate is 0.021072 (70 nulls) so the
+      column is retained as nullable rather than imputed.
+  - name: type
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: distinct_count is 3 with distinct_values Fixed wing multi engine, Fixed wing
+      single engine, Rotorcraft, and null_rate is 0.0, so this low-cardinality category column
+      is required.
+  - name: manufacturer
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: distinct_count is 35 with sample_values like AIRBUS, BOEING, BEECH, BELL,
+      and null_rate is 0.0, so manufacturer is kept as a required text field.
+  - name: model
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: distinct_count is 127 with samples such as 172E, 310Q, 421C showing free-form
+      alphanumeric model codes, and null_rate is 0.0, so model is kept as required text.
+  - name: engines
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: distinct_values are exactly 1.0, 2.0, 3.0, 4.0, all integral, so cast from
+      DECIMAL(38,9) to INTEGER; null_rate is 0.0 so the column is required.
+  - name: seats
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: sample_values (2.0, 4.0, 5.0, ... up to max 450.0) are all integral counts
+      of seats, so cast to INTEGER; null_rate is 0.0 so required true.
+  - name: speed
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: distinct_values (90.0, 95.0, ... 432.0) are integral so cast to INTEGER,
+      but null_rate is 0.993076 (3299 of 3322 rows null), so the column is sparsely populated
+      and retained as nullable rather than dropped or imputed.
+  - name: engine
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: distinct_count is 6 with distinct_values 4 Cycle, Reciprocating, Turbo-fan,
+      Turbo-jet, Turbo-prop, Turbo-shaft, and null_rate is 0.0, so engine type is kept as
+      a required category.
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (tailnum) combinations'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT tailnum
+        FROM silver.silver_nyc_planes
+        GROUP BY tailnum
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: silver-cleanup-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.0.0
+- property: modelId
+  value: claude-sonnet-5
+- property: profileHash
+  value: sha256:d775f9080fcb9731f1489bfc4933efc20b764c7dff57f90224131c77ea50b3f5
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: cleanup
+- property: decisionExactDuplicates
+  value: no-duplicates-found
+- property: decisionGrain
+  value: tailnum-unique-identifier
+- property: decisionCastNumericColumns
+  value: cast-decimal-to-integer
+- property: decisionNullYear
+  value: retained-nullable
+- property: decisionNullSpeed
+  value: retained-nullable-sparse
+- property: decisionDroppedMetadata
+  value: excluded-as-capture-artifacts

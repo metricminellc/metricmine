@@ -1,0 +1,85 @@
+{
+  "target_table": "silver_nyc_airlines",
+  "columns": [
+    {
+      "source_column": "carrier",
+      "action": "keep",
+      "target_name": "carrier",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 and distinct_count is 16, matching the row_count of 16, so every row carries a unique IATA carrier code such as 9E, AA, DL."
+    },
+    {
+      "source_column": "name",
+      "action": "rename",
+      "target_name": "carrier_name",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 with 16 distinct full carrier names (e.g. Delta Air Lines Inc., Southwest Airlines Co.); renamed from the generic 'name' to carrier_name for clarity since it describes the carrier."
+    },
+    {
+      "source_column": "_airbyte_raw_id",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata: true; this is a capture-tool UUID, not a business column, so it is dropped."
+    },
+    {
+      "source_column": "_airbyte_extracted_at",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata: true with a single constant value 2026-09-02T23:26:17 across all rows; it is a capture-tool timestamp and is dropped."
+    },
+    {
+      "source_column": "_airbyte_meta",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "JSON",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata: true with the constant value '{}' across all rows, carrying no business information, so it is dropped."
+    }
+  ],
+  "dedupe_strategy": "none",
+  "dedupe_keys": [],
+  "grain_keys": [
+    "carrier"
+  ],
+  "decisions": [
+    {
+      "key": "decisionGrain",
+      "value": "carrier-is-grain",
+      "rationale": "carrier has distinct_count 16 equal to row_count 16 and null_rate 0.0, so it plausibly identifies one row per carrier after cleanup."
+    },
+    {
+      "key": "decisionExactDuplicates",
+      "value": "none-detected",
+      "rationale": "dataset.duplicate_row_rate is 0.0 across row_count 16, so no exact duplicate rows exist in bronze and no dedupe step is required."
+    },
+    {
+      "key": "decisionDropMetadata",
+      "value": "excluded-as-capture-artifacts",
+      "rationale": "_airbyte_raw_id, _airbyte_extracted_at, and _airbyte_meta are all flagged is_airbyte_metadata: true and carry capture-tool values (a UUID, a constant timestamp, and an empty JSON object respectively), so they are dropped from silver."
+    },
+    {
+      "key": "decisionRenameName",
+      "value": "renamed-to-carrier-name",
+      "rationale": "The bronze column named 'name' is ambiguous outside context; it holds 16 distinct full carrier names with null_rate 0.0 and is renamed to carrier_name to be self-describing alongside the carrier code."
+    }
+  ],
+  "purpose": "This silver table is a cleaned airline carrier reference set, pairing each IATA carrier code with its full legal carrier name, intended to be joined with flight fact tables to enrich records with readable carrier identity.",
+  "usage": "Join downstream flight tables on the carrier column, which is the declared grain, to pull in carrier_name; since duplicate_row_rate is 0.0 and null_rate is 0.0 on both columns, no additional null-filtering or dedupe logic is required by consumers.",
+  "limitations": "The profile covers only 16 rows (one per carrier observed at capture time), so carriers introduced after this snapshot will be absent until the bronze source is re-profiled; the zero duplicate_row_rate and zero null_rate reflect this single capture and were not evaluated across multiple extraction cycles."
+}

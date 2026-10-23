@@ -1,0 +1,165 @@
+{
+  "target_table": "silver_nyc_planes",
+  "columns": [
+    {
+      "source_column": "tailnum",
+      "action": "keep",
+      "target_name": "tailnum",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "distinct_count 3322 equals the table's row_count 3322 and null_rate is 0.0, indicating tailnum uniquely identifies each aircraft record."
+    },
+    {
+      "source_column": "year",
+      "action": "cast",
+      "target_name": "year",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "Sample values (1956.0, 1959.0 ... up to max 2013.0) are all integral decimals representing manufacture year, so DECIMAL(38,9) can be cast to INTEGER; null_rate is 0.021072 (70 nulls) so the column stays nullable."
+    },
+    {
+      "source_column": "type",
+      "action": "keep",
+      "target_name": "type",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "Exactly 3 distinct_values (Fixed wing multi engine, Fixed wing single engine, Rotorcraft) with null_rate 0.0."
+    },
+    {
+      "source_column": "manufacturer",
+      "action": "keep",
+      "target_name": "manufacturer",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "35 distinct manufacturer names (e.g. AIRBUS, BOEING, BEECH) sampled with null_rate 0.0."
+    },
+    {
+      "source_column": "model",
+      "action": "keep",
+      "target_name": "model",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "127 distinct model values (e.g. 172E, 310Q, 550) with null_rate 0.0."
+    },
+    {
+      "source_column": "engines",
+      "action": "cast",
+      "target_name": "engines",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "distinct_values are exactly 1.0, 2.0, 3.0, 4.0 - integral engine counts - with null_rate 0.0, so DECIMAL(38,9) can be safely cast to INTEGER."
+    },
+    {
+      "source_column": "seats",
+      "action": "cast",
+      "target_name": "seats",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "48 distinct integral values ranging from min 2.0 to max 450.0 with null_rate 0.0 support casting DECIMAL(38,9) to INTEGER."
+    },
+    {
+      "source_column": "speed",
+      "action": "cast",
+      "target_name": "speed",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "13 distinct integral values (90.0 to 432.0) support an INTEGER cast, but null_rate is 0.993076 (3299 of 3322 rows null) so the column is sparsely populated and must remain nullable."
+    },
+    {
+      "source_column": "engine",
+      "action": "keep",
+      "target_name": "engine",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "6 distinct engine types (4 Cycle, Reciprocating, Turbo-fan, Turbo-jet, Turbo-prop, Turbo-shaft) with null_rate 0.0."
+    },
+    {
+      "source_column": "_airbyte_raw_id",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "is_airbyte_metadata is true; this is a capture-tool row identifier (3322 distinct UUID-like values), not a business column."
+    },
+    {
+      "source_column": "_airbyte_extracted_at",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "is_airbyte_metadata is true; single distinct_value 2026-09-02T23:26:22 across all rows, a capture timestamp rather than a business column."
+    },
+    {
+      "source_column": "_airbyte_meta",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "JSON",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "is_airbyte_metadata is true; single distinct_value '{}' indicates no business content, a capture-tool artifact."
+    }
+  ],
+  "dedupe_strategy": "none",
+  "dedupe_keys": [],
+  "grain_keys": [
+    "tailnum"
+  ],
+  "decisions": [
+    {
+      "key": "decisionGrain",
+      "value": "tailnum-is-unique-key",
+      "rationale": "distinct_count for tailnum (3322) equals dataset row_count (3322) with null_rate 0.0, so tailnum alone plausibly identifies one row per aircraft."
+    },
+    {
+      "key": "decisionExactDuplicates",
+      "value": "no-duplicates-found",
+      "rationale": "duplicate_row_rate is 0.0 across row_count 3322, so no exact duplicate rows exist in bronze and no dedupe step is needed."
+    },
+    {
+      "key": "decisionDroppedMetadata",
+      "value": "excluded-as-capture-artifacts",
+      "rationale": "_airbyte_raw_id, _airbyte_extracted_at, and _airbyte_meta all carry is_airbyte_metadata true and were dropped as non-business capture-tool columns."
+    },
+    {
+      "key": "decisionCastDecimalColumns",
+      "value": "decimal-to-integer-cast",
+      "rationale": "year, engines, seats, and speed are landed as DECIMAL(38,9) but all sample and distinct values are integral (e.g. engines distinct_values 1.0-4.0, seats min 2.0 max 450.0), justifying a cast to INTEGER."
+    },
+    {
+      "key": "decisionNullYear",
+      "value": "retained-nullable",
+      "rationale": "year has null_rate 0.021072 (70 of 3322 nulls); nulls are retained rather than imputed or dropped."
+    },
+    {
+      "key": "decisionNullSpeed",
+      "value": "retained-nullable-sparse",
+      "rationale": "speed has null_rate 0.993076 (3299 of 3322 nulls), making it sparsely populated; it is retained as nullable rather than dropped since distinct_count 13 shows real values exist for some rows."
+    }
+  ],
+  "purpose": "silver_nyc_planes provides cleaned aircraft registration reference data (tail number, manufacturer, model, engine configuration, and capacity) intended to be joined against flight fact tables for downstream analytics on aircraft characteristics.",
+  "usage": "Join downstream flight tables to this table on tailnum to enrich records with aircraft attributes; consumers should expect and explicitly handle nulls in year (about 2.1% of rows) and should treat speed as largely unavailable since 99.3% of rows have a null speed value.",
+  "limitations": "Cleanup could not resolve the null rates present in bronze: year is null for 2.1% of rows and speed is null for 99.3% of rows, both retained as nullable rather than imputed; the three Airbyte capture metadata columns were dropped and are not available in this table."
+}

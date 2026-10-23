@@ -1,0 +1,143 @@
+# Draft proposed by silver-cleanup-proposer v0.1.0 at 2026-10-23T12:08:25.452973+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_online_retail_ii
+name: Silver online retail ii
+version: 1.0.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: This silver table provides cleaned retail transaction line items (invoice, stock
+    code, description, quantity, price, customer, and country) sourced from the bronze online_retail_ii
+    table, intended to feed sales, returns, and customer analytics.
+  usage: Consumers should treat invoice plus stockcode as the row grain after exact duplicates
+    are removed, filter or explicitly handle rows where customer_id is null (about 29.8% of
+    rows), and interpret negative quantity values as returns or cancellations rather than
+    data errors.
+  limitations: Airbyte capture metadata columns were dropped entirely; about 1.12% of bronze
+    rows were exact duplicates and were removed; customer_id is null for roughly 29.78% of
+    rows and description is null for about 0.50% of rows, both retained as nullable rather
+    than imputed; type casts for quantity, price, and invoicedate rely on the sampled values
+    being representative, and any future non-conforming values would require reprofiling.
+schema:
+- name: silver_online_retail_ii
+  physicalName: silver_online_retail_ii
+  logicalType: object
+  physicalType: table
+  description: This silver table provides cleaned retail transaction line items (invoice,
+    stock code, description, quantity, price, customer, and country) sourced from the bronze
+    online_retail_ii table, intended to feed sales, returns, and customer analytics.
+  properties:
+  - name: invoice
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: invoice has 0 null_rate across 45228 rows and 2330 distinct values such as
+      '489434'-'489443', so it is retained as a required identifier string.
+  - name: stockcode
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 2
+    description: stockcode has 0 null_rate and 3141 distinct values including alphanumeric
+      codes like '10002R' and '10123C', so it stays a required string rather than a numeric
+      type.
+  - name: description
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: description has null_count 228 (null_rate 0.005041) out of 45228 rows and
+      free-text samples like ' 3 STRIPEY MICE FELTCRAFT' and ' Bank Charges', so it is kept
+      nullable text.
+  - name: quantity
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: quantity is landed as DECIMAL(38,9) with 0 null_rate and all sample values
+      integral (-1395.0, -1043.0, ... 5184.0 max), so it is safely cast to INTEGER; negative
+      values like -1395 indicate returns and are retained.
+  - name: invoicedate
+    logicalType: date
+    physicalType: TIMESTAMP
+    required: true
+    description: invoicedate has 0 null_rate and every sample is ISO-shaped like '2009-12-01
+      07:45:00', so it is cast from VARCHAR to TIMESTAMP.
+  - name: price
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: true
+    description: price is landed as DECIMAL(38,9) with 0 null_rate, min 0.0 and max 1998.49,
+      and samples show two-decimal monetary values (0.04, 0.06, ... 0.18), so it is cast to
+      DECIMAL(10,2).
+  - name: customer_id
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: customer_id has null_count 13468 (null_rate 0.29778) out of 45228 rows, and
+      the non-null samples (12346.0 to 18287.0) are all integral, so it is cast to INTEGER
+      but kept nullable since nearly 30% of rows lack a customer.
+  - name: country
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: country has 0 null_rate and only 24 distinct values such as 'Australia',
+      'Belgium', 'EIRE', consistent with a required low-cardinality dimension string.
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (invoice, stockcode) combinations'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT invoice, stockcode
+        FROM silver.silver_online_retail_ii
+        GROUP BY invoice, stockcode
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: silver-cleanup-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.0.0
+- property: modelId
+  value: claude-sonnet-5
+- property: profileHash
+  value: sha256:79f801e1d8182ee55a32a0e3323134a27fec839c5a5478edfb8f5683cf5221f0
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: cleanup
+- property: decisionExactDuplicates
+  value: drop-exact-duplicates
+- property: decisionGrain
+  value: invoice-stockcode
+- property: decisionNullCustomerId
+  value: retained-nullable
+- property: decisionSparseDescription
+  value: retained-nullable
+- property: decisionNegativeQuantity
+  value: retained-as-returns
+- property: decisionDropAirbyteMetadata
+  value: excluded-as-capture-artifacts
+- property: decisionPriceCast
+  value: cast-to-decimal-10-2
+- property: decisionQuantityCast
+  value: cast-to-integer

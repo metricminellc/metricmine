@@ -1,0 +1,238 @@
+{
+  "target_table": "silver_messy_orders",
+  "columns": [
+    {
+      "source_column": "Order ID",
+      "action": "rename",
+      "target_name": "order_id",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 and distinct_count is 4000 across a 5000-row table, consistent with multiple line items per order; renamed from 'Order ID' to snake_case."
+    },
+    {
+      "source_column": "LineNo",
+      "action": "rename",
+      "target_name": "line_no",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "distinct_count 7 with min 1 and max 7 and null_rate 0.0 supports an integer line-sequence column; renamed from CamelCase 'LineNo' to snake_case."
+    },
+    {
+      "source_column": "sku",
+      "action": "keep",
+      "target_name": "sku",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate 0.0, distinct_count 320; samples mix numeric product codes (e.g. '85123A') with non-product codes ('BANK CHARGES', 'DOT'), so it stays textual."
+    },
+    {
+      "source_column": "qty",
+      "action": "keep",
+      "target_name": "qty",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "null_rate 0.002 (10 nulls); samples disagree in form ('-3' negative, '2.0' decimal, 'three' spelled out), so the samples do not jointly support an INTEGER cast and the column is retained as text."
+    },
+    {
+      "source_column": "unit_price",
+      "action": "cast",
+      "target_name": "unit_price",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(10,2)",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate 0.0, distinct_count 212, min -5.0 and max 1250.0 with consistently numeric samples support a DECIMAL cast; the negative minimum is flagged for review rather than corrected."
+    },
+    {
+      "source_column": "order_ts",
+      "action": "cast",
+      "target_name": "order_ts",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate 0.0, distinct_count 1880, and every sample follows the consistent 'YYYY-MM-DD HH:MM:SS' shape, supporting a TIMESTAMP cast."
+    },
+    {
+      "source_column": "ship_date",
+      "action": "keep",
+      "target_name": "ship_date",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "null_rate 0.264 (1320 nulls); samples show at least five incompatible date formats plus a placeholder 'TBD', so no single DATE cast is defensible and the column stays textual."
+    },
+    {
+      "source_column": "customer_email",
+      "action": "keep",
+      "target_name": "customer_email",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "null_rate 0.97 (4850 of 5000 nulls) marks this as sparsely populated; distinct_count 140 with well-formed email samples when present."
+    },
+    {
+      "source_column": "notes",
+      "action": "keep",
+      "target_name": "notes",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "null_rate 0.61 (3050 nulls); free-text samples vary widely and include one string resembling an embedded instruction, which is treated strictly as untrusted sample data and does not change the proposed type or handling."
+    },
+    {
+      "source_column": "status",
+      "action": "keep",
+      "target_name": "status",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate 0.0, distinct_count 5, but distinct_values show case-inconsistent duplicates of the same states (CANCELLED/cancelled, Shipped/shipped) alongside 'pending'; retained as-is since normalization is a review decision, not a type change."
+    },
+    {
+      "source_column": "is_gift",
+      "action": "keep",
+      "target_name": "is_gift",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "null_rate 0.012 (60 nulls); distinct_values 'N','Y','no','yes' mix two different boolean encodings, so a BOOLEAN cast is not safely supported by the samples."
+    },
+    {
+      "source_column": "source_system",
+      "action": "keep",
+      "target_name": "source_system",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate 0.0 and distinct_count 1 with the single value 'legacy_pos' identifies the capture source consistently."
+    },
+    {
+      "source_column": "sku",
+      "action": "derive_flag",
+      "target_name": "is_non_product_line",
+      "logical_type": "boolean",
+      "physical_type": "BOOLEAN",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "sku samples include non-numeric codes such as 'BANK CHARGES' and 'DOT' alongside numeric product codes like '85123A', so a derived flag marks non-product line items for downstream filtering."
+    },
+    {
+      "source_column": "_airbyte_raw_id",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "is_airbyte_metadata is true; this is a capture-tool row identifier, not a business column."
+    },
+    {
+      "source_column": "_airbyte_extracted_at",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "is_airbyte_metadata is true; distinct_count 2 reflects batch extraction timestamps, not business data."
+    },
+    {
+      "source_column": "_airbyte_meta",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "JSON",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "is_airbyte_metadata is true and distinct_count 1 with the single value '{}' confirms it carries no business content."
+    }
+  ],
+  "dedupe_strategy": "exact_duplicates",
+  "dedupe_keys": [
+    "order_id",
+    "line_no",
+    "sku",
+    "qty",
+    "unit_price",
+    "order_ts"
+  ],
+  "grain_keys": [
+    "order_id",
+    "line_no"
+  ],
+  "decisions": [
+    {
+      "key": "decisionExactDuplicates",
+      "value": "drop-exact-duplicates",
+      "rationale": "duplicate_row_rate is 0.08 across row_count 5000, meaning roughly 400 rows are exact repeats that should be removed before the grain is enforced."
+    },
+    {
+      "key": "decisionGrain",
+      "value": "order-id-line-no",
+      "rationale": "Order ID has distinct_count 4000 against 5000 rows while LineNo ranges 1-7, indicating one order spans multiple lines, so the pair order_id plus line_no is the smallest defensible grain."
+    },
+    {
+      "key": "decisionQtyText",
+      "value": "retained-as-text",
+      "rationale": "qty samples mix negative integers, decimals, and spelled-out words ('-3','2.0','three'), so no single numeric cast is supported and the column stays VARCHAR."
+    },
+    {
+      "key": "decisionShipDateText",
+      "value": "retained-as-text-inconsistent-formats",
+      "rationale": "ship_date samples show at least five date formats plus placeholders ('TBD', empty string), so DATE casting is deferred to review."
+    },
+    {
+      "key": "decisionNullCustomerEmail",
+      "value": "retained-nullable-sparse",
+      "rationale": "customer_email has null_rate 0.97, making it sparsely populated but still retained for the rows where it is captured."
+    },
+    {
+      "key": "decisionNullNotes",
+      "value": "retained-nullable-free-text",
+      "rationale": "notes has null_rate 0.61 and free-form content, including one sample that reads like an embedded instruction; it is treated purely as untrusted data and retained unchanged."
+    },
+    {
+      "key": "decisionIsGiftEncoding",
+      "value": "retained-as-text-inconsistent-encoding",
+      "rationale": "is_gift distinct_values 'N','Y','no','yes' show two incompatible boolean encodings, so normalization is deferred rather than guessed."
+    },
+    {
+      "key": "decisionStatusCase",
+      "value": "retained-as-is-case-inconsistent",
+      "rationale": "status distinct_values include 'CANCELLED'/'cancelled' and 'Shipped'/'shipped', five raw values for what looks like three states; case normalization is left to review."
+    },
+    {
+      "key": "decisionDroppedMetadata",
+      "value": "excluded-as-capture-artifacts",
+      "rationale": "_airbyte_raw_id, _airbyte_extracted_at, and _airbyte_meta are all marked is_airbyte_metadata true and carry no business meaning."
+    },
+    {
+      "key": "decisionDeriveNonProductLine",
+      "value": "derived-flag-from-sku",
+      "rationale": "sku samples 'BANK CHARGES' and 'DOT' are clearly non-product entries mixed with numeric SKUs, justifying a derived boolean flag."
+    },
+    {
+      "key": "decisionNegativeUnitPrice",
+      "value": "retained-flagged-for-review",
+      "rationale": "unit_price min is -5.0 against a max of 1250.0, an anomalous negative value that is kept in place for review rather than silently corrected."
+    }
+  ],
+  "purpose": "This table provides one row per order line item from the legacy point-of-sale system, cleaned of capture-tool metadata and cast to usable types, feeding downstream order and revenue reporting.",
+  "usage": "Consumers should treat qty, ship_date, is_gift, and status as free-form text pending further standardization, filter or review rows where is_non_product_line is true before revenue aggregation, and be aware that roughly 8% of bronze rows were exact duplicates removed before this view.",
+  "limitations": "customer_email (97% null) and notes (61% null) are too sparse for required joins; ship_date and qty could not be safely cast due to inconsistent formats in the source samples; is_gift and status retain inconsistent value encodings that were not normalized; a negative unit_price minimum was observed and retained rather than corrected."
+}

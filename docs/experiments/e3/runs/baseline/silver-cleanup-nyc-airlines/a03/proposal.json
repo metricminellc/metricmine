@@ -1,0 +1,85 @@
+{
+  "target_table": "silver_nyc_airlines",
+  "columns": [
+    {
+      "source_column": "carrier",
+      "action": "keep",
+      "target_name": "carrier",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 across 16 rows and distinct_count is 16, matching row_count, so carrier is a complete two-letter IATA code (e.g. '9E','AA','DL') suitable as a required key."
+    },
+    {
+      "source_column": "name",
+      "action": "rename",
+      "target_name": "carrier_name",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 with distinct_count 16 matching row_count; values like 'Delta Air Lines Inc.' and 'Southwest Airlines Co.' are full carrier names, renamed from the generic 'name' to the descriptive 'carrier_name' for clarity in a dedicated airline lookup table."
+    },
+    {
+      "source_column": "_airbyte_raw_id",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "is_airbyte_metadata is true; this is a capture-tool surrogate id (sample '06a98b09-9d5f-7d1f-8000-66033e8441d3') with no business meaning and is dropped per policy."
+    },
+    {
+      "source_column": "_airbyte_extracted_at",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "is_airbyte_metadata is true; min and max are both '2026-09-02T23:26:17' (a single extraction batch timestamp), a pipeline artifact dropped per policy."
+    },
+    {
+      "source_column": "_airbyte_meta",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "JSON",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "is_airbyte_metadata is true; the single distinct value '{}' shows an empty capture-tool metadata blob carrying no business content, dropped per policy."
+    }
+  ],
+  "dedupe_strategy": "none",
+  "dedupe_keys": [],
+  "grain_keys": [
+    "carrier"
+  ],
+  "decisions": [
+    {
+      "key": "decisionGrain",
+      "value": "carrier-is-grain",
+      "rationale": "carrier has distinct_count 16 equal to row_count 16 and null_rate 0.0, so each row is uniquely identified by the carrier code; carrier_name is descriptive and not needed for uniqueness."
+    },
+    {
+      "key": "decisionExactDuplicates",
+      "value": "no-duplicates-found",
+      "rationale": "dataset.duplicate_row_rate is 0.0 across row_count 16, so no exact duplicate rows exist in bronze and no dedupe step is required."
+    },
+    {
+      "key": "decisionDropMetadata",
+      "value": "excluded-as-capture-artifacts",
+      "rationale": "_airbyte_raw_id, _airbyte_extracted_at, and _airbyte_meta all carry is_airbyte_metadata true and are capture-tool columns with no business meaning, so they are dropped."
+    },
+    {
+      "key": "decisionRenameName",
+      "value": "renamed-to-carrier-name",
+      "rationale": "The bronze column 'name' is ambiguous outside context; it is renamed to 'carrier_name' to clarify it holds the full airline name (e.g. 'United Air Lines Inc.') alongside the 'carrier' code."
+    }
+  ],
+  "purpose": "This table is a small reference lookup mapping two-letter IATA carrier codes to their full airline names, intended to feed joins from flight-fact tables that only carry the carrier code.",
+  "usage": "Join on carrier to enrich flight or booking records with the human-readable carrier_name; both columns are required and non-null so no null-handling logic is needed by consumers.",
+  "limitations": "The profile covers only 16 rows (one per carrier) with zero nulls and zero duplicates, so no sparsity, duplicate, or clock-drift issues were found; consumers should be aware this is a static small dimension table, not a growing fact table."
+}

@@ -1,0 +1,80 @@
+{
+  "target_table": "silver_nyc_airlines",
+  "columns": [
+    {
+      "source_column": "carrier",
+      "action": "keep",
+      "target_name": "carrier",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 and distinct_count 16 equals the table's row_count of 16, with distinct_values like AA, DL, UA, WN showing standard two-letter IATA carrier codes suitable as a business key."
+    },
+    {
+      "source_column": "name",
+      "action": "rename",
+      "target_name": "airline_name",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 and distinct_count 16 matches carrier's cardinality, with sample values such as 'American Airlines Inc.' and 'Delta Air Lines Inc.' showing full descriptive carrier names; renamed from the generic 'name' to avoid ambiguity in the silver schema."
+    },
+    {
+      "source_column": "_airbyte_raw_id",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "is_airbyte_metadata is true, identifying this as a capture-tool artifact with no business meaning; dropped per standard metadata-stripping policy."
+    },
+    {
+      "source_column": "_airbyte_extracted_at",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "is_airbyte_metadata is true with a single distinct_value '2026-09-02T23:26:17' shared across all 16 rows, confirming it records the extraction batch rather than business data; dropped."
+    },
+    {
+      "source_column": "_airbyte_meta",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "JSON",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "is_airbyte_metadata is true and distinct_count is 1 with the constant value '{}', showing no business content; dropped."
+    }
+  ],
+  "dedupe_strategy": "none",
+  "dedupe_keys": [],
+  "grain_keys": [
+    "carrier"
+  ],
+  "decisions": [
+    {
+      "key": "decisionDropAirbyteMetadata",
+      "value": "dropped-capture-artifacts",
+      "rationale": "Three columns (_airbyte_raw_id, _airbyte_extracted_at, _airbyte_meta) carry is_airbyte_metadata: true and were dropped as capture-tool artifacts with no business meaning."
+    },
+    {
+      "key": "decisionGrain",
+      "value": "carrier-as-natural-key",
+      "rationale": "carrier has distinct_count 16 exactly equal to dataset.row_count of 16 and null_rate 0.0, making it a reliable one-row-per-carrier natural key; airline_name shares the same cardinality but carrier is the conventional business key for airline dimension tables."
+    },
+    {
+      "key": "decisionExactDuplicates",
+      "value": "no-duplicates-found",
+      "rationale": "dataset.duplicate_row_rate is 0.0 across dataset.row_count of 16, so no exact duplicate rows exist in this bronze snapshot and no dedupe step is required."
+    }
+  ],
+  "purpose": "This silver table is a cleaned airline carrier reference (dimension) table mapping IATA carrier codes to full airline names, intended to feed joins against flight-level fact tables keyed by carrier code.",
+  "usage": "Consumers should join downstream flight or booking tables to this table on the carrier column to resolve human-readable airline_name; no filtering of flagged or null rows is required since all columns in this snapshot are fully populated.",
+  "limitations": "This is a small 16-row snapshot with no historical versioning or effective-dating; duplicate_row_rate was 0.0 at profiling time but this does not guarantee future loads remain duplicate-free, and all Airbyte capture metadata was dropped so lineage to the original extraction batch is not preserved in silver."
+}

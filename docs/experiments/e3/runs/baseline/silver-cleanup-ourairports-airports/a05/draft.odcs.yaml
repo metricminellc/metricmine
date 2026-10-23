@@ -1,0 +1,203 @@
+# Draft proposed by silver-cleanup-proposer v0.1.0 at 2026-10-23T13:06:48.155016+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_airports
+name: Silver airports
+version: 1.0.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: This table cleans the bronze ourairports_airports capture into a silver airport
+    reference table, one row per airport identified by id, feeding downstream airport lookup
+    and geospatial joins.
+  usage: Consumers should join on id (or ident/iata_code/icao_code/gps_code/local_code when
+    matching external airport code schemes) and must handle nulls in elevation_ft, municipality,
+    icao_code, gps_code, local_code, home_link, wikipedia_link, and keywords since these columns
+    are sparsely populated and never imputed.
+  limitations: Pipeline metadata columns (_airbyte_raw_id, _airbyte_extracted_at, _airbyte_meta)
+    were dropped; local_code (63.7% null), home_link (74.9% null), and keywords (68.0% null)
+    remain heavily sparse and were not backfilled or excluded; no exact duplicate rows were
+    found (duplicate_row_rate 0.0) so no dedupe logic beyond the stated grain was applied.
+schema:
+- name: silver_airports
+  physicalName: silver_airports
+  logicalType: object
+  physicalType: table
+  description: This table cleans the bronze ourairports_airports capture into a silver airport
+    reference table, one row per airport identified by id, feeding downstream airport lookup
+    and geospatial joins.
+  properties:
+  - name: id
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: distinct_count 9057 equals row_count 9057 with null_rate 0.0, and all sampled
+      values ('10309','10366','1058',...) are integral digit strings, so the surrogate id
+      can be cast from VARCHAR to INTEGER.
+  - name: ident
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: distinct_count 9057 equals row_count with null_rate 0.0; samples ('03N','07FA','0CO2',...)
+      mix letters and digits so it stays a string identifier.
+  - name: type
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: Low-cardinality categorical column with distinct_values ['heliport','large_airport','medium_airport','seaplane_base','small_airport']
+      and null_rate 0.0.
+  - name: name
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: distinct_count 9006 out of row_count 9057 with null_rate 0.0; free-text airport
+      names such as 'Aalborg Airport' and 'Aappilattoq Heliport'.
+  - name: latitude_deg
+    logicalType: number
+    physicalType: DECIMAL(10,6)
+    required: true
+    description: null_rate 0.0 with min -79.777778 and max 82.517263; landed as DECIMAL(38,9),
+      narrowed to DECIMAL(10,6) which comfortably holds the observed range and precision.
+  - name: longitude_deg
+    logicalType: number
+    physicalType: DECIMAL(10,6)
+    required: true
+    description: null_rate 0.0 with min -179.876999 and max 179.9757; landed as DECIMAL(38,9),
+      narrowed to DECIMAL(10,6) which fits the observed range.
+  - name: elevation_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: null_rate 0.036988 (335 nulls); every sampled value (-1266.0,-210.0,-182.0,...)
+      is integral so DECIMAL(38,9) can be narrowed to INTEGER while retaining nulls for the
+      3.7% missing.
+  - name: continent
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: distinct_count 7 matching continent codes AF, AN, AS, EU, NA, OC, SA; null_rate
+      0.0.
+  - name: iso_country
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: distinct_count 239 ISO country codes (e.g. AD, AE, AF) with null_rate 0.0.
+  - name: iso_region
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: distinct_count 2169 subnational region codes (e.g. AD-08, AE-AZ) with null_rate
+      0.0.
+  - name: municipality
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_rate 0.039748 (360 nulls) among 8049 distinct municipality names such
+      as 'Aachen' and 'Aarhus'; nulls retained rather than imputed.
+  - name: scheduled_service
+    logicalType: boolean
+    physicalType: BOOLEAN
+    required: true
+    description: distinct_values are exactly ['no','yes'] with null_rate 0.0, so the VARCHAR
+      flag can be cast to BOOLEAN.
+  - name: icao_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_rate 0.136579 (1237 nulls) among 7820 distinct ICAO codes (e.g. AGAF,
+      AGAR); retained nullable.
+  - name: iata_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: distinct_count 9057 equals row_count with null_rate 0.0; three-letter IATA
+      codes such as AAA, AAB, AAC.
+  - name: gps_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_rate 0.053881 (488 nulls) among 8569 distinct GPS codes (e.g. 03N, 05AA);
+      retained nullable.
+  - name: local_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_rate 0.636635 (5766 nulls) is high; column is sparsely populated so
+      it is retained nullable rather than dropped, citing distinct_count 3193.
+  - name: home_link
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_rate 0.749034 (6784 nulls) is very high; sparsely populated URL column
+      retained nullable, e.g. samples like 'http://GillespieField.com/'.
+  - name: wikipedia_link
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_rate 0.130838 (1185 nulls) among 7870 distinct wikipedia URLs; retained
+      nullable.
+  - name: keywords
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_rate 0.679585 (6155 nulls) is very high; free-text keyword lists such
+      as '06AZ' or '1XA2, Naval Air Station Chase Field, Beeville Municipal Airport' retained
+      nullable as sparsely populated.
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (id) combinations'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT id
+        FROM silver.silver_airports
+        GROUP BY id
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: silver-cleanup-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.0.0
+- property: modelId
+  value: claude-sonnet-5
+- property: profileHash
+  value: sha256:113a01272f19c485ada9b62583be7449fbfd55b60fb304b18139a17614cf0ec2
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: cleanup
+- property: decisionGrain
+  value: id-as-primary-key
+- property: decisionExactDuplicates
+  value: no-duplicates-found
+- property: decisionDropMetadata
+  value: excluded-as-capture-artifacts
+- property: decisionCastElevation
+  value: cast-decimal-to-integer
+- property: decisionCastScheduledService
+  value: cast-string-to-boolean
+- property: decisionNullLocalCode
+  value: retained-nullable-sparse
+- property: decisionNullHomeLink
+  value: retained-nullable-sparse
+- property: decisionNullKeywords
+  value: retained-nullable-sparse

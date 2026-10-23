@@ -1,0 +1,59 @@
+{
+  "columns": {
+    "draft": 19,
+    "oracle": 18,
+    "ordinal_order_equal": false,
+    "shared": 13
+  },
+  "first_class_checks": {
+    "agree": 61,
+    "checked": 65,
+    "per_field": {
+      "logicalType": "13/13",
+      "physicalType": "11/13",
+      "primaryKey": "12/13",
+      "primaryKeyPosition": "12/13",
+      "required": "13/13"
+    }
+  },
+  "grain": {
+    "draft": [
+      "id"
+    ],
+    "oracle": [
+      "iata_code"
+    ],
+    "order_equal": false,
+    "set_equal": false
+  },
+  "mismatches": [
+    "airport_ident: missing from the draft",
+    "airport_type: missing from the draft",
+    "airport_name: missing from the draft",
+    "continent_code: missing from the draft",
+    "captured_at: missing from the draft",
+    "id: extra in the draft",
+    "ident: extra in the draft",
+    "type: extra in the draft",
+    "name: extra in the draft",
+    "continent: extra in the draft",
+    "home_link: extra in the draft",
+    "iata_code.primaryKey: oracle=True draft=False",
+    "iata_code.primaryKeyPosition: oracle=1 draft=None",
+    "latitude_deg.physicalType: oracle='DOUBLE' draft='DECIMAL(9,6)'",
+    "longitude_deg.physicalType: oracle='DOUBLE' draft='DECIMAL(9,6)'"
+  ],
+  "oracle_id": "silver_ourairports_airports",
+  "rule_types": {
+    "column_equal": false,
+    "table_draft": [
+      "library:rowCount",
+      "sql"
+    ],
+    "table_equal": true,
+    "table_oracle": [
+      "library:rowCount",
+      "sql"
+    ]
+  }
+}

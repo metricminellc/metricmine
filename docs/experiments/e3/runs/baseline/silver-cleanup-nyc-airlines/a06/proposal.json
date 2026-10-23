@@ -1,0 +1,80 @@
+{
+  "target_table": "silver_airlines",
+  "columns": [
+    {
+      "source_column": "carrier",
+      "action": "keep",
+      "target_name": "carrier",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 with null_count 0, and distinct_count 16 matches the table row_count of 16, with values like 'AA', 'DL', 'UA' consistent with IATA carrier codes."
+    },
+    {
+      "source_column": "name",
+      "action": "keep",
+      "target_name": "name",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 with null_count 0, and distinct_count 16 lists full carrier legal names such as 'Delta Air Lines Inc.' and 'Southwest Airlines Co.' with no truncation markers."
+    },
+    {
+      "source_column": "_airbyte_raw_id",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "is_airbyte_metadata is true, identifying this as a capture-tool UUID column with no business meaning for the silver layer."
+    },
+    {
+      "source_column": "_airbyte_extracted_at",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "is_airbyte_metadata is true and distinct_count is 1 with a single constant extraction timestamp, confirming it is pipeline metadata rather than business data."
+    },
+    {
+      "source_column": "_airbyte_meta",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "JSON",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "is_airbyte_metadata is true and distinct_count is 1 with the constant value '{}', confirming it carries no business information."
+    }
+  ],
+  "dedupe_strategy": "none",
+  "dedupe_keys": [],
+  "grain_keys": [
+    "carrier"
+  ],
+  "decisions": [
+    {
+      "key": "decisionDedupe",
+      "value": "no-dedupe-needed",
+      "rationale": "duplicate_row_rate is 0.0 and row_count is 16, so no exact duplicate rows exist in bronze to remove."
+    },
+    {
+      "key": "decisionGrain",
+      "value": "carrier-as-grain",
+      "rationale": "carrier has null_rate 0.0 and distinct_count 16 equal to row_count 16, making it the natural unique identifier for one row per airline."
+    },
+    {
+      "key": "decisionDroppedMetadata",
+      "value": "excluded-as-capture-artifacts",
+      "rationale": "the three _airbyte_* columns are flagged is_airbyte_metadata true and carry no business meaning, so they are dropped from silver."
+    }
+  ],
+  "purpose": "This table provides a clean, deduplicated reference list of airline carriers with their IATA carrier codes and full legal names, intended to feed joins against flight-level fact tables keyed by carrier code.",
+  "usage": "Consumers should join on the carrier column, which is unique across all 16 rows and never null; no filtering for flagged or duplicate rows is required since none were found in bronze.",
+  "limitations": "The dataset is a small static reference list (16 rows) sourced at a single extraction timestamp; it does not capture carrier code reuse or historical name changes over time, and pipeline metadata columns were dropped entirely."
+}

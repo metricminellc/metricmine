@@ -1,0 +1,197 @@
+# Draft proposed by gold-mapping-proposer v0.1.0 at 2026-10-23T13:47:22.582243+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: gold_airport_weather_observations_mapping
+name: Gold mapping, airport_weather_observations category
+version: 1.0.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: This mapping declares how the silver_airport_weather table (row_count 13014) enters
+    the gold unified event star as the airport_weather_observations fact category, assigning
+    the time column, hour grain, transaction identity, and field roles that the deterministic
+    modeling engine consumes to generate gold models; it is read by the modeling engine, never
+    executed itself.
+  usage: The proposal is rendered into an ODCS mapping contract draft, validated against the
+    frozen mapping-contract schema, linted, and reviewed by a human before approval; once
+    approved, consumers query the resulting gold fact by airport_code and observed_hour_utc
+    alongside the mapped weather measures and station dimensions.
+  limitations: The mapping does not filter, impute, or otherwise transform the nulls present
+    in wind_gust_mph (null_rate 0.745505), pressure_mb (null_rate 0.114953), or wind_dir_degrees
+    (null_rate 0.016828); handling of missing readings is left to downstream consumers, and
+    the contract does not reconcile the small gap between row_count (13014) and the airport_code
+    times observed_hour_utc distinct-value product (13023) implied by the profile.
+schema:
+- name: airport_weather_observations
+  logicalType: object
+  physicalType: mapping
+  description: One row represents a single hourly weather observation recorded at one of three
+    NYC-area airports (EWR, JFK, LGA per airport_code distinct_values), capturing temperature,
+    dewpoint, humidity, wind, precipitation, visibility, and pressure conditions along with
+    static station attributes for that airport at that hour.
+  entityGroup: airport_weather_observations
+  sourceTable: silver.silver_airport_weather
+  timeColumn: observed_hour_utc
+  timeGrain: hour
+  grain:
+    type: transaction
+    degenerateIdentifiers:
+    - source: derived
+      name: airport_hour_identity
+      derivation: canonical-key-v2
+      of:
+      - airport_code
+      - observed_hour_utc
+  properties:
+  - name: airport_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    mappingRole: dimension
+    description: Three-letter airport code (EWR, JFK, LGA per distinct_values) identifying
+      the observing station, never null across 13014 rows.
+  - name: observed_hour_utc
+    logicalType: date
+    physicalType: TIMESTAMP
+    required: true
+    mappingRole: time
+    description: UTC timestamp at hourly resolution (samples show :00:00 minutes/seconds,
+      range 2013-01-01T06:00:00 to 2013-07-01T03:00:00) timestamping each weather observation
+      event.
+  - name: observed_date_local
+    logicalType: date
+    physicalType: DATE
+    required: true
+    mappingRole: dimension
+    description: Local calendar date of the observation (range 2013-01-01 to 2013-06-30, 181
+      distinct values), never null.
+  - name: observed_hour_local
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    mappingRole: dimension
+    description: Local hour of day label (0-23, 24 distinct values), a descriptive time label
+      rather than a measured quantity, never null.
+  - name: temp_f
+    logicalType: number
+    physicalType: DOUBLE
+    required: true
+    mappingRole: measure
+    description: Air temperature in Fahrenheit (min 10.94, max 93.92 across 130 distinct values),
+      a measured quantity compared and averaged across rows, never null.
+  - name: dewpoint_f
+    logicalType: number
+    physicalType: DOUBLE
+    required: true
+    mappingRole: measure
+    description: Dewpoint temperature in Fahrenheit (min -9.94, max 73.94 across 119 distinct
+      values), a measured quantity, never null.
+  - name: humidity_pct
+    logicalType: number
+    physicalType: DOUBLE
+    required: true
+    mappingRole: measure
+    description: Relative humidity percentage (min 12.74, max 100.0 across 2178 distinct values),
+      a measured quantity, never null.
+  - name: wind_dir_degrees
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    mappingRole: dimension
+    description: Wind direction in compass degrees 0-360 (37 distinct values), a directional
+      label rather than a summable measure; nullable in 1.68% of rows (null_rate 0.016828),
+      likely when wind is calm.
+  - name: wind_speed_mph
+    logicalType: number
+    physicalType: DOUBLE
+    required: false
+    mappingRole: measure
+    description: Wind speed in mph (min 0.0, max 1048.36 across 36 distinct values), a measured
+      quantity; nullable in a small fraction of rows (null_rate 0.000154).
+  - name: wind_gust_mph
+    logicalType: number
+    physicalType: DOUBLE
+    required: false
+    mappingRole: measure
+    description: Wind gust speed in mph (range 16.11 to 62.14 across 35 distinct values),
+      a measured quantity; nullable in most rows (null_rate 0.745505), consistent with gusts
+      only being reported when they occur.
+  - name: precip_inches
+    logicalType: number
+    physicalType: DOUBLE
+    required: true
+    mappingRole: measure
+    description: Precipitation in inches (min 0.0, max 1.06 across 50 distinct values), a
+      measured quantity summed or compared across rows, never null.
+  - name: pressure_mb
+    logicalType: number
+    physicalType: DOUBLE
+    required: false
+    mappingRole: measure
+    description: Barometric pressure in millibars (min 983.8, max 1038.4 across 430 distinct
+      values), a measured quantity; nullable in 11.5% of rows (null_rate 0.114953).
+  - name: visibility_miles
+    logicalType: number
+    physicalType: DOUBLE
+    required: true
+    mappingRole: measure
+    description: Visibility distance in miles (min 0.0, max 10.0, capped distinct_values list
+      of 20 values shown), a measured quantity, never null.
+  - name: airport_name
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    mappingRole: dimension
+    description: Full airport name (John F. Kennedy International Airport, LaGuardia Airport,
+      Newark Liberty International Airport per distinct_values), never null.
+  - name: airport_municipality
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    mappingRole: dimension
+    description: Municipality of the airport (New York or Newark per distinct_values), never
+      null.
+  - name: airport_elevation_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    mappingRole: dimension
+    description: Airport elevation in feet, a fixed descriptive attribute per station (13,
+      18, or 21 per distinct_values) rather than a measured quantity, never null.
+  - name: airport_longest_runway_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    mappingRole: dimension
+    description: Longest runway length in feet, a fixed descriptive attribute per station
+      (7002, 11000, or 14511 per distinct_values), never null.
+  - name: captured_at
+    logicalType: date
+    physicalType: TIMESTAMP
+    required: true
+    mappingRole: dimension
+    description: Capture timestamp recorded by the ingestion process (3 distinct values clustered
+      within seconds on 2026-09-02), a lineage marker rather than the event time, never null.
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: gold
+customProperties:
+- property: proposedBy
+  value: gold-mapping-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.0.0
+- property: modelId
+  value: claude-sonnet-5
+- property: profileHash
+  value: sha256:70cb304edcaa97a18aa7411d2ed8b68a860627c53342343a78b87fa306345567
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: propose
