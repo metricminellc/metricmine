@@ -46,6 +46,7 @@ def run_queue(
     model_flag: str | None = None,
     client: Any = None,
     lint_runner: Any = None,
+    context: str | None = None,
 ) -> int:
     """Walk the queue's driven items in plan order. 0 = every invoked
     item wrote a draft (including an empty walk); 1 = a refusal or a
@@ -114,6 +115,7 @@ def run_queue(
                 lint_runner=lint_runner,
                 report=report,
                 quiet=True,
+                context=context,
             )
         else:
             target = repo_root / "contracts" / f"{name}.odcs.yaml"
@@ -155,6 +157,7 @@ def run_queue(
                         committed, committed_bytes
                     )
                 },
+                context=context,
             )
         walked += 1
         record = report.get("record")
