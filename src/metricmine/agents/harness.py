@@ -76,6 +76,13 @@ class ProposerSpec:
     target_contract: Path
     render: Callable[[dict, Provenance, str], dict]
     validate: Callable[[dict, dict], list[str]]
+    # E3b (experiment branch; docs/experiments/e3/KEY.md): when set, the
+    # model emits a JUDGMENT object against the judgment schema and this
+    # callable builds the full proposal from the profile artifact and that
+    # judgment (code writes the machine half); the unchanged validator then
+    # runs on the result. None means head's behavior: the model emits the
+    # whole proposal.
+    skeleton: Callable[[dict, dict], dict] | None = None
 
 
 @dataclass(frozen=True)
@@ -98,6 +105,12 @@ class AgentsConfig:
 
 class PromptError(ValueError):
     """The prompt file is missing or its front matter is incomplete."""
+
+
+class SkeletonError(ValueError):
+    """A judgment the skeleton cannot apply (E3b): it names a column the
+    skeleton does not carry, or declares a change code cannot apply. The
+    harness records it as a judgment error and feeds it back."""
 
 
 def load_agents_config(repo_root: Path) -> dict:
@@ -254,6 +267,8 @@ def run_proposer(
     extra_inputs: list[tuple[GovernedInput, str]] | None = None,
     intent: str | None = None,
     provenance_extras: Mapping[str, str] | None = None,
+    context: str | None = None,
+    context_path: str | None = None,
 ) -> int:
     """One governed proposer run. 0 = draft written; 1 = refused before
     any call; 2 = failed closed after the retry budget or on staleness.
@@ -263,8 +278,13 @@ def run_proposer(
     success summary and the diff are not printed; the record carries
     everything. `extra_inputs` binds further governed inputs after the
     profile, each under its own kind tag; `intent` binds the operator's
-    intent verbatim as the LAST governed input; `provenance_extras`
-    merge after proposerStance (D-23 Amendment H, D-22 Amendment I)."""
+    intent verbatim as a governed input after the evidence;
+    `provenance_extras` merge after proposerStance (D-23 Amendment H,
+    D-22 Amendment I). `context` (E3a, experiment branch;
+    docs/experiments/e3/KEY.md) binds the operator's context verbatim as
+    the LAST governed input, kind operator_context, hashed over its UTF-8
+    bytes exactly as the intent is; `context_path` records the committed
+    file it was read from, so the staleness re-check re-reads it."""
     raw_cfg = load_agents_config(repo_root)
     cfg = AgentsConfig(
         effort=raw_cfg["effort"],
@@ -373,6 +393,22 @@ def run_proposer(
             )
         )
         tagged.append(("operator_intent", intent))
+    if context is not None:
+        # E3a: the operator's context is one more governed input, the
+        # configured list one longer and still no retrieval (D-23
+        # Amendment H); hashed over its UTF-8 bytes and recorded verbatim
+        # (as D-22 Amendment I records the intent); rendered inside its own
+        # tag after every other input, as data.
+        inputs.append(
+            GovernedInput(
+                kind="operator_context",
+                path=context_path or "",
+                content_hash="sha256:"
+                + hashlib.sha256(context.encode("utf-8")).hexdigest(),
+                schema_version="",
+            )
+        )
+        tagged.append(("operator_context", context))
     user_content = build_user_content(tagged)
 
     run_dir = (
@@ -403,6 +439,7 @@ def run_proposer(
     attempt_log: list[dict] = []
     validation: dict = {}
     proposal: dict | None = None
+    judgment: dict | None = None
     draft_text: str | None = None
     stale = False
 
@@ -467,6 +504,7 @@ def run_proposer(
         }
         proposal = None
         draft_text = None
+        judgment = None
         if stop_reason != "end_turn":
             errors.append(
                 f"response stopped on {stop_reason!r}, not end_turn; the "
@@ -484,6 +522,16 @@ def run_proposer(
             ]
             errors.extend(schema_errors)
             validation["schema_pass"] = not schema_errors
+            if spec.skeleton is not None and not schema_errors:
+                # E3b: what parsed is the judgment; code writes the
+                # machine half and applies the judgment over it, and the
+                # unchanged validator judges the result below.
+                judgment = proposal
+                try:
+                    proposal = spec.skeleton(artifact, judgment)
+                except SkeletonError as exc:
+                    errors.append(f"judgment: {exc}")
+                    proposal = None
         relaxation = False
         if proposal is not None and not errors:
             found = spec.validate(proposal, artifact)
@@ -552,9 +600,10 @@ def run_proposer(
                 {
                     "role": "user",
                     "content": (
-                        "The proposal failed validation. Errors:\n"
+                        f"The {'judgment' if spec.skeleton else 'proposal'} "
+                        f"failed validation. Errors:\n"
                         + "\n".join(errors)
-                        + "\nEmit a corrected proposal."
+                        + f"\nEmit a corrected {'judgment' if spec.skeleton else 'proposal'}."
                     ),
                 }
             )
@@ -580,6 +629,9 @@ def run_proposer(
         "profile_schema_version": str(artifact.get("schema_version", "")),
         "inputs": [asdict(bound) for bound in inputs],
         "intent": intent,
+        "context": context,
+        "context_path": context_path,
+        "skeleton": spec.skeleton is not None,
         "created_at": created_at,
         "response_id": response_id,
         "stop_reason": stop_reason,
@@ -603,6 +655,15 @@ def run_proposer(
                 json.dumps(proposal, indent=2, ensure_ascii=False) + "\n"
             ).encode("utf-8"),
         )
+        if judgment is not None:
+            # E3b: the judgment as the model emitted it, beside the
+            # proposal code built from it.
+            _replace_bytes(
+                run_dir / "judgment.json",
+                (
+                    json.dumps(judgment, indent=2, ensure_ascii=False) + "\n"
+                ).encode("utf-8"),
+            )
     else:
         draft_tmp.unlink(missing_ok=True)
         if api_error is None:
