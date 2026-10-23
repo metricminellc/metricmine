@@ -88,13 +88,18 @@ def build_describe_spec(repo_root: Path, table: str) -> ProposerSpec:
 
 
 def build_amend_spec(
-    repo_root: Path, table: str, *, allow_relaxation: bool = False
+    repo_root: Path,
+    table: str,
+    *,
+    allow_relaxation: bool = False,
+    committed_path: Path | None = None,
 ) -> tuple[ProposerSpec, dict, bytes]:
     """The amend stance over one contracted silver table (D-35).
 
     Amend consumes three governed inputs: the fresh profile, the
     committed contract it amends, and the operator's intent (D-23
-    Amendment H). The committed document is read here ONCE, and its raw
+    Amendment H). The committed document is read here ONCE (from
+    `committed_path` when given, else the target), and its raw
     bytes are the canonical bytes both consumers hash: the
     amendsContract stamp and the staleness re-check (D-22 Amendment I).
     The validator and renderer close over the parsed document, so the
@@ -105,7 +110,10 @@ def build_amend_spec(
     """
     stance_cfg = load_agents_config(repo_root)["silver"]["stances"]["amend"]
     target = repo_root / "contracts" / f"{table}.odcs.yaml"
-    committed_bytes = target.read_bytes()
+    # E3 (experiment branch): an explicit committed document, so a fixture
+    # can amend a contract as it stood at an earlier commit while the
+    # oracle is the contract that followed (docs/experiments/e3/KEY.md).
+    committed_bytes = (committed_path or target).read_bytes()
     committed = yaml.safe_load(committed_bytes.decode("utf-8"))
     spec = ProposerSpec(
         name=NAME,
