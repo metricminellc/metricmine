@@ -18,6 +18,7 @@ from pathlib import Path
 import yaml
 
 from metricmine.agents import agreement
+from metricmine.agents import e3
 from metricmine.agents import eval as eval_lane
 from metricmine.agents import (
     harness,
@@ -82,6 +83,20 @@ def main(argv: list[str] | None = None) -> int:
         "governed input (D-22 Amendment I, D-23 Amendment H)",
     )
     propose.add_argument(
+        "--context",
+        default=None,
+        help="every stance (E3a, experiment branch; docs/experiments/e3/"
+        "KEY.md): the operator's context, a few sentences, bound as the "
+        "last governed input, hashed and recorded verbatim",
+    )
+    propose.add_argument(
+        "--context-file",
+        default=None,
+        metavar="PATH",
+        help="every stance: read the operator's context from a committed "
+        "file, recording its path beside its hash",
+    )
+    propose.add_argument(
         "--allow-relaxation",
         action="store_true",
         help="amend only: permit a NARROWING change set; it renders at "
@@ -133,6 +148,12 @@ def main(argv: list[str] | None = None) -> int:
         help="allow-listed model ID override (D-34), the same precedence "
         "as propose",
     )
+    queue.add_argument(
+        "--context",
+        default=None,
+        help="the operator's batch context, bound verbatim to every item "
+        "the batch invokes (E3a, experiment branch)",
+    )
     evaluate = subparsers.add_parser(
         "eval",
         help="the live eval lane over the golden-profile set (D-25); "
@@ -151,19 +172,78 @@ def main(argv: list[str] | None = None) -> int:
         metavar="LABEL",
         help="run only the named fixture label(s) from agents.eval.fixtures",
     )
+    evaluate.add_argument(
+        "--arm",
+        default=None,
+        help="E3 (experiment branch): run one arm of docs/experiments/e3/"
+        "arms.yaml as a batch with repeats, the ledger, and the bound; "
+        "without it the lane runs as at head",
+    )
+    evaluate.add_argument(
+        "--repeats",
+        type=int,
+        default=None,
+        help="E3: attempts per fixture in the arm (default: the arm's)",
+    )
+    evaluate.add_argument(
+        "--rerun-technical",
+        action="store_true",
+        help="E3: re-invoke, once, the attempts the ledger marks technical; "
+        "a result is never re-run",
+    )
+    evaluate.add_argument(
+        "--continue-lost",
+        default=None,
+        metavar="LABEL",
+        help="E3: run the remaining attempts of one fixture whose latest "
+        "result failed closed, on a person's instruction after the record "
+        "was read (D-10 Amendment G); never set unattended",
+    )
+    evaluate.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="E3: print what each fixture's call would carry, with no call",
+    )
+    subparsers.add_parser(
+        "e3-leakage",
+        help="E3: count the oracle column names each context text carries",
+    )
+    subparsers.add_parser(
+        "e3-score",
+        help="E3: score the committed ledger and evidence; write scores.json",
+    )
     args = parser.parse_args(argv)
 
     repo_root = Path(__file__).resolve().parents[3]
     if args.command == "propose-queue":
         return _run_queue(repo_root, args)
+    if args.command == "e3-leakage":
+        e3.leakage(repo_root)
+        return 0
+    if args.command == "e3-score":
+        e3.score(repo_root)
+        return 0
     if args.command == "eval":
+        if args.arm:
+            return e3.run_arm(
+                repo_root,
+                args.arm,
+                repeats=args.repeats,
+                model_flag=args.model,
+                rerun_technical=args.rerun_technical,
+                continue_lost=args.continue_lost,
+                dry_run=args.dry_run,
+            )
         return eval_lane.run_eval(
             repo_root, model_flag=args.model, labels=args.fixture
         )
+    context, context_path = _context_arguments(args)
+    if context is None and context_path == "":
+        return 1
     if args.proposer == "describe":
-        return _run_describe(repo_root, args)
+        return _run_describe(repo_root, args, context, context_path)
     if args.proposer == "amend":
-        return _run_amend(repo_root, args)
+        return _run_amend(repo_root, args, context, context_path)
     oracle_path = Path(args.oracle) if args.oracle else None
     if oracle_path is not None and not oracle_path.exists():
         print(f"error: oracle {oracle_path} does not exist", file=sys.stderr)
@@ -185,10 +265,34 @@ def main(argv: list[str] | None = None) -> int:
         profile=args.profile,
         model_flag=args.model,
         report=report,
+        context=context,
+        context_path=context_path,
     )
     if code == 0 and oracle_path is not None:
         _score_against_oracle(report, oracle_path, *scorer)
     return code
+
+
+def _context_arguments(args: argparse.Namespace) -> tuple[str | None, str | None]:
+    """The operator's context from --context or --context-file (E3a):
+    (text, path). (None, "") signals a refusal already printed."""
+    text = getattr(args, "context", None)
+    path = getattr(args, "context_file", None)
+    if text is not None and path is not None:
+        print("error: pass --context or --context-file, not both", file=sys.stderr)
+        return None, ""
+    if path is not None:
+        source = Path(path)
+        if not source.exists():
+            print(f"error: context file {source} does not exist", file=sys.stderr)
+            return None, ""
+        # Bytes, decoded: the hash the harness records is the hash the
+        # staleness re-check computes over the file, byte for byte.
+        return source.read_bytes().decode("utf-8"), str(source)
+    if text is not None and not text.strip():
+        print("error: --context is empty; omit it to run with no context", file=sys.stderr)
+        return None, ""
+    return text, None
 
 
 def _score_against_oracle(report: dict, oracle_path: Path, score, lines) -> None:
@@ -213,7 +317,12 @@ def _score_against_oracle(report: dict, oracle_path: Path, score, lines) -> None
     print(f"agreement: {out}")
 
 
-def _run_describe(repo_root: Path, args: argparse.Namespace) -> int:
+def _run_describe(
+    repo_root: Path,
+    args: argparse.Namespace,
+    context: str | None = None,
+    context_path: str | None = None,
+) -> int:
     """The describe stance: refusal gate, one run, optional oracle study.
 
     Describe refuses when a contract with the table's id already exists
@@ -255,6 +364,8 @@ def _run_describe(repo_root: Path, args: argparse.Namespace) -> int:
         profile=args.profile,
         model_flag=args.model,
         report=report,
+        context=context,
+        context_path=context_path,
     )
     if code == 0 and oracle_path is not None:
         _score_against_oracle(
@@ -281,12 +392,18 @@ def _run_queue(repo_root: Path, args: argparse.Namespace) -> int:
         )
         return 1
     intent = (args.intent or "").strip() or None
+    context = (args.context or "").strip() or None
     return propose_queue.run_queue(
-        repo_root, int(raw), intent=intent, model_flag=args.model
+        repo_root, int(raw), intent=intent, model_flag=args.model, context=context
     )
 
 
-def _run_amend(repo_root: Path, args: argparse.Namespace) -> int:
+def _run_amend(
+    repo_root: Path,
+    args: argparse.Namespace,
+    context: str | None = None,
+    context_path: str | None = None,
+) -> int:
     """The amend stance: refusal gates, three governed inputs, one run.
 
     Amend evolves a COMMITTED contract (D-35), so it refuses when no
@@ -345,6 +462,8 @@ def _run_amend(repo_root: Path, args: argparse.Namespace) -> int:
         extra_inputs=[(bound, committed_bytes.decode("utf-8"))],
         intent=intent,
         provenance_extras={"amendsContract": stamp},
+        context=context,
+        context_path=context_path,
     )
     if code == 0:
         proposal = json.loads(
