@@ -19,3 +19,9 @@ data/samples/** -text
 # each standing row records the upstream file's sha256, and a gate holds
 # the copy to it.
 documents/sources/** -text
+
+# The E3 experiment's committed evidence (experiment branch only;
+# docs/experiments/e3/KEY.md Section 8) keeps its bytes verbatim: a
+# recording is evidence, and the screen reports what it finds, never
+# edits it.
+docs/experiments/e3/runs/** -text
