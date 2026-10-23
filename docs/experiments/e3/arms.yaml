@@ -1,0 +1,215 @@
+# E3 arms (docs/experiments/e3/KEY.md, Section 2). Read by the eval lane's
+# --arm flag on the experiment branch only; head's eval lane never reads
+# this file. Estimates are the Arc 6 cost actuals per fixture at
+# claude-sonnet-5 (docs/verification/evidence/2026-09-05_arc6_exit.md); the
+# amend fixture takes the Arc 6 amend call's actual, and the two describe
+# fixtures are derived from the Session P describe call's output per
+# column (KEY.md, Section 6).
+spend_bound_usd: 200.0
+# The three fixtures the Arc 6 study scored 0/0 (KEY.md, Section 1).
+zero_fixtures:
+  - silver-cleanup-nyc-flights
+  - silver-cleanup-nyc-weather
+  - silver-cleanup-nyc-airlines
+ledger: docs/experiments/e3/ledger.jsonl
+evidence_dir: docs/experiments/e3/runs
+default_model: claude-sonnet-5
+prompts:
+  head:
+    cleanup: src/metricmine/agents/prompts/silver_cleanup.md
+    propose: src/metricmine/agents/prompts/gold_mapping.md
+    describe: src/metricmine/agents/prompts/silver_describe.md
+    amend: src/metricmine/agents/prompts/silver_amend.md
+  e3:
+    cleanup: src/metricmine/agents/prompts/e3/silver_cleanup.md
+    propose: src/metricmine/agents/prompts/e3/gold_mapping.md
+    describe: src/metricmine/agents/prompts/e3/silver_describe.md
+    amend: src/metricmine/agents/prompts/e3/silver_amend.md
+judgment_schema: docs/spec/agent-layer/e3/table-contract-judgment.schema.json
+fixtures:
+  # The eleven of agents.eval.fixtures at head, label for label (a test holds
+  # the two lists equal on label, profile, source, table, and oracle).
+  - label: silver-cleanup-online-retail
+    proposer: silver
+    stance: cleanup
+    profile: profiles/bronze.online_retail_ii/v0001.json
+    estimate_usd: 0.0978
+  - label: mapping-propose-invoice-lines
+    proposer: mapping
+    stance: propose
+    profile: profiles/silver.silver_invoice_lines/v0001.json
+    estimate_usd: 0.0609
+  - label: silver-cleanup-messy-orders
+    proposer: silver
+    stance: cleanup
+    profile: tests/agents/fixtures/profiles/bronze.messy_orders/v0001.json
+    estimate_usd: 0.1259
+  - label: silver-cleanup-nyc-flights
+    proposer: silver
+    stance: cleanup
+    source: nyc_flights
+    profile: profiles/bronze.nyc_flights/v0001.json
+    oracle: contracts/silver_nyc_flights.odcs.yaml
+    context: docs/experiments/e3/contexts/silver-cleanup-nyc-flights.md
+    context_docs_only: docs/experiments/e3/contexts/docs-only/silver-cleanup-nyc-flights.md
+    estimate_usd: 0.0979
+  - label: silver-cleanup-nyc-weather
+    proposer: silver
+    stance: cleanup
+    source: nyc_weather
+    profile: profiles/bronze.nyc_weather/v0001.json
+    oracle: contracts/silver_nyc_weather.odcs.yaml
+    context: docs/experiments/e3/contexts/silver-cleanup-nyc-weather.md
+    context_docs_only: docs/experiments/e3/contexts/docs-only/silver-cleanup-nyc-weather.md
+    estimate_usd: 0.0835
+  - label: silver-cleanup-nyc-airlines
+    proposer: silver
+    stance: cleanup
+    source: nyc_airlines
+    profile: profiles/bronze.nyc_airlines/v0001.json
+    oracle: contracts/silver_nyc_airlines.odcs.yaml
+    context: docs/experiments/e3/contexts/silver-cleanup-nyc-airlines.md
+    context_docs_only: docs/experiments/e3/contexts/docs-only/silver-cleanup-nyc-airlines.md
+    estimate_usd: 0.0363
+  - label: silver-cleanup-nyc-planes
+    proposer: silver
+    stance: cleanup
+    source: nyc_planes
+    profile: profiles/bronze.nyc_planes/v0001.json
+    oracle: contracts/silver_nyc_planes.odcs.yaml
+    context: docs/experiments/e3/contexts/silver-cleanup-nyc-planes.md
+    estimate_usd: 0.0475
+  - label: silver-cleanup-ourairports-airports
+    proposer: silver
+    stance: cleanup
+    source: ourairports_airports
+    profile: profiles/bronze.ourairports_airports/v0001.json
+    oracle: contracts/silver_ourairports_airports.odcs.yaml
+    context: docs/experiments/e3/contexts/silver-cleanup-ourairports-airports.md
+    estimate_usd: 0.1054
+  - label: silver-cleanup-ourairports-runways
+    proposer: silver
+    stance: cleanup
+    source: ourairports_runways
+    profile: profiles/bronze.ourairports_runways/v0001.json
+    oracle: contracts/silver_ourairports_runways.odcs.yaml
+    context: docs/experiments/e3/contexts/silver-cleanup-ourairports-runways.md
+    estimate_usd: 0.0869
+  - label: mapping-propose-flights
+    proposer: mapping
+    stance: propose
+    table: silver_flights
+    profile: profiles/silver.silver_flights/v0001.json
+    oracle: contracts/gold_flights_mapping.odcs.yaml
+    context: docs/experiments/e3/contexts/mapping-propose-flights.md
+    estimate_usd: 0.1288
+  - label: mapping-propose-airport-weather
+    proposer: mapping
+    stance: propose
+    table: silver_airport_weather
+    profile: profiles/silver.silver_airport_weather/v0001.json
+    oracle: contracts/gold_airport_weather_mapping.odcs.yaml
+    context: docs/experiments/e3/contexts/mapping-propose-airport-weather.md
+    estimate_usd: 0.0701
+  # The three E3b fixtures (KEY.md, Section 3).
+  - label: describe-silver-flights
+    proposer: silver
+    stance: describe
+    table: silver_flights
+    profile: profiles/silver.silver_flights/v0001.json
+    oracle: contracts/silver_flights.odcs.yaml
+    estimate_usd: 0.1194
+  - label: describe-silver-airport-weather
+    proposer: silver
+    stance: describe
+    table: silver_airport_weather
+    profile: profiles/silver.silver_airport_weather/v0001.json
+    oracle: contracts/silver_airport_weather.odcs.yaml
+    estimate_usd: 0.0666
+  - label: amend-silver-invoice-lines-f28
+    proposer: silver
+    stance: amend
+    table: silver_invoice_lines
+    profile: profiles/silver.silver_invoice_lines/v0002.json
+    committed: docs/experiments/e3/fixtures/silver_invoice_lines@1.2.0.odcs.yaml
+    intent: >-
+      The incremental path has landed and every row carries captured_at;
+      the fresh profile measures it at null rate 0.0 over 44,721 rows.
+      Tighten captured_at to required and say in its description why it is
+      required now. Change nothing else.
+    oracle: contracts/silver_invoice_lines.odcs.yaml
+    estimate_usd: 0.0879
+arms:
+  baseline:
+    prompts: head
+    context: false
+    skeleton: false
+    model_override: true
+    repeats: 10
+    fixtures:
+      - silver-cleanup-online-retail
+      - mapping-propose-invoice-lines
+      - silver-cleanup-messy-orders
+      - silver-cleanup-nyc-flights
+      - silver-cleanup-nyc-weather
+      - silver-cleanup-nyc-airlines
+      - silver-cleanup-nyc-planes
+      - silver-cleanup-ourairports-airports
+      - silver-cleanup-ourairports-runways
+      - mapping-propose-flights
+      - mapping-propose-airport-weather
+  A:
+    prompts: e3
+    context: true
+    skeleton: false
+    model_override: false
+    repeats: 10
+    fixtures:
+      - silver-cleanup-nyc-flights
+      - silver-cleanup-nyc-weather
+      - silver-cleanup-nyc-airlines
+      - silver-cleanup-nyc-planes
+      - silver-cleanup-ourairports-airports
+      - silver-cleanup-ourairports-runways
+      - mapping-propose-flights
+      - mapping-propose-airport-weather
+  A0:
+    prompts: e3
+    context: false
+    skeleton: false
+    model_override: false
+    repeats: 10
+    fixtures:
+      - silver-cleanup-nyc-flights
+      - silver-cleanup-nyc-weather
+      - silver-cleanup-nyc-airlines
+  A1:
+    prompts: e3
+    context: docs_only
+    skeleton: false
+    model_override: false
+    repeats: 10
+    fixtures:
+      - silver-cleanup-nyc-flights
+      - silver-cleanup-nyc-weather
+      - silver-cleanup-nyc-airlines
+  B-baseline:
+    prompts: head
+    context: false
+    skeleton: false
+    model_override: false
+    repeats: 10
+    fixtures:
+      - describe-silver-flights
+      - describe-silver-airport-weather
+      - amend-silver-invoice-lines-f28
+  B:
+    prompts: e3
+    context: false
+    skeleton: true
+    model_override: false
+    repeats: 10
+    fixtures:
+      - describe-silver-flights
+      - describe-silver-airport-weather
+      - amend-silver-invoice-lines-f28
