@@ -1,0 +1,160 @@
+# Draft proposed by silver-cleanup-proposer v0.1.0 at 2026-10-23T18:45:58.848864+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_online_retail_ii
+name: Silver online retail ii
+version: 1.0.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: 'silver_online_retail_ii is the cleaned invoice-line table for the Online Retail
+    II source: one row per invoice line after exact-duplicate removal, with typed quantity,
+    price, timestamp, and customer identifier, feeding revenue, returns, and customer analytics
+    downstream.'
+  usage: Read one row as one invoice line identified by invoice, stockcode, quantity, and
+    price. Filter is_return = false to analyze sales only, since negative-quantity return
+    lines are retained and flagged. Expect customer_id to be null on roughly 30% of rows (guest
+    transactions) and handle those deliberately in customer-level aggregations. Zero-price
+    lines are present and should be excluded from unit-economics calculations if not wanted.
+  limitations: Exact duplicate rows (duplicate_row_rate 0.011188 in bronze) are collapsed,
+    but near-duplicates differing only in whitespace or description are not reconciled; description
+    values keep their landed whitespace and 228 nulls (null_rate 0.005041). customer_id is
+    missing on 29.778% of rows and no imputation is performed. The invoice column is kept
+    as text because only 10 of 2330 distinct values were sampled, so purely numeric typing
+    could not be verified. The declared grain has not yet been measured against the full warehouse
+    and must be confirmed in review.
+schema:
+- name: silver_online_retail_ii
+  physicalName: silver_online_retail_ii
+  logicalType: object
+  physicalType: table
+  description: 'silver_online_retail_ii is the cleaned invoice-line table for the Online Retail
+    II source: one row per invoice line after exact-duplicate removal, with typed quantity,
+    price, timestamp, and customer identifier, feeding revenue, returns, and customer analytics
+    downstream.'
+  properties:
+  - name: invoice
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: null_rate 0.0 with 2330 distinct values; samples ('489434', '489435') are
+      numeric-looking but only 10 of 2330 distincts are visible, so the column stays VARCHAR
+      rather than risking a cast the samples cannot fully support.
+  - name: stockcode
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 2
+    description: null_rate 0.0 with 3141 distinct values; samples mix numeric and alphanumeric
+      codes ('10002', '10002R', '10123C'), so VARCHAR is the correct type.
+  - name: description
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_rate 0.005041 (228 nulls), so the column is nullable and nulls are retained;
+      samples show leading/trailing whitespace (' ANIMAL STICKERS', ' BROWN  PIRATE TREASURE
+      CHEST ') which is preserved as landed.
+  - name: quantity
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 3
+    description: null_rate 0.0; landed as DECIMAL(38,9) but all samples are integral (-1395.0
+      to -504.0 shown, min -1395.0, max 5184.0), supporting a cast to INTEGER; negative values
+      are retained as returns.
+  - name: is_return
+    logicalType: boolean
+    physicalType: BOOLEAN
+    required: true
+    description: quantity has min -1395.0 and every one of the 10 samples is negative, showing
+      a distinct return/credit record kind; this flag marks rows where quantity < 0 so consumers
+      can filter them deliberately.
+  - name: invoice_date
+    logicalType: date
+    physicalType: TIMESTAMP
+    required: true
+    description: null_rate 0.0 and all 10 samples are ISO-shaped timestamps ('2009-12-01 07:45:00'),
+      supporting a cast from VARCHAR to TIMESTAMP; renamed to invoice_date for readability.
+  - name: price
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 4
+    description: null_rate 0.0; samples carry at most two decimal places (0.04, 0.09, 0.12)
+      with min 0.0 and max 1998.49, so DECIMAL(10,2) fits; zero prices are retained as landed.
+  - name: customer_id
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: Landed as DECIMAL(38,9) but all samples are integral (12346.0, 12349.0) with
+      min 12346.0 and max 18287.0, supporting INTEGER; null_rate 0.29778 (13468 nulls) means
+      the column is nullable and nulls are retained, not imputed.
+  - name: country
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: null_rate 0.0 with a low cardinality of 24 distinct values ('Australia',
+      'EIRE', 'Germany'), so the column is kept as required VARCHAR.
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (invoice, stockcode, quantity, price) combinations'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT invoice, stockcode, quantity, price
+        FROM silver.silver_online_retail_ii
+        GROUP BY invoice, stockcode, quantity, price
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: silver-cleanup-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.0.0
+- property: modelId
+  value: claude-fable-5
+- property: profileHash
+  value: sha256:79f801e1d8182ee55a32a0e3323134a27fec839c5a5478edfb8f5683cf5221f0
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: cleanup
+- property: decisionExactDuplicates
+  value: deduplicate-exact-rows
+- property: decisionGrain
+  value: invoice-stockcode-quantity-price
+- property: decisionNullCustomerId
+  value: retained-nullable
+- property: decisionNegativeQuantityFlag
+  value: flagged-as-returns
+- property: decisionCastQuantityCustomerIdInteger
+  value: cast-decimal-to-integer
+- property: decisionCastInvoiceDateTimestamp
+  value: cast-text-to-timestamp
+- property: decisionDropAirbyteMetadata
+  value: excluded-as-capture-artifacts
+- property: decisionDescriptionWhitespace
+  value: retained-as-landed
+- property: decisionZeroPrice
+  value: retained-as-landed

@@ -1,0 +1,188 @@
+{
+  "target_table": "silver_online_retail_ii",
+  "columns": [
+    {
+      "source_column": "invoice",
+      "action": "keep",
+      "target_name": "invoice",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "Invoice identifier with null_rate 0.0 and 2330 distinct values; samples such as '489434' are numeric-looking codes but kept as VARCHAR because stockcode-style alphanumeric codes are common in this domain and no evidence confirms all values are integral."
+    },
+    {
+      "source_column": "stockcode",
+      "action": "keep",
+      "target_name": "stockcode",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "Product code with null_rate 0.0 and 3141 distinct values; samples include alphanumeric codes like '10002R' and '10123C', so VARCHAR is the correct type."
+    },
+    {
+      "source_column": "description",
+      "action": "keep",
+      "target_name": "description",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "Free-text product description with 228 nulls (null_rate 0.005041) retained as nullable; samples show leading and trailing whitespace (e.g. ' BROWN  PIRATE TREASURE CHEST ') that a trim step should address."
+    },
+    {
+      "source_column": "quantity",
+      "action": "cast",
+      "target_name": "quantity",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "Landed as DECIMAL(38,9) but all samples are integral (e.g. -1395.0, -504.0) with min -1395.0 and max 5184.0, well within INTEGER range; null_rate 0.0 supports required."
+    },
+    {
+      "source_column": "quantity",
+      "action": "derive_flag",
+      "target_name": "is_return",
+      "logical_type": "boolean",
+      "physical_type": "BOOLEAN",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "Boolean derived as quantity < 0; profile min is -1395.0 and samples include many negative quantities (-1043.0, -954.0), indicating return or reversal lines that consumers must be able to filter."
+    },
+    {
+      "source_column": "invoicedate",
+      "action": "rename_and_cast",
+      "target_name": "invoice_date",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "All 10 samples are ISO-shaped timestamps like '2009-12-01 07:45:00' with null_rate 0.0, supporting a strict VARCHAR-to-TIMESTAMP cast; renamed to snake_case invoice_date."
+    },
+    {
+      "source_column": "price",
+      "action": "cast",
+      "target_name": "price",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(10,2)",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "Landed as DECIMAL(38,9) but samples show at most two decimal places (0.04, 0.12, 1998.49 max) with min 0.0 and null_rate 0.0, so DECIMAL(10,2) is sufficient; note min 0.0 means zero-priced lines exist."
+    },
+    {
+      "source_column": "customer_id",
+      "action": "cast",
+      "target_name": "customer_id",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "All samples are integral (12346.0 to 18287.0, matching min 12346.0 and max 18287.0) so DECIMAL(38,9) casts safely to INTEGER; 13468 nulls (null_rate 0.29778) represent anonymous transactions and are retained as null."
+    },
+    {
+      "source_column": "country",
+      "action": "keep",
+      "target_name": "country",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "Country name with null_rate 0.0 and only 24 distinct values (samples include 'Australia', 'EIRE', 'Channel Islands'), kept as required VARCHAR."
+    },
+    {
+      "source_column": "_airbyte_raw_id",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Marked is_airbyte_metadata: true; capture-tool record identifier with 45228 distinct UUIDs, dropped as a pipeline artifact."
+    },
+    {
+      "source_column": "_airbyte_extracted_at",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Marked is_airbyte_metadata: true; extraction timestamp with only 2 distinct values spanning one second (2026-07-27T10:24:46 to 2026-07-27T10:24:47), dropped as a capture artifact."
+    },
+    {
+      "source_column": "_airbyte_meta",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "JSON",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Marked is_airbyte_metadata: true; single distinct value '{}' across all rows, carries no business information, dropped."
+    }
+  ],
+  "dedupe_strategy": "exact_duplicates",
+  "dedupe_keys": [
+    "invoice",
+    "stockcode",
+    "description",
+    "quantity",
+    "invoice_date",
+    "price",
+    "customer_id",
+    "country"
+  ],
+  "grain_keys": [
+    "invoice",
+    "stockcode",
+    "invoice_date",
+    "quantity",
+    "price"
+  ],
+  "decisions": [
+    {
+      "key": "decisionExactDuplicates",
+      "value": "removed-exact-duplicate-rows",
+      "rationale": "With row_count 45228 and duplicate_row_rate 0.011188, roughly 506 rows are byte-identical across all business columns; they are removed by deduplicating on the full set of retained business columns, since bronze carries no reliable line identifier to distinguish legitimate repeats."
+    },
+    {
+      "key": "decisionGrain",
+      "value": "invoice-stockcode-timestamp-quantity-price",
+      "rationale": "No single column identifies a row (invoice has 2330 distinct values against 45228 rows); after exact-duplicate removal the composite of invoice, stockcode, invoice_date, quantity, and price is the smallest plausible line-item grain, and it must be measured against the warehouse before approval."
+    },
+    {
+      "key": "decisionDropAirbyteMetadata",
+      "value": "excluded-as-capture-artifacts",
+      "rationale": "The three columns flagged is_airbyte_metadata (_airbyte_raw_id, _airbyte_extracted_at, _airbyte_meta) are Airbyte capture columns, not business columns, and are dropped per pipeline convention."
+    },
+    {
+      "key": "decisionNullCustomerId",
+      "value": "retained-nullable",
+      "rationale": "customer_id is null on 13468 of 45228 rows (null_rate 0.29778), consistent with guest or anonymous transactions; nulls are retained rather than imputed or filtered."
+    },
+    {
+      "key": "decisionIntegerCasts",
+      "value": "strict-cast-from-decimal",
+      "rationale": "quantity and customer_id landed as DECIMAL(38,9) but every profiled sample is integral (quantity min -1395.0 max 5184.0; customer_id min 12346.0 max 18287.0), so both are strictly cast to INTEGER and the build should fail if a fractional value appears."
+    },
+    {
+      "key": "decisionReturnFlag",
+      "value": "derived-is-return-from-negative-quantity",
+      "rationale": "quantity min is -1395.0 and negative samples dominate the low end of the distribution, indicating return or reversal lines; a derived boolean is_return (quantity < 0) lets consumers filter them deliberately rather than silently excluding them."
+    },
+    {
+      "key": "decisionDescriptionWhitespace",
+      "value": "trim-recommended-not-applied",
+      "rationale": "description samples show leading and trailing whitespace and inconsistent spacing (e.g. ' BROWN  PIRATE TREASURE CHEST '); the column is retained as-is with a recommendation to add a deterministic trim step, flagged for reviewer decision."
+    },
+    {
+      "key": "decisionZeroPrice",
+      "value": "retained-with-caveat",
+      "rationale": "price min is 0.0, so zero-priced lines (samples, adjustments, or data issues) exist in bronze; they are retained and documented rather than filtered."
+    }
+  ],
+  "purpose": "silver_online_retail_ii is the cleaned line-item view of the bronze online_retail_ii capture: one row per retail invoice line with typed quantity, price, timestamp, and customer identifier, feeding downstream revenue, basket, and customer analytics.",
+  "usage": "Read one row as one invoice line at the declared grain (invoice, stockcode, invoice_date, quantity, price). Filter on is_return = false to analyze sales only, since return lines carry negative quantities; include them when computing net revenue. customer_id is null on roughly 30% of rows, so customer-level aggregations must deliberately decide whether to exclude anonymous lines. Zero-priced rows exist and should be filtered when computing unit economics.",
+  "limitations": "Exact duplicate rows (duplicate_row_rate 0.011188, ~506 of 45228 rows) are removed, which may drop legitimate repeated lines because bronze has no line identifier. description retains untrimmed whitespace and is null on 0.5% of rows. customer_id is missing on 29.78% of rows and is not imputed. Negative quantities and zero prices are flagged or documented but not corrected, and the declared grain has not yet been verified against the warehouse."
+}

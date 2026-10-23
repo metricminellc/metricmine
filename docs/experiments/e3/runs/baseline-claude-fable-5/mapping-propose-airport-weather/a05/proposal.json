@@ -1,0 +1,170 @@
+{
+  "category_name": "airport_weather_observations",
+  "entity_group": "airport_weather_observations",
+  "source_table": "silver.silver_airport_weather",
+  "time_column": "observed_hour_utc",
+  "time_grain": "hour",
+  "grain_type": "transaction",
+  "degenerate_identifiers": [
+    {
+      "source": "derived",
+      "name": "observation_identity",
+      "of": [
+        "airport_code",
+        "observed_hour_utc"
+      ]
+    }
+  ],
+  "aggregations": [],
+  "grain_rationale": "Each source row is one hourly weather observation at one airport: the profile shows row_count 13014 with duplicate_row_rate 0.0, and 3 distinct airport_code values combined with 4341 distinct observed_hour_utc values (3 x 4341 = 13023, approximately the row count allowing for a few missing station-hours) indicates the tuple (airport_code, observed_hour_utc) identifies a line, so a derived identity over that tuple declares the transaction grain with no duplicates to absorb.",
+  "fields": [
+    {
+      "name": "airport_code",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "mapping_role": "dimension",
+      "description": "IATA airport code of the observing station, one of EWR, JFK, LGA per the 3 distinct values with zero nulls; identity-bearing with observed_hour_utc."
+    },
+    {
+      "name": "observed_hour_utc",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": true,
+      "mapping_role": "time",
+      "description": "UTC timestamp of the observation hour; samples such as 2013-01-01T06:00:00 resolve to whole hours across 4341 distinct values with zero nulls, timestamping each event."
+    },
+    {
+      "name": "observed_date_local",
+      "logical_type": "date",
+      "physical_type": "DATE",
+      "required": false,
+      "mapping_role": "dimension",
+      "description": "Local calendar date of the observation, 181 distinct dates from 2013-01-01 to 2013-06-30 with zero nulls, labeling rather than timestamping the event."
+    },
+    {
+      "name": "observed_hour_local",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "mapping_role": "dimension",
+      "description": "Local hour of day as an integer label 0 through 23 (24 distinct values, zero nulls); a numeric label, not an additive quantity."
+    },
+    {
+      "name": "temp_f",
+      "logical_type": "number",
+      "physical_type": "DOUBLE",
+      "required": false,
+      "mapping_role": "measure",
+      "description": "Air temperature in degrees Fahrenheit, profiled between 10.94 and 93.92 with zero nulls; compared and averaged across observations."
+    },
+    {
+      "name": "dewpoint_f",
+      "logical_type": "number",
+      "physical_type": "DOUBLE",
+      "required": false,
+      "mapping_role": "measure",
+      "description": "Dew point in degrees Fahrenheit, profiled between -9.94 and 73.94 with zero nulls; a continuous quantity compared across rows."
+    },
+    {
+      "name": "humidity_pct",
+      "logical_type": "number",
+      "physical_type": "DOUBLE",
+      "required": false,
+      "mapping_role": "measure",
+      "description": "Relative humidity percentage, profiled between 12.74 and 100.0 across 2178 distinct values with zero nulls; a continuous quantity compared across rows."
+    },
+    {
+      "name": "wind_dir_degrees",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "mapping_role": "dimension",
+      "description": "Wind direction in compass degrees 0 to 360 in 10-degree steps (37 distinct values); a directional label rather than an additive quantity, nullable at a 0.0168 null rate, likely when wind is calm or direction is unreported."
+    },
+    {
+      "name": "wind_speed_mph",
+      "logical_type": "number",
+      "physical_type": "DOUBLE",
+      "required": false,
+      "mapping_role": "measure",
+      "description": "Wind speed in miles per hour, profiled from 0.0 to 1048.36 (the maximum suggests a conversion outlier); nullable at a 0.000154 null rate."
+    },
+    {
+      "name": "wind_gust_mph",
+      "logical_type": "number",
+      "physical_type": "DOUBLE",
+      "required": false,
+      "mapping_role": "measure",
+      "description": "Wind gust speed in miles per hour, profiled between 16.11 and 62.14; nullable at a 0.7455 null rate because gusts are only reported when they occur."
+    },
+    {
+      "name": "precip_inches",
+      "logical_type": "number",
+      "physical_type": "DOUBLE",
+      "required": false,
+      "mapping_role": "measure",
+      "description": "Hourly precipitation in inches, profiled between 0.0 and 1.06 with zero nulls; an additive quantity summed across hours."
+    },
+    {
+      "name": "pressure_mb",
+      "logical_type": "number",
+      "physical_type": "DOUBLE",
+      "required": false,
+      "mapping_role": "measure",
+      "description": "Sea-level pressure in millibars, profiled between 983.8 and 1038.4; nullable at a 0.1150 null rate, presumably when the sensor reading is missing."
+    },
+    {
+      "name": "visibility_miles",
+      "logical_type": "number",
+      "physical_type": "DOUBLE",
+      "required": false,
+      "mapping_role": "measure",
+      "description": "Visibility in miles, bounded 0.0 to 10.0 across 20 reporting increments per the distinct values, with zero nulls; a continuous quantity compared across rows."
+    },
+    {
+      "name": "airport_name",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "mapping_role": "dimension",
+      "description": "Full name of the observing airport, one of three values such as John F. Kennedy International Airport, with zero nulls."
+    },
+    {
+      "name": "airport_municipality",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "mapping_role": "dimension",
+      "description": "Municipality of the airport, either New York or Newark per the 2 distinct values, with zero nulls."
+    },
+    {
+      "name": "airport_elevation_ft",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "mapping_role": "dimension",
+      "description": "Airport elevation in feet, a fixed attribute per station with only 3 distinct values (13, 18, 21); a numeric label of the airport, not an event measure."
+    },
+    {
+      "name": "airport_longest_runway_ft",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "mapping_role": "dimension",
+      "description": "Length of the airport's longest runway in feet, a fixed attribute per station with 3 distinct values (7002, 11000, 14511); a numeric label, not an event measure."
+    },
+    {
+      "name": "captured_at",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": false,
+      "mapping_role": "dimension",
+      "description": "Pipeline capture timestamp with only 3 distinct values around 2026-09-02T23:26, labeling the ingestion batch rather than the observation itself."
+    }
+  ],
+  "category_description": "One row is one hourly weather observation recorded at one of three New York area airports (EWR, JFK, LGA), carrying the observed temperature, dew point, humidity, wind, precipitation, pressure, and visibility for that station-hour alongside fixed airport attributes.",
+  "purpose": "This mapping declares how silver.silver_airport_weather enters the gold unified event star as the airport_weather_observations fact category: it names the time column and hourly grain, declares the transaction grain with a derived identity over (airport_code, observed_hour_utc), and assigns a role to every mapped silver column. Its consumer is the deterministic modeling engine, which renders the gold models from it.",
+  "usage": "The proposal is rendered by deterministic code into an ODCS mapping contract draft, validated against the frozen mapping-contract schema, gated by the validator and datacontract lint, and reviewed and edited by a human before approval; nothing in it executes directly.",
+  "limitations": "The mapping names silver columns as-is and declares no transformations, filters, quality rules, severities, or service levels. It does not deduplicate or reconcile the UTC and local time columns, does not exclude the implausible wind_speed_mph maximum of 1048.36 or interpret the 2026-dated captured_at batch timestamps, and leaves handling of the 74.55% null wind_gust_mph and 11.50% null pressure_mb values to consumers."
+}

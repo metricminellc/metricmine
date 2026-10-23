@@ -1,0 +1,235 @@
+# Draft proposed by silver-cleanup-proposer v0.1.0 at 2026-10-23T18:55:46.227570+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_nyc_flights
+name: Silver nyc flights
+version: 1.1.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: silver_nyc_flights is the cleaned flight-level table for NYC-origin departures
+    (EWR, JFK, LGA) in January through June 2013, derived from bronze.nyc_flights. It standardizes
+    integral DECIMAL columns to INTEGER, parses time_hour into a TIMESTAMP, drops Airbyte
+    capture metadata, and adds an is_cancelled flag, feeding downstream delay, route, and
+    carrier analytics.
+  usage: Read one row per scheduled flight departure, identified by year, month, day, carrier,
+    flight, origin, dest, and sched_dep_time. Consumers computing delay or air-time metrics
+    must deliberately filter on is_cancelled = false (or exclude null arr_delay/air_time)
+    because cancelled and diverted flights retain nulls in dep_time, dep_delay, arr_time,
+    arr_delay, and air_time. dep_time, sched_dep_time, arr_time, and sched_arr_time are integer
+    HHMM clock encodings, not durations.
+  limitations: 'Nulls are retained, not resolved: about 2.94% of rows lack dep_time/dep_delay,
+    3.07% lack arr_time, and 3.30% lack arr_delay/air_time, so completed-flight metrics exclude
+    those rows. tailnum is null on 0.92% of rows and contains at least one value (D942DN)
+    that does not match the usual N-prefix registration pattern; no tail-number cleansing
+    was attempted. The declared grain is plausible from profile evidence but has not been
+    measured for uniqueness against the warehouse, and no clock-drift or near-duplicate detection
+    was applied since duplicate_row_rate is 0.0.'
+schema:
+- name: silver_nyc_flights
+  physicalName: silver_nyc_flights
+  logicalType: object
+  physicalType: table
+  description: silver_nyc_flights is the cleaned flight-level table for NYC-origin departures
+    (EWR, JFK, LGA) in January through June 2013, derived from bronze.nyc_flights. It standardizes
+    integral DECIMAL columns to INTEGER, parses time_hour into a TIMESTAMP, drops Airbyte
+    capture metadata, and adds an is_cancelled flag, feeding downstream delay, route, and
+    carrier analytics.
+  properties:
+  - name: year
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: Landed as DECIMAL(38,9) but the single distinct value 2013.0 (null_rate 0.0,
+      distinct_count 1) is integral, so an INTEGER cast is safe.
+  - name: month
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 2
+    description: All 6 distinct values (1.0 through 6.0) are integral month numbers with null_rate
+      0.0, supporting a DECIMAL to INTEGER cast.
+  - name: day
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 3
+    description: 31 distinct values with min 1.0 and max 31.0, all integral in the samples,
+      and null_rate 0.0; cast to INTEGER as a day-of-month.
+  - name: dep_time
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: Integral HHMM-style values (min 1.0, max 2400.0, samples all whole numbers)
+      support an INTEGER cast; null_rate 0.029388 (4883 nulls) marks flights that never departed,
+      so nulls are retained.
+  - name: is_cancelled
+    logicalType: boolean
+    physicalType: BOOLEAN
+    required: true
+    description: 'Derived as true when dep_time is null: 4883 rows (null_rate 0.029388) have
+      no actual departure time, the standard signal of a cancelled flight, letting consumers
+      filter without null checks.'
+  - name: sched_dep_time
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 8
+    description: Samples (500.0 to 530.0) are integral HHMM values with min 500.0, max 2359.0
+      and null_rate 0.0, supporting a required INTEGER column.
+  - name: dep_delay
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: Integral minute values from -33.0 to 1301.0 support an INTEGER cast; null_rate
+      0.029388 (4883 nulls) matches dep_time, so nulls are retained for non-departed flights.
+  - name: arr_time
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: Integral HHMM values (min 1.0, max 2400.0, all samples whole numbers) support
+      an INTEGER cast; null_rate 0.0307 (5101 nulls) reflects flights that never arrived,
+      so nulls are retained.
+  - name: sched_arr_time
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: Integral samples with min 1.0, max 2359.0 and null_rate 0.0 support a required
+      INTEGER column.
+  - name: arr_delay
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: Integral minute values from -86.0 to 1272.0 support an INTEGER cast; null_rate
+      0.032981 (5480 nulls) covers cancelled and diverted flights, so nulls are retained.
+  - name: carrier
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 4
+    description: 16 distinct two-letter carrier codes (9E, AA, AS, B6, DL, EV, F9, FL, HA,
+      MQ, OO, UA, US, VX, WN, YV) with null_rate 0.0; kept as VARCHAR.
+  - name: flight
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 5
+    description: 2994 distinct integral flight numbers (min 1.0, max 8500.0, samples all whole
+      numbers) with null_rate 0.0 support a required INTEGER cast.
+  - name: tailnum
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: 3825 distinct aircraft tail numbers (samples N10156, N102UW, plus the anomalous
+      D942DN) with null_rate 0.009154 (1521 nulls); retained nullable as VARCHAR.
+  - name: origin
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 6
+    description: Exactly 3 distinct values (EWR, JFK, LGA) with null_rate 0.0, consistent
+      with NYC-origin flights; kept as VARCHAR.
+  - name: dest
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 7
+    description: 100 distinct three-letter airport codes (samples ABQ, ACK, ALB, ATL) with
+      null_rate 0.0; kept as VARCHAR.
+  - name: air_time
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: Integral minute values from 20.0 to 695.0 support an INTEGER cast; null_rate
+      0.032981 (5480 nulls) matches arr_delay, so nulls are retained for flights without completed
+      arrivals.
+  - name: distance
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: 203 distinct integral mile values (min 80.0, max 4983.0, samples all whole
+      numbers) with null_rate 0.0 support a required INTEGER cast.
+  - name: hour
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: 19 distinct integral values from 5.0 to 23.0 with null_rate 0.0; cast to
+      INTEGER as the scheduled departure hour.
+  - name: minute
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: 60 distinct integral values from 0.0 to 59.0 with null_rate 0.0; cast to
+      INTEGER as the scheduled departure minute.
+  - name: time_hour
+    logicalType: date
+    physicalType: TIMESTAMP
+    required: true
+    description: All 10 samples are ISO-8601 timestamps (e.g. 2013-01-01T10:00:00Z) with null_rate
+      0.0 and 3439 distinct values, supporting a VARCHAR to TIMESTAMP cast.
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (year, month, day, carrier, flight, origin,
+      dest, sched_dep_time) combinations'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT year, month, day, carrier, flight, origin, dest, sched_dep_time
+        FROM silver.silver_nyc_flights
+        GROUP BY year, month, day, carrier, flight, origin, dest, sched_dep_time
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: silver-cleanup-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.0.0
+- property: modelId
+  value: claude-fable-5
+- property: profileHash
+  value: sha256:49b479ac0612017571579cc02b0b7e592474551a14d3adff6e06c01139bdadce
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: cleanup
+- property: decisionGrain
+  value: one-row-per-scheduled-flight-departure
+- property: decisionExactDuplicates
+  value: no-dedupe-applied
+- property: decisionDecimalToInteger
+  value: cast-integral-decimals-to-integer
+- property: decisionTimeHourCast
+  value: cast-varchar-to-timestamp
+- property: decisionCancelledFlag
+  value: derive-is-cancelled-from-null-dep-time
+- property: decisionNullOutcomeColumns
+  value: retained-nullable
+- property: decisionTailnumNullable
+  value: retained-nullable
+- property: decisionAirbyteMetadata
+  value: excluded-as-capture-artifacts

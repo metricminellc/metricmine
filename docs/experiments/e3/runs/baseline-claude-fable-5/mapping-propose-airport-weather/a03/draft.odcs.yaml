@@ -1,0 +1,198 @@
+# Draft proposed by gold-mapping-proposer v0.1.0 at 2026-10-23T19:23:25.332897+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: gold_hourly_weather_observations_mapping
+name: Gold mapping, hourly_weather_observations category
+version: 1.0.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: 'This mapping declares how silver.silver_airport_weather enters the gold unified
+    event star as the hourly_weather_observations fact category: it names the time column,
+    fixes the transaction grain with a derived identity over (airport_code, observed_hour_utc),
+    and assigns dimension, measure, and time roles so the deterministic modeling engine can
+    emit the gold models without further interpretation.'
+  usage: The proposal is rendered to an ODCS mapping contract draft, validated against the
+    frozen mapping-contract schema, gated by the validator and datacontract lint, and reviewed
+    and edited by a human before approval; only the approved contract feeds the modeling engine,
+    which generates the gold fact for this category.
+  limitations: 'The mapping does not transform, filter, or correct source values: the implausible
+    wind_speed_mph maximum of 1048.36058 is passed through and its handling is left to consumers,
+    as is the interpretation of highly null columns such as wind_gust_mph (null_rate 0.745505)
+    and pressure_mb (null_rate 0.114953). It does not declare quality rules, severities, service
+    levels, ownership, or access policies, and it does not model the airport attributes as
+    a separate dimension table; they are mapped as degenerate dimensions on the observation
+    row.'
+schema:
+- name: hourly_weather_observations
+  logicalType: object
+  physicalType: mapping
+  description: One row is a single hourly weather observation recorded at one of three New
+    York area airports (EWR, JFK, LGA), carrying measured atmospheric conditions such as temperature,
+    humidity, wind, precipitation, pressure, and visibility, together with descriptive airport
+    attributes, timestamped by observed_hour_utc.
+  entityGroup: weather_observations
+  sourceTable: silver.silver_airport_weather
+  timeColumn: observed_hour_utc
+  timeGrain: hour
+  grain:
+    type: transaction
+    degenerateIdentifiers:
+    - source: derived
+      name: observation_identity
+      derivation: canonical-key-v2
+      of:
+      - airport_code
+      - observed_hour_utc
+  properties:
+  - name: airport_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    mappingRole: dimension
+    description: Three-letter airport identifier with distinct values EWR, JFK, and LGA and
+      null_rate 0.0, labeling the station that produced the observation.
+  - name: observed_hour_utc
+    logicalType: date
+    physicalType: TIMESTAMP
+    required: true
+    mappingRole: time
+    description: UTC timestamp of the observation hour, with samples such as 2013-01-01T06:00:00
+      landing exactly on the hour across 4341 distinct values and null_rate 0.0.
+  - name: observed_date_local
+    logicalType: date
+    physicalType: DATE
+    required: true
+    mappingRole: dimension
+    description: Local calendar date of the observation, spanning 181 distinct dates from
+      2013-01-01 to 2013-06-30 with null_rate 0.0.
+  - name: observed_hour_local
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    mappingRole: dimension
+    description: Local hour of day from 0 to 23 (24 distinct values, null_rate 0.0); a numeric
+      label of the observation slot rather than a measured quantity.
+  - name: temp_f
+    logicalType: number
+    physicalType: DOUBLE
+    required: true
+    mappingRole: measure
+    description: Air temperature in degrees Fahrenheit ranging from 10.94 to 93.92 with null_rate
+      0.0, a measured quantity compared and averaged across observations.
+  - name: dewpoint_f
+    logicalType: number
+    physicalType: DOUBLE
+    required: true
+    mappingRole: measure
+    description: Dew point in degrees Fahrenheit ranging from -9.94 to 73.94 with null_rate
+      0.0, a measured atmospheric quantity.
+  - name: humidity_pct
+    logicalType: number
+    physicalType: DOUBLE
+    required: true
+    mappingRole: measure
+    description: Relative humidity percentage ranging from 12.74 to 100.0 with 2178 distinct
+      values and null_rate 0.0.
+  - name: wind_dir_degrees
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    mappingRole: dimension
+    description: Compass wind direction from 0 to 360 degrees in 10-degree steps (37 distinct
+      values); nullable at null_rate 0.016828, likely absent when wind is calm or direction
+      is unreported, and a circular label rather than an additive measure.
+  - name: wind_speed_mph
+    logicalType: number
+    physicalType: DOUBLE
+    required: false
+    mappingRole: measure
+    description: Wind speed in miles per hour from 0.0 up to a profiled maximum of 1048.36058
+      (a likely sensor or conversion outlier); nullable at null_rate 0.000154 for 2 unreported
+      readings.
+  - name: wind_gust_mph
+    logicalType: number
+    physicalType: DOUBLE
+    required: false
+    mappingRole: measure
+    description: Peak wind gust in miles per hour from 16.11092 to 62.14212; nullable at null_rate
+      0.745505 because gusts are only reported when they occur.
+  - name: precip_inches
+    logicalType: number
+    physicalType: DOUBLE
+    required: true
+    mappingRole: measure
+    description: Hourly precipitation in inches from 0.0 to 1.06 with null_rate 0.0, an additive
+      measured quantity.
+  - name: pressure_mb
+    logicalType: number
+    physicalType: DOUBLE
+    required: false
+    mappingRole: measure
+    description: Sea-level pressure in millibars from 983.8 to 1038.4; nullable at null_rate
+      0.114953 where the station did not report pressure.
+  - name: visibility_miles
+    logicalType: number
+    physicalType: DOUBLE
+    required: true
+    mappingRole: measure
+    description: Visibility in miles from 0.0 to 10.0 across 20 distinct reporting increments
+      with null_rate 0.0.
+  - name: airport_name
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    mappingRole: dimension
+    description: Full airport name with 3 distinct values such as LaGuardia Airport, a descriptive
+      label for the station and null_rate 0.0.
+  - name: airport_municipality
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    mappingRole: dimension
+    description: City served by the airport, with 2 distinct values New York and Newark and
+      null_rate 0.0.
+  - name: airport_elevation_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    mappingRole: dimension
+    description: Airport elevation in feet with exactly 3 distinct values (13, 18, 21) that
+      vary only by airport, so it labels the station rather than measures the observation.
+  - name: airport_longest_runway_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    mappingRole: dimension
+    description: Length of the airport's longest runway in feet with 3 distinct values (7002,
+      11000, 14511), a static airport attribute, not an event measure.
+  - name: captured_at
+    logicalType: date
+    physicalType: TIMESTAMP
+    required: true
+    mappingRole: dimension
+    description: Pipeline capture timestamp with 3 distinct values on 2026-09-02 and null_rate
+      0.0, a load-batch label rather than the observation time.
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: gold
+customProperties:
+- property: proposedBy
+  value: gold-mapping-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.0.0
+- property: modelId
+  value: claude-fable-5
+- property: profileHash
+  value: sha256:70cb304edcaa97a18aa7411d2ed8b68a860627c53342343a78b87fa306345567
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: propose

@@ -1,0 +1,280 @@
+{
+  "target_table": "silver_ourairports_runways",
+  "columns": [
+    {
+      "source_column": "id",
+      "action": "cast",
+      "target_name": "id",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate 0.0 and distinct_count 10760 equals row_count 10760, making it a unique identifier; all 10 sample_values (e.g. '232758', '232770') are integral strings, supporting a VARCHAR to INTEGER cast."
+    },
+    {
+      "source_column": "airport_ref",
+      "action": "cast",
+      "target_name": "airport_ref",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate 0.0 with distinct_count 7591; all sample_values (e.g. '10309', '111') are integral strings, so VARCHAR is cast to INTEGER to match the airport id it references."
+    },
+    {
+      "source_column": "airport_ident",
+      "action": "keep",
+      "target_name": "airport_ident",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate 0.0 with distinct_count 7591; samples like '03N' and '19AK' are alphanumeric airport codes, so the column stays VARCHAR."
+    },
+    {
+      "source_column": "length_ft",
+      "action": "cast",
+      "target_name": "length_ft",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "All sample_values (0.0 through 44.0) and min 0.0 / max 16798.0 are integral, so DECIMAL(38,9) is cast to INTEGER; null_rate 0.007993 (86 nulls) means the column stays nullable with nulls retained."
+    },
+    {
+      "source_column": "width_ft",
+      "action": "cast",
+      "target_name": "width_ft",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "Samples (1.0 through 26.0) and min 1.0 / max 7000.0 are all integral, supporting DECIMAL(38,9) to INTEGER; null_rate 0.082528 (888 nulls) so nulls are retained."
+    },
+    {
+      "source_column": "surface",
+      "action": "keep",
+      "target_name": "surface",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "Free-text surface codes with distinct_count 239 and inconsistent spellings in samples ('ASP', 'ASPH', 'ASP/CONC'); null_rate 0.022955 (247 nulls) so the raw text is kept nullable without normalization."
+    },
+    {
+      "source_column": "lighted",
+      "action": "cast",
+      "target_name": "lighted",
+      "logical_type": "boolean",
+      "physical_type": "BOOLEAN",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "distinct_values are exactly [0.0, 1.0] with null_rate 0.0, so DECIMAL(38,9) is safely cast to BOOLEAN."
+    },
+    {
+      "source_column": "closed",
+      "action": "cast",
+      "target_name": "closed",
+      "logical_type": "boolean",
+      "physical_type": "BOOLEAN",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "distinct_values are exactly [0.0, 1.0] with null_rate 0.0, so DECIMAL(38,9) is safely cast to BOOLEAN."
+    },
+    {
+      "source_column": "le_ident",
+      "action": "keep",
+      "target_name": "le_ident",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "Runway-end designators with distinct_count 199 and non-numeric samples ('01L', '-12', '.'), so the column stays VARCHAR; null_rate 0.001022 (11 nulls) means nulls are retained."
+    },
+    {
+      "source_column": "le_latitude_deg",
+      "action": "cast",
+      "target_name": "le_latitude_deg",
+      "logical_type": "number",
+      "physical_type": "DOUBLE",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "Fractional coordinate values (min -62.187801, max 82.512802) justify casting DECIMAL(38,9) to DOUBLE; null_rate 0.220911 (2377 nulls) so nulls are retained."
+    },
+    {
+      "source_column": "le_longitude_deg",
+      "action": "cast",
+      "target_name": "le_longitude_deg",
+      "logical_type": "number",
+      "physical_type": "DOUBLE",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "Fractional coordinate values (min -179.881256, max 179.338837) justify casting DECIMAL(38,9) to DOUBLE; null_rate 0.221283 (2381 nulls) so nulls are retained."
+    },
+    {
+      "source_column": "le_elevation_ft",
+      "action": "cast",
+      "target_name": "le_elevation_ft",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "All sample_values (-1246.0 through -69.0) and min -1246.0 / max 13202.0 are integral, so DECIMAL(38,9) is cast to INTEGER; null_rate 0.276301 (2973 nulls) so nulls are retained."
+    },
+    {
+      "source_column": "le_heading_degt",
+      "action": "rename_and_cast",
+      "target_name": "le_heading_deg_true",
+      "logical_type": "number",
+      "physical_type": "DOUBLE",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "Fractional sample_values (0.2, 1.12) show the heading carries decimals, so DECIMAL(38,9) is cast to DOUBLE; renamed to spell out 'degrees true' for clarity. null_rate 0.228346 (2457 nulls) so nulls are retained."
+    },
+    {
+      "source_column": "le_displaced_threshold_ft",
+      "action": "cast",
+      "target_name": "le_displaced_threshold_ft",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "All samples (1.0 through 57.0) and min 1.0 / max 4250.0 are integral, so DECIMAL(38,9) is cast to INTEGER; the column is sparsely populated with null_rate 0.884201 (9514 nulls) and nulls are retained."
+    },
+    {
+      "source_column": "he_ident",
+      "action": "keep",
+      "target_name": "he_ident",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "Runway-end designators with distinct_count 177 and non-numeric samples ('01L', '-', '.'), so the column stays VARCHAR; null_rate 0.004926 (53 nulls) means nulls are retained."
+    },
+    {
+      "source_column": "he_latitude_deg",
+      "action": "cast",
+      "target_name": "he_latitude_deg",
+      "logical_type": "number",
+      "physical_type": "DOUBLE",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "Fractional coordinate values (min -62.193901, max 82.522797) justify casting DECIMAL(38,9) to DOUBLE; null_rate 0.222212 (2391 nulls) so nulls are retained."
+    },
+    {
+      "source_column": "he_longitude_deg",
+      "action": "cast",
+      "target_name": "he_longitude_deg",
+      "logical_type": "number",
+      "physical_type": "DOUBLE",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "Fractional coordinate values (min -179.873184, max 179.343002) justify casting DECIMAL(38,9) to DOUBLE; null_rate 0.222212 (2391 nulls) so nulls are retained."
+    },
+    {
+      "source_column": "he_elevation_ft",
+      "action": "cast",
+      "target_name": "he_elevation_ft",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "All sample_values (-1210.0 through -69.0) and min -1210.0 / max 13314.0 are integral, so DECIMAL(38,9) is cast to INTEGER; null_rate 0.276208 (2972 nulls) so nulls are retained."
+    },
+    {
+      "source_column": "he_heading_degt",
+      "action": "rename_and_cast",
+      "target_name": "he_heading_deg_true",
+      "logical_type": "number",
+      "physical_type": "DOUBLE",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "Fractional samples (0.1 through 0.9) show decimals, so DECIMAL(38,9) is cast to DOUBLE and renamed to spell out 'degrees true'; null_rate 0.227138 (2444 nulls) so nulls are retained. Note max 362.0 exceeds the 360-degree compass range."
+    },
+    {
+      "source_column": "he_displaced_threshold_ft",
+      "action": "cast",
+      "target_name": "he_displaced_threshold_ft",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "All samples (10.0 through 76.0) and min 10.0 / max 4790.0 are integral, so DECIMAL(38,9) is cast to INTEGER; the column is sparsely populated with null_rate 0.899907 (9683 nulls) and nulls are retained."
+    },
+    {
+      "source_column": "_airbyte_raw_id",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Marked is_airbyte_metadata in the profile; capture-tool record UUID with distinct_count 10760, dropped as a pipeline artifact."
+    },
+    {
+      "source_column": "_airbyte_extracted_at",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Marked is_airbyte_metadata; extraction timestamp with only 2 distinct_values spanning one second, dropped as a pipeline artifact."
+    },
+    {
+      "source_column": "_airbyte_meta",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "JSON",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Marked is_airbyte_metadata; single distinct value '{}' carries no information, dropped as a pipeline artifact."
+    }
+  ],
+  "dedupe_strategy": "none",
+  "dedupe_keys": [],
+  "grain_keys": [
+    "id"
+  ],
+  "decisions": [
+    {
+      "key": "decisionGrain",
+      "value": "one-row-per-runway-id",
+      "rationale": "id has null_rate 0.0 and distinct_count 10760 equal to row_count 10760, so a single runway record per id is the smallest defensible grain."
+    },
+    {
+      "key": "decisionExactDuplicates",
+      "value": "no-dedupe-needed",
+      "rationale": "duplicate_row_rate is 0.0 across 10760 rows, so no deduplication step is applied."
+    },
+    {
+      "key": "decisionMetadataColumns",
+      "value": "excluded-as-capture-artifacts",
+      "rationale": "_airbyte_raw_id, _airbyte_extracted_at, and _airbyte_meta are flagged is_airbyte_metadata and are dropped as capture-tool columns, not business columns."
+    },
+    {
+      "key": "decisionBooleanCasts",
+      "value": "zero-one-decimals-cast-to-boolean",
+      "rationale": "lighted and closed each show distinct_values exactly [0.0, 1.0] with null_rate 0.0, so both are cast from DECIMAL(38,9) to BOOLEAN."
+    },
+    {
+      "key": "decisionIdCasts",
+      "value": "numeric-text-ids-cast-to-integer",
+      "rationale": "id and airport_ref landed as VARCHAR but every sample value is an integral string, so both are cast to INTEGER to support joins against airport tables."
+    },
+    {
+      "key": "decisionSparseThresholds",
+      "value": "retained-nullable",
+      "rationale": "le_displaced_threshold_ft (null_rate 0.884201) and he_displaced_threshold_ft (null_rate 0.899907) are very sparsely populated but are retained as nullable INTEGER columns rather than dropped or imputed."
+    },
+    {
+      "key": "decisionSurfaceNotNormalized",
+      "value": "raw-codes-retained",
+      "rationale": "surface has 239 distinct free-text values with inconsistent spellings ('ASP', 'ASPH', 'ASP/CONC'); normalization is out of scope for this cleanup and the raw text is retained."
+    }
+  ],
+  "purpose": "silver_ourairports_runways is the cleaned runway-level table from the OurAirports bronze landing: one row per runway id, with text-encoded numeric ids cast to integers, 0/1 flags cast to booleans, integral measures cast to INTEGER, and Airbyte capture metadata removed. It feeds airport and runway analytics joined via airport_ref.",
+  "usage": "Join to airport tables on airport_ref (integer). Treat lighted and closed as true booleans; filter closed = false to analyze active runways. Many geospatial and threshold columns are nullable (null rates between 0.22 and 0.90), so consumers must handle nulls explicitly rather than assume full coverage. Surface codes are raw source text and must be mapped by the consumer if grouped categories are needed.",
+  "limitations": "Runway-end coordinates, elevations, and headings are missing for roughly 22-28% of rows, and displaced-threshold columns are about 88-90% null; no imputation was performed. surface carries 239 unnormalized free-text spellings. he_heading_deg_true has a max of 362.0, exceeding the 360-degree compass range, and le_ident/he_ident contain placeholder values like '.' and '-'; these anomalies are retained as-is for review."
+}

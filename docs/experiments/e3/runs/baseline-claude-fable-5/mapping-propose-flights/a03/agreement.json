@@ -1,0 +1,40 @@
+{
+  "first_class_checks": {
+    "agree": 129,
+    "checked": 132,
+    "per_field": {
+      "logicalType": "33/33",
+      "mappingRole": "30/33",
+      "physicalType": "33/33",
+      "required": "33/33"
+    }
+  },
+  "header": {
+    "entityGroup": false,
+    "grainType": true,
+    "sourceTable": true,
+    "timeColumn": false,
+    "timeGrain": false
+  },
+  "identifiers_equal": true,
+  "mismatches": [
+    "captured_at: extra in the draft",
+    "flight_date.mappingRole: oracle='dimension' draft='time'",
+    "departure_hour_utc.mappingRole: oracle='time' draft='dimension'",
+    "aircraft_seat_count.mappingRole: oracle='dimension' draft='measure'",
+    "entityGroup: oracle='flights' draft='flight_departures'",
+    "timeColumn: oracle='departure_hour_utc' draft='flight_date'",
+    "timeGrain: oracle='hour' draft='day'"
+  ],
+  "oracle_id": "gold_flights_mapping",
+  "properties": {
+    "draft": 34,
+    "oracle": 33,
+    "ordinal_order_equal": false,
+    "shared": 33
+  },
+  "roles": {
+    "dimensions_equal": false,
+    "measures_equal": false
+  }
+}

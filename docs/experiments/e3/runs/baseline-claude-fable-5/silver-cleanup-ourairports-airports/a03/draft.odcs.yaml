@@ -1,0 +1,214 @@
+# Draft proposed by silver-cleanup-proposer v0.1.0 at 2026-10-23T19:09:29.863210+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_ourairports_airports
+name: Silver ourairports airports
+version: 1.1.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: 'silver_ourairports_airports is the cleaned reference table of world airports from
+    the OurAirports bronze feed: one row per airport with its identifiers (airport_id, ident,
+    iata_code, icao_code, gps_code, local_code), classification (airport_type, has_scheduled_service),
+    location (latitude_deg, longitude_deg, elevation_ft, continent, iso_country, iso_region,
+    municipality), and reference links. It feeds downstream geographic enrichment, route analysis,
+    and airport dimension builds.'
+  usage: Join on airport_id as the primary key; ident and iata_code are also fully populated
+    and unique in this snapshot and may serve as natural-key joins, but only airport_id is
+    contractually the grain. has_scheduled_service is a true/false boolean derived from the
+    source's yes/no text. Consumers needing icao_code, gps_code, local_code, municipality,
+    home_link, wikipedia_link, elevation_ft, or keywords must handle nulls explicitly, as
+    these columns are nullable and nulls are retained as-is.
+  limitations: 'Several columns are sparsely populated and were retained without imputation:
+    local_code is 63.7% null, keywords is 68.0% null, and home_link is 74.9% null; icao_code
+    is 13.7% null and elevation_ft is 3.7% null. The keywords column is unparsed free text
+    that mixes alternate codes and names. Coordinate precision is capped at six decimal places
+    by the cast from DECIMAL(38,9). No cross-field geographic validation (e.g. country/region
+    consistency) was performed in this cleanup.'
+schema:
+- name: silver_ourairports_airports
+  physicalName: silver_ourairports_airports
+  logicalType: object
+  physicalType: table
+  description: 'silver_ourairports_airports is the cleaned reference table of world airports
+    from the OurAirports bronze feed: one row per airport with its identifiers (airport_id,
+    ident, iata_code, icao_code, gps_code, local_code), classification (airport_type, has_scheduled_service),
+    location (latitude_deg, longitude_deg, elevation_ft, continent, iso_country, iso_region,
+    municipality), and reference links. It feeds downstream geographic enrichment, route analysis,
+    and airport dimension builds.'
+  properties:
+  - name: airport_id
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: All 10 sample values are integral digit strings (e.g. '10309', '111'), null_rate
+      is 0.0, and distinct_count 9057 equals row_count 9057, so the landed VARCHAR is safely
+      cast to INTEGER and renamed for clarity.
+  - name: ident
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: Airport identifier code with null_rate 0.0 and distinct_count 9057 equal
+      to row_count; samples like '03N' and '07FA' are short codes kept as VARCHAR.
+  - name: airport_type
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: Low-cardinality category with 5 distinct values (heliport, large_airport,
+      medium_airport, seaplane_base, small_airport) and null_rate 0.0; renamed from the generic
+      'type' to avoid an ambiguous and reserved-sounding name.
+  - name: name
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: Human-readable airport name with null_rate 0.0 and 9006 distinct values across
+      9057 rows; kept as VARCHAR.
+  - name: latitude_deg
+    logicalType: number
+    physicalType: DECIMAL(9,6)
+    required: true
+    description: Values range from -79.777778 to 82.517263 with samples showing at most 6
+      decimal places and null_rate 0.0, so DECIMAL(38,9) is narrowed to DECIMAL(9,6), which
+      covers the valid latitude range.
+  - name: longitude_deg
+    logicalType: number
+    physicalType: DECIMAL(10,6)
+    required: true
+    description: Values range from -179.876999 to 179.9757 with samples showing at most 6
+      decimal places and null_rate 0.0, so DECIMAL(38,9) is narrowed to DECIMAL(10,6), which
+      covers the valid longitude range.
+  - name: elevation_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: All sample values are integral (e.g. -1266.0, -210.0) and min -1266.0 to
+      max 14472.0 fit INTEGER, so DECIMAL(38,9) is cast to INTEGER; null_rate 0.036988 (335
+      nulls) so nulls are retained.
+  - name: continent
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: Exactly 7 distinct continent codes (AF, AN, AS, EU, NA, OC, SA) with null_rate
+      0.0; kept as VARCHAR.
+  - name: iso_country
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: 239 distinct two-letter codes (samples 'AD', 'AE', 'AF') with null_rate 0.0;
+      kept as VARCHAR.
+  - name: iso_region
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: 2169 distinct ISO region codes (samples 'AD-08', 'AE-AZ') with null_rate
+      0.0; kept as VARCHAR.
+  - name: municipality
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: City/town name with 8049 distinct values; null_rate 0.039748 (360 nulls)
+      so the column is nullable and nulls are retained.
+  - name: has_scheduled_service
+    logicalType: boolean
+    physicalType: BOOLEAN
+    required: true
+    description: Exactly 2 distinct values ('no', 'yes') with null_rate 0.0, so the VARCHAR
+      is cast to BOOLEAN ('yes' -> true, 'no' -> false) and renamed to the has_ convention.
+  - name: icao_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: 7820 distinct ICAO codes (samples 'AGAF', 'AGAR'); null_rate 0.136579 (1237
+      nulls) so nulls are retained.
+  - name: iata_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: null_rate 0.0 and distinct_count 9057 equals row_count, meaning every row
+      carries a unique IATA code (samples 'AAA', 'AAB'); kept as VARCHAR and required.
+  - name: gps_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: 8569 distinct GPS codes with null_rate 0.053881 (488 nulls); kept nullable
+      with nulls retained.
+  - name: local_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: Sparsely populated at null_rate 0.636635 (5766 nulls) with 3193 distinct
+      values; retained as nullable VARCHAR rather than dropped.
+  - name: home_link
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: Sparsely populated at null_rate 0.749034 (6784 nulls); samples are URLs (e.g.
+      'http://GillespieField.com/') retained as nullable VARCHAR.
+  - name: wikipedia_link
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: 7870 distinct Wikipedia URLs with null_rate 0.130838 (1185 nulls); retained
+      as nullable VARCHAR.
+  - name: keywords
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: Sparsely populated at null_rate 0.679585 (6155 nulls) with free-text, sometimes
+      comma-separated values; retained as nullable VARCHAR with no parsing attempted.
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (airport_id) combinations'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT airport_id
+        FROM silver.silver_ourairports_airports
+        GROUP BY airport_id
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: silver-cleanup-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.0.0
+- property: modelId
+  value: claude-fable-5
+- property: profileHash
+  value: sha256:113a01272f19c485ada9b62583be7449fbfd55b60fb304b18139a17614cf0ec2
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: cleanup
+- property: decisionGrain
+  value: one-row-per-airport-id
+- property: decisionExactDuplicates
+  value: no-dedupe-needed
+- property: decisionAirbyteMetadata
+  value: excluded-as-capture-artifacts
+- property: decisionScheduledServiceBoolean
+  value: cast-yes-no-to-boolean
+- property: decisionIdCast
+  value: cast-varchar-id-to-integer
+- property: decisionCoordinatePrecision
+  value: narrow-decimal-to-six-places
+- property: decisionSparseColumns
+  value: retained-nullable

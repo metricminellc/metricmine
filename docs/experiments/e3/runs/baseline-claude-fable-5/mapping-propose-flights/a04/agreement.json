@@ -1,0 +1,51 @@
+{
+  "first_class_checks": {
+    "agree": 117,
+    "checked": 132,
+    "per_field": {
+      "logicalType": "33/33",
+      "mappingRole": "30/33",
+      "physicalType": "33/33",
+      "required": "21/33"
+    }
+  },
+  "header": {
+    "entityGroup": true,
+    "grainType": true,
+    "sourceTable": true,
+    "timeColumn": false,
+    "timeGrain": false
+  },
+  "identifiers_equal": true,
+  "mismatches": [
+    "captured_at: extra in the draft",
+    "flight_date.mappingRole: oracle='dimension' draft='time'",
+    "dest_airport.required: oracle=True draft=False",
+    "is_cancelled.required: oracle=True draft=False",
+    "sched_arr_hhmm.required: oracle=True draft=False",
+    "distance_miles.required: oracle=True draft=False",
+    "sched_dep_hour_local.required: oracle=True draft=False",
+    "sched_dep_minute_local.required: oracle=True draft=False",
+    "departure_hour_utc.mappingRole: oracle='time' draft='dimension'",
+    "departure_hour_utc.required: oracle=True draft=False",
+    "carrier_name.required: oracle=True draft=False",
+    "aircraft_seat_count.mappingRole: oracle='dimension' draft='measure'",
+    "origin_airport_name.required: oracle=True draft=False",
+    "origin_municipality.required: oracle=True draft=False",
+    "origin_elevation_ft.required: oracle=True draft=False",
+    "origin_longest_runway_ft.required: oracle=True draft=False",
+    "timeColumn: oracle='departure_hour_utc' draft='flight_date'",
+    "timeGrain: oracle='hour' draft='day'"
+  ],
+  "oracle_id": "gold_flights_mapping",
+  "properties": {
+    "draft": 34,
+    "oracle": 33,
+    "ordinal_order_equal": false,
+    "shared": 33
+  },
+  "roles": {
+    "dimensions_equal": false,
+    "measures_equal": false
+  }
+}

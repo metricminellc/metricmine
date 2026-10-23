@@ -1,0 +1,101 @@
+{
+  "category_name": "invoice_lines",
+  "entity_group": "invoice_lines",
+  "source_table": "silver.silver_invoice_lines",
+  "time_column": "invoiced_at",
+  "time_grain": "minute",
+  "grain_type": "transaction",
+  "degenerate_identifiers": [
+    {
+      "source": "derived",
+      "name": "line_identity",
+      "of": [
+        "invoice_id",
+        "stock_code",
+        "invoiced_at",
+        "quantity",
+        "unit_price"
+      ]
+    }
+  ],
+  "aggregations": [],
+  "grain_rationale": "The profile shows row_count 44721 with duplicate_row_rate 0.0, so every source row is already a distinct invoice line event and the fact is declared at transaction grain. No single column is unique on its own (invoice_id has distinct_count 2330, stock_code 3141, invoiced_at 2004), so a derived identity over the tuple (invoice_id, stock_code, invoiced_at, quantity, unit_price) identifies a line; with zero exact duplicates in the source this tuple has nothing to absorb and no aggregation is required.",
+  "fields": [
+    {
+      "name": "invoice_id",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "mapping_role": "dimension",
+      "description": "Invoice document identifier with null_rate 0.0 and samples like '489434' and '489435'; a numeric-looking code stored as VARCHAR that labels the invoice a line belongs to, so it is a dimension rather than a measure."
+    },
+    {
+      "name": "is_cancellation",
+      "logical_type": "boolean",
+      "physical_type": "BOOLEAN",
+      "required": true,
+      "mapping_role": "dimension",
+      "description": "Boolean flag with exactly two distinct values (false, true) and null_rate 0.0 marking whether the line belongs to a cancellation, consistent with the negative quantities observed in the quantity samples."
+    },
+    {
+      "name": "stock_code",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "mapping_role": "dimension",
+      "description": "Product stock code with null_rate 0.0 and 3141 distinct values such as '10002' and '10123C'; an alphanumeric product identifier, so a dimension."
+    },
+    {
+      "name": "product_description",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "mapping_role": "dimension",
+      "description": "Free-text product description such as '11 PC CERAMIC TEA SET POLKADOT'; nullable with null_rate 0.005098 (228 nulls), likely missing where the catalog carries no description for a stock code."
+    },
+    {
+      "name": "quantity",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "mapping_role": "measure",
+      "description": "Units sold on the line with null_rate 0.0, ranging from -1395 to 5184; negative samples correspond to cancellation lines, and the value is summed and compared across rows, so it is a measure."
+    },
+    {
+      "name": "invoiced_at",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": true,
+      "mapping_role": "time",
+      "description": "Invoice timestamp with null_rate 0.0 spanning 2009-12-01T07:45:00 to 2009-12-23T16:58:00; samples resolve to the minute (seconds are always :00), timestamping each line event."
+    },
+    {
+      "name": "unit_price",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(10,2)",
+      "required": true,
+      "mapping_role": "measure",
+      "description": "Price per unit with null_rate 0.0, ranging from 0.0 to 1998.49; a monetary amount compared and aggregated across rows, so a measure, with zero-price samples present in the data."
+    },
+    {
+      "name": "customer_id",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "mapping_role": "dimension",
+      "description": "Numeric customer identifier (samples 12346 to 12437, 1045 distinct values) that labels rather than measures, so a dimension; nullable with null_rate 0.300664 (13446 nulls), consistent with guest or unregistered purchases carrying no customer."
+    },
+    {
+      "name": "country",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "mapping_role": "dimension",
+      "description": "Customer country with null_rate 0.0 and 24 distinct values such as 'Australia' and 'EIRE', labeling where the invoice was placed."
+    }
+  ],
+  "category_description": "One row is one invoice line: a single product (stock_code) sold or cancelled in a given quantity at a given unit price on one invoice (invoice_id) at a specific minute (invoiced_at), optionally tied to a customer and always tied to a country.",
+  "purpose": "This mapping declares how silver.silver_invoice_lines enters the gold unified event star as the invoice_lines fact category: its transaction grain, its derived line identity, its minute-grained time column, and the dimension/measure role of every mapped column. Its consumer is the deterministic modeling engine, which renders the gold models from it.",
+  "usage": "The proposal is rendered by deterministic code into an ODCS mapping contract draft (gold_invoice_lines_mapping), validated against the frozen mapping-contract schema, gated by the validator and datacontract lint, and reviewed and edited by a human before approval; nothing in it executes directly.",
+  "limitations": "The mapping does not filter or transform rows: cancellation lines (is_cancellation = true, with negative quantities down to -1395) and zero-priced lines (unit_price min 0.0) are mapped as-is, and their exclusion is left to consumers. It does not resolve the 30.07% null customer_id rows to any surrogate customer, does not declare quality rules, severities, classifications, service levels, ownership, or access policies, and derives no columns beyond the line_identity the transaction grain requires."
+}

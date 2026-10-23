@@ -1,0 +1,190 @@
+# Draft proposed by silver-cleanup-proposer v0.1.0 at 2026-10-23T19:00:59.168298+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_nyc_weather
+name: Silver nyc weather
+version: 1.1.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: silver_nyc_weather is the cleaned hourly weather observation table for the three
+    NYC-area airports (EWR, JFK, LGA) covering January through June 2013. It standardizes
+    types from the bronze landing (casting date parts to INTEGER, measurements to appropriately
+    scaled DECIMALs, and the observation timestamp from text to TIMESTAMP), drops Airbyte
+    capture metadata, and declares a grain of one row per station per hour. It feeds downstream
+    weather-enrichment joins against flight and operations tables.
+  usage: 'Join on origin plus time_hour at the hourly grain. Consumers must handle nulls deliberately:
+    wind_gust is null on roughly 75% of rows (gusts are only reported when observed), pressure
+    is null on about 11% of rows, and wind_dir on about 1.7%; no imputation was applied. Be
+    aware that wind_speed contains at least one extreme value (max 1048.36058) that was retained
+    as landed and should be filtered or capped by consumers who need physically plausible
+    speeds.'
+  limitations: Coverage is limited to year 2013, months 1 through 6, and three stations. The
+    wind_speed outlier (max 1048.36058 against typical values under 63) was not corrected,
+    and sparse columns (wind_gust null_rate 0.745505, pressure 0.114953, wind_dir 0.016828)
+    retain their nulls. The declared station-hour grain is inferred from distinct counts (3
+    origins x 4341 hours vs 13014 rows) and must be confirmed against the warehouse before
+    approval; roughly 9 station-hours appear to be missing rather than duplicated.
+schema:
+- name: silver_nyc_weather
+  physicalName: silver_nyc_weather
+  logicalType: object
+  physicalType: table
+  description: silver_nyc_weather is the cleaned hourly weather observation table for the
+    three NYC-area airports (EWR, JFK, LGA) covering January through June 2013. It standardizes
+    types from the bronze landing (casting date parts to INTEGER, measurements to appropriately
+    scaled DECIMALs, and the observation timestamp from text to TIMESTAMP), drops Airbyte
+    capture metadata, and declares a grain of one row per station per hour. It feeds downstream
+    weather-enrichment joins against flight and operations tables.
+  properties:
+  - name: origin
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: Three distinct station codes (EWR, JFK, LGA) with null_rate 0.0; kept as
+      the station identifier and part of the grain.
+  - name: year
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: Single distinct value 2013.0 landed as DECIMAL(38,9) with null_rate 0.0;
+      every value is integral, so cast to INTEGER.
+  - name: month
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: Six distinct values 1.0 through 6.0, all integral with null_rate 0.0; cast
+      DECIMAL(38,9) to INTEGER.
+  - name: day
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: 31 distinct values with min 1.0 and max 31.0, all integral samples, null_rate
+      0.0; cast DECIMAL(38,9) to INTEGER.
+  - name: hour
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: 24 distinct values with min 0.0 and max 23.0, all integral samples, null_rate
+      0.0; cast DECIMAL(38,9) to INTEGER.
+  - name: temp
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: true
+    description: Temperature with min 10.94 and max 93.92 and null_rate 0.0; samples carry
+      at most two decimal places, so DECIMAL(38,9) is narrowed to DECIMAL(10,2).
+  - name: dewp
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: true
+    description: Dew point with min -9.94 and max 73.94 and null_rate 0.0; samples carry two
+      decimal places, so narrowed to DECIMAL(10,2).
+  - name: humid
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: true
+    description: Relative humidity with min 12.74 and max 100.0, 2178 distinct values, null_rate
+      0.0; samples carry two decimal places, so narrowed to DECIMAL(10,2).
+  - name: wind_dir
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: 37 distinct values between 0.0 and 360.0, every sample an integral multiple
+      of 10; null_rate 0.016828 (219 nulls) so retained nullable and cast to INTEGER.
+  - name: wind_speed
+    logicalType: number
+    physicalType: DECIMAL(12,5)
+    required: false
+    description: Samples carry five decimal places with min 0.0, but max 1048.36058 is a physically
+      implausible outlier retained as-is; null_rate 0.000154 (2 nulls) so retained nullable
+      with DECIMAL(12,5).
+  - name: wind_gust
+    logicalType: number
+    physicalType: DECIMAL(12,5)
+    required: false
+    description: Sparsely populated with null_rate 0.745505 (9702 nulls); non-null values
+      span 16.11092 to 62.14212 with five decimal places, retained nullable as DECIMAL(12,5).
+  - name: precip
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: true
+    description: Precipitation with 50 distinct values between 0.0 and 1.06 and null_rate
+      0.0; samples carry two decimal places, so narrowed to DECIMAL(10,2).
+  - name: pressure
+    logicalType: number
+    physicalType: DECIMAL(10,1)
+    required: false
+    description: 430 distinct values between 983.8 and 1038.4, all samples with one decimal
+      place; null_rate 0.114953 (1496 nulls) so retained nullable as DECIMAL(10,1).
+  - name: visib
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: true
+    description: Exactly 20 distinct values between 0.0 and 10.0 with at most two decimal
+      places (e.g. 0.06, 0.12) and null_rate 0.0; narrowed to DECIMAL(10,2).
+  - name: time_hour
+    logicalType: date
+    physicalType: TIMESTAMP
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 2
+    description: 4341 distinct VARCHAR values, every sample ISO-8601 shaped (e.g. 2013-01-01T06:00:00Z)
+      with null_rate 0.0; cast to TIMESTAMP and used as part of the grain.
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (origin, time_hour) combinations'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT origin, time_hour
+        FROM silver.silver_nyc_weather
+        GROUP BY origin, time_hour
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: silver-cleanup-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.0.0
+- property: modelId
+  value: claude-fable-5
+- property: profileHash
+  value: sha256:1dee708bb140addbdb172a3727f79d85a2d7a611bd9c191d56d3e433a8c5777b
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: cleanup
+- property: decisionGrain
+  value: one-row-per-station-per-hour
+- property: decisionExactDuplicates
+  value: no-dedupe-needed
+- property: decisionDroppedAirbyteMetadata
+  value: excluded-as-capture-artifacts
+- property: decisionTimeHourCast
+  value: cast-varchar-to-timestamp
+- property: decisionIntegerDateParts
+  value: cast-decimal-to-integer
+- property: decisionSparseWindGust
+  value: retained-nullable
+- property: decisionNullablePressureWindDir
+  value: retained-nullable
+- property: decisionWindSpeedOutlier
+  value: retained-as-landed

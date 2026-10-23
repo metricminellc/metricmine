@@ -1,0 +1,80 @@
+{
+  "target_table": "silver_nyc_airlines",
+  "columns": [
+    {
+      "source_column": "carrier",
+      "action": "keep",
+      "target_name": "carrier",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "Two-letter IATA carrier code with null_rate 0.0 and distinct_count 16 equal to row_count 16, making it a natural unique key (samples: 9E, AA, DL, UA, WN)."
+    },
+    {
+      "source_column": "name",
+      "action": "keep",
+      "target_name": "name",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "Full airline name with null_rate 0.0 and distinct_count 16 matching row_count 16; one name per carrier code (samples: Delta Air Lines Inc., United Air Lines Inc., Southwest Airlines Co.)."
+    },
+    {
+      "source_column": "_airbyte_raw_id",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Marked is_airbyte_metadata true; capture-tool record identifier with no business meaning, dropped per pipeline convention."
+    },
+    {
+      "source_column": "_airbyte_extracted_at",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Marked is_airbyte_metadata true; single extraction timestamp (min and max both 2026-09-02T23:26:17) is a capture artifact, dropped per pipeline convention."
+    },
+    {
+      "source_column": "_airbyte_meta",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "JSON",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Marked is_airbyte_metadata true; its single distinct value is the empty JSON object {} carrying no information, dropped per pipeline convention."
+    }
+  ],
+  "dedupe_strategy": "none",
+  "dedupe_keys": [],
+  "grain_keys": [
+    "carrier"
+  ],
+  "decisions": [
+    {
+      "key": "decisionGrain",
+      "value": "one-row-per-carrier-code",
+      "rationale": "carrier has null_rate 0.0 and distinct_count 16 equal to row_count 16, so each carrier code identifies exactly one row; declared as the primary key and error-severity uniqueness rule."
+    },
+    {
+      "key": "decisionExactDuplicates",
+      "value": "no-dedupe-needed",
+      "rationale": "duplicate_row_rate is 0.0 across row_count 16, so no exact duplicate rows exist in bronze and no dedupe step is applied."
+    },
+    {
+      "key": "decisionAirbyteMetadata",
+      "value": "excluded-as-capture-artifacts",
+      "rationale": "_airbyte_raw_id, _airbyte_extracted_at, and _airbyte_meta are flagged is_airbyte_metadata true and carry only capture-tool state (_airbyte_meta holds only {}), so all three are dropped."
+    }
+  ],
+  "purpose": "silver_nyc_airlines is a small reference (lookup) table mapping two-letter IATA carrier codes to full airline names for the NYC flights domain, feeding joins that enrich flight-level facts with human-readable carrier names.",
+  "usage": "Join on carrier (the declared grain and primary key) to resolve airline names; both columns are non-null and the table holds exactly one row per carrier code, so joins are safe without deduplication. Treat it as a static dimension refreshed with each bronze load.",
+  "limitations": "The cleanup only drops the three Airbyte capture columns; no values were altered. The table reflects a single extraction snapshot (16 rows, duplicate_row_rate 0.0) and covers only the 16 carriers present in the source, so codes outside this set will not resolve in joins."
+}

@@ -1,0 +1,310 @@
+# Draft proposed by gold-mapping-proposer v0.1.0 at 2026-10-23T19:18:00.645001+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: gold_flights_mapping
+name: Gold mapping, flights category
+version: 1.1.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: This mapping declares how silver.silver_flights enters the gold unified event star
+    as the flights fact category at transaction grain, keyed by a derived line identity and
+    timed by flight_date at day grain. Its consumer is the deterministic modeling engine,
+    which renders the gold models from this contract.
+  usage: The proposal is rendered to an ODCS mapping contract draft, validated against the
+    frozen mapping-contract schema, gated by the validator and datacontract lint, and reviewed
+    and edited by a human before approval; only then does the modeling engine consume it.
+  limitations: 'The mapping does not filter or transform rows: cancelled flights (is_cancelled
+    true) remain in the category with null dep_hhmm, dep_delay_minutes, arr_hhmm, arr_delay_minutes,
+    and air_time_minutes (null rates around 0.029 to 0.033), and excluding them is left to
+    consumers. Aircraft attributes are missing for roughly 16 percent of rows and destination
+    attributes for about 2 percent, and the mapping does not impute them. captured_at is a
+    load timestamp (2026 values), not an event time, and departure_hour_utc resolves only
+    to the hour; the declared event time is flight_date at day grain. No quality rules, classifications,
+    service levels, or ownership are proposed, as the mapping contract carries none by design.'
+schema:
+- name: flights
+  logicalType: object
+  physicalType: mapping
+  description: One row is one scheduled flight departure from a New York City airport (EWR,
+    JFK, or LGA) in the first half of 2013, carrying its carrier, route, aircraft, schedule,
+    actual times, delays, and cancellation status.
+  entityGroup: flights
+  sourceTable: silver.silver_flights
+  timeColumn: flight_date
+  timeGrain: day
+  grain:
+    type: transaction
+    degenerateIdentifiers:
+    - source: derived
+      name: flight_identity
+      derivation: canonical-key-v2
+      of:
+      - flight_date
+      - carrier_code
+      - flight_number
+      - origin_airport
+      - sched_dep_hhmm
+  properties:
+  - name: flight_date
+    logicalType: date
+    physicalType: DATE
+    required: true
+    mappingRole: time
+    description: Calendar date of the scheduled flight, never null, spanning 2013-01-01 to
+      2013-06-30 across 181 distinct days.
+  - name: carrier_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    mappingRole: dimension
+    description: Two-character IATA operating carrier code, never null, with 16 distinct values
+      such as AA, DL, UA, B6.
+  - name: flight_number
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    mappingRole: dimension
+    description: Carrier-assigned flight number from 1 to 8500; a numeric identifier that
+      labels the flight rather than a quantity, so it maps as a dimension.
+  - name: origin_airport
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    mappingRole: dimension
+    description: Origin airport code, never null, limited to the three New York airports EWR,
+      JFK, and LGA.
+  - name: sched_dep_hhmm
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    mappingRole: dimension
+    description: Scheduled departure clock time encoded as HHMM (500 to 2359); a clock label
+      rather than an additive quantity, never null.
+  - name: dest_airport
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    mappingRole: dimension
+    description: Destination airport code, never null, with 100 distinct values such as ATL,
+      BNA, and AUS.
+  - name: tail_number
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    mappingRole: dimension
+    description: Aircraft registration such as N10156; nullable (null_rate 0.009154), likely
+      missing where the operating aircraft was not recorded, for example on cancelled flights.
+  - name: is_cancelled
+    logicalType: boolean
+    physicalType: BOOLEAN
+    required: true
+    mappingRole: dimension
+    description: Flag marking whether the flight was cancelled, never null, with both true
+      and false observed in the profile.
+  - name: dep_hhmm
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    mappingRole: dimension
+    description: Actual departure clock time encoded as HHMM (1 to 2400); nullable (null_rate
+      0.029388), consistent with flights that never departed because they were cancelled.
+  - name: dep_delay_minutes
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    mappingRole: measure
+    description: Departure delay in minutes from -33 (early) to 1301, additive and comparable
+      across flights; nullable (null_rate 0.029388) where no actual departure was recorded.
+  - name: arr_hhmm
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    mappingRole: dimension
+    description: Actual arrival clock time encoded as HHMM (1 to 2400); nullable (null_rate
+      0.0307), consistent with cancelled or diverted flights that never arrived.
+  - name: sched_arr_hhmm
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    mappingRole: dimension
+    description: Scheduled arrival clock time encoded as HHMM (1 to 2359); a clock label,
+      never null.
+  - name: arr_delay_minutes
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    mappingRole: measure
+    description: Arrival delay in minutes from -86 (early) to 1272, the key additive delay
+      quantity; nullable (null_rate 0.032981) where no arrival was recorded.
+  - name: air_time_minutes
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    mappingRole: measure
+    description: Minutes spent in the air, 20 to 695, an additive duration; nullable (null_rate
+      0.032981) matching flights without a recorded arrival.
+  - name: distance_miles
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    mappingRole: measure
+    description: Route distance in miles from 80 to 4983, never null, additive for totals
+      such as miles flown.
+  - name: sched_dep_hour_local
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    mappingRole: dimension
+    description: Local hour of scheduled departure, 5 through 23, never null; a time-of-day
+      bucket label rather than a quantity.
+  - name: sched_dep_minute_local
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    mappingRole: dimension
+    description: Local minute of scheduled departure, 0 through 59, never null; a clock label
+      rather than a quantity.
+  - name: departure_hour_utc
+    logicalType: date
+    physicalType: TIMESTAMP
+    required: true
+    mappingRole: dimension
+    description: UTC departure timestamp truncated to the hour (samples all end in :00:00),
+      never null; a secondary time attribute kept as a dimension because flight_date carries
+      the event time.
+  - name: carrier_name
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    mappingRole: dimension
+    description: Full carrier name with 16 distinct values such as Delta Air Lines Inc. and
+      JetBlue Airways, matching the 16 carrier codes, never null.
+  - name: aircraft_manufacturer
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    mappingRole: dimension
+    description: Aircraft manufacturer such as BOEING or AIRBUS; nullable (null_rate 0.160426),
+      missing where the tail number did not join to aircraft reference data.
+  - name: aircraft_model
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    mappingRole: dimension
+    description: Aircraft model designation such as 172N or 550; nullable (null_rate 0.160426),
+      missing alongside the other aircraft attributes.
+  - name: aircraft_manufacture_year
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    mappingRole: dimension
+    description: Year the aircraft was built, 1956 to 2013; a numeric label of the aircraft
+      rather than a quantity, nullable (null_rate 0.176531).
+  - name: aircraft_seat_count
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    mappingRole: measure
+    description: Seat capacity of the operating aircraft, 2 to 450, additive across flights
+      as offered capacity; nullable (null_rate 0.160426) where aircraft data is missing.
+  - name: aircraft_engine_type
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    mappingRole: dimension
+    description: Engine type with 6 distinct values such as Turbo-fan and Reciprocating; nullable
+      (null_rate 0.160426) alongside the other aircraft attributes.
+  - name: origin_airport_name
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    mappingRole: dimension
+    description: Full origin airport name, never null, one of the three New York airports
+      such as LaGuardia Airport.
+  - name: origin_municipality
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    mappingRole: dimension
+    description: Origin city, never null, either New York or Newark.
+  - name: origin_elevation_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    mappingRole: dimension
+    description: Origin airport elevation in feet with only 3 distinct values (13, 18, 21),
+      an attribute of the airport rather than a flight quantity, never null.
+  - name: origin_longest_runway_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    mappingRole: dimension
+    description: Length of the origin airport's longest runway in feet with 3 distinct values
+      (7002, 11000, 14511), an airport attribute, never null.
+  - name: dest_airport_name
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    mappingRole: dimension
+    description: Full destination airport name such as Boston Logan International Airport;
+      nullable (null_rate 0.02089) where the destination code did not join to airport reference
+      data.
+  - name: dest_municipality
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    mappingRole: dimension
+    description: Destination city such as Atlanta or Austin; nullable (null_rate 0.02089)
+      alongside the other destination attributes.
+  - name: dest_iso_region
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    mappingRole: dimension
+    description: ISO region of the destination such as US-GA or PR-U-A; nullable (null_rate
+      0.02089) alongside the other destination attributes.
+  - name: dest_elevation_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    mappingRole: dimension
+    description: Destination airport elevation in feet, 3 to 6606, an airport attribute rather
+      than a flight quantity; nullable (null_rate 0.02089).
+  - name: dest_longest_runway_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    mappingRole: dimension
+    description: Length of the destination airport's longest runway in feet, 5076 to 16000,
+      an airport attribute; nullable (null_rate 0.02089).
+  - name: captured_at
+    logicalType: date
+    physicalType: TIMESTAMP
+    required: true
+    mappingRole: dimension
+    description: Pipeline capture timestamp, never null, with 16 distinct values clustered
+      in a 15-second window on 2026-09-02; a load-audit attribute, not a business event time.
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: gold
+customProperties:
+- property: proposedBy
+  value: gold-mapping-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.0.0
+- property: modelId
+  value: claude-fable-5
+- property: profileHash
+  value: sha256:2d19b75b44c2aa680549789ba634ee35b281fe90233870346553b2b1fc571e8b
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: propose

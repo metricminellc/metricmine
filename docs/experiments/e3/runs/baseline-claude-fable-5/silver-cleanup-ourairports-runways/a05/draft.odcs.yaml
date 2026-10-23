@@ -1,0 +1,222 @@
+# Draft proposed by silver-cleanup-proposer v0.1.0 at 2026-10-23T19:16:03.591662+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_ourairports_runways
+name: Silver ourairports runways
+version: 1.1.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: 'silver_ourairports_runways is the cleaned, typed runway reference table derived
+    from bronze ourairports_runways: one row per runway (grain runway_id) with typed dimensions,
+    boolean lighting/closure flags, and low-end (le_) and high-end (he_) endpoint coordinates,
+    elevations, headings, and displaced thresholds. It feeds airport-level analytics by joining
+    to the airports table on airport_ref or airport_ident.'
+  usage: Join to the airports table on airport_ref (numeric) or airport_ident (code). Filter
+    on is_closed = false to analyze active runways. Endpoint columns (le_/he_ latitude, longitude,
+    elevation, heading) are null for roughly 22-28% of rows and displaced thresholds for roughly
+    88-90%, so consumers must handle nulls explicitly; surface is raw uncleaned text and should
+    be normalized by the consumer before grouping.
+  limitations: 'Nulls are retained rather than imputed: le/he coordinates and headings are
+    missing at rates of 0.221-0.276, displaced thresholds at 0.884 and 0.900. The surface
+    column''s 239 distinct raw spellings are not normalized. Out-of-range values landed in
+    the source are kept as-is, including length_ft of 0.0 and he_heading_degt up to 362.0,
+    and le_ident/he_ident contain junk values like ''.'' and ''-''. No duplicate removal was
+    applied because duplicate_row_rate is 0.0.'
+schema:
+- name: silver_ourairports_runways
+  physicalName: silver_ourairports_runways
+  logicalType: object
+  physicalType: table
+  description: 'silver_ourairports_runways is the cleaned, typed runway reference table derived
+    from bronze ourairports_runways: one row per runway (grain runway_id) with typed dimensions,
+    boolean lighting/closure flags, and low-end (le_) and high-end (he_) endpoint coordinates,
+    elevations, headings, and displaced thresholds. It feeds airport-level analytics by joining
+    to the airports table on airport_ref or airport_ident.'
+  properties:
+  - name: runway_id
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: Landed as VARCHAR with null_rate 0.0 and distinct_count 10760 equal to row_count
+      10760; all samples (e.g. '232758', '232770') are pure integral digits, so the cast to
+      INTEGER is safe and the column uniquely identifies rows.
+  - name: airport_ref
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: VARCHAR with null_rate 0.0 and distinct_count 7591; all samples ('10309',
+      '1058', '111') are integral digit strings, supporting a cast to INTEGER as the numeric
+      airport foreign key.
+  - name: airport_ident
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: Null_rate 0.0 with distinct_count 7591 matching airport_ref; samples ('03N',
+      '07FA', '19AK') are alphanumeric airport codes, so the column stays VARCHAR.
+  - name: length_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: DECIMAL(38,9) with min 0.0, max 16798.0 and all samples integral (0.0, 2.0,
+      20.0), so INTEGER is sufficient; null_rate 0.007993 (86 nulls), so nulls are retained.
+  - name: width_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: DECIMAL(38,9) with min 1.0, max 7000.0 and all samples integral (1.0, 10.0,
+      15.0), supporting INTEGER; null_rate 0.082528 (888 nulls), so nulls are retained.
+  - name: surface
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: Free-text surface codes with distinct_count 239 and inconsistent spellings
+      in samples ('ASP', 'ASPH', 'ASP/CONC', 'ASPH-CONC-G'), so the value is kept as uncleaned
+      VARCHAR; null_rate 0.022955 (247 nulls) retained.
+  - name: is_lighted
+    logicalType: boolean
+    physicalType: BOOLEAN
+    required: true
+    description: DECIMAL(38,9) with distinct_count 2 and distinct_values exactly [0.0, 1.0]
+      and null_rate 0.0, so it is a numeric-encoded boolean; renamed to is_lighted and cast
+      to BOOLEAN.
+  - name: is_closed
+    logicalType: boolean
+    physicalType: BOOLEAN
+    required: true
+    description: DECIMAL(38,9) with distinct_count 2 and distinct_values exactly [0.0, 1.0]
+      and null_rate 0.0, so it is a numeric-encoded boolean; renamed to is_closed and cast
+      to BOOLEAN.
+  - name: le_ident
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: Runway low-end identifiers with distinct_count 199; samples mix numeric and
+      suffixed forms plus junk values ('-12', '.', '01L'), so the column stays VARCHAR; null_rate
+      0.001022 (11 nulls) retained.
+  - name: le_latitude_deg
+    logicalType: number
+    physicalType: DOUBLE
+    required: false
+    description: DECIMAL(38,9) coordinate with min -62.187801 and max 82.512802, within latitude
+      bounds; cast to DOUBLE for coordinate use; null_rate 0.220911 (2377 nulls) retained.
+  - name: le_longitude_deg
+    logicalType: number
+    physicalType: DOUBLE
+    required: false
+    description: DECIMAL(38,9) coordinate with min -179.881256 and max 179.338837, within
+      longitude bounds; cast to DOUBLE; null_rate 0.221283 (2381 nulls) retained.
+  - name: le_elevation_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: DECIMAL(38,9) with min -1246.0, max 13202.0 and all samples integral (-1246.0,
+      -184.0), so INTEGER is sufficient; null_rate 0.276301 (2973 nulls) retained.
+  - name: le_heading_degt
+    logicalType: number
+    physicalType: DOUBLE
+    required: false
+    description: DECIMAL(38,9) heading with min 0.0, max 360.0 and fractional samples (0.2,
+      1.12), so a DOUBLE preserves the precision; null_rate 0.228346 (2457 nulls) retained.
+  - name: le_displaced_threshold_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: Sparsely populated column with null_rate 0.884201 (9514 nulls), still retained;
+      min 1.0, max 4250.0 with all samples integral (1.0, 2.0, 10.0), so INTEGER is sufficient.
+  - name: he_ident
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: Runway high-end identifiers with distinct_count 177; samples include junk
+      values ('-', '.') alongside valid designators ('01L', '04R'), so the column stays VARCHAR;
+      null_rate 0.004926 (53 nulls) retained.
+  - name: he_latitude_deg
+    logicalType: number
+    physicalType: DOUBLE
+    required: false
+    description: DECIMAL(38,9) coordinate with min -62.193901 and max 82.522797, within latitude
+      bounds; cast to DOUBLE; null_rate 0.222212 (2391 nulls) retained.
+  - name: he_longitude_deg
+    logicalType: number
+    physicalType: DOUBLE
+    required: false
+    description: DECIMAL(38,9) coordinate with min -179.873184 and max 179.343002, within
+      longitude bounds; cast to DOUBLE; null_rate 0.222212 (2391 nulls) retained.
+  - name: he_elevation_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: DECIMAL(38,9) with min -1210.0, max 13314.0 and all samples integral (-1210.0,
+      -181.0), so INTEGER is sufficient; null_rate 0.276208 (2972 nulls) retained.
+  - name: he_heading_degt
+    logicalType: number
+    physicalType: DOUBLE
+    required: false
+    description: DECIMAL(38,9) heading with min 0.0 and max 362.0 (slightly above 360, left
+      uncorrected) with fractional samples (0.1, 0.3), so a DOUBLE preserves the precision;
+      null_rate 0.227138 (2444 nulls) retained.
+  - name: he_displaced_threshold_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: Sparsely populated column with null_rate 0.899907 (9683 nulls), still retained;
+      min 10.0, max 4790.0 with all samples integral (10.0, 30.0), so INTEGER is sufficient.
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (runway_id) combinations'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT runway_id
+        FROM silver.silver_ourairports_runways
+        GROUP BY runway_id
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: silver-cleanup-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.0.0
+- property: modelId
+  value: claude-fable-5
+- property: profileHash
+  value: sha256:02990e96b848ac4edf287fdcca8136ca6b04008ab98d2a2f5287e450b0eecb33
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: cleanup
+- property: decisionGrain
+  value: one-row-per-runway-id
+- property: decisionExactDuplicates
+  value: no-dedupe-applied
+- property: decisionDroppedAirbyteMetadata
+  value: excluded-as-capture-artifacts
+- property: decisionBooleanEncoding
+  value: cast-zero-one-decimals-to-boolean
+- property: decisionIntegralIdCasts
+  value: cast-digit-strings-to-integer
+- property: decisionSparseDisplacedThresholds
+  value: retained-nullable
+- property: decisionSurfaceNotNormalized
+  value: kept-as-raw-text
+- property: decisionOutOfRangeValuesRetained
+  value: retained-without-correction

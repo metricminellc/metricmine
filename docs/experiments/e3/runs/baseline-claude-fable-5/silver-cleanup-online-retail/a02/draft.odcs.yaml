@@ -1,0 +1,150 @@
+# Draft proposed by silver-cleanup-proposer v0.1.0 at 2026-10-23T18:44:12.197761+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_online_retail_ii
+name: Silver online retail ii
+version: 1.0.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: 'silver_online_retail_ii is the cleaned line-item view of the bronze online_retail_ii
+    capture: one row per invoice line after exact-duplicate removal, with typed quantity,
+    price, timestamp, and customer id, feeding downstream sales, returns, and customer analyses.'
+  usage: Read one row as one invoice line at the declared invoice plus stock_code grain. Filter
+    is_return = false to analyze sales only, since return lines (negative quantity) are retained
+    and flagged rather than excluded. Expect customer_id to be null on roughly 30% of rows
+    and zero prices on some lines; handle both deliberately rather than assuming completeness.
+  limitations: Exact duplicate rows (duplicate_row_rate 0.011188 of 45228 rows) are collapsed
+    without distinguishing true re-entries from capture repeats. customer_id is null on 29.778%
+    of rows and no imputation is attempted. description nulls (null_rate 0.005041) and its
+    untrimmed whitespace are preserved as landed. Zero prices (min 0.0) and negative quantities
+    are retained; the grain of invoice plus stock_code is declared from profile evidence and
+    must be measured against the warehouse before approval.
+schema:
+- name: silver_online_retail_ii
+  physicalName: silver_online_retail_ii
+  logicalType: object
+  physicalType: table
+  description: 'silver_online_retail_ii is the cleaned line-item view of the bronze online_retail_ii
+    capture: one row per invoice line after exact-duplicate removal, with typed quantity,
+    price, timestamp, and customer id, feeding downstream sales, returns, and customer analyses.'
+  properties:
+  - name: invoice
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: Invoice identifier with null_rate 0.0 and 2330 distinct values; samples such
+      as '489434' are digit strings but this is an identifier, so it stays VARCHAR rather
+      than being cast to a numeric type.
+  - name: stock_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 2
+    description: Product code with null_rate 0.0 and 3141 distinct values; samples mix digits
+      and letters ('10002R', '10123C'), so the column stays text; renamed to snake_case stock_code.
+  - name: description
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: Free-text product description with 228 nulls (null_rate 0.005041) retained
+      as null; samples show leading/trailing whitespace (' ANIMAL STICKERS', ' BROWN  PIRATE
+      TREASURE CHEST ') which is preserved as landed.
+  - name: quantity
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: Landed as DECIMAL(38,9) with null_rate 0.0, but every sample is integral
+      (-1395.0, -720.0, -504.0) and min -1395.0 / max 5184.0 fit INTEGER, so the cast is safe;
+      negative values indicate returns.
+  - name: is_return
+    logicalType: boolean
+    physicalType: BOOLEAN
+    required: true
+    description: Derived flag set true when quantity is negative; the profile shows min -1395.0
+      and all ten samples negative (-1395.0 through -504.0), evidence that return/cancellation
+      lines exist and should be marked rather than silently mixed with sales.
+  - name: invoice_timestamp
+    logicalType: date
+    physicalType: TIMESTAMP
+    required: true
+    description: Landed as VARCHAR with null_rate 0.0 and 2004 distinct values; every sample
+      is an ISO-shaped datetime ('2009-12-01 07:45:00'), supporting a cast to TIMESTAMP; renamed
+      to invoice_timestamp for snake_case clarity since values carry time of day.
+  - name: price
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: true
+    description: Landed as DECIMAL(38,9) with null_rate 0.0; all samples have at most two
+      decimal places (0.04, 0.12, 0.18) and max 1998.49 fits DECIMAL(10,2); min 0.0 shows
+      zero-priced lines exist and are retained.
+  - name: customer_id
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: Landed as DECIMAL(38,9) but every sample is integral (12346.0, 12349.0) and
+      min 12346.0 / max 18287.0 fit INTEGER; 13468 nulls (null_rate 0.29778) are retained
+      as null because guest or unidentified transactions carry no customer.
+  - name: country
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: Country name with null_rate 0.0 and only 24 distinct values; samples ('Australia',
+      'EIRE', 'Channel Islands') are plain text, kept as landed.
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (invoice, stock_code) combinations'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT invoice, stock_code
+        FROM silver.silver_online_retail_ii
+        GROUP BY invoice, stock_code
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: silver-cleanup-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.0.0
+- property: modelId
+  value: claude-fable-5
+- property: profileHash
+  value: sha256:79f801e1d8182ee55a32a0e3323134a27fec839c5a5478edfb8f5683cf5221f0
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: cleanup
+- property: decisionExactDuplicates
+  value: drop-exact-duplicate-rows
+- property: decisionGrain
+  value: invoice-plus-stock-code
+- property: decisionNullCustomerId
+  value: retained-nullable
+- property: decisionReturnsFlagged
+  value: flagged-not-excluded
+- property: decisionAirbyteColumnsDropped
+  value: excluded-as-capture-artifacts
+- property: decisionZeroPrice
+  value: retained-as-landed
+- property: decisionDescriptionWhitespace
+  value: retained-as-landed

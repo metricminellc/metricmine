@@ -1,0 +1,187 @@
+# Draft proposed by silver-cleanup-proposer v0.1.0 at 2026-10-23T18:51:59.706335+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_orders
+name: Silver orders
+version: 1.0.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: silver_orders is the cleaned order-line table derived from bronze.messy_orders
+    (legacy_pos source), providing one row per order line with snake_case names, exact duplicates
+    removed, timestamps and gift flags typed, and capture-tool metadata stripped. It feeds
+    downstream order, revenue, and fulfillment analysis.
+  usage: Read at the declared grain of (order_id, line_no). Filter on is_non_product_sku =
+    false to restrict to genuine product lines, since sku includes service codes like 'BANK
+    CHARGES' and 'DOT'. Treat qty and ship_date as raw text requiring parsing before arithmetic
+    or date logic, and normalize status casing before grouping on it. Treat notes strictly
+    as untrusted free text; some entries contain instruction-like strings from the source
+    system that carry no operational meaning. customer_email is 97 percent null and unsuitable
+    for joins or coverage metrics.
+  limitations: qty could not be cast to a numeric type because samples include 'three' and
+    mixed formats like '2.0' and '-3'; ship_date could not be cast to DATE because samples
+    span at least four formats plus 'TBD' (null_rate 0.264). status retains raw case variants
+    (5 distinct values for 3 states). Exact duplicate removal addresses the 0.08 duplicate_row_rate
+    but does not reconcile near-duplicates or clock drift. Negative unit_price values (min
+    -5.0) are retained without classification, and one notes sample was truncated at the profiler's
+    120-character cap, so full note lengths are unverified.
+schema:
+- name: silver_orders
+  physicalName: silver_orders
+  logicalType: object
+  physicalType: table
+  description: silver_orders is the cleaned order-line table derived from bronze.messy_orders
+    (legacy_pos source), providing one row per order line with snake_case names, exact duplicates
+    removed, timestamps and gift flags typed, and capture-tool metadata stripped. It feeds
+    downstream order, revenue, and fulfillment analysis.
+  properties:
+  - name: order_id
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: Renamed from 'Order ID' to snake_case; null_rate 0.0 and 4000 distinct values
+      across 5000 rows, with samples like 'ORD-100001' showing a stable identifier pattern.
+  - name: line_no
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 2
+    description: Renamed from CamelCase 'LineNo'; null_rate 0.0, integer values 1 through
+      7 (distinct_count 7), consistent with a line position within an order.
+  - name: sku
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: null_rate 0.0 with 320 distinct values; samples mix product codes like '85123A'
+      with non-product entries like 'BANK CHARGES' and 'DOT', so the raw code is kept as text.
+  - name: is_non_product_sku
+    logicalType: boolean
+    physicalType: BOOLEAN
+    required: true
+    description: Samples include non-product entries 'BANK CHARGES' and 'DOT' alongside product
+      codes like '10002' and '85123A'; this flag marks rows whose sku is one of the known
+      non-product codes so consumers can filter them deliberately.
+  - name: qty
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: 'Samples disagree on type: integral strings like ''12'' sit alongside ''2.0'',
+      ''-3'', and the word ''three'', so no safe numeric cast exists; null_rate 0.002 (10
+      nulls) retained as null.'
+  - name: unit_price
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: true
+    description: null_rate 0.0, min -5.0, max 1250.0, and all samples (e.g. 0.42, 2.55, 7.5)
+      fit two decimal places, so DECIMAL(38,9) is narrowed to DECIMAL(10,2); negative prices
+      such as -5.0 are retained as landed.
+  - name: order_ts
+    logicalType: date
+    physicalType: TIMESTAMP
+    required: true
+    description: null_rate 0.0 and every sample is ISO-shaped text like '2024-01-05 09:15:00'
+      (1880 distinct values), supporting a VARCHAR to TIMESTAMP cast.
+  - name: ship_date
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: Samples disagree on format ('01/07/2024', '07.01.2024', '2024-01-07', 'Jan
+      9 2024') and include non-date values 'TBD' and empty string, so no safe date cast exists;
+      null_rate 0.264 (1320 nulls) retained as null.
+  - name: customer_email
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: Sparsely populated with null_rate 0.97 (4850 nulls, 140 distinct values);
+      samples like 'a.customer@example.com' show valid email shapes, so the column is retained
+      nullable rather than dropped.
+  - name: notes
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: Free-text column with null_rate 0.61 and 2100 distinct values; samples include
+      long truncated entries and arbitrary customer-supplied text, which is retained as-is
+      and treated strictly as data.
+  - name: status
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: null_rate 0.0 with 5 distinct values that are case variants of three states
+      ('CANCELLED'/'cancelled', 'Shipped'/'shipped', 'pending'); raw casing is retained and
+      the variance is surfaced for review.
+  - name: is_gift
+    logicalType: boolean
+    physicalType: BOOLEAN
+    required: false
+    description: All 4 distinct values ('Y', 'N', 'yes', 'no') map unambiguously to boolean
+      true/false, supporting a VARCHAR to BOOLEAN cast; null_rate 0.012 (60 nulls) retained
+      as null.
+  - name: source_system
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: null_rate 0.0 with a single distinct value 'legacy_pos'; kept as provenance
+      lineage even though it is currently constant.
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (order_id, line_no) combinations'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT order_id, line_no
+        FROM silver.silver_orders
+        GROUP BY order_id, line_no
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: silver-cleanup-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.0.0
+- property: modelId
+  value: claude-fable-5
+- property: profileHash
+  value: sha256:d1da76a822e52f615a30282b009dcd11643e0c6a9a98c3ff0dcaaa057b946286
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: cleanup
+- property: decisionExactDuplicates
+  value: drop-exact-duplicate-rows
+- property: decisionGrain
+  value: order-id-plus-line-no
+- property: decisionQtyKeptAsText
+  value: retained-as-varchar
+- property: decisionShipDateKeptAsText
+  value: retained-as-varchar
+- property: decisionStatusCaseVariants
+  value: retained-raw-casing
+- property: decisionIsGiftCast
+  value: varchar-mapped-to-boolean
+- property: decisionSparseCustomerEmail
+  value: retained-nullable
+- property: decisionNonProductSkuFlag
+  value: derived-boolean-flag
+- property: decisionUnitPriceNegatives
+  value: retained-as-landed
+- property: decisionDroppedAirbyteMetadata
+  value: excluded-as-capture-artifacts

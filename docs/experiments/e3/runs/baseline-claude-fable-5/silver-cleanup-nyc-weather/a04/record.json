@@ -1,0 +1,66 @@
+{
+  "agent": {
+    "name": "silver-cleanup-proposer",
+    "version": "0.1.0"
+  },
+  "api_error": null,
+  "context": null,
+  "context_path": null,
+  "cost_usd_estimate": 0.30841,
+  "created_at": "2026-10-23T19:01:47.502452+00:00",
+  "disposition": "draft_written",
+  "draft_path": "proposals/silver-cleanup-proposer/20261023T190147502452Z_1dee708b/draft.odcs.yaml",
+  "inputs": [
+    {
+      "content_hash": "sha256:1dee708bb140addbdb172a3727f79d85a2d7a611bd9c191d56d3e433a8c5777b",
+      "kind": "profile_artifact",
+      "path": "profiles/bronze.nyc_weather/v0001.json",
+      "schema_version": "1.0.0"
+    }
+  ],
+  "intent": null,
+  "model_id": "claude-fable-5",
+  "model_source": "flag",
+  "profile_hash": "sha256:1dee708bb140addbdb172a3727f79d85a2d7a611bd9c191d56d3e433a8c5777b",
+  "profile_path": "profiles/bronze.nyc_weather/v0001.json",
+  "profile_schema_version": "1.0.0",
+  "prompt_path": "src/metricmine/agents/prompts/silver_cleanup.md",
+  "prompt_version": "1.0.0",
+  "rates": {
+    "input_per_mtok": 10.0,
+    "output_per_mtok": 50.0
+  },
+  "request_params": {
+    "effort": "high",
+    "max_tokens": 16384
+  },
+  "response_id": "msg_011CgKgkGJuAxRZrVTEj5y5a",
+  "sdk_version": "1.0.0",
+  "skeleton": false,
+  "stance": "cleanup",
+  "stop_reason": "end_turn",
+  "usage": {
+    "input_tokens": 8141,
+    "output_tokens": 4540
+  },
+  "validation": {
+    "attempt_log": [
+      {
+        "completeness_pass": true,
+        "errors": [],
+        "groundedness_pass": true,
+        "lint_pass": true,
+        "schema_pass": true,
+        "staleness_pass": true,
+        "stop_reason": "end_turn"
+      }
+    ],
+    "attempts": 1,
+    "completeness_pass": true,
+    "errors": [],
+    "groundedness_pass": true,
+    "lint_pass": true,
+    "schema_pass": true,
+    "staleness_pass": true
+  }
+}
