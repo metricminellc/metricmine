@@ -1,0 +1,32 @@
+{
+  "stance": "amend",
+  "column_prose": [],
+  "added_columns": [],
+  "grain_keys": [
+    "invoice_id",
+    "stock_code",
+    "quantity",
+    "unit_price"
+  ],
+  "quality_rules": [],
+  "changes": [
+    {
+      "kind": "required_change",
+      "column": "captured_at",
+      "before": "false",
+      "after": "true",
+      "rationale": "The fresh profile (v0002) measures captured_at at null_rate 0.0 over 44,721 rows; the incremental path has landed."
+    },
+    {
+      "kind": "description_change",
+      "column": "captured_at",
+      "before": "Capture timestamp carried forward from the bronze landing",
+      "after": "Capture timestamp carried forward from the bronze landing (_airbyte_extracted_at): when the surviving line's earliest capture entered the pipeline. The incremental watermark the gold layer builds on; now required because the incremental path is proven and every row is populated.",
+      "rationale": "The description records why the column is required now."
+    }
+  ],
+  "decisions": [],
+  "purpose": "",
+  "usage": "",
+  "limitations": ""
+}

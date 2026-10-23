@@ -1,0 +1,87 @@
+{
+  "stance": "describe",
+  "column_prose": [
+    {
+      "name": "invoice_id",
+      "description": "Invoice number, kept as text (identifiers are text; Session D rule). A leading C marks a cancellation invoice; see is_cancellation.",
+      "rationale": "null_rate 0.0, distinct_count 2330, physical_type VARCHAR as profiled at v0002."
+    },
+    {
+      "name": "is_cancellation",
+      "description": "True when invoice_id carries the C cancellation prefix. Decision: cancellations are retained and flagged, not dropped, so conservation arithmetic against bronze stays auditable; exclusion is a consumer decision made at t",
+      "rationale": "null_rate 0.0, distinct_count 2, physical_type BOOLEAN as profiled at v0002."
+    },
+    {
+      "name": "stock_code",
+      "description": "Product code as landed, kept as text; alphanumeric suffixes and non-product adjustment codes (for example POST, M) occur.",
+      "rationale": "null_rate 0.0, distinct_count 3141, physical_type VARCHAR as profiled at v0002."
+    },
+    {
+      "name": "product_description",
+      "description": "Product description, whitespace-trimmed. Null rate 0.005041 at profile v0001; nulls retained rather than imputed.",
+      "rationale": "null_rate 0.005098, distinct_count 3034, physical_type VARCHAR as profiled at v0002."
+    },
+    {
+      "name": "quantity",
+      "description": "Units on the line, cast from DECIMAL(38,9) to INTEGER. Negative values occur both on cancellation-invoice lines and on zero-unit-price stock-adjustment lines; consumers must not infer cancellation from negative quantity ",
+      "rationale": "null_rate 0.0, distinct_count 233, physical_type INTEGER as profiled at v0002."
+    },
+    {
+      "name": "invoiced_at",
+      "description": "Invoice timestamp. Decision: strict cast from the VARCHAR landing (\"YYYY-MM-DD HH:MM:SS\"); an unparseable value fails the build loudly rather than becoming a silent null. On within-invoice clock-drift duplicates the earl",
+      "rationale": "null_rate 0.0, distinct_count 2004, physical_type TIMESTAMP as profiled at v0002."
+    },
+    {
+      "name": "unit_price",
+      "description": "Unit price in sterling, cast from DECIMAL(38,9). Observed range 0.00 to 1998.49 at v0001. Decision: zero-price lines (freebies and adjustments) are retained; negative prices are contract-invalid.",
+      "rationale": "null_rate 0.0, distinct_count 295, physical_type DECIMAL(10,2) as profiled at v0002."
+    },
+    {
+      "name": "customer_id",
+      "description": "Customer identifier, cast DECIMAL(38,9) to INTEGER (integral min, max, and samples, 12346 to 18287 at v0001). Decision: the 0.29778 bronze null rate is retained as null (guest or unregistered checkouts), not dropped and ",
+      "rationale": "null_rate 0.300664, distinct_count 1045, physical_type INTEGER as profiled at v0002."
+    },
+    {
+      "name": "country",
+      "description": "Customer country as landed (24 distinct at v0001).",
+      "rationale": "null_rate 0.0, distinct_count 24, physical_type VARCHAR as profiled at v0002."
+    },
+    {
+      "name": "captured_at",
+      "description": "Capture timestamp carried forward from the bronze landing (_airbyte_extracted_at): when the surviving line's earliest capture entered the pipeline. The incremental watermark the gold layer builds on; now required because",
+      "rationale": "null_rate 0.0, distinct_count 4, physical_type TIMESTAMP as profiled at v0002."
+    }
+  ],
+  "added_columns": [],
+  "grain_keys": [
+    "invoice_id",
+    "stock_code",
+    "quantity",
+    "unit_price"
+  ],
+  "quality_rules": [
+    {
+      "kind": "not_null",
+      "column": "invoice_id",
+      "values": [],
+      "rationale": "null_rate 0.0 at profile v0002; the grain's first key."
+    },
+    {
+      "kind": "non_negative",
+      "column": "unit_price",
+      "values": [],
+      "rationale": "profiled min 0.0 at v0002; a negative price would be invalid."
+    }
+  ],
+  "changes": [],
+  "decisions": [
+    {
+      "key": "decisionGrainKeys",
+      "value": "invoice-stockcode-quantity-price",
+      "rationale": "duplicate_row_rate 0.0 at v0002; the four columns together identify a distinct line as the committed cleanup settled it."
+    }
+  ],
+  "purpose": "The cleaned, typed, one-row-per-invoice-line view of the Online Retail II sample.",
+  "usage": "Read for line-level retail sales analysis; cancellation lines are retained and flagged.",
+  "limitations": "captured_at is a pipeline capture stamp carried from bronze, not a business column."
+}

@@ -1,0 +1,229 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://metricmine.ai/spec/agent-layer/e3/table-contract-judgment.schema.json",
+  "title": "Table contract judgment (E3b, experiment branch)",
+  "description": "The judgment half of a describe or amend proposal: what the model declares over a machine half that code writes from the profile (describe) or the committed contract (amend). docs/experiments/e3/KEY.md. A structured-outputs-compatible projection (F-26): flat, every property required, every enum typed, no composition keywords.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "stance",
+    "column_prose",
+    "added_columns",
+    "grain_keys",
+    "quality_rules",
+    "changes",
+    "decisions",
+    "purpose",
+    "usage",
+    "limitations"
+  ],
+  "properties": {
+    "stance": {
+      "type": "string",
+      "enum": [
+        "describe",
+        "amend"
+      ],
+      "description": "The stance of this run; must equal the skeleton's."
+    },
+    "column_prose": {
+      "type": "array",
+      "description": "Describe: one entry per profiled column, by its exact name, carrying the reviewer-facing description and the evidence quoted. Amend: empty; descriptions move only by a description_change.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "description",
+          "rationale"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The profiled column name, verbatim."
+          },
+          "description": {
+            "type": "string",
+            "description": "One or two reviewer-facing sentences saying what the column is."
+          },
+          "rationale": {
+            "type": "string",
+            "description": "The profile numbers relied on: null_rate, distinct_count, min, max, samples."
+          }
+        }
+      }
+    },
+    "added_columns": {
+      "type": "array",
+      "description": "Amend only: the full definition of every add_column change; enters optional (F-28). Empty under describe.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "logical_type",
+          "physical_type",
+          "required",
+          "description",
+          "rationale"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "logical_type": {
+            "type": "string",
+            "enum": [
+              "string",
+              "integer",
+              "number",
+              "boolean",
+              "date"
+            ]
+          },
+          "physical_type": {
+            "type": "string",
+            "description": "The DuckDB type; for a drift-add, the type the fresh profile measures."
+          },
+          "required": {
+            "type": "boolean",
+            "description": "Always false: additions enter optional and tighten in a later amendment (F-28)."
+          },
+          "description": {
+            "type": "string"
+          },
+          "rationale": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "grain_keys": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Describe: the smallest set of column names that plausibly identifies one row. Amend: the committed grain, or the grain after a declared grain_change."
+    },
+    "quality_rules": {
+      "type": "array",
+      "description": "Describe: the column-level rules the evidence supports; code writes row_count_positive and grain_unique. Amend: the definition of every rule a rule_change adds.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "column",
+          "values",
+          "rationale"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "not_null",
+              "non_negative",
+              "accepted_values_subset"
+            ]
+          },
+          "column": {
+            "type": "string",
+            "description": "The column the rule names."
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Only for accepted_values_subset; else empty."
+          },
+          "rationale": {
+            "type": "string",
+            "description": "The profile numbers that justify the rule."
+          }
+        }
+      }
+    },
+    "changes": {
+      "type": "array",
+      "description": "Amend: every difference between the committed contract and the contract proposed, one entry per change, nothing undeclared. Empty under describe.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "column",
+          "before",
+          "after",
+          "rationale"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "add_column",
+              "drop_column",
+              "retype_column",
+              "required_change",
+              "grain_change",
+              "rule_change",
+              "description_change",
+              "no_change"
+            ]
+          },
+          "column": {
+            "type": "string",
+            "description": "The column changed; empty for grain_change, rule_change, and no_change."
+          },
+          "before": {
+            "type": "string",
+            "description": "The committed value as the amend prompt defines it per kind."
+          },
+          "after": {
+            "type": "string",
+            "description": "The proposed value as the amend prompt defines it per kind."
+          },
+          "rationale": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "decisions": {
+      "type": "array",
+      "description": "The judgments a reviewer must see: camelCase keys starting with decision, kebab-case values, evidence in the rationale.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "key",
+          "value",
+          "rationale"
+        ],
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          },
+          "rationale": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "purpose": {
+      "type": "string",
+      "description": "What the table is and what it holds (describe); amend may restate it or leave it empty to keep the committed text."
+    },
+    "usage": {
+      "type": "string",
+      "description": "How to read the table at its grain; amend as above."
+    },
+    "limitations": {
+      "type": "string",
+      "description": "What the profile could not settle; amend as above."
+    }
+  }
+}
