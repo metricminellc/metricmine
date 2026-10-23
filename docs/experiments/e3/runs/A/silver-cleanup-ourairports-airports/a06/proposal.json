@@ -1,0 +1,275 @@
+{
+  "target_table": "silver_ourairports_airports",
+  "columns": [
+    {
+      "source_column": "id",
+      "action": "rename_and_cast",
+      "target_name": "airport_id",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "All 10 sampled values (e.g. '10309','1058','111') are plain integer strings, distinct_count 9057 equals row_count 9057, and null_rate is 0.0; operator context describes id as the publisher's internal integer identifier, so it is renamed for clarity and cast to INTEGER."
+    },
+    {
+      "source_column": "ident",
+      "action": "keep",
+      "target_name": "ident",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "distinct_count 9057 equals row_count 9057 and null_rate is 0.0; samples like '03N','07FA' are mixed alphanumeric so the column stays text, per operator context it is the identifier used in the OurAirports URL."
+    },
+    {
+      "source_column": "type",
+      "action": "rename",
+      "target_name": "airport_type",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 with only 5 distinct_values (heliport, large_airport, medium_airport, seaplane_base, small_airport); renamed from the generic 'type' to 'airport_type' for clarity, no cast needed since it is a category label."
+    },
+    {
+      "source_column": "name",
+      "action": "keep",
+      "target_name": "name",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 with distinct_count 9006 close to row_count 9057, consistent with mostly-unique airport names like '28 de Noviembre Airport'."
+    },
+    {
+      "source_column": "latitude_deg",
+      "action": "cast",
+      "target_name": "latitude_deg",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(9,6)",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0, min -79.777778 and max 82.517263 fit comfortably in DECIMAL(9,6); already carries the '_deg' unit suffix per naming convention."
+    },
+    {
+      "source_column": "longitude_deg",
+      "action": "cast",
+      "target_name": "longitude_deg",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(9,6)",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0, min -179.876999 and max 179.9757 fit DECIMAL(9,6); already carries the '_deg' unit suffix."
+    },
+    {
+      "source_column": "elevation_ft",
+      "action": "cast",
+      "target_name": "elevation_ft",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "All sample_values (-1266.0, -210.0, ... -70.0) are whole numbers so DECIMAL(38,9) can be cast to INTEGER; null_rate is 3.6988% (335 of 9057), so the column stays nullable and nulls are retained rather than imputed."
+    },
+    {
+      "source_column": "continent",
+      "action": "keep",
+      "target_name": "continent",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 with 7 distinct_values including 'NA'; operator context confirms NA is the literal continent code for North America, a value and not a missing marker."
+    },
+    {
+      "source_column": "iso_country",
+      "action": "keep",
+      "target_name": "iso_country",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 with distinct_count 239 matching ISO 3166-1 alpha-2 coverage; samples like 'AD','AE','AF' confirm the code format."
+    },
+    {
+      "source_column": "iso_region",
+      "action": "keep",
+      "target_name": "iso_region",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 with distinct_count 2169; samples like 'AD-08','AE-AZ' confirm ISO 3166-2 subdivision format."
+    },
+    {
+      "source_column": "municipality",
+      "action": "keep",
+      "target_name": "municipality",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "null_rate is 3.9748% (360 of 9057); samples like 'Aalborg','Aarhus' confirm free-text municipality names, retained nullable rather than imputed."
+    },
+    {
+      "source_column": "scheduled_service",
+      "action": "rename_and_cast",
+      "target_name": "is_scheduled_service",
+      "logical_type": "boolean",
+      "physical_type": "BOOLEAN",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 with exactly 2 distinct_values ('no','yes'), so this is cast to BOOLEAN and renamed with the 'is_' prefix per naming convention."
+    },
+    {
+      "source_column": "icao_code",
+      "action": "keep",
+      "target_name": "icao_code",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "null_rate is 13.6579% (1237 of 9057); samples like 'AGAF','AGAR' confirm code format, retained nullable since not all airports have an ICAO code."
+    },
+    {
+      "source_column": "iata_code",
+      "action": "keep",
+      "target_name": "iata_code",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "distinct_count 9057 equals row_count 9057 and null_count is 0, matching the dataset scope of airports that carry an IATA code; proposed as the declared grain key."
+    },
+    {
+      "source_column": "gps_code",
+      "action": "keep",
+      "target_name": "gps_code",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "null_rate is 5.3881% (488 of 9057); samples like '03N','05AA' confirm code format, retained nullable."
+    },
+    {
+      "source_column": "local_code",
+      "action": "keep",
+      "target_name": "local_code",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "null_rate is 63.6635% (5766 of 9057), the sparsest non-metadata column; retained nullable rather than dropped since samples like '00C','00F' show it is populated where available."
+    },
+    {
+      "source_column": "home_link",
+      "action": "keep",
+      "target_name": "home_link",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "null_rate is 74.9034% (6784 of 9057); samples confirm URL format (e.g. 'http://GillespieField.com/'), retained nullable as a sparsely populated reference link."
+    },
+    {
+      "source_column": "wikipedia_link",
+      "action": "keep",
+      "target_name": "wikipedia_link",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "null_rate is 13.0838% (1185 of 9057); samples confirm URL format, retained nullable."
+    },
+    {
+      "source_column": "keywords",
+      "action": "keep",
+      "target_name": "keywords",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "null_rate is 67.9585% (6155 of 9057); samples are free-text comma-separated phrases, retained nullable since the content is a sparse search aid, not a required field."
+    },
+    {
+      "source_column": "_airbyte_raw_id",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "is_airbyte_metadata is true; this is a capture-tool identifier, not a business column."
+    },
+    {
+      "source_column": "_airbyte_extracted_at",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "is_airbyte_metadata is true; this records extraction time, not a business attribute, with only 2 distinct_values across all rows."
+    },
+    {
+      "source_column": "_airbyte_meta",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "JSON",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "is_airbyte_metadata is true and distinct_count is 1 ('{}'), confirming it carries no business information."
+    }
+  ],
+  "dedupe_strategy": "none",
+  "dedupe_keys": [],
+  "grain_keys": [
+    "iata_code"
+  ],
+  "decisions": [
+    {
+      "key": "decisionExactDuplicates",
+      "value": "no-duplicates-found",
+      "rationale": "duplicate_row_rate is 0.0 across row_count 9057, so no exact-duplicate removal is applied."
+    },
+    {
+      "key": "decisionGrain",
+      "value": "iata-code-as-grain",
+      "rationale": "iata_code has distinct_count 9057 equal to row_count 9057 and null_count 0, matching the dataset's scope of airports with an IATA code, making it the smallest column that uniquely identifies a row."
+    },
+    {
+      "key": "decisionDroppedMetadata",
+      "value": "excluded-as-capture-artifacts",
+      "rationale": "_airbyte_raw_id, _airbyte_extracted_at, and _airbyte_meta all carry is_airbyte_metadata true and contribute no business meaning."
+    },
+    {
+      "key": "decisionNullLocalCode",
+      "value": "retained-nullable-sparse",
+      "rationale": "local_code has null_rate 63.6635% (5766 of 9057), the highest among retained columns; nulls are retained rather than imputed or the column dropped."
+    },
+    {
+      "key": "decisionNullHomeLink",
+      "value": "retained-nullable-sparse",
+      "rationale": "home_link has null_rate 74.9034% (6784 of 9057); retained nullable since it remains a valid optional reference link where present."
+    },
+    {
+      "key": "decisionCastElevationFt",
+      "value": "cast-decimal-to-integer",
+      "rationale": "All sampled elevation_ft values (-1266.0 through -70.0) are whole numbers, supporting a cast from DECIMAL(38,9) to INTEGER while retaining the 3.6988% null rate as nullable."
+    },
+    {
+      "key": "decisionCastScheduledService",
+      "value": "cast-yes-no-to-boolean",
+      "rationale": "scheduled_service has exactly 2 distinct_values ('no','yes') with null_rate 0.0, supporting a cast to BOOLEAN renamed is_scheduled_service per the 'is_' naming convention."
+    },
+    {
+      "key": "decisionContinentNaValue",
+      "value": "na-is-literal-value-not-null",
+      "rationale": "continent has null_rate 0.0 and includes the distinct_value 'NA'; operator context confirms NA is the North America continent code, a value rather than a missing marker, so it is retained unchanged."
+    }
+  ],
+  "purpose": "This table is the cleaned OurAirports airports reference, limited to airports that carry an IATA code, intended to feed airport lookups, geospatial joins, and reference enrichment in downstream models.",
+  "usage": "Join on iata_code, the declared grain key, which is unique and non-null for every row; treat the continent value 'NA' and any iso_country 'NA' as the literal code for North America / Namibia rather than a missing marker; consumers should expect and handle nulls in elevation_ft, municipality, icao_code, gps_code, local_code, home_link, wikipedia_link, and keywords rather than assuming completeness.",
+  "limitations": "Cleanup did not resolve the sparsity of several optional columns: local_code is null for 63.6635% of rows, home_link for 74.9034%, keywords for 67.9585%, icao_code for 13.6579%, wikipedia_link for 13.0838%, elevation_ft for 3.6988%, and municipality for 3.9748%; no exact-duplicate rows were found (duplicate_row_rate 0.0 across 9057 rows) so no row removal was performed."
+}

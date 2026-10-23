@@ -1,0 +1,285 @@
+{
+  "target_table": "silver_ourairports_runways",
+  "columns": [
+    {
+      "source_column": "id",
+      "action": "rename_and_cast",
+      "target_name": "runway_id",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "Operator context states id is the publisher's internal integer identifier for the runway; null_rate is 0.0 and distinct_count 10760 equals row_count 10760, and all sampled values ('232758','232759',...) are plain integer strings, so it is cast to INTEGER and used as the grain."
+    },
+    {
+      "source_column": "airport_ref",
+      "action": "rename_and_cast",
+      "target_name": "airport_id",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "Operator context describes airport_ref as the internal integer key of the airport; null_rate is 0.0 and samples ('10309','10366','10532',...) are all integer-shaped, so it is cast to INTEGER and renamed to match the spelled-out convention for a foreign key reference."
+    },
+    {
+      "source_column": "airport_ident",
+      "action": "keep",
+      "target_name": "airport_ident",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "Operator context states airport_ident is the externally visible string key matching the airports table's ident; null_rate is 0.0 with samples like '03N','07FA','0CO2' that are alphanumeric codes, not integers, so it stays VARCHAR."
+    },
+    {
+      "source_column": "length_ft",
+      "action": "rename_and_cast",
+      "target_name": "length_feet",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(10,1)",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "Sample values (0.0, 2.0, 20.0 ... up to max 16798.0) show a bounded decimal measure with null_rate 0.007993 (86 nulls); renamed to spell out the feet unit per naming convention and tightened from DECIMAL(38,9) to DECIMAL(10,1) to match the observed magnitude."
+    },
+    {
+      "source_column": "width_ft",
+      "action": "rename_and_cast",
+      "target_name": "width_feet",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(10,1)",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "Samples (1.0 to max 7000.0) show a bounded decimal measure with null_rate 0.082528 (888 nulls); renamed to the full 'feet' unit suffix and precision tightened to DECIMAL(10,1)."
+    },
+    {
+      "source_column": "surface",
+      "action": "rename",
+      "target_name": "surface_code",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "Operator context confirms surface is a code without a fixed value list; distinct_count is 239 with varied codes like 'ASP','ASP-G','ASP/CONC' and null_rate 0.022955 (247 nulls), so it is renamed with the `_code` suffix convention and kept as VARCHAR."
+    },
+    {
+      "source_column": "lighted",
+      "action": "rename_and_cast",
+      "target_name": "is_lighted",
+      "logical_type": "boolean",
+      "physical_type": "BOOLEAN",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "distinct_values are exactly [0.0, 1.0] with null_rate 0.0, and operator context confirms it is 1 when the surface is lighted at night, so it is cast to BOOLEAN and renamed with the `is_` convention."
+    },
+    {
+      "source_column": "closed",
+      "action": "rename_and_cast",
+      "target_name": "is_closed",
+      "logical_type": "boolean",
+      "physical_type": "BOOLEAN",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "distinct_values are exactly [0.0, 1.0] with null_rate 0.0, and operator context confirms it is 1 when the runway is currently closed, so it is cast to BOOLEAN and renamed with the `is_` convention."
+    },
+    {
+      "source_column": "le_ident",
+      "action": "rename",
+      "target_name": "low_end_identifier",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "Operator context says le_ident is the low-numbered end's designator; samples include odd values like '-12' and '.' alongside typical codes '00','01C', null_rate is low at 0.001022 (11 nulls), so it is renamed to spell out 'low_end' and kept as text given the irregular samples."
+    },
+    {
+      "source_column": "le_latitude_deg",
+      "action": "rename_and_cast",
+      "target_name": "low_end_latitude_degrees",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(9,6)",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "Range -62.187801 to 82.512802 with null_rate 0.220911 (2377 nulls) matches a geographic latitude; renamed to spell out 'low_end' and the full 'degrees' unit, precision narrowed to DECIMAL(9,6) to fit the observed 6-decimal samples."
+    },
+    {
+      "source_column": "le_longitude_deg",
+      "action": "rename_and_cast",
+      "target_name": "low_end_longitude_degrees",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(9,6)",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "Range -179.881256 to 179.338837 with null_rate 0.221283 (2381 nulls) matches a geographic longitude; renamed to spell out 'low_end' and 'degrees', precision narrowed to DECIMAL(9,6)."
+    },
+    {
+      "source_column": "le_elevation_ft",
+      "action": "rename_and_cast",
+      "target_name": "low_end_elevation_feet",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(10,1)",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "Samples range from -1246.0 to max 13202.0 with null_rate 0.276301 (2973 nulls); renamed to spell out 'low_end' and the full 'feet' unit, with precision tightened from DECIMAL(38,9)."
+    },
+    {
+      "source_column": "le_heading_degt",
+      "action": "rename_and_cast",
+      "target_name": "low_end_heading_degrees",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(5,1)",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "Samples span 0.0 to max 360.0, consistent with a compass heading, with null_rate 0.228346 (2457 nulls); renamed to spell out 'low_end' and 'degrees', precision tightened to DECIMAL(5,1)."
+    },
+    {
+      "source_column": "le_displaced_threshold_ft",
+      "action": "rename_and_cast",
+      "target_name": "low_end_displaced_threshold_feet",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(10,1)",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "null_rate is 0.884201 (9514 of 10760 rows null), reflecting that most runway ends have no displaced threshold per operator context; retained as sparsely populated nullable DECIMAL(10,1) renamed to spell out units, not dropped or imputed."
+    },
+    {
+      "source_column": "he_ident",
+      "action": "rename",
+      "target_name": "high_end_identifier",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "Operator context says he_ident is the high-numbered end's designator; samples include '-','.' plus codes like '01L','04R', null_rate is 0.004926 (53 nulls), so it is renamed to spell out 'high_end' and kept as text."
+    },
+    {
+      "source_column": "he_latitude_deg",
+      "action": "rename_and_cast",
+      "target_name": "high_end_latitude_degrees",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(9,6)",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "Range -62.193901 to 82.522797 with null_rate 0.222212 (2391 nulls) matches a geographic latitude; renamed to spell out 'high_end' and 'degrees', precision narrowed to DECIMAL(9,6)."
+    },
+    {
+      "source_column": "he_longitude_deg",
+      "action": "rename_and_cast",
+      "target_name": "high_end_longitude_degrees",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(9,6)",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "Range -179.873184 to 179.343002 with null_rate 0.222212 (2391 nulls) matches a geographic longitude; renamed to spell out 'high_end' and 'degrees', precision narrowed to DECIMAL(9,6)."
+    },
+    {
+      "source_column": "he_elevation_ft",
+      "action": "rename_and_cast",
+      "target_name": "high_end_elevation_feet",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(10,1)",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "Samples range from -1210.0 to max 13314.0 with null_rate 0.276208 (2972 nulls); renamed to spell out 'high_end' and the full 'feet' unit, precision tightened from DECIMAL(38,9)."
+    },
+    {
+      "source_column": "he_heading_degt",
+      "action": "rename_and_cast",
+      "target_name": "high_end_heading_degrees",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(5,1)",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "Samples span 0.0 to max 362.0, consistent with a compass heading, with null_rate 0.227138 (2444 nulls); renamed to spell out 'high_end' and 'degrees', precision tightened to DECIMAL(5,1)."
+    },
+    {
+      "source_column": "he_displaced_threshold_ft",
+      "action": "rename_and_cast",
+      "target_name": "high_end_displaced_threshold_feet",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(10,1)",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "null_rate is 0.899907 (9683 of 10760 rows null), the sparsest column in the table, reflecting that most runway ends have no displaced threshold per operator context; retained nullable rather than dropped or imputed."
+    },
+    {
+      "source_column": "_airbyte_raw_id",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata: true; this is a capture-tool identifier (UUID samples like '06a98b0a-93db-7be1-8000-48b76a2729d6') with no business meaning in the runways domain."
+    },
+    {
+      "source_column": "_airbyte_extracted_at",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata: true; distinct_count 2 with values '2026-09-02T23:26:33' and '2026-09-02T23:26:34' show this is a capture-run timestamp, not a business attribute."
+    },
+    {
+      "source_column": "_airbyte_meta",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "JSON",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata: true; distinct_count is 1 with the single value '{}', carrying no business information."
+    }
+  ],
+  "dedupe_strategy": "none",
+  "dedupe_keys": [],
+  "grain_keys": [
+    "runway_id"
+  ],
+  "decisions": [
+    {
+      "key": "decisionDropAirbyteColumns",
+      "value": "excluded-as-capture-artifacts",
+      "rationale": "_airbyte_raw_id, _airbyte_extracted_at, and _airbyte_meta are all flagged is_airbyte_metadata: true and carry no business meaning for runways, so all three are dropped."
+    },
+    {
+      "key": "decisionGrain",
+      "value": "runway-id-as-grain",
+      "rationale": "id has null_rate 0.0 and distinct_count 10760 exactly equal to row_count 10760, so the cast integer runway_id uniquely identifies one row and is declared the grain."
+    },
+    {
+      "key": "decisionDedupe",
+      "value": "no-duplicates-found",
+      "rationale": "dataset.duplicate_row_rate is 0.0 across row_count 10760, so no exact-duplicate or clock-drift dedupe logic is proposed."
+    },
+    {
+      "key": "decisionIdentifierCasts",
+      "value": "cast-integer-identifiers",
+      "rationale": "id and airport_ref are documented by the operator as internal integer identifiers and every sampled value is a plain integer string with null_rate 0.0, so both are cast from VARCHAR to INTEGER."
+    },
+    {
+      "key": "decisionBooleanFlags",
+      "value": "cast-to-boolean",
+      "rationale": "lighted and closed each have distinct_values restricted to [0.0, 1.0] with null_rate 0.0, matching the operator's description of them as flags, so both are cast to BOOLEAN and renamed with the is_ prefix."
+    },
+    {
+      "key": "decisionSurfaceCodeOpenSet",
+      "value": "retained-as-open-code",
+      "rationale": "surface has distinct_count 239 with heterogeneous samples such as 'ASP-G' and 'ASPH 71/F/C/X/T', and the operator confirms this is not a fixed list, so it is kept as VARCHAR surface_code rather than constrained to an enum."
+    },
+    {
+      "key": "decisionNullGeoCoordinates",
+      "value": "retained-nullable",
+      "rationale": "le_latitude_deg, le_longitude_deg, he_latitude_deg, and he_longitude_deg each carry null_rate near 0.22 (2377 to 2391 nulls), so runway ends without recorded coordinates are retained with nulls rather than dropped or imputed."
+    },
+    {
+      "key": "decisionNullDisplacedThreshold",
+      "value": "retained-nullable-sparse",
+      "rationale": "le_displaced_threshold_ft has null_rate 0.884201 and he_displaced_threshold_ft has null_rate 0.899907, the two sparsest columns in the table, reflecting that most runway ends lack a displaced threshold; both are retained as nullable rather than dropped."
+    }
+  ],
+  "purpose": "This silver table holds one row per OurAirports runway, cleaned from the bronze ourairports_runways capture, feeding downstream analyses that join airports to their runways by airport_id or airport_ident.",
+  "usage": "Join on airport_id (or the externally visible airport_ident) to the airports table, and treat runway_id as the unique row key; low_end_* and high_end_* columns describe the two physical ends of each runway and are independently nullable, so consumers must null-check them before use, and is_closed should be filtered when only active runways are wanted.",
+  "limitations": "Geographic and physical attributes for the runway ends are missing for a substantial share of rows (roughly 22% for latitude/longitude, 23-28% for elevation and heading, and 88-90% for displaced threshold), and surface_code remains an open, non-enumerated set of publisher codes rather than a normalized vocabulary; none of these gaps were imputed or inferred."
+}

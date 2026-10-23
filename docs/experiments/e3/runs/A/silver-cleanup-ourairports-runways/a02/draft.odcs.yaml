@@ -1,0 +1,235 @@
+# Draft proposed by silver-cleanup-proposer v0.1.0 at 2026-10-23T15:51:37.969111+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_ourairports_runways
+name: Silver ourairports runways
+version: 1.1.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: This table holds one row per runway end-pair record from OurAirports, giving each
+    runway's identifiers, physical dimensions, surface, lighting and closure status, and the
+    geographic and heading details of its low-numbered and high-numbered ends, feeding airport
+    infrastructure and flight-planning analyses that join back to the airports table via airport_reference_id
+    or airport_identifier.
+  usage: Join to the silver airports table on airport_identifier (matching that table's ident)
+    or airport_reference_id (matching its internal key); treat runway_id as the unique grain
+    and filter on is_closed when only operational runways are wanted. Many measure and position
+    columns (length_feet, width_feet, the low_end_/high_end_ latitude, longitude, elevation,
+    heading, and displaced_threshold_feet columns) are nullable and must be null-checked before
+    aggregation, especially the displaced_threshold_feet columns which are populated on fewer
+    than 12% of rows.
+  limitations: No deduplication was needed since duplicate_row_rate is 0.0, but roughly 22-28%
+    of rows lack low-end or high-end latitude, longitude, elevation, and heading values, and
+    over 88% lack displaced_threshold_feet on either end, so geometric and threshold analyses
+    will only cover a minority of runway ends; surface_code remains an open, unvalidated vocabulary
+    rather than a constrained enum.
+schema:
+- name: silver_ourairports_runways
+  physicalName: silver_ourairports_runways
+  logicalType: object
+  physicalType: table
+  description: This table holds one row per runway end-pair record from OurAirports, giving
+    each runway's identifiers, physical dimensions, surface, lighting and closure status,
+    and the geographic and heading details of its low-numbered and high-numbered ends, feeding
+    airport infrastructure and flight-planning analyses that join back to the airports table
+    via airport_reference_id or airport_identifier.
+  properties:
+  - name: runway_id
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: null_rate is 0.0 and distinct_count 10760 equals row_count 10760, so this
+      is a non-null unique key; operator context describes it as the publisher's internal
+      integer identifier and all sample_values (e.g. 232758, 232770) are plain digit strings,
+      so VARCHAR to INTEGER is a safe cast.
+  - name: airport_reference_id
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: null_rate is 0.0 and operator context identifies this as the airport's internal
+      integer key; sample_values (10309, 1058, 111, ...) are all plain digit strings of varying
+      length with no leading zeros, supporting a VARCHAR to INTEGER cast.
+  - name: airport_identifier
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: null_rate is 0.0 and sample_values (03N, 07FA, 0CO2, 0NM0, ...) mix letters
+      and digits, so it stays a string; renamed to spell out the abbreviated 'ident' per the
+      stated naming convention, matching the airports table's join key.
+  - name: length_feet
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: false
+    description: null_rate 0.007993 (86 nulls) means a small nonzero share is unknown so the
+      field stays nullable; sample_values are whole-number feet up to max 16798.0, so DECIMAL(10,2)
+      is narrowed from the landed DECIMAL(38,9) and the name is spelled out to 'feet' per
+      the unit-suffix convention.
+  - name: width_feet
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: false
+    description: null_rate 0.082528 (888 nulls) keeps this nullable; sample_values (1.0 to
+      26.0) and max 7000.0 fit DECIMAL(10,2), and the name is spelled out from 'ft' to 'feet'
+      per the operator's unit-suffix convention.
+  - name: surface_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_rate 0.022955 (247 nulls) keeps this nullable; distinct_count 239 with
+      samples like ASP, ASP-G, ASPH-CONC-F show an open, non-fixed vocabulary per operator
+      context, so it stays a string renamed with the '_code' suffix convention.
+  - name: is_lighted
+    logicalType: boolean
+    physicalType: BOOLEAN
+    required: true
+    description: null_rate is 0.0 and distinct_values are exactly [0.0, 1.0], a binary flag
+      per operator context, so it casts cleanly to BOOLEAN and is renamed with the 'is_' prefix
+      convention.
+  - name: is_closed
+    logicalType: boolean
+    physicalType: BOOLEAN
+    required: true
+    description: null_rate is 0.0 and distinct_values are exactly [0.0, 1.0], matching the
+      operator's description of a closed/open flag, so it casts to BOOLEAN and is renamed
+      with the 'is_' prefix convention.
+  - name: low_end_identifier
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_rate 0.001022 (11 nulls) keeps this nullable; sample_values include
+      irregular tokens like '-12', '.', '009', so it stays a string; renamed to spell out
+      'le' to 'low_end' and 'ident' to 'identifier' per operator context and naming convention.
+  - name: low_end_latitude_degrees
+    logicalType: number
+    physicalType: DECIMAL(9,6)
+    required: false
+    description: null_rate 0.220911 (2377 nulls) is high but retained per rule 7; sample_values
+      show six decimal places (e.g. -62.187801) within range -62.1878 to 82.5228, so DECIMAL(9,6)
+      fits, and the name spells out 'le'/'deg' to 'low_end'/'degrees'.
+  - name: low_end_longitude_degrees
+    logicalType: number
+    physicalType: DECIMAL(9,6)
+    required: false
+    description: null_rate 0.221283 (2381 nulls) is retained as sparsely populated; sample_values
+      carry six decimal places within -179.881256 to 179.338837, supporting DECIMAL(9,6),
+      with the name spelled out per convention.
+  - name: low_end_elevation_feet
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: false
+    description: null_rate 0.276301 (2973 nulls) keeps this nullable; sample_values (-1246.0
+      to 13202.0) are whole-number feet, so DECIMAL(10,2) narrows the landed DECIMAL(38,9),
+      and the name is spelled out to 'low_end'/'feet'.
+  - name: low_end_heading_degrees
+    logicalType: number
+    physicalType: DECIMAL(6,2)
+    required: false
+    description: null_rate 0.228346 (2457 nulls) keeps this nullable; sample_values (0.0 to
+      2.1, max 360.0) show two-decimal headings fitting DECIMAL(6,2), and the abbreviated
+      'degt' is spelled out to 'degrees' per convention.
+  - name: low_end_displaced_threshold_feet
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: false
+    description: null_rate 0.884201 (9514 nulls) is very high but still retained and flagged
+      as sparsely populated per rule 7; sample_values (1.0 to 4250.0) are whole feet values,
+      so DECIMAL(10,2) applies and the name is spelled out to 'low_end'/'feet'.
+  - name: high_end_identifier
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_rate 0.004926 (53 nulls) keeps this nullable; sample_values include
+      '-', '.', '04R' showing mixed alphanumeric tokens, so it stays a string, renamed to
+      spell out 'he'/'ident' to 'high_end'/'identifier'.
+  - name: high_end_latitude_degrees
+    logicalType: number
+    physicalType: DECIMAL(9,6)
+    required: false
+    description: null_rate 0.222212 (2391 nulls) is retained as sparsely populated; sample_values
+      with six decimals within -62.193901 to 82.522797 support DECIMAL(9,6), and the name
+      spells out 'he'/'deg' to 'high_end'/'degrees'.
+  - name: high_end_longitude_degrees
+    logicalType: number
+    physicalType: DECIMAL(9,6)
+    required: false
+    description: null_rate 0.222212 (2391 nulls) is retained; sample_values with six decimals
+      within -179.873184 to 179.343002 support DECIMAL(9,6), with the name spelled out per
+      convention.
+  - name: high_end_elevation_feet
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: false
+    description: null_rate 0.276208 (2972 nulls) keeps this nullable; sample_values (-1210.0
+      to 13314.0) are whole feet, so DECIMAL(10,2) applies and the name is spelled out to
+      'high_end'/'feet'.
+  - name: high_end_heading_degrees
+    logicalType: number
+    physicalType: DECIMAL(6,2)
+    required: false
+    description: null_rate 0.227138 (2444 nulls) keeps this nullable; sample_values (0.0 to
+      0.9, max 362.0) show two-decimal headings fitting DECIMAL(6,2), with 'degt' spelled
+      out to 'degrees'.
+  - name: high_end_displaced_threshold_feet
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: false
+    description: null_rate 0.899907 (9683 nulls) is the highest in the table and is flagged
+      as sparsely populated per rule 7 rather than dropped; sample_values (10.0 to 4790.0)
+      are whole feet, so DECIMAL(10,2) applies and the name is spelled out to 'high_end'/'feet'.
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (runway_id) combinations'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT runway_id
+        FROM silver.silver_ourairports_runways
+        GROUP BY runway_id
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: silver-cleanup-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.1.0
+- property: modelId
+  value: claude-sonnet-5
+- property: profileHash
+  value: sha256:02990e96b848ac4edf287fdcca8136ca6b04008ab98d2a2f5287e450b0eecb33
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: cleanup
+- property: decisionExactDuplicates
+  value: none-observed
+- property: decisionGrain
+  value: single-column-runway-id
+- property: decisionAirbyteMetadataDropped
+  value: excluded-as-capture-artifacts
+- property: decisionCastIdentifiersToInteger
+  value: cast-id-and-airport-ref-to-integer
+- property: decisionSurfaceCodeOpenVocabulary
+  value: retained-as-string-no-enum
+- property: decisionSparseDisplacedThreshold
+  value: retained-nullable-sparse
+- property: decisionNullGeographicCoordinates
+  value: retained-nullable

@@ -1,0 +1,85 @@
+{
+  "target_table": "silver_nyc_airlines",
+  "columns": [
+    {
+      "source_column": "carrier",
+      "action": "rename",
+      "target_name": "carrier_code",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 with 16 distinct_values exactly matching the 16-row count, so this two-letter code is complete and unique; renamed to carrier_code per the operator's convention that code columns carry a _code suffix."
+    },
+    {
+      "source_column": "name",
+      "action": "rename",
+      "target_name": "carrier_name",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 with 16 distinct_values (e.g. 'Delta Air Lines Inc.', 'JetBlue Airways') matching row_count 16; renamed from the generic 'name' to carrier_name to clarify it is the carrier's full legal name per the operator's context."
+    },
+    {
+      "source_column": "_airbyte_raw_id",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata true; this is a capture-tool UUID with no business meaning and must be dropped per rule 3."
+    },
+    {
+      "source_column": "_airbyte_extracted_at",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata true; distinct_count 1 with a single constant value '2026-09-02T23:26:17' confirms it is a pipeline-run timestamp, not business data, and is dropped per rule 3."
+    },
+    {
+      "source_column": "_airbyte_meta",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "JSON",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata true; distinct_count 1 with constant value '{}' shows it carries no business content and is dropped per rule 3."
+    }
+  ],
+  "dedupe_strategy": "none",
+  "dedupe_keys": [],
+  "grain_keys": [
+    "carrier_code"
+  ],
+  "decisions": [
+    {
+      "key": "decisionGrain",
+      "value": "carrier-code-grain",
+      "rationale": "carrier_code has distinct_count 16 exactly matching dataset.row_count 16 with null_rate 0.0, so it alone identifies one row and is the declared grain."
+    },
+    {
+      "key": "decisionExactDuplicates",
+      "value": "no-dedupe-needed",
+      "rationale": "dataset.duplicate_row_rate is 0.0 across row_count 16, so no exact duplicate rows exist in bronze and no dedupe step is required."
+    },
+    {
+      "key": "decisionDroppedMetadata",
+      "value": "excluded-as-capture-artifacts",
+      "rationale": "_airbyte_raw_id, _airbyte_extracted_at, and _airbyte_meta are all flagged is_airbyte_metadata true and are capture-tool fields, not business columns, so they are dropped."
+    },
+    {
+      "key": "decisionRenameColumns",
+      "value": "renamed-to-carrier-code-and-carrier-name",
+      "rationale": "Per operator context, code columns take a _code suffix and ambiguous names are spelled out; carrier becomes carrier_code and name becomes carrier_name to disambiguate from a generic 'name' field."
+    }
+  ],
+  "purpose": "This table is a cleaned lookup of the 16 air carriers that flew out of New York City airports in 2013, per the Bureau of Transportation Statistics, mapping each two-letter carrier_code to its full carrier_name for use as a dimension joined to flight fact tables.",
+  "usage": "Join downstream flight records to this table on carrier_code to enrich them with the full carrier_name; the table is complete (no nulls) and free of exact duplicate rows, so no pre-filtering is required before joining.",
+  "limitations": "The lookup reflects a snapshot of 2013 carrier codes only and carries no versioning or effective-date column, so code reassignments over time cannot be tracked; pipeline capture-tool metadata columns (_airbyte_raw_id, _airbyte_extracted_at, _airbyte_meta) were dropped and are unavailable downstream."
+}

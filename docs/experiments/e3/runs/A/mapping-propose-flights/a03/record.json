@@ -1,0 +1,72 @@
+{
+  "agent": {
+    "name": "gold-mapping-proposer",
+    "version": "0.1.0"
+  },
+  "api_error": null,
+  "context": "This source is the unified flights table of the silver layer: the nycflights13 flights joined to the carrier lookup, the aircraft registry, and the OurAirports airports and runways, with each join's completeness measured and declared in the table's contract (carrier and origin complete, aircraft and destination above their floors). Delays are minutes, negative when early; a flight that never departed keeps its scheduled times and no actual ones. We keep every field name as the silver contract names it.\n",
+  "context_path": "docs/experiments/e3/contexts/mapping-propose-flights.md",
+  "cost_usd_estimate": 0.155568,
+  "created_at": "2026-10-23T16:09:16.647761+00:00",
+  "disposition": "draft_written",
+  "draft_path": "proposals/gold-mapping-proposer/20261023T160916647761Z_2d19b75b/draft.odcs.yaml",
+  "inputs": [
+    {
+      "content_hash": "sha256:2d19b75b44c2aa680549789ba634ee35b281fe90233870346553b2b1fc571e8b",
+      "kind": "profile_artifact",
+      "path": "profiles/silver.silver_flights/v0001.json",
+      "schema_version": "1.0.0"
+    },
+    {
+      "content_hash": "sha256:75279986162cfab78d3d3be0bc16e185c6ad47d81a3c3c12bf8ac275799de1d1",
+      "kind": "operator_context",
+      "path": "docs/experiments/e3/contexts/mapping-propose-flights.md",
+      "schema_version": ""
+    }
+  ],
+  "intent": null,
+  "model_id": "claude-sonnet-5",
+  "model_source": "default",
+  "profile_hash": "sha256:2d19b75b44c2aa680549789ba634ee35b281fe90233870346553b2b1fc571e8b",
+  "profile_path": "profiles/silver.silver_flights/v0001.json",
+  "profile_schema_version": "1.0.0",
+  "prompt_path": "src/metricmine/agents/prompts/e3/gold_mapping.md",
+  "prompt_version": "1.1.0",
+  "rates": {
+    "input_per_mtok": 2.0,
+    "output_per_mtok": 10.0
+  },
+  "request_params": {
+    "effort": "high",
+    "max_tokens": 16384
+  },
+  "response_id": "msg_011CgKTbGb1QoWvazuyLgm9a",
+  "sdk_version": "1.0.0",
+  "skeleton": false,
+  "stance": "propose",
+  "stop_reason": "end_turn",
+  "usage": {
+    "input_tokens": 11634,
+    "output_tokens": 13230
+  },
+  "validation": {
+    "attempt_log": [
+      {
+        "completeness_pass": true,
+        "errors": [],
+        "groundedness_pass": true,
+        "lint_pass": true,
+        "schema_pass": true,
+        "staleness_pass": true,
+        "stop_reason": "end_turn"
+      }
+    ],
+    "attempts": 1,
+    "completeness_pass": true,
+    "errors": [],
+    "groundedness_pass": true,
+    "lint_pass": true,
+    "schema_pass": true,
+    "staleness_pass": true
+  }
+}

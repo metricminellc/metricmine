@@ -1,0 +1,192 @@
+# Draft proposed by silver-cleanup-proposer v0.1.0 at 2026-10-23T15:23:03.187074+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_nyc_weather
+name: Silver nyc weather
+version: 1.1.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: This table provides cleaned hourly weather observations for the three NYC-area
+    airports (EWR, JFK, LGA) covering January through June 2013, feeding downstream analyses
+    that join flight delays and schedules to local weather conditions.
+  usage: Consumers should join on origin_code and time_hour to align with the flights table's
+    origin column, and read temperature_fahrenheit, dewpoint_fahrenheit, humidity_percent,
+    wind_direction_degrees, wind_speed_mph, wind_gust_mph, precipitation_inches, pressure_millibars,
+    and visibility_miles in their documented units; wind_direction_degrees, wind_speed_mph,
+    pressure_millibars, and especially wind_gust_mph carry nulls and must be filtered or coalesced
+    deliberately before aggregation.
+  limitations: Local calendar date is still represented as separate year, month, day, and
+    hour integer columns rather than a single DATE column, because the proposal format allows
+    only one action per source column and cannot merge them; consumers needing a local calendar
+    date should derive it from these fields, while the UTC instant is available directly in
+    time_hour. wind_gust_mph is sparsely populated (74.6% null, 9702 of 13014 rows) and pressure_millibars
+    is null in 11.5% of rows (1496 of 13014); these nulls are retained rather than imputed
+    or used to drop rows.
+schema:
+- name: silver_nyc_weather
+  physicalName: silver_nyc_weather
+  logicalType: object
+  physicalType: table
+  description: This table provides cleaned hourly weather observations for the three NYC-area
+    airports (EWR, JFK, LGA) covering January through June 2013, feeding downstream analyses
+    that join flight delays and schedules to local weather conditions.
+  properties:
+  - name: origin_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: distinct_count is 3 with values EWR, JFK, LGA and null_rate 0.0, so this
+      is a non-null station code; renamed to origin_code per the operator's code-column naming
+      convention.
+  - name: year
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: distinct_count is 1 with min=max=2013.0 and null_rate 0.0, an integral constant
+      landed as DECIMAL(38,9) that is safely cast to INTEGER.
+  - name: month
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: distinct_count is 6 with distinct_values 1.0-6.0 and null_rate 0.0, all integral
+      values justifying a DECIMAL to INTEGER cast.
+  - name: day
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: min 1.0, max 31.0, distinct_count 31, sample_values 1.0-10.0 all integral,
+      null_rate 0.0, so DECIMAL is cast to INTEGER.
+  - name: hour
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: min 0.0, max 23.0, distinct_count 24, sample_values 0.0-9.0 all integral,
+      null_rate 0.0, representing local hour of day cast to INTEGER.
+  - name: temperature_fahrenheit
+    logicalType: number
+    physicalType: DECIMAL(5,2)
+    required: true
+    description: min 10.94, max 93.92, two-decimal samples (10.94, 12.02, 12.92...), null_rate
+      0.0; renamed and unit-suffixed per operator convention that temp is degrees Fahrenheit
+      and abbreviations are spelled out.
+  - name: dewpoint_fahrenheit
+    logicalType: number
+    physicalType: DECIMAL(5,2)
+    required: true
+    description: min -9.94, max 73.94, two-decimal samples (-9.94, -9.04, -7.96...), null_rate
+      0.0; renamed and unit-suffixed per operator convention for dewpoint in degrees Fahrenheit.
+  - name: humidity_percent
+    logicalType: number
+    physicalType: DECIMAL(5,2)
+    required: true
+    description: min 12.74, max 100.0, distinct_count 2178, null_rate 0.0; renamed with percent
+      unit suffix per operator convention for relative humidity.
+  - name: wind_direction_degrees
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: distinct_count 37 with all sample_values multiples of ten (0.0, 10.0, 20.0...)
+      spanning 0.0 to 360.0, consistent with integral compass degrees, cast to INTEGER; null_rate
+      0.016828 (219 of 13014 rows) so nulls are retained.
+  - name: wind_speed_mph
+    logicalType: number
+    physicalType: DECIMAL(10,5)
+    required: false
+    description: min 0.0, max 1048.36058, five-decimal samples (3.45234, 4.60312...), null_rate
+      0.000154 (2 of 13014 rows) so nulls are retained; unit-suffixed per operator convention
+      for mph.
+  - name: wind_gust_mph
+    logicalType: number
+    physicalType: DECIMAL(10,5)
+    required: false
+    description: min 16.11092, max 62.14212, five-decimal samples, but null_rate is 0.745505
+      (9702 of 13014 rows) making this a sparsely populated measure that is retained nullable
+      rather than imputed or dropped.
+  - name: precipitation_inches
+    logicalType: number
+    physicalType: DECIMAL(5,2)
+    required: true
+    description: min 0.0, max 1.06, distinct_count 50, two-decimal samples (0.0, 0.01, 0.02...),
+      null_rate 0.0; unit-suffixed per operator convention for inches.
+  - name: pressure_millibars
+    logicalType: number
+    physicalType: DECIMAL(6,1)
+    required: false
+    description: min 983.8, max 1038.4, one-decimal samples, distinct_count 430, null_rate
+      0.114953 (1496 of 13014 rows) so nulls are retained; unit-suffixed for sea-level pressure
+      in millibars.
+  - name: visibility_miles
+    logicalType: number
+    physicalType: DECIMAL(4,2)
+    required: true
+    description: distinct_count 20 with enumerated distinct_values from 0.0 to 10.0 including
+      two-decimal values like 0.06 and 0.12, null_rate 0.0; unit-suffixed per operator convention
+      for visibility in miles.
+  - name: time_hour
+    logicalType: date
+    physicalType: TIMESTAMP
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 2
+    description: all sample_values are ISO8601 'Z'-suffixed instants (2013-01-01T06:00:00Z...),
+      distinct_count 4341, null_rate 0.0, so VARCHAR is cast to TIMESTAMP representing the
+      UTC recording instant.
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (origin_code, time_hour) combinations'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT origin_code, time_hour
+        FROM silver.silver_nyc_weather
+        GROUP BY origin_code, time_hour
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: silver-cleanup-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.1.0
+- property: modelId
+  value: claude-sonnet-5
+- property: profileHash
+  value: sha256:1dee708bb140addbdb172a3727f79d85a2d7a611bd9c191d56d3e433a8c5777b
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: cleanup
+- property: decisionDropAirbyteMetadata
+  value: dropped-as-capture-artifacts
+- property: decisionExactDuplicates
+  value: no-duplicates-present
+- property: decisionGrain
+  value: origin-code-and-time-hour
+- property: decisionCalendarDateMerge
+  value: retained-as-separate-integer-columns
+- property: decisionWindDirCast
+  value: cast-to-integer-degrees
+- property: decisionWindGustSparsity
+  value: retained-nullable-sparse
+- property: decisionPressureNulls
+  value: retained-nullable
+- property: decisionOriginRename
+  value: renamed-to-origin-code

@@ -1,0 +1,68 @@
+{
+  "columns": {
+    "draft": 20,
+    "oracle": 10,
+    "ordinal_order_equal": false,
+    "shared": 4
+  },
+  "first_class_checks": {
+    "agree": 18,
+    "checked": 20,
+    "per_field": {
+      "logicalType": "3/4",
+      "physicalType": "3/4",
+      "primaryKey": "4/4",
+      "primaryKeyPosition": "4/4",
+      "required": "4/4"
+    }
+  },
+  "grain": {
+    "draft": [
+      "runway_id"
+    ],
+    "oracle": [
+      "runway_id"
+    ],
+    "order_equal": true,
+    "set_equal": true
+  },
+  "mismatches": [
+    "length_ft: missing from the draft",
+    "width_ft: missing from the draft",
+    "surface: missing from the draft",
+    "low_end_ident: missing from the draft",
+    "high_end_ident: missing from the draft",
+    "captured_at: missing from the draft",
+    "airport_reference_id: extra in the draft",
+    "length_feet: extra in the draft",
+    "width_feet: extra in the draft",
+    "surface_code: extra in the draft",
+    "low_end_identifier: extra in the draft",
+    "low_end_latitude_degrees: extra in the draft",
+    "low_end_longitude_degrees: extra in the draft",
+    "low_end_elevation_feet: extra in the draft",
+    "low_end_heading_degrees: extra in the draft",
+    "low_end_displaced_threshold_feet: extra in the draft",
+    "high_end_identifier: extra in the draft",
+    "high_end_latitude_degrees: extra in the draft",
+    "high_end_longitude_degrees: extra in the draft",
+    "high_end_elevation_feet: extra in the draft",
+    "high_end_heading_degrees: extra in the draft",
+    "high_end_displaced_threshold_feet: extra in the draft",
+    "runway_id.logicalType: oracle='string' draft='integer'",
+    "runway_id.physicalType: oracle='VARCHAR' draft='INTEGER'"
+  ],
+  "oracle_id": "silver_ourairports_runways",
+  "rule_types": {
+    "column_equal": false,
+    "table_draft": [
+      "library:rowCount",
+      "sql"
+    ],
+    "table_equal": true,
+    "table_oracle": [
+      "library:rowCount",
+      "sql"
+    ]
+  }
+}

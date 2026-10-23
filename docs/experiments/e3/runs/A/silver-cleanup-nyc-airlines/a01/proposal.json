@@ -1,0 +1,90 @@
+{
+  "target_table": "silver_airlines",
+  "columns": [
+    {
+      "source_column": "carrier",
+      "action": "rename",
+      "target_name": "carrier_code",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate 0.0 and distinct_count 16 equal to row_count 16, matching the sixteen two-letter IATA carrier abbreviations (e.g. 9E, AA, DL); renamed to carrier_code per the operator's convention of suffixing code columns with _code."
+    },
+    {
+      "source_column": "name",
+      "action": "rename",
+      "target_name": "carrier_name",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate 0.0, distinct_count 16 with full airline names (e.g. 'Delta Air Lines Inc.', 'JetBlue Airways'); renamed from the ambiguous 'name' to carrier_name to spell out what it identifies, per operator guidance."
+    },
+    {
+      "source_column": "_airbyte_raw_id",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "is_airbyte_metadata true; this is the capture-tool's internal row identifier (UUID samples shown), not a business column."
+    },
+    {
+      "source_column": "_airbyte_extracted_at",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "is_airbyte_metadata true; a single constant extraction timestamp (2026-09-02T23:26:17) across all 16 rows, a capture-tool artifact not a business attribute."
+    },
+    {
+      "source_column": "_airbyte_meta",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "JSON",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "is_airbyte_metadata true; distinct_count 1 with the single value '{}', an empty capture-tool metadata blob."
+    }
+  ],
+  "dedupe_strategy": "none",
+  "dedupe_keys": [],
+  "grain_keys": [
+    "carrier_code"
+  ],
+  "decisions": [
+    {
+      "key": "decisionGrain",
+      "value": "carrier-code-as-grain",
+      "rationale": "carrier has distinct_count 16 equal to row_count 16 with null_rate 0.0, so carrier_code uniquely identifies each of the sixteen rows in this small reference table."
+    },
+    {
+      "key": "decisionExactDuplicates",
+      "value": "no-duplicates-found",
+      "rationale": "dataset.duplicate_row_rate is 0.0 across row_count 16, so no exact-duplicate-row dedupe step is required."
+    },
+    {
+      "key": "decisionDropAirbyteMetadata",
+      "value": "excluded-as-capture-artifacts",
+      "rationale": "The three columns _airbyte_raw_id, _airbyte_extracted_at, and _airbyte_meta are all flagged is_airbyte_metadata: true and carry no business meaning (a UUID, a constant timestamp, and an empty JSON object respectively)."
+    },
+    {
+      "key": "decisionRenameCarrier",
+      "value": "renamed-to-carrier-code",
+      "rationale": "Per operator context, code columns are suffixed _code; carrier holds the two-letter IATA abbreviation (e.g. AA, DL, UA) so it becomes carrier_code."
+    },
+    {
+      "key": "decisionRenameName",
+      "value": "renamed-to-carrier-name",
+      "rationale": "Per operator context to spell out abbreviated column names; the bronze column 'name' holds full carrier names (e.g. 'United Air Lines Inc.') so it becomes carrier_name for clarity alongside carrier_code."
+    }
+  ],
+  "purpose": "This table is a small reference lookup mapping each two-letter carrier code to its full airline name, derived from the nycflights13 airlines source restricted to the sixteen carriers that flew out of New York City in 2013; it is intended to be joined to flight fact tables on carrier_code.",
+  "usage": "Join on carrier_code to enrich flight-level records with the carrier's full name; both columns are required and non-null so no null-handling logic is needed by consumers, and the grain is one row per carrier_code.",
+  "limitations": "The three Airbyte capture-metadata columns (_airbyte_raw_id, _airbyte_extracted_at, _airbyte_meta) were dropped as non-business artifacts; the table has zero measured duplicate rows and zero nulls in the profiled sample, but as a static sixteen-row reference extracted at a single point in time (2026-09-02T23:26:17), it should be refreshed if new carriers begin service to NYC airports."
+}

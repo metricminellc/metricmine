@@ -1,0 +1,144 @@
+# Draft proposed by silver-cleanup-proposer v0.1.0 at 2026-10-23T15:31:29.927121+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_nyc_planes
+name: Silver nyc planes
+version: 1.1.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: This silver table provides a cleaned registry of individual aircraft, one row per
+    tail number, drawn from the FAA aircraft registry subset used by the nycflights13 planes
+    dataset, for joining to flight records by tail number.
+  usage: Join downstream flight data on tail_number, the declared grain key; treat manufacture_year
+    and speed_mph as nullable measures and handle missing values explicitly rather than assuming
+    completeness, since both carry substantial null rates.
+  limitations: speed_mph is populated for only about 0.7% of rows (null_rate 0.993076, 3299
+    of 3322 rows null) and manufacture_year is missing for 2.1% of rows (70 of 3322 null);
+    neither is imputed, both remain nullable, and American Airlines and Envoy Air aircraft
+    are absent from this registry subset per the source documentation since those carriers
+    reported fleet numbers rather than tail numbers.
+schema:
+- name: silver_nyc_planes
+  physicalName: silver_nyc_planes
+  logicalType: object
+  physicalType: table
+  description: This silver table provides a cleaned registry of individual aircraft, one row
+    per tail number, drawn from the FAA aircraft registry subset used by the nycflights13
+    planes dataset, for joining to flight records by tail number.
+  properties:
+  - name: tail_number
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: null_rate is 0.0 with null_count 0, and distinct_count 3322 equals the row_count
+      of 3322, so every tail number such as N10156 and N102UW uniquely identifies a row.
+  - name: manufacture_year
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: null_rate is 0.021072 (70 of 3322 rows null) and all sample values (1956.0,
+      1959.0, 1963.0, ...) and the min 1956.0 / max 2013.0 are whole numbers, supporting a
+      DECIMAL-to-INTEGER cast; retained nullable rather than imputed.
+  - name: aircraft_type
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: null_rate is 0.0 with distinct_count 3 and distinct_values Fixed wing multi
+      engine, Fixed wing single engine, Rotorcraft, a small closed category.
+  - name: manufacturer
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: null_rate is 0.0 with distinct_count 35 and samples such as AIRBUS and BOEING
+      showing registry-recorded manufacturer names.
+  - name: model
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: null_rate is 0.0 with distinct_count 127 and samples such as 172E and 310Q
+      showing registry-recorded model codes.
+  - name: engines
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: null_rate is 0.0 and distinct_values are exactly 1.0, 2.0, 3.0, 4.0 (min
+      1.0, max 4.0), all whole numbers supporting an INTEGER cast for this engine count.
+  - name: seats
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: null_rate is 0.0 with distinct_count 48, min 2.0 and max 450.0, and all sample
+      values (2.0, 4.0, 5.0, ...) are whole numbers supporting an INTEGER cast for this seat
+      count.
+  - name: speed_mph
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: null_rate is 0.993076 (3299 of 3322 rows null), making this column sparsely
+      populated, but the 13 distinct_values present (90.0 through 432.0) are all whole numbers
+      supporting an INTEGER cast; renamed with the mph unit suffix per the operator's naming
+      convention for average cruising speed.
+  - name: engine_type
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: null_rate is 0.0 with distinct_count 6 and distinct_values 4 Cycle, Reciprocating,
+      Turbo-fan, Turbo-jet, Turbo-prop, Turbo-shaft; renamed from engine to engine_type to
+      disambiguate it from the engines count column.
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (tail_number) combinations'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT tail_number
+        FROM silver.silver_nyc_planes
+        GROUP BY tail_number
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: silver-cleanup-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.1.0
+- property: modelId
+  value: claude-sonnet-5
+- property: profileHash
+  value: sha256:d775f9080fcb9731f1489bfc4933efc20b764c7dff57f90224131c77ea50b3f5
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: cleanup
+- property: decisionGrain
+  value: tail-number-is-grain
+- property: decisionExactDuplicates
+  value: no-duplicates-found
+- property: decisionNullManufactureYear
+  value: retained-nullable
+- property: decisionNullSpeedMph
+  value: retained-nullable-sparse
+- property: decisionCastMeasureColumns
+  value: decimal-to-integer
+- property: decisionRenameEngineType
+  value: disambiguated-from-engines
+- property: decisionDroppedMetadata
+  value: excluded-as-capture-artifacts

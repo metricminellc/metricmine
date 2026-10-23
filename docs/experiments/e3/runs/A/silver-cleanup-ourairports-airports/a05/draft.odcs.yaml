@@ -1,0 +1,210 @@
+# Draft proposed by silver-cleanup-proposer v0.1.0 at 2026-10-23T15:41:22.394622+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_airports
+name: Silver airports
+version: 1.0.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: silver_airports cleans the bronze ourairports_airports capture, the publisher's
+    full airport reference table filtered to airports carrying an IATA code, for consumers
+    who need a typed, deduplicated airport dimension keyed by the publisher's internal id.
+  usage: Join on id (or the alternate business keys iata_code, icao_code, gps_code, local_code)
+    to enrich flight or airport-adjacent records; treat continent='NA' and iso_country='NA'
+    as the North America and Namibia codes, not missing markers; filter on is_scheduled_service
+    as needed and expect nulls in icao_code, gps_code, local_code, home_link, wikipedia_link,
+    and keywords for many rows since those columns are legitimately sparse.
+  limitations: elevation_feet, municipality, icao_code, gps_code, local_code, home_link, wikipedia_link,
+    and keywords retain nulls at rates from 3.7% up to 74.9% (local_code 63.7%, home_link
+    74.9%, keywords 68.0%) because cleanup never imputes values or drops rows for nullability;
+    no exact-duplicate rows were found (duplicate_row_rate 0.0) so no dedupe logic was applied;
+    and the type column's observed distinct set of 5 values does not include the balloonport
+    and closed_airport kinds the operator's data dictionary mentions, so downstream consumers
+    should not assume all documented kinds appear in this data.
+schema:
+- name: silver_airports
+  physicalName: silver_airports
+  logicalType: object
+  physicalType: table
+  description: silver_airports cleans the bronze ourairports_airports capture, the publisher's
+    full airport reference table filtered to airports carrying an IATA code, for consumers
+    who need a typed, deduplicated airport dimension keyed by the publisher's internal id.
+  properties:
+  - name: id
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: distinct_count 9057 equals row_count 9057 and null_rate is 0.0; samples are
+      numeric strings (e.g. '10309', '111'), so the text identifier casts cleanly to INTEGER
+      as the publisher documents it as an internal integer identifier.
+  - name: identifier
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: distinct_count 9057 equals row_count 9057 and null_rate is 0.0; renamed from
+      the abbreviated 'ident' to 'identifier' per the team's convention of spelling out abbreviations,
+      with samples like '03N' and '19AK' remaining text.
+  - name: type
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: 5 distinct_values (heliport, large_airport, medium_airport, seaplane_base,
+      small_airport) and null_rate 0.0 show a small closed set of airport kinds, retained
+      as text.
+  - name: name
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: distinct_count 9006 across 9057 rows with null_rate 0.0 shows the official
+      airport name is always populated, retained as text.
+  - name: latitude_degrees
+    logicalType: number
+    physicalType: DECIMAL(9,6)
+    required: true
+    description: null_rate 0.0 with min -79.777778 and max 82.517263 and six-decimal samples;
+      renamed to spell out the unit as latitude_degrees and retyped to DECIMAL(9,6) to match
+      the precision observed in samples.
+  - name: longitude_degrees
+    logicalType: number
+    physicalType: DECIMAL(9,6)
+    required: true
+    description: null_rate 0.0 with min -179.876999 and max 179.9757 and six-decimal samples;
+      renamed to longitude_degrees with DECIMAL(9,6) to match sample precision.
+  - name: elevation_feet
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: null_rate 0.036988 (335 nulls) with min -1266.0 and max 14472.0; every sample
+      value (e.g. -1266.0, -210.0, -70.0) is integral, so it casts cleanly to INTEGER, renamed
+      to elevation_feet to spell out the unit, and stays nullable.
+  - name: continent
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: 7 distinct_values (AF, AN, AS, EU, NA, OC, SA) and null_rate 0.0; per operator
+      context NA is the valid North America code, not a missing marker, retained as text.
+  - name: iso_country
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: 239 distinct values and null_rate 0.0, samples like 'AD', 'AE', 'AF' confirm
+      ISO 3166-1 alpha-2 codes, retained as text.
+  - name: iso_region
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: 2169 distinct values and null_rate 0.0, samples like 'AD-08', 'AE-AZ' confirm
+      ISO 3166-2 subdivision codes, retained as text.
+  - name: municipality
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_rate 0.039748 (360 nulls) with 8049 distinct values; retained as nullable
+      text since a missing municipality is a legitimate gap, not an error.
+  - name: is_scheduled_service
+    logicalType: boolean
+    physicalType: BOOLEAN
+    required: true
+    description: 2 distinct_values ('no','yes') and null_rate 0.0 map cleanly to BOOLEAN;
+      renamed to is_scheduled_service per the team's boolean naming convention.
+  - name: icao_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_rate 0.136579 (1237 nulls) with 7820 distinct values and samples like
+      'AGAF', 'AGGA'; retained as nullable text since not every airport carries an ICAO code.
+  - name: iata_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: distinct_count 9057 equals row_count 9057 and null_rate 0.0, confirming this
+      dataset is scoped to airports carrying an IATA code; retained as required text.
+  - name: gps_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_rate 0.053881 (488 nulls) with 8569 distinct values; retained as nullable
+      text.
+  - name: local_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_rate 0.636635 (5766 nulls) with 3193 distinct values; retained as nullable
+      text, sparsely populated.
+  - name: home_link
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_rate 0.749034 (6784 nulls); retained as nullable text, sparsely populated,
+      with URL samples like 'http://GillespieField.com/'.
+  - name: wikipedia_link
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_rate 0.130838 (1185 nulls) with 7870 distinct values and URL samples;
+      retained as nullable text.
+  - name: keywords
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_rate 0.679585 (6155 nulls) with 2883 distinct values and free-text samples;
+      retained as nullable text, sparsely populated.
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (id) combinations'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT id
+        FROM silver.silver_airports
+        GROUP BY id
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: silver-cleanup-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.1.0
+- property: modelId
+  value: claude-sonnet-5
+- property: profileHash
+  value: sha256:113a01272f19c485ada9b62583be7449fbfd55b60fb304b18139a17614cf0ec2
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: cleanup
+- property: decisionGrain
+  value: id-as-sole-grain-key
+- property: decisionNoDuplicates
+  value: no-dedupe-needed
+- property: decisionDropAirbyteMetadata
+  value: dropped-as-capture-artifacts
+- property: decisionCastElevationFeet
+  value: cast-decimal-to-integer
+- property: decisionCastScheduledService
+  value: cast-text-to-boolean
+- property: decisionCastId
+  value: cast-text-to-integer
+- property: decisionSparseColumns
+  value: retained-nullable-sparse
+- property: decisionRenameAbbreviations
+  value: spelled-out-abbreviations

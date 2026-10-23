@@ -1,0 +1,160 @@
+# Draft proposed by silver-cleanup-proposer v0.1.0 at 2026-10-23T15:09:53.058248+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_nyc_weather
+name: Silver nyc weather
+version: 1.1.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: This table provides cleaned hourly historical weather observations (temperature,
+    dewpoint, humidity, wind, precipitation, pressure, and visibility) for the three NYC airports
+    (EWR, JFK, LGA) covering the January-June 2013 extract window, intended to feed downstream
+    analyses that join weather conditions to NYC flight records.
+  usage: Join on origin and observation_timestamp_utc to the corresponding flights-side origin
+    and scheduled hour; consumers must explicitly handle nulls in wind_direction_degrees,
+    wind_speed_mph, wind_gust_mph, and pressure_millibars since these are legitimately missing
+    for some hours rather than imputed, with wind_gust_mph missing most of the time (74.6%
+    of rows).
+  limitations: The original local year, month, day, and hour integer parts were dropped in
+    favor of the single UTC observation_timestamp_utc field, so local civil time before UTC
+    conversion is not retained in this table. wind_gust_mph is null for 74.6% of rows (9702/13014)
+    and pressure_millibars is null for 11.5% of rows (1496/13014), so aggregates over these
+    columns must account for sparse coverage; no duplicate rows were found in bronze (duplicate_row_rate
+    0.0) so no deduplication was necessary.
+schema:
+- name: silver_nyc_weather
+  physicalName: silver_nyc_weather
+  logicalType: object
+  physicalType: table
+  description: This table provides cleaned hourly historical weather observations (temperature,
+    dewpoint, humidity, wind, precipitation, pressure, and visibility) for the three NYC airports
+    (EWR, JFK, LGA) covering the January-June 2013 extract window, intended to feed downstream
+    analyses that join weather conditions to NYC flight records.
+  properties:
+  - name: origin
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: null_rate is 0.0 with distinct_count 3 and distinct_values EWR, JFK, LGA,
+      matching the three NYC airport weather stations named to align with the flights table's
+      origin column.
+  - name: temperature_fahrenheit
+    logicalType: number
+    physicalType: DECIMAL(10,4)
+    required: true
+    description: null_rate is 0.0 with samples ranging 10.94 to 93.92 degrees Fahrenheit per
+      operator context; renamed with a unit suffix per the team's measure-naming convention.
+  - name: dewpoint_fahrenheit
+    logicalType: number
+    physicalType: DECIMAL(10,4)
+    required: true
+    description: null_rate is 0.0 with samples ranging -9.94 to 73.94 degrees Fahrenheit;
+      renamed with a unit suffix and the abbreviation spelled out per operator naming conventions.
+  - name: humidity_percent
+    logicalType: number
+    physicalType: DECIMAL(10,4)
+    required: true
+    description: null_rate is 0.0 with min 12.74 and max 100.0, consistent with a relative
+      humidity percentage per operator context; renamed with the percent unit suffix and abbreviation
+      spelled out.
+  - name: wind_direction_degrees
+    logicalType: number
+    physicalType: DECIMAL(10,4)
+    required: false
+    description: null_rate is 0.016828 (219 nulls) with values ranging 0.0 to 360.0 degrees;
+      retained as nullable since missing wind direction is a normal ASOS gap, not an error.
+  - name: wind_speed_mph
+    logicalType: number
+    physicalType: DECIMAL(10,4)
+    required: false
+    description: null_rate is 0.000154 (2 nulls out of 13014) with values ranging 0.0 to 1048.36058
+      mph per operator context; retained as nullable given the small but nonzero null count.
+  - name: wind_gust_mph
+    logicalType: number
+    physicalType: DECIMAL(10,4)
+    required: false
+    description: null_rate is 0.745505 (9702 of 13014 rows null), so this column is sparsely
+      populated; retained as nullable rather than dropped since gusts are only recorded during
+      gusty conditions.
+  - name: precipitation_inches
+    logicalType: number
+    physicalType: DECIMAL(10,4)
+    required: true
+    description: null_rate is 0.0 with values ranging 0.0 to 1.06 inches; renamed with the
+      inches unit suffix per operator convention.
+  - name: pressure_millibars
+    logicalType: number
+    physicalType: DECIMAL(10,4)
+    required: false
+    description: null_rate is 0.114953 (1496 of 13014 rows null) with values ranging 983.8
+      to 1038.4 millibars; retained as nullable rather than imputed given the meaningful null
+      share.
+  - name: visibility_miles
+    logicalType: number
+    physicalType: DECIMAL(10,4)
+    required: true
+    description: null_rate is 0.0 with distinct_count 20 and distinct_values spanning 0.0
+      to 10.0 miles; renamed with the miles unit suffix per operator convention.
+  - name: observation_timestamp_utc
+    logicalType: date
+    physicalType: TIMESTAMP
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 2
+    description: null_rate is 0.0, distinct_count 4341, and samples are ISO-8601 instants
+      ending in Z (e.g. 2013-01-01T06:00:00Z) representing a UTC instant per operator context,
+      justifying a VARCHAR-to-TIMESTAMP cast; this becomes the single authoritative date/time
+      column replacing the decomposed year, month, day, and hour parts.
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (origin, observation_timestamp_utc) combinations'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT origin, observation_timestamp_utc
+        FROM silver.silver_nyc_weather
+        GROUP BY origin, observation_timestamp_utc
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: silver-cleanup-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.1.0
+- property: modelId
+  value: claude-sonnet-5
+- property: profileHash
+  value: sha256:1dee708bb140addbdb172a3727f79d85a2d7a611bd9c191d56d3e433a8c5777b
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: cleanup
+- property: decisionDropDateParts
+  value: superseded-by-timestamp
+- property: decisionAirbyteMetadata
+  value: dropped-capture-artifacts
+- property: decisionWindGustSparse
+  value: retained-nullable-sparse
+- property: decisionDedupe
+  value: no-duplicates-found
+- property: decisionGrain
+  value: origin-plus-observation-timestamp

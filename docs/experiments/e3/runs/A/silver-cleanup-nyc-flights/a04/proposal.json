@@ -1,0 +1,280 @@
+{
+  "target_table": "silver_nyc_flights",
+  "columns": [
+    {
+      "source_column": "year",
+      "action": "cast",
+      "target_name": "year",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "year has null_rate 0.0 and a single distinct value 2013.0 stored as DECIMAL(38,9); cast to INTEGER since the value is whole."
+    },
+    {
+      "source_column": "month",
+      "action": "cast",
+      "target_name": "month",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "month has null_rate 0.0 and 6 distinct whole values (1.0-6.0), matching a January-June window; cast to INTEGER."
+    },
+    {
+      "source_column": "day",
+      "action": "cast",
+      "target_name": "day",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "day has null_rate 0.0, distinct_count 31, and samples 1.0-10.0 are whole numbers; cast to INTEGER."
+    },
+    {
+      "source_column": "dep_time",
+      "action": "rename_and_cast",
+      "target_name": "departure_time",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "dep_time has null_rate 0.029388 (4883 nulls), consistent with flights that never departed; samples 1.0-10.0 and max 2400.0 are whole-number HHMM codes, so renamed to spell out the abbreviation and cast to INTEGER."
+    },
+    {
+      "source_column": "sched_dep_time",
+      "action": "rename_and_cast",
+      "target_name": "scheduled_departure_time",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "sched_dep_time has null_rate 0.0, distinct_count 969, and samples 500.0-530.0 are whole-number HHMM codes; renamed to spell out the abbreviation and cast to INTEGER."
+    },
+    {
+      "source_column": "dep_delay",
+      "action": "rename_and_cast",
+      "target_name": "departure_delay_minutes",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "dep_delay has null_rate 0.029388 (4883 nulls), matching dep_time nulls; samples -33.0 to -19.0 are whole-minute values, so renamed with the minutes suffix and cast to INTEGER."
+    },
+    {
+      "source_column": "arr_time",
+      "action": "rename_and_cast",
+      "target_name": "arrival_time",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "arr_time has null_rate 0.0307 (5101 nulls), consistent with flights that never arrived; samples 1.0-10.0 are whole-number HHMM codes, so renamed to spell out the abbreviation and cast to INTEGER."
+    },
+    {
+      "source_column": "sched_arr_time",
+      "action": "rename_and_cast",
+      "target_name": "scheduled_arrival_time",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "sched_arr_time has null_rate 0.0, distinct_count 1134, and samples 1.0-10.0 are whole-number HHMM codes; renamed to spell out the abbreviation and cast to INTEGER."
+    },
+    {
+      "source_column": "arr_delay",
+      "action": "rename_and_cast",
+      "target_name": "arrival_delay_minutes",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "arr_delay has null_rate 0.032981 (5480 nulls), matching arr_time nulls; samples -86.0 to -67.0 are whole-minute values, so renamed with the minutes suffix and cast to INTEGER."
+    },
+    {
+      "source_column": "carrier",
+      "action": "rename",
+      "target_name": "carrier_code",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "carrier has null_rate 0.0 and 16 distinct two-letter values (9E, AA, AS ... YV); renamed with the _code suffix per the operator's naming convention for categorical codes."
+    },
+    {
+      "source_column": "flight",
+      "action": "rename_and_cast",
+      "target_name": "flight_number",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "flight has null_rate 0.0, distinct_count 2994, and samples 1.0-10.0 are whole numbers; renamed to spell out the abbreviation and cast to INTEGER."
+    },
+    {
+      "source_column": "tailnum",
+      "action": "rename",
+      "target_name": "tail_number",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "tailnum has null_rate 0.009154 (1521 nulls) and distinct_count 3825 with samples like D942DN, N0EGMQ; renamed to spell out the abbreviation and retained nullable."
+    },
+    {
+      "source_column": "origin",
+      "action": "rename",
+      "target_name": "origin_airport_code",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "origin has null_rate 0.0 and exactly 3 distinct values (EWR, JFK, LGA), matching the three NYC airports; renamed to spell out the abbreviation with the _code suffix."
+    },
+    {
+      "source_column": "dest",
+      "action": "rename",
+      "target_name": "destination_airport_code",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "dest has null_rate 0.0 and distinct_count 100 with samples like ABQ, ACK, ALB; renamed to spell out the abbreviation with the _code suffix."
+    },
+    {
+      "source_column": "air_time",
+      "action": "rename_and_cast",
+      "target_name": "air_time_minutes",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "air_time has null_rate 0.032981 (5480 nulls), matching arr_time/arr_delay nulls; samples 20.0-29.0 are whole-minute values, so renamed with the minutes suffix and cast to INTEGER."
+    },
+    {
+      "source_column": "distance",
+      "action": "rename_and_cast",
+      "target_name": "distance_miles",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "distance has null_rate 0.0 and samples 80.0-185.0 are whole numbers; renamed with the miles suffix and cast to INTEGER."
+    },
+    {
+      "source_column": "hour",
+      "action": "cast",
+      "target_name": "hour",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "hour has null_rate 0.0 and 19 distinct whole values (5.0-23.0); cast to INTEGER, name already spelled out."
+    },
+    {
+      "source_column": "minute",
+      "action": "cast",
+      "target_name": "minute",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "minute has null_rate 0.0, distinct_count 60, and samples 0.0-9.0 are whole numbers; cast to INTEGER."
+    },
+    {
+      "source_column": "time_hour",
+      "action": "rename_and_cast",
+      "target_name": "scheduled_hour_utc",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "time_hour has null_rate 0.0 and all 10 sampled values match the ISO8601 UTC pattern (e.g. 2013-01-01T10:00:00Z); cast to TIMESTAMP and renamed to reflect it is a UTC instant per operator context."
+    },
+    {
+      "source_column": "_airbyte_raw_id",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "_airbyte_raw_id is flagged is_airbyte_metadata true, a capture-tool artifact with no business meaning."
+    },
+    {
+      "source_column": "_airbyte_extracted_at",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "_airbyte_extracted_at is flagged is_airbyte_metadata true and records ingestion time, not flight data."
+    },
+    {
+      "source_column": "_airbyte_meta",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "JSON",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "_airbyte_meta is flagged is_airbyte_metadata true with a single constant value '{}' across all rows, carrying no business information."
+    }
+  ],
+  "dedupe_strategy": "none",
+  "dedupe_keys": [],
+  "grain_keys": [
+    "year",
+    "month",
+    "day",
+    "carrier_code",
+    "flight_number",
+    "scheduled_departure_time"
+  ],
+  "decisions": [
+    {
+      "key": "decisionExactDuplicates",
+      "value": "no-duplicates-removed",
+      "rationale": "duplicate_row_rate is 0.0 across all 166158 rows, so no exact-duplicate dedupe step is applied."
+    },
+    {
+      "key": "decisionGrain",
+      "value": "date-carrier-flight-sched-dep-grain",
+      "rationale": "year, month, day, carrier_code, flight_number, and scheduled_departure_time all have null_rate 0.0 and are required, and together they identify one scheduled flight departure record; no profiled column proves finer uniqueness."
+    },
+    {
+      "key": "decisionDroppedMetadata",
+      "value": "capture-artifacts-dropped",
+      "rationale": "_airbyte_raw_id, _airbyte_extracted_at, and _airbyte_meta are flagged is_airbyte_metadata true and carry no business meaning."
+    },
+    {
+      "key": "decisionDateParts",
+      "value": "kept-as-three-integers",
+      "rationale": "Operator convention favors a single DATE column over year, month, and day, but the proposal schema has no multi-source-column merge action, so the three are retained as separate required integer columns (each null_rate 0.0) pending a dedicated derivation step."
+    },
+    {
+      "key": "decisionNullDepartureTimes",
+      "value": "retained-nullable",
+      "rationale": "departure_time has null_rate 0.029388 (4883 nulls) and arrival_time has null_rate 0.0307 (5101 nulls), consistent with flights that never departed or arrived; nulls are retained rather than imputed."
+    },
+    {
+      "key": "decisionNullDelaysAndAirTime",
+      "value": "retained-nullable",
+      "rationale": "departure_delay_minutes (null_rate 0.029388), arrival_delay_minutes (null_rate 0.032981), and air_time_minutes (null_rate 0.032981) are null in step with the corresponding time columns, so nulls are retained."
+    },
+    {
+      "key": "decisionNullTailNumber",
+      "value": "retained-nullable",
+      "rationale": "tail_number has null_rate 0.009154 (1521 of 166158 rows), so it is retained nullable rather than required."
+    },
+    {
+      "key": "decisionCastTimeHour",
+      "value": "cast-to-timestamp",
+      "rationale": "All 10 sampled time_hour values match the ISO8601 UTC pattern (e.g. 2013-01-01T10:00:00Z), so the VARCHAR column is cast to TIMESTAMP and renamed scheduled_hour_utc."
+    }
+  ],
+  "purpose": "This table provides cleaned, typed NYC flight departure records for January through June 2013 from JFK, LGA, and EWR, ready for downstream analytics on schedule adherence and delay performance.",
+  "usage": "Consumers should treat nulls in departure_time, arrival_time, departure_delay_minutes, arrival_delay_minutes, air_time_minutes, and tail_number as flights that never departed, never arrived, or lack a recorded tail number, and handle them deliberately rather than assuming zero or an error; the declared grain of year, month, day, carrier_code, flight_number, and scheduled_departure_time should be validated against the warehouse before being relied on as a unique key.",
+  "limitations": "year, month, and day remain three separate integer columns rather than a single DATE column because no merge action is available in this cleanup pass; roughly 2.9%-3.3% of departure_time, arrival_time, the two delay columns, and air_time_minutes are null (null_rate 0.029388-0.032981), and 0.9% of tail_number values are null (null_rate 0.009154), none of which were imputed or dropped."
+}

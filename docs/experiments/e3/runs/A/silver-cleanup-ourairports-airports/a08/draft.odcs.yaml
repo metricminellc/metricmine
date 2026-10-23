@@ -1,0 +1,217 @@
+# Draft proposed by silver-cleanup-proposer v0.1.0 at 2026-10-23T15:45:10.819069+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_ourairports_airports
+name: Silver ourairports airports
+version: 1.1.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: This silver table provides cleaned, typed airport reference data sourced from OurAirports,
+    covering every airport in the bronze extract that carries an IATA code, to feed downstream
+    airport lookup, geocoding, and flight-operations joins.
+  usage: Join on airport_id (or iata_code, which is also fully populated and unique in this
+    extract) for the declared grain; treat continent_code value NA and iso_country_code value
+    NA as North America and Namibia respectively, not missing data; expect and handle nulls
+    in elevation_feet, municipality, icao_code, gps_code, local_code, home_page_url, wikipedia_url,
+    and keywords before aggregating or joining on those columns, since each carries a nonzero
+    null_rate documented per column.
+  limitations: 'Cleanup could not fill gaps in sparsely populated columns: local_code is 63.7%
+    null, home_page_url is 74.9% null, keywords is 68.0% null, icao_code is 13.7% null, and
+    gps_code is 5.4% null; elevation_ft (elevation_feet) is 3.7% null and municipality is
+    4.0% null. duplicate_row_rate is 0.0 across 9057 rows, so no exact-duplicate or clock-drift
+    dedupe logic was needed or applied.'
+schema:
+- name: silver_ourairports_airports
+  physicalName: silver_ourairports_airports
+  logicalType: object
+  physicalType: table
+  description: This silver table provides cleaned, typed airport reference data sourced from
+    OurAirports, covering every airport in the bronze extract that carries an IATA code, to
+    feed downstream airport lookup, geocoding, and flight-operations joins.
+  properties:
+  - name: airport_id
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: All sample values (10309,10366,10532,1058,...,111) are digit-only strings
+      consistent with integers, null_rate is 0.0, and distinct_count 9057 equals row_count
+      9057, confirming a unique non-null identifier safe to cast to INTEGER.
+  - name: identifier_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: Samples (03N,07FA,0CO2,0NM0,0TE7,13Z,16A,16K,19AK,19P) mix letters and digits
+      and are not uniformly ICAO-shaped, so the value stays text; null_rate 0.0 with distinct_count
+      9057 equal to row_count, renamed to carry the _code suffix convention for a code column.
+  - name: airport_type
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: distinct_values are exactly {heliport, large_airport, medium_airport, seaplane_base,
+      small_airport} with null_rate 0.0; renamed from the generic 'type' per operator naming
+      guidance for clarity downstream.
+  - name: name
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: null_rate 0.0 and distinct_count 9006 close to row_count 9057; samples (28
+      de Noviembre Airport, Aalborg Airport, A Coruña Airport) show full official names, kept
+      as-is.
+  - name: latitude_degrees
+    logicalType: number
+    physicalType: DECIMAL(9,6)
+    required: true
+    description: min -79.777778 and max 82.517263 with null_rate 0.0 confirm a fully populated
+      decimal-degree measure; renamed to carry the degrees unit suffix per naming convention.
+  - name: longitude_degrees
+    logicalType: number
+    physicalType: DECIMAL(9,6)
+    required: true
+    description: min -179.876999 and max 179.9757 with null_rate 0.0 span the full longitude
+      range; renamed to carry the degrees unit suffix per naming convention.
+  - name: elevation_feet
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: false
+    description: null_rate 0.036988 (335 of 9057 null) with min -1266.0 and max 14472.0; renamed
+      to carry the feet unit suffix and retained nullable since not every airport reports
+      elevation.
+  - name: continent_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: distinct_values are the 7 two-letter codes {AF,AN,AS,EU,NA,OC,SA} with null_rate
+      0.0; renamed to carry the _code suffix, and NA (North America) is a valid code per operator
+      context, not a missing marker.
+  - name: iso_country_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: distinct_count 239 with null_rate 0.0 and samples (AD,AE,AF,AG,AI,...) match
+      ISO 3166-1 alpha-2 codes; renamed to carry the _code suffix, and NA for Namibia is a
+      valid code value per operator context, not a missing marker.
+  - name: iso_region_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: distinct_count 2169 with null_rate 0.0 and samples (AD-08,AE-AZ,AE-DU,...)
+      match ISO 3166-2 subdivision codes; renamed to carry the _code suffix.
+  - name: municipality
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_rate 0.039748 (360 of 9057 null) with samples (108 Mile, Aachen, Aalborg,...)
+      showing municipality names; retained nullable since not every airport reports a serving
+      municipality.
+  - name: has_scheduled_service
+    logicalType: boolean
+    physicalType: BOOLEAN
+    required: true
+    description: distinct_values are exactly {no,yes} with null_rate 0.0; cast to boolean
+      and renamed with the is_/has_ convention for boolean columns.
+  - name: icao_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_rate 0.136579 (1237 of 9057 null) with samples (AGAF,AGAR,AGAT,...)
+      matching 4-letter ICAO codes; retained nullable since not every airport has an ICAO
+      code.
+  - name: iata_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: null_rate 0.0 and distinct_count 9057 equal row_count, samples (AAA,AAB,AAC,...)
+      are 3-letter IATA codes consistent with this extract covering only airports with an
+      IATA code per operator context.
+  - name: gps_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_rate 0.053881 (488 of 9057 null) with samples (03N,05AA,05U,...) matching
+      GPS codes; retained nullable.
+  - name: local_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_rate 0.636635 (5766 of 9057 null) is high; samples (00C,00F,03N,...)
+      show local codes but the column is sparsely populated across the dataset, retained nullable.
+  - name: home_page_url
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_rate 0.749034 (6784 of 9057 null) is very sparse; samples are full http
+      URLs (http://GillespieField.com/, http://aai.aero/allAirports/...); renamed for clarity
+      and retained nullable.
+  - name: wikipedia_url
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_rate 0.130838 (1185 of 9057 null); samples are wikipedia URLs across
+      languages (de, en, fr, id wikipedia.org); renamed for naming consistency and retained
+      nullable.
+  - name: keywords
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_rate 0.679585 (6155 of 9057 null) is high; samples show comma-separated
+      search phrases including airbase names and alternate codes; retained nullable and sparsely
+      populated.
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (airport_id) combinations'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT airport_id
+        FROM silver.silver_ourairports_airports
+        GROUP BY airport_id
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: silver-cleanup-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.1.0
+- property: modelId
+  value: claude-sonnet-5
+- property: profileHash
+  value: sha256:113a01272f19c485ada9b62583be7449fbfd55b60fb304b18139a17614cf0ec2
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: cleanup
+- property: decisionDedupe
+  value: no-duplicates-found
+- property: decisionGrain
+  value: airport-id-as-grain
+- property: decisionDropMetadata
+  value: airbyte-columns-dropped
+- property: decisionBooleanScheduledService
+  value: cast-yes-no-to-boolean
+- property: decisionContinentNaValue
+  value: na-is-a-value-not-missing
+- property: decisionNullLocalCode
+  value: retained-nullable-sparse
+- property: decisionNullHomeLink
+  value: retained-nullable-sparse
+- property: decisionNullKeywords
+  value: retained-nullable-sparse

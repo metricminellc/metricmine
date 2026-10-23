@@ -1,0 +1,230 @@
+# Draft proposed by silver-cleanup-proposer v0.1.0 at 2026-10-23T15:57:57.350571+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_runways
+name: Silver runways
+version: 1.0.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: silver_runways is the cleaned, one-row-per-runway reference table built from the
+    OurAirports runways extract, carrying surface, dimension, lighting, closure, and per-end
+    geolocation detail for each runway so it can be joined to the airports silver table and
+    used in airport infrastructure and routing-capacity analyses.
+  usage: Join to airports on airport_identifier (matching the published ident) for human-facing
+    joins or on airport_reference for the integer key; treat is_lighted and is_closed as booleans,
+    and because low_end_/high_end_ latitude, longitude, elevation, heading, and displaced-threshold
+    columns are independently nullable (roughly 22-28% null for geolocation/heading and 88-90%
+    null for displaced thresholds), consumers must null-check before computing per-end metrics
+    rather than assuming both ends are populated.
+  limitations: 'Cleanup could not resolve the source''s incomplete surveys: le_/he_ latitude,
+    longitude, elevation, and heading columns remain null on about 22-28% of rows and displaced_threshold_feet
+    columns on 88-90% of rows; surface_code and the low_end_/high_end_ identifier columns
+    were left as free text because the publisher''s own dictionary states these vocabularies
+    are open-ended and irregular samples (e.g. ''.'', ''-'', ''-12'') could not be normalized
+    without inventing a taxonomy.'
+schema:
+- name: silver_runways
+  physicalName: silver_runways
+  logicalType: object
+  physicalType: table
+  description: silver_runways is the cleaned, one-row-per-runway reference table built from
+    the OurAirports runways extract, carrying surface, dimension, lighting, closure, and per-end
+    geolocation detail for each runway so it can be joined to the airports silver table and
+    used in airport infrastructure and routing-capacity analyses.
+  properties:
+  - name: runway_id
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: null_count is 0 and distinct_count 10760 equals the dataset row_count of
+      10760, so id (samples like '232758','232759') is the publisher's unique runway identifier
+      and is renamed for clarity without casting.
+  - name: airport_reference
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: null_rate is 0.0 and all sample values ('10309','1058','111', etc.) are integral
+      digit strings, matching the operator context's description of airport_ref as the airport's
+      internal integer key, so it is cast to INTEGER.
+  - name: airport_identifier
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: null_rate is 0.0 with 7591 distinct values and alphanumeric samples like
+      '03N','0NM0','19AK', consistent with the external string key documented to match the
+      airports table's ident, so it is renamed to spell out the abbreviation but kept as text.
+  - name: length_feet
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: null_rate is 0.007993 (86 nulls) and every sample value (0.0, 2.0, 20.0 ...
+      44.0) is integral up to a max of 16798.0, so it is renamed with a unit suffix and cast
+      from DECIMAL(38,9) to INTEGER while nulls are retained.
+  - name: width_feet
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: null_rate is 0.082528 (888 nulls) and samples (1.0,10.0,...,26.0) up to max
+      7000.0 are all integral, so it is renamed with a unit suffix and cast to INTEGER, retaining
+      nulls as unmeasured widths.
+  - name: surface_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_rate is 0.022955 (247 nulls) with 239 distinct values and samples like
+      'ASP','ASP/CONC','ASPH-CONC-F', matching the operator context's statement that surface
+      is a code from an open, not fixed, vocabulary, so it is renamed with the _code suffix
+      and left as text.
+  - name: is_lighted
+    logicalType: boolean
+    physicalType: BOOLEAN
+    required: true
+    description: null_rate is 0.0 and distinct_values are exactly [0.0,1.0], a binary flag
+      per the operator context, so it is renamed with the is_ prefix and cast from DECIMAL(38,9)
+      to BOOLEAN.
+  - name: is_closed
+    logicalType: boolean
+    physicalType: BOOLEAN
+    required: true
+    description: null_rate is 0.0 and distinct_values are exactly [0.0,1.0], a binary flag
+      per the operator context, so it is renamed with the is_ prefix and cast from DECIMAL(38,9)
+      to BOOLEAN.
+  - name: low_end_identifier
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_rate is 0.001022 (11 nulls) with irregular samples such as '-12','.','009','01C',
+      so the low end designator is kept as text and renamed to spell out the le_ abbreviation.
+  - name: low_end_latitude_degrees
+    logicalType: number
+    physicalType: DECIMAL(9,6)
+    required: false
+    description: null_rate is 0.220911 (2377 nulls) and samples carry six decimal places (e.g.
+      -62.187801, 82.5128 at the max), so it is renamed with a unit suffix and cast to a tighter
+      DECIMAL(9,6) while nulls are retained for unsurveyed ends.
+  - name: low_end_longitude_degrees
+    logicalType: number
+    physicalType: DECIMAL(9,6)
+    required: false
+    description: null_rate is 0.221283 (2381 nulls) and samples carry six decimal places ranging
+      to a max of 179.338837, so it is renamed with a unit suffix and cast to DECIMAL(9,6),
+      retaining nulls.
+  - name: low_end_elevation_feet
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: null_rate is 0.276301 (2973 nulls) and samples (-1246.0,-184.0,...,-69.0)
+      are all integral, so it is renamed with a unit suffix and cast to INTEGER, retaining
+      nulls for unsurveyed ends.
+  - name: low_end_heading_degrees
+    logicalType: number
+    physicalType: DECIMAL(5,2)
+    required: false
+    description: null_rate is 0.228346 (2457 nulls) and samples include fractional values
+      such as 0.2,0.4,1.12 up to max 360.0, so it stays a DECIMAL (not INTEGER) renamed with
+      a degrees suffix, retaining nulls.
+  - name: low_end_displaced_threshold_feet
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: null_rate is 0.884201 (9514 nulls), making this sparsely populated, but all
+      samples (1.0,2.0,...,57.0) are integral so it is cast to INTEGER and nulls are retained
+      rather than imputed.
+  - name: high_end_identifier
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_rate is 0.004926 (53 nulls) with irregular samples such as '-','.','1','10',
+      so the high end designator is kept as text and renamed to spell out the he_ abbreviation.
+  - name: high_end_latitude_degrees
+    logicalType: number
+    physicalType: DECIMAL(9,6)
+    required: false
+    description: null_rate is 0.222212 (2391 nulls) and samples carry six decimal places up
+      to max 82.522797, so it is renamed with a unit suffix and cast to DECIMAL(9,6), retaining
+      nulls.
+  - name: high_end_longitude_degrees
+    logicalType: number
+    physicalType: DECIMAL(9,6)
+    required: false
+    description: null_rate is 0.222212 (2391 nulls) and samples carry six decimal places up
+      to max 179.343002, so it is renamed with a unit suffix and cast to DECIMAL(9,6), retaining
+      nulls.
+  - name: high_end_elevation_feet
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: null_rate is 0.276208 (2972 nulls) and samples (-1210.0,-181.0,...,-69.0)
+      are all integral, so it is renamed with a unit suffix and cast to INTEGER, retaining
+      nulls.
+  - name: high_end_heading_degrees
+    logicalType: number
+    physicalType: DECIMAL(5,2)
+    required: false
+    description: null_rate is 0.227138 (2444 nulls) and samples include fractional values
+      (0.1,0.2,...,0.9) up to max 362.0, so it stays a DECIMAL renamed with a degrees suffix,
+      retaining nulls.
+  - name: high_end_displaced_threshold_feet
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: null_rate is 0.899907 (9683 nulls), the sparsest column in the table, but
+      all samples (10.0,30.0,...,76.0) are integral so it is cast to INTEGER and nulls are
+      retained rather than imputed.
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (runway_id) combinations'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT runway_id
+        FROM silver.silver_runways
+        GROUP BY runway_id
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: silver-cleanup-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.1.0
+- property: modelId
+  value: claude-sonnet-5
+- property: profileHash
+  value: sha256:02990e96b848ac4edf287fdcca8136ca6b04008ab98d2a2f5287e450b0eecb33
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: cleanup
+- property: decisionDropAirbyteMetadata
+  value: dropped-as-capture-artifacts
+- property: decisionExactDuplicates
+  value: no-duplicates-found
+- property: decisionGrain
+  value: runway-id-as-grain
+- property: decisionSparseDisplacedThresholds
+  value: retained-nullable-sparse
+- property: decisionIntegralFeetMeasures
+  value: cast-integral-feet-to-integer
+- property: decisionBooleanFlags
+  value: cast-lighted-closed-to-boolean
+- property: decisionAirportReferenceCast
+  value: cast-airport-ref-to-integer

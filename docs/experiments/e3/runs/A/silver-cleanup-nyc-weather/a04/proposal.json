@@ -1,0 +1,241 @@
+{
+  "target_table": "silver_nyc_weather",
+  "columns": [
+    {
+      "source_column": "origin",
+      "action": "keep",
+      "target_name": "origin",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "distinct_count 3 with values EWR, JFK, LGA and null_rate 0.0; kept as origin rather than renamed to a _code suffix because the operator context states this column is named to match the flights table's origin column for joins."
+    },
+    {
+      "source_column": "year",
+      "action": "cast",
+      "target_name": "year",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "distinct_count 1, min and max both 2013.0, null_rate 0.0; the single distinct value is whole-numbered so DECIMAL(38,9) casts cleanly to INTEGER."
+    },
+    {
+      "source_column": "month",
+      "action": "cast",
+      "target_name": "month",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "distinct_count 6, min 1.0 max 6.0, null_rate 0.0; distinct values 1 through 6 are all whole numbers supporting an INTEGER cast."
+    },
+    {
+      "source_column": "day",
+      "action": "cast",
+      "target_name": "day",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "distinct_count 31, min 1.0 max 31.0, null_rate 0.0; sample_values 1.0 through 10.0 are whole numbers supporting an INTEGER cast."
+    },
+    {
+      "source_column": "hour",
+      "action": "cast",
+      "target_name": "hour",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "distinct_count 24, min 0.0 max 23.0, null_rate 0.0; sample_values 0.0 through 9.0 are whole numbers supporting an INTEGER cast, consistent with local observation hour."
+    },
+    {
+      "source_column": "temp",
+      "action": "rename_and_cast",
+      "target_name": "temperature_fahrenheit",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(5,2)",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "distinct_count 130, min 10.94 max 93.92, null_rate 0.0; renamed with the fahrenheit unit suffix per operator convention and cast to a two-decimal DECIMAL matching the sample precision."
+    },
+    {
+      "source_column": "dewp",
+      "action": "rename_and_cast",
+      "target_name": "dewpoint_fahrenheit",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(5,2)",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "distinct_count 119, min -9.94 max 73.94, null_rate 0.0; renamed with the fahrenheit unit suffix and spelled-out dewpoint name per operator convention."
+    },
+    {
+      "source_column": "humid",
+      "action": "rename_and_cast",
+      "target_name": "humidity_percent",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(5,2)",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "distinct_count 2178, min 12.74 max 100.0, null_rate 0.0; renamed with the percent unit suffix and spelled-out humidity name per operator convention."
+    },
+    {
+      "source_column": "wind_dir",
+      "action": "rename_and_cast",
+      "target_name": "wind_direction_degrees",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "distinct_count 37, min 0.0 max 360.0, null_rate 0.016828 (219 nulls); sample_values 0.0 through 90.0 are all whole numbers supporting an INTEGER cast, retained nullable for the observed missing readings."
+    },
+    {
+      "source_column": "wind_speed",
+      "action": "rename_and_cast",
+      "target_name": "wind_speed_mph",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(10,5)",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "distinct_count 36, min 0.0 max 1048.36058, null_rate 0.000154 (2 nulls); sample_values like 3.45234 are non-integral so a DECIMAL type is kept, retained nullable."
+    },
+    {
+      "source_column": "wind_gust",
+      "action": "rename_and_cast",
+      "target_name": "wind_gust_mph",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(10,5)",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "distinct_count 35, min 16.11092 max 62.14212, null_rate 0.745505 (9702 of 13014 nulls); sparsely populated but retained nullable rather than dropped, per the non-imputation rule."
+    },
+    {
+      "source_column": "precip",
+      "action": "rename_and_cast",
+      "target_name": "precipitation_inches",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(5,2)",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "distinct_count 50, min 0.0 max 1.06, null_rate 0.0; renamed with the inches unit suffix per operator convention."
+    },
+    {
+      "source_column": "pressure",
+      "action": "rename_and_cast",
+      "target_name": "pressure_millibars",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(6,2)",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "distinct_count 430, min 983.8 max 1038.4, null_rate 0.114953 (1496 nulls); renamed with the millibars unit suffix and retained nullable for the real missing sensor readings."
+    },
+    {
+      "source_column": "visib",
+      "action": "rename_and_cast",
+      "target_name": "visibility_miles",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(4,2)",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "distinct_count 20 with distinct_values ranging 0.0 to 10.0 including fractional entries like 0.06 and 0.12, null_rate 0.0; renamed with the miles unit suffix per operator convention."
+    },
+    {
+      "source_column": "time_hour",
+      "action": "cast",
+      "target_name": "time_hour",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP WITH TIME ZONE",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "distinct_count 4341, null_rate 0.0; sample_values are uniform ISO8601 strings with a Z suffix such as 2013-01-01T06:00:00Z, supporting a timestamp-with-time-zone cast representing the UTC instant per operator context."
+    },
+    {
+      "source_column": "_airbyte_raw_id",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata true; a capture-tool identifier with no business meaning."
+    },
+    {
+      "source_column": "_airbyte_extracted_at",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata true; records ingestion time rather than observation data."
+    },
+    {
+      "source_column": "_airbyte_meta",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "JSON",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata true; distinct_count 1 with the single value '{}' carries no business content."
+    }
+  ],
+  "dedupe_strategy": "none",
+  "dedupe_keys": [],
+  "grain_keys": [
+    "origin",
+    "time_hour"
+  ],
+  "decisions": [
+    {
+      "key": "decisionGrain",
+      "value": "origin-time-hour",
+      "rationale": "origin has distinct_count 3 (EWR, JFK, LGA) and time_hour has distinct_count 4341 UTC instants; together they identify one hourly weather observation per station, matching the nycflights13 package's description of hourly ASOS recordings."
+    },
+    {
+      "key": "decisionExactDuplicates",
+      "value": "no-duplicates-detected",
+      "rationale": "dataset.duplicate_row_rate is 0.0 across row_count 13014, so no exact-duplicate removal is proposed."
+    },
+    {
+      "key": "decisionDroppedAirbyteColumns",
+      "value": "excluded-as-capture-artifacts",
+      "rationale": "_airbyte_raw_id, _airbyte_extracted_at, and _airbyte_meta are each flagged is_airbyte_metadata true and carry no business meaning for weather analysis."
+    },
+    {
+      "key": "decisionLocalDateParts",
+      "value": "retained-as-separate-integers",
+      "rationale": "Operator convention prefers one DATE column over three integer parts, but this proposal's action vocabulary has no merge operation across source columns, and year, month, day are local time while time_hour is a separate UTC instant per the package documentation, so the parts are retained as cast integers pending a dedicated downstream merge."
+    },
+    {
+      "key": "decisionNullWindGust",
+      "value": "retained-nullable-sparse",
+      "rationale": "wind_gust null_rate is 0.745505 (9702 of 13014 rows), well above the 0.5 sparsity threshold, so it is retained nullable rather than dropped or imputed."
+    },
+    {
+      "key": "decisionNullPressure",
+      "value": "retained-nullable",
+      "rationale": "pressure null_rate is 0.114953 (1496 of 13014 rows), reflecting real missing sensor readings, so it is retained nullable."
+    },
+    {
+      "key": "decisionNullWindDir",
+      "value": "retained-nullable",
+      "rationale": "wind_dir null_rate is 0.016828 (219 of 13014 rows), so it is retained nullable rather than requiring a value."
+    },
+    {
+      "key": "decisionNullWindSpeed",
+      "value": "retained-nullable",
+      "rationale": "wind_speed null_rate is 0.000154 (2 of 13014 rows), so it is retained nullable rather than requiring a value."
+    },
+    {
+      "key": "decisionOriginNaming",
+      "value": "kept-as-origin",
+      "rationale": "The operator context states origin is named to match the flights table's origin column, overriding the general _code suffix convention to preserve cross-table join compatibility."
+    }
+  ],
+  "purpose": "This silver table provides cleaned hourly ASOS weather observations for the three NYC-area airports (EWR, JFK, LGA) from January through June 2013, sourced from the nycflights13 weather dataset, to feed downstream analyses and joins against flight records on origin and time.",
+  "usage": "Consumers should join on origin and time_hour, the declared grain representing one hourly station observation as a UTC instant, and should explicitly filter or account for nulls in wind_gust, pressure, and wind_dir when those measures are required rather than assuming completeness; year, month, day, and hour remain separate local-time integer columns distinct from the UTC time_hour.",
+  "limitations": "wind_gust is null in 74.6% of rows (9702 of 13014) and pressure in 11.5% (1496 of 13014); neither is imputed. year, month, and day remain separate integer columns rather than a single DATE because this cleanup's one-action-per-column model has no merge operation to combine them as the operator's naming convention prefers, so a follow-up transformation would be needed to produce that column."
+}

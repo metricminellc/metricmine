@@ -1,0 +1,72 @@
+{
+  "agent": {
+    "name": "silver-cleanup-proposer",
+    "version": "0.1.0"
+  },
+  "api_error": null,
+  "context": "This source is the planes table of the nycflights13 R data package: the FAA aircraft registry's 2014 release, reduced to the tail numbers found among the 2013 New York City flights; American Airlines and Envoy Air reported fleet numbers rather than tail numbers, so their aircraft do not appear. As the package documents the columns: tailnum is the tail number; year is the year manufactured; type is the type of plane; manufacturer and model are as the registry records them; engines and seats are counts; speed is the average cruising speed in mph; engine is the type of engine. The publisher writes NA where a value is missing. We name a measure with its unit as a suffix (minutes, miles, mph, inches, degrees, feet, percent). We name a code column with `_code` and a boolean with `is_`. We carry a calendar date as one DATE column rather than three integer parts. We spell out abbreviated column names.\n",
+  "context_path": "docs/experiments/e3/contexts/silver-cleanup-nyc-planes.md",
+  "cost_usd_estimate": 0.063406,
+  "created_at": "2026-10-23T15:35:09.020818+00:00",
+  "disposition": "draft_written",
+  "draft_path": "proposals/silver-cleanup-proposer/20261023T153509020818Z_d775f908/draft.odcs.yaml",
+  "inputs": [
+    {
+      "content_hash": "sha256:d775f9080fcb9731f1489bfc4933efc20b764c7dff57f90224131c77ea50b3f5",
+      "kind": "profile_artifact",
+      "path": "profiles/bronze.nyc_planes/v0001.json",
+      "schema_version": "1.0.0"
+    },
+    {
+      "content_hash": "sha256:7b8c5eca8910971488ea3b001734048226fd45eb95359b93bb03f23938ae73ea",
+      "kind": "operator_context",
+      "path": "docs/experiments/e3/contexts/silver-cleanup-nyc-planes.md",
+      "schema_version": ""
+    }
+  ],
+  "intent": null,
+  "model_id": "claude-sonnet-5",
+  "model_source": "default",
+  "profile_hash": "sha256:d775f9080fcb9731f1489bfc4933efc20b764c7dff57f90224131c77ea50b3f5",
+  "profile_path": "profiles/bronze.nyc_planes/v0001.json",
+  "profile_schema_version": "1.0.0",
+  "prompt_path": "src/metricmine/agents/prompts/e3/silver_cleanup.md",
+  "prompt_version": "1.1.0",
+  "rates": {
+    "input_per_mtok": 2.0,
+    "output_per_mtok": 10.0
+  },
+  "request_params": {
+    "effort": "high",
+    "max_tokens": 16384
+  },
+  "response_id": "msg_011CgKQzKsjqMT5RmiZjNKPt",
+  "sdk_version": "1.0.0",
+  "skeleton": false,
+  "stance": "cleanup",
+  "stop_reason": "end_turn",
+  "usage": {
+    "input_tokens": 7383,
+    "output_tokens": 4864
+  },
+  "validation": {
+    "attempt_log": [
+      {
+        "completeness_pass": true,
+        "errors": [],
+        "groundedness_pass": true,
+        "lint_pass": true,
+        "schema_pass": true,
+        "staleness_pass": true,
+        "stop_reason": "end_turn"
+      }
+    ],
+    "attempts": 1,
+    "completeness_pass": true,
+    "errors": [],
+    "groundedness_pass": true,
+    "lint_pass": true,
+    "schema_pass": true,
+    "staleness_pass": true
+  }
+}

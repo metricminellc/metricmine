@@ -1,0 +1,149 @@
+# Draft proposed by silver-cleanup-proposer v0.1.0 at 2026-10-23T15:30:05.020629+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_nyc_planes
+name: Silver nyc planes
+version: 1.1.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: This table provides cleaned FAA aircraft registry attributes (manufacture year,
+    type, manufacturer, model, engine configuration, seat count, and cruising speed) for the
+    tail numbers observed among 2013 NYC flights, feeding downstream joins on tailnum for
+    fleet and aircraft-characteristic analysis.
+  usage: Join on tailnum to enrich flight records with plane_type, manufacturer, model, engine_count,
+    seat_count, engine_type, year_manufactured, and speed_mph; consumers must explicitly handle
+    nulls in speed_mph (present for well under 1% of rows) and year_manufactured (about 2.1%
+    null) rather than assuming zero or imputing a value.
+  limitations: speed_mph is populated for only 23 of 3322 rows (null_rate 0.993076), making
+    it unsuitable for broad analysis without acknowledging its sparsity; year_manufactured
+    has a smaller but real gap (null_rate 0.021072, 70 nulls); per operator context, American
+    Airlines and Envoy Air aircraft are absent from this registry extract because those carriers
+    reported fleet numbers rather than tail numbers, so this table cannot resolve plane attributes
+    for their flights.
+schema:
+- name: silver_nyc_planes
+  physicalName: silver_nyc_planes
+  logicalType: object
+  physicalType: table
+  description: This table provides cleaned FAA aircraft registry attributes (manufacture year,
+    type, manufacturer, model, engine configuration, seat count, and cruising speed) for the
+    tail numbers observed among 2013 NYC flights, feeding downstream joins on tailnum for
+    fleet and aircraft-characteristic analysis.
+  properties:
+  - name: tailnum
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: distinct_count 3322 equals dataset.row_count 3322 with null_count 0, so tailnum
+      uniquely identifies each row and serves as the natural key.
+  - name: year_manufactured
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: null_rate 0.021072 (70 of 3322 nulls) and sample values are all integral
+      years (1956.0, 1959.0, 1963.0, ...) ranging min 1956 to max 2013, so the DECIMAL(38,9)
+      column casts cleanly to INTEGER; renamed per operator convention to spell out the abbreviated
+      bare-word column.
+  - name: plane_type
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: distinct_values are exactly ["Fixed wing multi engine", "Fixed wing single
+      engine", "Rotorcraft"] with null_count 0; renamed from the bare word 'type' to a spelled-out,
+      unambiguous name per operator naming convention.
+  - name: manufacturer
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: distinct_count 35 with null_count 0 and samples such as AIRBUS, BOEING, BEECH
+      show a clean categorical registry field.
+  - name: model
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: distinct_count 127 with null_count 0; sample values like 172E, 310Q, 421C
+      confirm free-text model codes as recorded by the registry.
+  - name: engine_count
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: distinct_values are exactly [1.0, 2.0, 3.0, 4.0] with null_count 0, so the
+      DECIMAL(38,9) count casts cleanly to INTEGER; renamed to spell out that this is a count
+      of engines.
+  - name: seat_count
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: min 2.0 and max 450.0 with distinct_count 48, null_count 0, and integral
+      sample values (2.0, 4.0, 5.0, ...) support casting the DECIMAL(38,9) field to INTEGER;
+      renamed to spell out that this is a count of seats.
+  - name: speed_mph
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: null_rate 0.993076 (3299 of 3322 nulls) means this column is sparsely populated
+      and must be retained nullable, not failed or imputed; the 13 distinct_values present
+      (90.0 to 432.0) are all integral, supporting a cast to INTEGER, and renamed to attach
+      the mph unit per operator convention.
+  - name: engine_type
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: distinct_values are exactly ["4 Cycle", "Reciprocating", "Turbo-fan", "Turbo-jet",
+      "Turbo-prop", "Turbo-shaft"] with null_count 0; renamed from the bare word 'engine'
+      to distinguish it from engine_count.
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (tailnum) combinations'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT tailnum
+        FROM silver.silver_nyc_planes
+        GROUP BY tailnum
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: silver-cleanup-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.1.0
+- property: modelId
+  value: claude-sonnet-5
+- property: profileHash
+  value: sha256:d775f9080fcb9731f1489bfc4933efc20b764c7dff57f90224131c77ea50b3f5
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: cleanup
+- property: decisionDropAirbyteMetadata
+  value: dropped-as-capture-artifacts
+- property: decisionGrain
+  value: tailnum-is-natural-key
+- property: decisionExactDuplicates
+  value: no-duplicates-found
+- property: decisionNullSpeedMph
+  value: retained-nullable-sparse
+- property: decisionNullYearManufactured
+  value: retained-nullable
+- property: decisionCastDecimalCounts
+  value: cast-integral-decimals-to-integer

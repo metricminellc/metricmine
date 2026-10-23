@@ -1,0 +1,82 @@
+{
+  "columns": {
+    "draft": 20,
+    "oracle": 19,
+    "ordinal_order_equal": false,
+    "shared": 6
+  },
+  "first_class_checks": {
+    "agree": 28,
+    "checked": 30,
+    "per_field": {
+      "logicalType": "6/6",
+      "physicalType": "6/6",
+      "primaryKey": "6/6",
+      "primaryKeyPosition": "4/6",
+      "required": "6/6"
+    }
+  },
+  "grain": {
+    "draft": [
+      "year",
+      "month",
+      "day",
+      "carrier_code",
+      "flight_number",
+      "origin_code"
+    ],
+    "oracle": [
+      "flight_date",
+      "carrier_code",
+      "flight_number",
+      "origin_airport",
+      "sched_dep_hhmm"
+    ],
+    "order_equal": false,
+    "set_equal": false
+  },
+  "mismatches": [
+    "flight_date: missing from the draft",
+    "origin_airport: missing from the draft",
+    "sched_dep_hhmm: missing from the draft",
+    "dest_airport: missing from the draft",
+    "dep_hhmm: missing from the draft",
+    "dep_delay_minutes: missing from the draft",
+    "arr_hhmm: missing from the draft",
+    "sched_arr_hhmm: missing from the draft",
+    "arr_delay_minutes: missing from the draft",
+    "sched_dep_hour_local: missing from the draft",
+    "sched_dep_minute_local: missing from the draft",
+    "departure_hour_utc: missing from the draft",
+    "captured_at: missing from the draft",
+    "year: extra in the draft",
+    "month: extra in the draft",
+    "day: extra in the draft",
+    "departure_time: extra in the draft",
+    "scheduled_departure_time: extra in the draft",
+    "departure_delay_minutes: extra in the draft",
+    "arrival_time: extra in the draft",
+    "scheduled_arrival_time: extra in the draft",
+    "arrival_delay_minutes: extra in the draft",
+    "origin_code: extra in the draft",
+    "destination_code: extra in the draft",
+    "hour: extra in the draft",
+    "minute: extra in the draft",
+    "scheduled_hour_utc: extra in the draft",
+    "carrier_code.primaryKeyPosition: oracle=2 draft=4",
+    "flight_number.primaryKeyPosition: oracle=3 draft=5"
+  ],
+  "oracle_id": "silver_nyc_flights",
+  "rule_types": {
+    "column_equal": false,
+    "table_draft": [
+      "library:rowCount",
+      "sql"
+    ],
+    "table_equal": true,
+    "table_oracle": [
+      "library:rowCount",
+      "sql"
+    ]
+  }
+}

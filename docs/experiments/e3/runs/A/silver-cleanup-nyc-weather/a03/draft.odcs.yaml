@@ -1,0 +1,160 @@
+# Draft proposed by silver-cleanup-proposer v0.1.0 at 2026-10-23T15:12:44.378018+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_nyc_weather
+name: Silver nyc weather
+version: 1.1.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: This table provides cleaned hourly weather observations from the three NYC-area
+    airports (EWR, JFK, LGA) for January-June 2013, sourced from ASOS/IEM data in the nycflights13
+    weather dataset, feeding downstream joins with flight delay analyses.
+  usage: Consumers should join on origin_code and observation_timestamp to combine with flight
+    records, and must handle nulls explicitly in wind_direction_degrees, wind_speed_mph, wind_gust_mph,
+    and pressure_millibars (the latter two carry substantial null rates) rather than assuming
+    zero or average values.
+  limitations: Redundant year, month, day, and hour integer parts were dropped in favor of
+    the single observation_timestamp field; wind_gust_mph is null in 74.55% of rows and pressure_millibars
+    in 11.50% of rows, reflecting instrument reporting gaps rather than data quality defects
+    introduced here; no exact duplicate rows were found to clean (duplicate_row_rate 0.0).
+schema:
+- name: silver_nyc_weather
+  physicalName: silver_nyc_weather
+  logicalType: object
+  physicalType: table
+  description: This table provides cleaned hourly weather observations from the three NYC-area
+    airports (EWR, JFK, LGA) for January-June 2013, sourced from ASOS/IEM data in the nycflights13
+    weather dataset, feeding downstream joins with flight delay analyses.
+  properties:
+  - name: origin_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: origin has 3 distinct values (EWR, JFK, LGA) with null_rate 0.0; renamed
+      to origin_code per the operator's convention of naming code columns with a _code suffix,
+      matching the flights table's origin column.
+  - name: temp_fahrenheit
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: true
+    description: temp has distinct_count 130, range 10.94 to 93.92, and null_rate 0.0; cast
+      to DECIMAL(10,2) and given the fahrenheit unit suffix per operator convention.
+  - name: dewpoint_fahrenheit
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: true
+    description: dewp has distinct_count 119, range -9.94 to 73.94, and null_rate 0.0; spelled
+      out to dewpoint and given the fahrenheit unit suffix per operator convention.
+  - name: humidity_percent
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: true
+    description: humid has distinct_count 2178, range 12.74 to 100.0, and null_rate 0.0; renamed
+      with the percent unit suffix per operator convention.
+  - name: wind_direction_degrees
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: false
+    description: wind_dir has distinct_count 37, range 0 to 360, and null_rate 0.016828 (219
+      nulls); retained nullable since calm-wind readings lack a direction, and given the degrees
+      unit suffix.
+  - name: wind_speed_mph
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: false
+    description: wind_speed has distinct_count 36, range 0 to 1048.36058, and null_rate 0.000154
+      (2 nulls); retained nullable and given the mph unit suffix per operator convention.
+  - name: wind_gust_mph
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: false
+    description: wind_gust has distinct_count 35, range 16.11092 to 62.14212, and null_rate
+      0.745505 (9702 of 13014 nulls); sparsely populated but retained nullable since gusts
+      are only recorded during gusty conditions.
+  - name: precipitation_inches
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: true
+    description: precip has distinct_count 50, range 0.0 to 1.06, and null_rate 0.0; given
+      the inches unit suffix per operator convention.
+  - name: pressure_millibars
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: false
+    description: pressure has distinct_count 430, range 983.8 to 1038.4, and null_rate 0.114953
+      (1496 nulls); retained nullable rather than imputed, given the millibars unit suffix.
+  - name: visibility_miles
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: true
+    description: visib has distinct_count 20 with distinct_values ranging 0.0 to 10.0, and
+      null_rate 0.0; given the miles unit suffix per operator convention.
+  - name: observation_timestamp
+    logicalType: date
+    physicalType: TIMESTAMP WITH TIME ZONE
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 2
+    description: time_hour has distinct_count 4341 (approximately 3 origins x 4341 ~= row_count
+      13014) with ISO-8601 UTC samples like 2013-01-01T06:00:00Z and null_rate 0.0; cast to
+      a timestamp and made the single canonical date/hour column replacing year, month, day,
+      and hour.
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (origin_code, observation_timestamp) combinations'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT origin_code, observation_timestamp
+        FROM silver.silver_nyc_weather
+        GROUP BY origin_code, observation_timestamp
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: silver-cleanup-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.1.0
+- property: modelId
+  value: claude-sonnet-5
+- property: profileHash
+  value: sha256:1dee708bb140addbdb172a3727f79d85a2d7a611bd9c191d56d3e433a8c5777b
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: cleanup
+- property: decisionExactDuplicates
+  value: no-duplicates-found
+- property: decisionGrain
+  value: origin-code-and-observation-timestamp
+- property: decisionDropDateParts
+  value: dropped-redundant-date-parts
+- property: decisionDropAirbyteMetadata
+  value: excluded-as-capture-artifacts
+- property: decisionNullWindGust
+  value: retained-nullable-sparse
+- property: decisionNullPressure
+  value: retained-nullable
+- property: decisionNullWindDir
+  value: retained-nullable
+- property: decisionNullWindSpeed
+  value: retained-nullable

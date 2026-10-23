@@ -1,0 +1,90 @@
+{
+  "target_table": "silver_nyc_airlines",
+  "columns": [
+    {
+      "source_column": "carrier",
+      "action": "rename",
+      "target_name": "carrier_code",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 with null_count 0 and distinct_count 16 matching row_count 16 (e.g. 9E, AA, DL, UA, WN), so this two-letter carrier abbreviation is renamed with the _code suffix per the team's naming convention and used as the unique identifier."
+    },
+    {
+      "source_column": "name",
+      "action": "rename",
+      "target_name": "carrier_name",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 with distinct_count 16 holding fully spelled carrier names (e.g. 'Delta Air Lines Inc.', 'JetBlue Airways'); renamed from the ambiguous 'name' to carrier_name per the operator's instruction to spell out abbreviated column names and disambiguate."
+    },
+    {
+      "source_column": "_airbyte_raw_id",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "is_airbyte_metadata is true for this column, identifying it as a capture-tool artifact (UUID values) rather than a business column, so it is dropped."
+    },
+    {
+      "source_column": "_airbyte_extracted_at",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "is_airbyte_metadata is true and the single distinct value '2026-09-02T23:26:17' across all 16 rows confirms this is a capture-run timestamp, not business data, so it is dropped."
+    },
+    {
+      "source_column": "_airbyte_meta",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "JSON",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "is_airbyte_metadata is true and the single distinct value '{}' across all 16 rows shows no business content, so it is dropped."
+    }
+  ],
+  "dedupe_strategy": "none",
+  "dedupe_keys": [],
+  "grain_keys": [
+    "carrier_code"
+  ],
+  "decisions": [
+    {
+      "key": "decisionExactDuplicates",
+      "value": "no-duplicates-found",
+      "rationale": "duplicate_row_rate is 0.0 across row_count 16, so no exact duplicate rows exist in bronze and no dedupe step is proposed."
+    },
+    {
+      "key": "decisionGrain",
+      "value": "carrier-code-as-grain",
+      "rationale": "carrier_code has distinct_count 16 equal to row_count 16 with null_rate 0.0, so it uniquely identifies each row and is declared the sole grain key."
+    },
+    {
+      "key": "decisionDropAirbyteMetadata",
+      "value": "excluded-as-capture-artifacts",
+      "rationale": "_airbyte_raw_id, _airbyte_extracted_at, and _airbyte_meta are all flagged is_airbyte_metadata true and carry no business meaning (a run-level timestamp and an empty JSON object), so all three are dropped."
+    },
+    {
+      "key": "decisionRenameCarrierCode",
+      "value": "renamed-with-code-suffix",
+      "rationale": "Per operator context, code columns are named with a _code suffix, so bronze 'carrier' (16 distinct two-letter values, null_rate 0.0) becomes carrier_code."
+    },
+    {
+      "key": "decisionRenameCarrierName",
+      "value": "disambiguated-from-name",
+      "rationale": "Per operator context to spell out abbreviated names and avoid ambiguity, bronze 'name' (16 distinct full carrier names, null_rate 0.0) becomes carrier_name."
+    }
+  ],
+  "purpose": "This table is the cleaned carrier reference lookup for the nycflights13-derived NYC airlines dataset, mapping each two-letter carrier code to its full legal airline name, for use as a dimension table joined against flight fact tables on carrier_code.",
+  "usage": "Join downstream flight or fare tables to this table on carrier_code to resolve the full carrier_name for reporting; the table is small (16 rows), fully populated, and requires no null handling or deduplication by consumers.",
+  "limitations": "The source profile shows zero nulls and zero duplicate rows across all five bronze columns, so no cleanup ambiguities remain; the three Airbyte capture-metadata columns were dropped entirely and carry no business value, and the table captures only the 2013 NYC-origin carrier roster documented by the nycflights13 package, not a live or comprehensive BTS carrier list."
+}

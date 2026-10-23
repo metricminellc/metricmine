@@ -1,0 +1,165 @@
+{
+  "target_table": "silver_nyc_planes",
+  "columns": [
+    {
+      "source_column": "tailnum",
+      "action": "keep",
+      "target_name": "tailnum",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "distinct_count 3322 equals row_count 3322 with null_count 0, confirming tailnum uniquely identifies each aircraft record; samples like N10156, N102UW, N103US show the FAA tail number format."
+    },
+    {
+      "source_column": "year",
+      "action": "rename_and_cast",
+      "target_name": "manufacture_year",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "year has null_rate 0.021072 (70 of 3322 nulls) with min 1956.0, max 2013.0, and integral sample values (1956.0, 1959.0, 1963.0...), so it casts cleanly from DECIMAL(38,9) to INTEGER; renamed to manufacture_year per operator context describing it as the year manufactured."
+    },
+    {
+      "source_column": "type",
+      "action": "rename",
+      "target_name": "aircraft_type",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "type has null_rate 0.0 with only 3 distinct_values (Fixed wing multi engine, Fixed wing single engine, Rotorcraft); renamed to aircraft_type to spell out the abbreviated name as the operator context instructs."
+    },
+    {
+      "source_column": "manufacturer",
+      "action": "keep",
+      "target_name": "manufacturer",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "manufacturer has null_rate 0.0 with 35 distinct_count and samples like AIRBUS, BOEING, BEECH, BELL showing registry free-text names; kept as-is."
+    },
+    {
+      "source_column": "model",
+      "action": "keep",
+      "target_name": "model",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "model has null_rate 0.0 with 127 distinct_count and samples like 172E, 172M, 310Q showing registry model codes; kept as-is."
+    },
+    {
+      "source_column": "engines",
+      "action": "rename_and_cast",
+      "target_name": "engine_count",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "engines has null_rate 0.0 with only 4 distinct_values (1.0, 2.0, 3.0, 4.0), integral counts that cast cleanly from DECIMAL(38,9) to INTEGER; renamed to engine_count to distinguish the count from the engine type column."
+    },
+    {
+      "source_column": "seats",
+      "action": "cast",
+      "target_name": "seats",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "seats has null_rate 0.0 with min 2.0 and max 450.0 and integral sample values (2.0, 4.0, 5.0, 6.0, 7.0...), casting cleanly from DECIMAL(38,9) to INTEGER."
+    },
+    {
+      "source_column": "speed",
+      "action": "rename_and_cast",
+      "target_name": "speed_mph",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "speed has null_rate 0.993076 (3299 of 3322 nulls) with only 13 distinct_values, all integral (90.0 to 432.0); renamed to speed_mph per the operator's unit-suffix naming convention and cast to INTEGER, retained as sparsely populated rather than dropped or imputed."
+    },
+    {
+      "source_column": "engine",
+      "action": "rename",
+      "target_name": "engine_type",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "engine has null_rate 0.0 with 6 distinct_values (4 Cycle, Reciprocating, Turbo-fan, Turbo-jet, Turbo-prop, Turbo-shaft); renamed to engine_type to avoid confusion with the new engine_count column."
+    },
+    {
+      "source_column": "_airbyte_raw_id",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata: true, a capture-tool identifier with no business meaning, dropped per pipeline convention."
+    },
+    {
+      "source_column": "_airbyte_extracted_at",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata: true with a single distinct_value (2026-09-02T23:26:22), a capture-run timestamp rather than business data, dropped per pipeline convention."
+    },
+    {
+      "source_column": "_airbyte_meta",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "JSON",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata: true with a single distinct_value ({}), a capture-tool artifact carrying no business meaning, dropped per pipeline convention."
+    }
+  ],
+  "dedupe_strategy": "none",
+  "dedupe_keys": [],
+  "grain_keys": [
+    "tailnum"
+  ],
+  "decisions": [
+    {
+      "key": "decisionGrain",
+      "value": "tailnum-sole-grain-key",
+      "rationale": "tailnum has distinct_count 3322 equal to row_count 3322 and null_count 0, so it uniquely identifies each row in this registry."
+    },
+    {
+      "key": "decisionExactDuplicates",
+      "value": "no-duplicates-detected",
+      "rationale": "duplicate_row_rate is 0.0 across row_count 3322, so no exact-duplicate dedupe strategy is applied."
+    },
+    {
+      "key": "decisionDroppedMetadata",
+      "value": "airbyte-columns-dropped",
+      "rationale": "_airbyte_raw_id, _airbyte_extracted_at, and _airbyte_meta are all flagged is_airbyte_metadata: true and carry no business meaning."
+    },
+    {
+      "key": "decisionSparseSpeed",
+      "value": "speed-retained-nullable",
+      "rationale": "speed has null_rate 0.993076 (3299 of 3322 nulls), reflecting that cruising speed is rarely recorded in the FAA registry; retained as nullable rather than dropped or imputed."
+    },
+    {
+      "key": "decisionNumericCasts",
+      "value": "integral-decimals-cast-to-integer",
+      "rationale": "year, engines, seats, and speed all land as DECIMAL(38,9) but every sample and distinct_value observed is a whole number, so each is cast to INTEGER."
+    },
+    {
+      "key": "decisionRenamesForClarity",
+      "value": "columns-renamed-for-clarity",
+      "rationale": "year, type, engines, and engine are renamed to manufacture_year, aircraft_type, engine_count, and engine_type respectively per operator guidance to spell out abbreviated names and distinguish counts from categorical types."
+    }
+  ],
+  "purpose": "This silver table provides a cleaned registry of aircraft tail numbers and their FAA registration attributes (manufacturer, model, manufacture year, engine configuration, seating, and cruising speed where known) for the subset of aircraft that appeared in 2013 NYC-area flights, feeding joins against flight-level fact tables on tailnum.",
+  "usage": "Consumers should join on tailnum, the declared grain, to enrich flight records with aircraft characteristics; manufacture_year and speed_mph are nullable and must be filtered or coalesced explicitly before aggregation, and consumers should remember that American Airlines and Envoy Air aircraft are absent because those carriers reported fleet numbers rather than tail numbers.",
+  "limitations": "speed_mph is populated for only about 0.7% of rows (null_rate 0.993076) and cannot be imputed, so speed-based analysis will cover a small fraction of the fleet; manufacture_year is missing for 2.1% of rows (null_rate 0.021072); and the table excludes any aircraft never observed in the 2013 NYC flights dataset, including entire American Airlines and Envoy Air fleets."
+}

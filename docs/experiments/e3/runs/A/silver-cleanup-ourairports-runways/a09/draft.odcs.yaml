@@ -1,0 +1,214 @@
+# Draft proposed by silver-cleanup-proposer v0.1.0 at 2026-10-23T16:03:02.511395+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_runways
+name: Silver runways
+version: 1.0.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: This table provides one cleaned row per runway from OurAirports, capturing runway
+    identity, physical dimensions, surface type, lighting and closure status, and the low-end
+    and high-end geometry of each runway, feeding runway- and airport-level analysis when
+    joined to the airports table.
+  usage: Consumers should treat runway_id as the unique key, join to the airports table via
+    airport_id or airport_ident, and expect frequent nulls on the low-end/high-end latitude,
+    longitude, elevation, and heading columns (roughly 22%-28% null) and on the displaced-threshold
+    columns (88%-90% null); do not assume these are populated, and filter or coalesce explicitly
+    where completeness matters.
+  limitations: Cleanup did not resolve the high null rates on low_end/high_end latitude, longitude,
+    elevation, and heading (about 22%-28%) or on displaced-threshold columns (88%-90%); surface_code
+    remains an open, non-enumerated code list per the publisher's own documentation and was
+    not validated against a fixed vocabulary; length_feet and width_feet keep their source
+    DECIMAL(38,9) precision rather than being narrowed to integer despite integral sample
+    values.
+schema:
+- name: silver_runways
+  physicalName: silver_runways
+  logicalType: object
+  physicalType: table
+  description: This table provides one cleaned row per runway from OurAirports, capturing
+    runway identity, physical dimensions, surface type, lighting and closure status, and the
+    low-end and high-end geometry of each runway, feeding runway- and airport-level analysis
+    when joined to the airports table.
+  properties:
+  - name: runway_id
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: null_rate 0.0 and distinct_count 10760 equal row_count 10760, with numeric-string
+      samples like '232758'-'232770', so this is cast from VARCHAR to INTEGER as the publisher's
+      internal runway identifier.
+  - name: airport_id
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: null_rate 0.0 with numeric-string samples like '10309','10366','1058', cast
+      from VARCHAR to INTEGER as the internal integer key of the airport per operator context.
+  - name: airport_ident
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: null_rate 0.0, distinct_count 7591, samples like '03N','07FA' are the external
+      key matching the airports table's ident, kept as VARCHAR.
+  - name: length_feet
+    logicalType: number
+    physicalType: DECIMAL(38,9)
+    required: false
+    description: null_count 86 (null_rate 0.008), distinct_count 3775, min 0.0 max 16798.0;
+      renamed to spell out the feet unit per naming convention while retaining nulls.
+  - name: width_feet
+    logicalType: number
+    physicalType: DECIMAL(38,9)
+    required: false
+    description: null_count 888 (null_rate 0.083), distinct_count 204, min 1.0 max 7000.0;
+      renamed to spell out the feet unit, retained nullable.
+  - name: surface_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_count 247 (null_rate 0.023), distinct_count 239 with samples like 'ASP','ASP-G','ASP/CONC';
+      renamed to the _code convention since this is a non-fixed code list per operator context.
+  - name: is_lighted
+    logicalType: boolean
+    physicalType: BOOLEAN
+    required: true
+    description: null_rate 0.0 and distinct_values are exactly [0.0, 1.0], a clear boolean
+      flag for night lighting, renamed with the is_ prefix and cast to BOOLEAN.
+  - name: is_closed
+    logicalType: boolean
+    physicalType: BOOLEAN
+    required: true
+    description: null_rate 0.0 and distinct_values are exactly [0.0, 1.0], a clear boolean
+      flag for closure status, renamed with the is_ prefix and cast to BOOLEAN.
+  - name: low_end_ident
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_count 11 (null_rate 0.001), distinct_count 199, samples include free-form
+      values like '-12','.','00' so kept as string; renamed to spell out the le_ abbreviation
+      as low_end_.
+  - name: low_end_latitude_degrees
+    logicalType: number
+    physicalType: DECIMAL(38,9)
+    required: false
+    description: null_count 2377 (null_rate 0.221), distinct_count 8333, min -62.187801 max
+      82.512802; renamed to spell out le_ and deg as low_end_ and degrees.
+  - name: low_end_longitude_degrees
+    logicalType: number
+    physicalType: DECIMAL(38,9)
+    required: false
+    description: null_count 2381 (null_rate 0.221), distinct_count 8290, min -179.881256 max
+      179.338837; renamed per unit/end naming convention.
+  - name: low_end_elevation_feet
+    logicalType: number
+    physicalType: DECIMAL(38,9)
+    required: false
+    description: null_count 2973 (null_rate 0.276), distinct_count 2648, min -1246.0 max 13202.0;
+      renamed to spell out le_ and ft as low_end_ and feet.
+  - name: low_end_heading_true_degrees
+    logicalType: number
+    physicalType: DECIMAL(38,9)
+    required: false
+    description: null_count 2457 (null_rate 0.228), distinct_count 1458, min 0.0 max 360.0;
+      renamed to spell out the true-heading-in-degrees abbreviation degt.
+  - name: low_end_displaced_threshold_feet
+    logicalType: number
+    physicalType: DECIMAL(38,9)
+    required: false
+    description: null_count 9514 (null_rate 0.884) indicates most runways lack a displaced
+      threshold on this end; distinct_count 568, min 1.0 max 4250.0; retained as sparsely
+      populated nullable.
+  - name: high_end_ident
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_count 53 (null_rate 0.005), distinct_count 177, samples include '-','.','00'
+      so kept as string; renamed to spell out he_ as high_end_.
+  - name: high_end_latitude_degrees
+    logicalType: number
+    physicalType: DECIMAL(38,9)
+    required: false
+    description: null_count 2391 (null_rate 0.222), distinct_count 8319, min -62.193901 max
+      82.522797; renamed per unit/end naming convention.
+  - name: high_end_longitude_degrees
+    logicalType: number
+    physicalType: DECIMAL(38,9)
+    required: false
+    description: null_count 2391 (null_rate 0.222), distinct_count 8265, min -179.873184 max
+      179.343002; renamed per unit/end naming convention.
+  - name: high_end_elevation_feet
+    logicalType: number
+    physicalType: DECIMAL(38,9)
+    required: false
+    description: null_count 2972 (null_rate 0.276), distinct_count 2668, min -1210.0 max 13314.0;
+      renamed to spell out he_ and ft as high_end_ and feet.
+  - name: high_end_heading_true_degrees
+    logicalType: number
+    physicalType: DECIMAL(38,9)
+    required: false
+    description: null_count 2444 (null_rate 0.227), distinct_count 1457, min 0.0 max 362.0;
+      renamed to spell out the degt abbreviation.
+  - name: high_end_displaced_threshold_feet
+    logicalType: number
+    physicalType: DECIMAL(38,9)
+    required: false
+    description: null_count 9683 (null_rate 0.900) indicates nearly all runways lack a displaced
+      threshold on this end; distinct_count 533, min 10.0 max 4790.0; retained as sparsely
+      populated nullable.
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (runway_id) combinations'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT runway_id
+        FROM silver.silver_runways
+        GROUP BY runway_id
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: silver-cleanup-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.1.0
+- property: modelId
+  value: claude-sonnet-5
+- property: profileHash
+  value: sha256:02990e96b848ac4edf287fdcca8136ca6b04008ab98d2a2f5287e450b0eecb33
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: cleanup
+- property: decisionGrain
+  value: runway-id-primary-key
+- property: decisionDuplicateRows
+  value: no-duplicates-found
+- property: decisionDroppedMetadata
+  value: excluded-as-capture-artifacts
+- property: decisionBooleanFlags
+  value: cast-to-boolean
+- property: decisionSurfaceCode
+  value: renamed-surface-code
+- property: decisionSparseDisplacedThreshold
+  value: retained-nullable-sparse
+- property: decisionUnitAndEndRenames
+  value: spelled-out-units-and-ends

@@ -1,0 +1,69 @@
+{
+  "columns": {
+    "draft": 12,
+    "oracle": 14,
+    "ordinal_order_equal": false,
+    "shared": 3
+  },
+  "first_class_checks": {
+    "agree": 12,
+    "checked": 15,
+    "per_field": {
+      "logicalType": "3/3",
+      "physicalType": "0/3",
+      "primaryKey": "3/3",
+      "primaryKeyPosition": "3/3",
+      "required": "3/3"
+    }
+  },
+  "grain": {
+    "draft": [
+      "origin_code",
+      "observation_timestamp_utc"
+    ],
+    "oracle": [
+      "airport_code",
+      "observed_hour_utc"
+    ],
+    "order_equal": false,
+    "set_equal": false
+  },
+  "mismatches": [
+    "airport_code: missing from the draft",
+    "observed_hour_utc: missing from the draft",
+    "observed_date_local: missing from the draft",
+    "observed_hour_local: missing from the draft",
+    "temp_f: missing from the draft",
+    "dewpoint_f: missing from the draft",
+    "humidity_pct: missing from the draft",
+    "wind_dir_degrees: missing from the draft",
+    "precip_inches: missing from the draft",
+    "pressure_mb: missing from the draft",
+    "captured_at: missing from the draft",
+    "origin_code: extra in the draft",
+    "hour: extra in the draft",
+    "temperature_fahrenheit: extra in the draft",
+    "dewpoint_fahrenheit: extra in the draft",
+    "humidity_percent: extra in the draft",
+    "wind_direction_degrees: extra in the draft",
+    "precipitation_inches: extra in the draft",
+    "pressure_millibars: extra in the draft",
+    "observation_timestamp_utc: extra in the draft",
+    "wind_speed_mph.physicalType: oracle='DOUBLE' draft='DECIMAL(10,5)'",
+    "wind_gust_mph.physicalType: oracle='DOUBLE' draft='DECIMAL(10,5)'",
+    "visibility_miles.physicalType: oracle='DOUBLE' draft='DECIMAL(4,2)'"
+  ],
+  "oracle_id": "silver_nyc_weather",
+  "rule_types": {
+    "column_equal": false,
+    "table_draft": [
+      "library:rowCount",
+      "sql"
+    ],
+    "table_equal": true,
+    "table_oracle": [
+      "library:rowCount",
+      "sql"
+    ]
+  }
+}

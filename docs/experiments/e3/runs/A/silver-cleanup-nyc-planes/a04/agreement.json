@@ -1,0 +1,57 @@
+{
+  "columns": {
+    "draft": 9,
+    "oracle": 10,
+    "ordinal_order_equal": false,
+    "shared": 3
+  },
+  "first_class_checks": {
+    "agree": 15,
+    "checked": 15,
+    "per_field": {
+      "logicalType": "3/3",
+      "physicalType": "3/3",
+      "primaryKey": "3/3",
+      "primaryKeyPosition": "3/3",
+      "required": "3/3"
+    }
+  },
+  "grain": {
+    "draft": [
+      "tailnum"
+    ],
+    "oracle": [
+      "tail_number"
+    ],
+    "order_equal": false,
+    "set_equal": false
+  },
+  "mismatches": [
+    "tail_number: missing from the draft",
+    "aircraft_type: missing from the draft",
+    "engine_count: missing from the draft",
+    "seat_count: missing from the draft",
+    "cruise_speed_mph: missing from the draft",
+    "engine_type: missing from the draft",
+    "captured_at: missing from the draft",
+    "tailnum: extra in the draft",
+    "type: extra in the draft",
+    "engines: extra in the draft",
+    "seats: extra in the draft",
+    "speed_mph: extra in the draft",
+    "engine: extra in the draft"
+  ],
+  "oracle_id": "silver_nyc_planes",
+  "rule_types": {
+    "column_equal": false,
+    "table_draft": [
+      "library:rowCount",
+      "sql"
+    ],
+    "table_equal": true,
+    "table_oracle": [
+      "library:rowCount",
+      "sql"
+    ]
+  }
+}

@@ -1,0 +1,211 @@
+# Draft proposed by silver-cleanup-proposer v0.1.0 at 2026-10-23T15:42:45.284521+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_ourairports_airports
+name: Silver ourairports airports
+version: 1.1.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: This table is the cleaned OurAirports airports reference, limited to airports that
+    carry an IATA code, intended to feed airport lookups, geospatial joins, and reference
+    enrichment in downstream models.
+  usage: Join on iata_code, the declared grain key, which is unique and non-null for every
+    row; treat the continent value 'NA' and any iso_country 'NA' as the literal code for North
+    America / Namibia rather than a missing marker; consumers should expect and handle nulls
+    in elevation_ft, municipality, icao_code, gps_code, local_code, home_link, wikipedia_link,
+    and keywords rather than assuming completeness.
+  limitations: 'Cleanup did not resolve the sparsity of several optional columns: local_code
+    is null for 63.6635% of rows, home_link for 74.9034%, keywords for 67.9585%, icao_code
+    for 13.6579%, wikipedia_link for 13.0838%, elevation_ft for 3.6988%, and municipality
+    for 3.9748%; no exact-duplicate rows were found (duplicate_row_rate 0.0 across 9057 rows)
+    so no row removal was performed.'
+schema:
+- name: silver_ourairports_airports
+  physicalName: silver_ourairports_airports
+  logicalType: object
+  physicalType: table
+  description: This table is the cleaned OurAirports airports reference, limited to airports
+    that carry an IATA code, intended to feed airport lookups, geospatial joins, and reference
+    enrichment in downstream models.
+  properties:
+  - name: airport_id
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: All 10 sampled values (e.g. '10309','1058','111') are plain integer strings,
+      distinct_count 9057 equals row_count 9057, and null_rate is 0.0; operator context describes
+      id as the publisher's internal integer identifier, so it is renamed for clarity and
+      cast to INTEGER.
+  - name: ident
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: distinct_count 9057 equals row_count 9057 and null_rate is 0.0; samples like
+      '03N','07FA' are mixed alphanumeric so the column stays text, per operator context it
+      is the identifier used in the OurAirports URL.
+  - name: airport_type
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: null_rate is 0.0 with only 5 distinct_values (heliport, large_airport, medium_airport,
+      seaplane_base, small_airport); renamed from the generic 'type' to 'airport_type' for
+      clarity, no cast needed since it is a category label.
+  - name: name
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: null_rate is 0.0 with distinct_count 9006 close to row_count 9057, consistent
+      with mostly-unique airport names like '28 de Noviembre Airport'.
+  - name: latitude_deg
+    logicalType: number
+    physicalType: DECIMAL(9,6)
+    required: true
+    description: null_rate is 0.0, min -79.777778 and max 82.517263 fit comfortably in DECIMAL(9,6);
+      already carries the '_deg' unit suffix per naming convention.
+  - name: longitude_deg
+    logicalType: number
+    physicalType: DECIMAL(9,6)
+    required: true
+    description: null_rate is 0.0, min -179.876999 and max 179.9757 fit DECIMAL(9,6); already
+      carries the '_deg' unit suffix.
+  - name: elevation_ft
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: All sample_values (-1266.0, -210.0, ... -70.0) are whole numbers so DECIMAL(38,9)
+      can be cast to INTEGER; null_rate is 3.6988% (335 of 9057), so the column stays nullable
+      and nulls are retained rather than imputed.
+  - name: continent
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: null_rate is 0.0 with 7 distinct_values including 'NA'; operator context
+      confirms NA is the literal continent code for North America, a value and not a missing
+      marker.
+  - name: iso_country
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: null_rate is 0.0 with distinct_count 239 matching ISO 3166-1 alpha-2 coverage;
+      samples like 'AD','AE','AF' confirm the code format.
+  - name: iso_region
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: null_rate is 0.0 with distinct_count 2169; samples like 'AD-08','AE-AZ' confirm
+      ISO 3166-2 subdivision format.
+  - name: municipality
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_rate is 3.9748% (360 of 9057); samples like 'Aalborg','Aarhus' confirm
+      free-text municipality names, retained nullable rather than imputed.
+  - name: is_scheduled_service
+    logicalType: boolean
+    physicalType: BOOLEAN
+    required: true
+    description: null_rate is 0.0 with exactly 2 distinct_values ('no','yes'), so this is
+      cast to BOOLEAN and renamed with the 'is_' prefix per naming convention.
+  - name: icao_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_rate is 13.6579% (1237 of 9057); samples like 'AGAF','AGAR' confirm
+      code format, retained nullable since not all airports have an ICAO code.
+  - name: iata_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: distinct_count 9057 equals row_count 9057 and null_count is 0, matching the
+      dataset scope of airports that carry an IATA code; proposed as the declared grain key.
+  - name: gps_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_rate is 5.3881% (488 of 9057); samples like '03N','05AA' confirm code
+      format, retained nullable.
+  - name: local_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_rate is 63.6635% (5766 of 9057), the sparsest non-metadata column; retained
+      nullable rather than dropped since samples like '00C','00F' show it is populated where
+      available.
+  - name: home_link
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_rate is 74.9034% (6784 of 9057); samples confirm URL format (e.g. 'http://GillespieField.com/'),
+      retained nullable as a sparsely populated reference link.
+  - name: wikipedia_link
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_rate is 13.0838% (1185 of 9057); samples confirm URL format, retained
+      nullable.
+  - name: keywords
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_rate is 67.9585% (6155 of 9057); samples are free-text comma-separated
+      phrases, retained nullable since the content is a sparse search aid, not a required
+      field.
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (iata_code) combinations'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT iata_code
+        FROM silver.silver_ourairports_airports
+        GROUP BY iata_code
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: silver-cleanup-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.1.0
+- property: modelId
+  value: claude-sonnet-5
+- property: profileHash
+  value: sha256:113a01272f19c485ada9b62583be7449fbfd55b60fb304b18139a17614cf0ec2
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: cleanup
+- property: decisionExactDuplicates
+  value: no-duplicates-found
+- property: decisionGrain
+  value: iata-code-as-grain
+- property: decisionDroppedMetadata
+  value: excluded-as-capture-artifacts
+- property: decisionNullLocalCode
+  value: retained-nullable-sparse
+- property: decisionNullHomeLink
+  value: retained-nullable-sparse
+- property: decisionCastElevationFt
+  value: cast-decimal-to-integer
+- property: decisionCastScheduledService
+  value: cast-yes-no-to-boolean
+- property: decisionContinentNaValue
+  value: na-is-literal-value-not-null

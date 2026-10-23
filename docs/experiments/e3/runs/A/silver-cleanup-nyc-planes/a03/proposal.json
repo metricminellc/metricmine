@@ -1,0 +1,165 @@
+{
+  "target_table": "silver_nyc_planes",
+  "columns": [
+    {
+      "source_column": "tailnum",
+      "action": "keep",
+      "target_name": "tailnum",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "distinct_count 3322 equals dataset.row_count 3322 with null_count 0, so tailnum uniquely identifies each row and serves as the natural key."
+    },
+    {
+      "source_column": "year",
+      "action": "rename_and_cast",
+      "target_name": "year_manufactured",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "null_rate 0.021072 (70 of 3322 nulls) and sample values are all integral years (1956.0, 1959.0, 1963.0, ...) ranging min 1956 to max 2013, so the DECIMAL(38,9) column casts cleanly to INTEGER; renamed per operator convention to spell out the abbreviated bare-word column."
+    },
+    {
+      "source_column": "type",
+      "action": "rename",
+      "target_name": "plane_type",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "distinct_values are exactly [\"Fixed wing multi engine\", \"Fixed wing single engine\", \"Rotorcraft\"] with null_count 0; renamed from the bare word 'type' to a spelled-out, unambiguous name per operator naming convention."
+    },
+    {
+      "source_column": "manufacturer",
+      "action": "keep",
+      "target_name": "manufacturer",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "distinct_count 35 with null_count 0 and samples such as AIRBUS, BOEING, BEECH show a clean categorical registry field."
+    },
+    {
+      "source_column": "model",
+      "action": "keep",
+      "target_name": "model",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "distinct_count 127 with null_count 0; sample values like 172E, 310Q, 421C confirm free-text model codes as recorded by the registry."
+    },
+    {
+      "source_column": "engines",
+      "action": "rename_and_cast",
+      "target_name": "engine_count",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "distinct_values are exactly [1.0, 2.0, 3.0, 4.0] with null_count 0, so the DECIMAL(38,9) count casts cleanly to INTEGER; renamed to spell out that this is a count of engines."
+    },
+    {
+      "source_column": "seats",
+      "action": "rename_and_cast",
+      "target_name": "seat_count",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "min 2.0 and max 450.0 with distinct_count 48, null_count 0, and integral sample values (2.0, 4.0, 5.0, ...) support casting the DECIMAL(38,9) field to INTEGER; renamed to spell out that this is a count of seats."
+    },
+    {
+      "source_column": "speed",
+      "action": "rename_and_cast",
+      "target_name": "speed_mph",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "null_rate 0.993076 (3299 of 3322 nulls) means this column is sparsely populated and must be retained nullable, not failed or imputed; the 13 distinct_values present (90.0 to 432.0) are all integral, supporting a cast to INTEGER, and renamed to attach the mph unit per operator convention."
+    },
+    {
+      "source_column": "engine",
+      "action": "rename",
+      "target_name": "engine_type",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "distinct_values are exactly [\"4 Cycle\", \"Reciprocating\", \"Turbo-fan\", \"Turbo-jet\", \"Turbo-prop\", \"Turbo-shaft\"] with null_count 0; renamed from the bare word 'engine' to distinguish it from engine_count."
+    },
+    {
+      "source_column": "_airbyte_raw_id",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "is_airbyte_metadata is true, marking this as a capture-tool column rather than business data."
+    },
+    {
+      "source_column": "_airbyte_extracted_at",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "is_airbyte_metadata is true with a single distinct_value (2026-09-02T23:26:22), confirming it is a capture-run timestamp, not business data."
+    },
+    {
+      "source_column": "_airbyte_meta",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "JSON",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "is_airbyte_metadata is true and the sole distinct_value is the empty object \"{}\", confirming it carries no business content."
+    }
+  ],
+  "dedupe_strategy": "none",
+  "dedupe_keys": [],
+  "grain_keys": [
+    "tailnum"
+  ],
+  "decisions": [
+    {
+      "key": "decisionDropAirbyteMetadata",
+      "value": "dropped-as-capture-artifacts",
+      "rationale": "_airbyte_raw_id, _airbyte_extracted_at, and _airbyte_meta all carry is_airbyte_metadata true and contribute no business meaning, so all three are dropped."
+    },
+    {
+      "key": "decisionGrain",
+      "value": "tailnum-is-natural-key",
+      "rationale": "tailnum has distinct_count 3322 equal to dataset.row_count 3322 and null_count 0, so it uniquely identifies every row in bronze and is declared the grain."
+    },
+    {
+      "key": "decisionExactDuplicates",
+      "value": "no-duplicates-found",
+      "rationale": "dataset.duplicate_row_rate is 0.0 across row_count 3322, so no exact-duplicate-row cleanup is required."
+    },
+    {
+      "key": "decisionNullSpeedMph",
+      "value": "retained-nullable-sparse",
+      "rationale": "speed has null_rate 0.993076 with 3299 of 3322 rows null; the column is retained nullable rather than dropped or imputed, and consumers should treat it as sparsely populated."
+    },
+    {
+      "key": "decisionNullYearManufactured",
+      "value": "retained-nullable",
+      "rationale": "year has null_rate 0.021072 with 70 of 3322 rows null, a small but genuine gap retained as nullable rather than failed or imputed."
+    },
+    {
+      "key": "decisionCastDecimalCounts",
+      "value": "cast-integral-decimals-to-integer",
+      "rationale": "year, engines, seats, and speed all land as DECIMAL(38,9) but every sample and distinct_value observed is integral (e.g. engines distinct_values [1.0,2.0,3.0,4.0]), so each casts to INTEGER."
+    }
+  ],
+  "purpose": "This table provides cleaned FAA aircraft registry attributes (manufacture year, type, manufacturer, model, engine configuration, seat count, and cruising speed) for the tail numbers observed among 2013 NYC flights, feeding downstream joins on tailnum for fleet and aircraft-characteristic analysis.",
+  "usage": "Join on tailnum to enrich flight records with plane_type, manufacturer, model, engine_count, seat_count, engine_type, year_manufactured, and speed_mph; consumers must explicitly handle nulls in speed_mph (present for well under 1% of rows) and year_manufactured (about 2.1% null) rather than assuming zero or imputing a value.",
+  "limitations": "speed_mph is populated for only 23 of 3322 rows (null_rate 0.993076), making it unsuitable for broad analysis without acknowledging its sparsity; year_manufactured has a smaller but real gap (null_rate 0.021072, 70 nulls); per operator context, American Airlines and Envoy Air aircraft are absent from this registry extract because those carriers reported fleet numbers rather than tail numbers, so this table cannot resolve plane attributes for their flights."
+}

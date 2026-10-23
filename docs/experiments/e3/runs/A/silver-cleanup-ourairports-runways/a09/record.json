@@ -1,0 +1,72 @@
+{
+  "agent": {
+    "name": "silver-cleanup-proposer",
+    "version": "0.1.0"
+  },
+  "api_error": null,
+  "context": "This source is the runways table of OurAirports (David Megginson and contributors, public domain), here the runways of the airports in the airports extract, many runways to one airport. As the publisher's data dictionary documents the columns: id is the publisher's internal integer identifier for the runway; airport_ref is the internal integer key of the airport, and airport_ident the externally visible string key matching the airports table's ident; length_ft is the length of the full runway surface in feet, and width_ft its width in feet; surface is a code for the surface type (ASP, TURF, CON, GRS, GRE, WATER, UNK, and others; not a fixed list); lighted is 1 when the surface is lighted at night and 0 otherwise; closed is 1 when the runway is currently closed and 0 otherwise. The le_ columns describe the low-numbered end of the runway and the he_ columns the high-numbered end: ident is that end's designator, latitude_deg and longitude_deg its centre in decimal degrees, elevation_ft its elevation above mean sea level in feet, heading_degt its true heading in degrees, and displaced_threshold_ft the length of its displaced threshold in feet, if any. We name a measure with its unit as a suffix (minutes, miles, mph, inches, degrees, feet, percent). We name a code column with `_code` and a boolean with `is_`. We carry a calendar date as one DATE column rather than three integer parts. We spell out abbreviated column names.\n",
+  "context_path": "docs/experiments/e3/contexts/silver-cleanup-ourairports-runways.md",
+  "cost_usd_estimate": 0.113172,
+  "created_at": "2026-10-23T16:03:02.511395+00:00",
+  "disposition": "draft_written",
+  "draft_path": "proposals/silver-cleanup-proposer/20261023T160302511395Z_02990e96/draft.odcs.yaml",
+  "inputs": [
+    {
+      "content_hash": "sha256:02990e96b848ac4edf287fdcca8136ca6b04008ab98d2a2f5287e450b0eecb33",
+      "kind": "profile_artifact",
+      "path": "profiles/bronze.ourairports_runways/v0001.json",
+      "schema_version": "1.0.0"
+    },
+    {
+      "content_hash": "sha256:5fb5712e5e64337eed8fc63ad9e2c48f0d85181d94b9bcd63ee2317910218365",
+      "kind": "operator_context",
+      "path": "docs/experiments/e3/contexts/silver-cleanup-ourairports-runways.md",
+      "schema_version": ""
+    }
+  ],
+  "intent": null,
+  "model_id": "claude-sonnet-5",
+  "model_source": "default",
+  "profile_hash": "sha256:02990e96b848ac4edf287fdcca8136ca6b04008ab98d2a2f5287e450b0eecb33",
+  "profile_path": "profiles/bronze.ourairports_runways/v0001.json",
+  "profile_schema_version": "1.0.0",
+  "prompt_path": "src/metricmine/agents/prompts/e3/silver_cleanup.md",
+  "prompt_version": "1.1.0",
+  "rates": {
+    "input_per_mtok": 2.0,
+    "output_per_mtok": 10.0
+  },
+  "request_params": {
+    "effort": "high",
+    "max_tokens": 16384
+  },
+  "response_id": "msg_011CgKT7gzRRM1zG76nzhRHz",
+  "sdk_version": "1.0.0",
+  "skeleton": false,
+  "stance": "cleanup",
+  "stop_reason": "end_turn",
+  "usage": {
+    "input_tokens": 9661,
+    "output_tokens": 9385
+  },
+  "validation": {
+    "attempt_log": [
+      {
+        "completeness_pass": true,
+        "errors": [],
+        "groundedness_pass": true,
+        "lint_pass": true,
+        "schema_pass": true,
+        "staleness_pass": true,
+        "stop_reason": "end_turn"
+      }
+    ],
+    "attempts": 1,
+    "completeness_pass": true,
+    "errors": [],
+    "groundedness_pass": true,
+    "lint_pass": true,
+    "schema_pass": true,
+    "staleness_pass": true
+  }
+}

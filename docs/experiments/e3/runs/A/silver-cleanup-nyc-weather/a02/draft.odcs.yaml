@@ -1,0 +1,189 @@
+# Draft proposed by silver-cleanup-proposer v0.1.0 at 2026-10-23T15:11:09.601812+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_nyc_weather
+name: Silver nyc weather
+version: 1.1.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: This table provides cleaned, typed hourly ASOS weather observations for the three
+    NYC-area airports (EWR, JFK, LGA) for January through June 2013, feeding downstream joins
+    to flight-level tables on origin and recorded time.
+  usage: Join on origin_code and recorded_at (or recorded_at truncated to hour) to flight
+    records; consumers must handle nulls explicitly in wind_dir, wind_speed, wind_gust, and
+    pressure rather than assuming zero or average values, and should be aware wind_gust is
+    null in roughly three-quarters of rows.
+  limitations: Pipeline metadata columns were dropped entirely; year, month, day, and hour
+    remain as separate local-time integer columns rather than a single DATE because the cleanup
+    mechanism available here cannot merge multiple source columns, so consumers needing a
+    single date/time key should prefer the recorded_at (UTC) column; wind_gust (74.6% null)
+    and pressure (11.5% null) are sparsely populated and were not imputed.
+schema:
+- name: silver_nyc_weather
+  physicalName: silver_nyc_weather
+  logicalType: object
+  physicalType: table
+  description: This table provides cleaned, typed hourly ASOS weather observations for the
+    three NYC-area airports (EWR, JFK, LGA) for January through June 2013, feeding downstream
+    joins to flight-level tables on origin and recorded time.
+  properties:
+  - name: origin_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: null_rate is 0.0 across 13014 rows and distinct_values show exactly the three
+      station codes EWR, JFK, LGA; renamed to origin_code per the operator's convention of
+      naming code columns with a _code suffix.
+  - name: year
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: Landed as DECIMAL(38,9) but the single distinct_value 2013.0 is integral
+      with null_rate 0.0, so it casts cleanly to INTEGER; kept separate because the schema
+      has no action to merge it with month/day/hour into one DATE column.
+  - name: month
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: All 6 distinct_values (1.0-6.0) are integral and null_rate is 0.0, justifying
+      DECIMAL(38,9) to INTEGER; retained as a discrete part alongside recorded_at since no
+      multi-column derive action exists.
+  - name: day
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: Samples 1.0-10.0 and min/max of 1.0/31.0 are all integral with null_rate
+      0.0, supporting a cast to INTEGER.
+  - name: hour
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: Samples 0.0-9.0 and min/max of 0.0/23.0 are integral hour-of-day values with
+      null_rate 0.0, supporting a cast to INTEGER; this is local time per operator context,
+      distinct from the UTC recorded_at timestamp.
+  - name: temperature_fahrenheit
+    logicalType: number
+    physicalType: DECIMAL(5,2)
+    required: true
+    description: null_rate is 0.0 with 130 distinct two-decimal values ranging 10.94 to 93.92
+      degrees Fahrenheit per operator context; renamed to carry the unit suffix convention.
+  - name: dewpoint_fahrenheit
+    logicalType: number
+    physicalType: DECIMAL(5,2)
+    required: true
+    description: null_rate is 0.0 with 119 distinct two-decimal values ranging -9.94 to 73.94;
+      renamed and typed to match the measure-plus-unit naming convention.
+  - name: humidity_percent
+    logicalType: number
+    physicalType: DECIMAL(5,2)
+    required: true
+    description: null_rate is 0.0, values range 12.74 to 100.0 across 2178 distinct two-decimal
+      readings consistent with a percent measure; spelled out and suffixed with its unit.
+  - name: wind_direction_degrees
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: Samples (0.0,10.0,...,90.0) and max 360.0 are all integral degree values,
+      justifying INTEGER, but null_rate 0.016828 (219 of 13014) means calm-wind or missing
+      readings are retained as null rather than imputed.
+  - name: wind_speed_mph
+    logicalType: number
+    physicalType: DECIMAL(10,5)
+    required: false
+    description: Samples carry 5 decimal places (e.g. 3.45234, 1048.36058 max) so DECIMAL(10,5)
+      preserves precision; null_rate 0.000154 (2 rows) is retained as null.
+  - name: wind_gust_mph
+    logicalType: number
+    physicalType: DECIMAL(10,5)
+    required: false
+    description: Samples show 5-decimal precision between 16.11092 and 62.14212 mph; null_rate
+      0.745505 (9702 of 13014) is very high, so the column is sparsely populated and retained
+      nullable rather than dropped.
+  - name: precipitation_inches
+    logicalType: number
+    physicalType: DECIMAL(5,2)
+    required: true
+    description: null_rate is 0.0 with 50 distinct two-decimal values from 0.0 to 1.06 inches,
+      consistent with the operator-documented unit.
+  - name: sea_level_pressure_millibars
+    logicalType: number
+    physicalType: DECIMAL(6,2)
+    required: false
+    description: Values range 983.8 to 1038.4 millibars across 430 distinct readings, but
+      null_rate 0.114953 (1496 of 13014) means missing sea-level pressure readings are retained
+      as null.
+  - name: visibility_miles
+    logicalType: number
+    physicalType: DECIMAL(4,2)
+    required: true
+    description: null_rate is 0.0 and all 20 distinct_values (0.0 through 10.0) are visibility-in-miles
+      readings per operator context, so DECIMAL(4,2) preserves the observed granularity.
+  - name: recorded_at
+    logicalType: date
+    physicalType: TIMESTAMP
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 2
+    description: All 10 samples are ISO-8601 UTC instants (e.g. 2013-01-01T06:00:00Z) with
+      null_rate 0.0 and distinct_count 4341, supporting a cast from VARCHAR to TIMESTAMP;
+      renamed to recorded_at since it is the canonical UTC instant distinct from the local
+      year/month/day/hour parts.
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (origin_code, recorded_at) combinations'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT origin_code, recorded_at
+        FROM silver.silver_nyc_weather
+        GROUP BY origin_code, recorded_at
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: silver-cleanup-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.1.0
+- property: modelId
+  value: claude-sonnet-5
+- property: profileHash
+  value: sha256:1dee708bb140addbdb172a3727f79d85a2d7a611bd9c191d56d3e433a8c5777b
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: cleanup
+- property: decisionExactDuplicates
+  value: none-observed
+- property: decisionGrain
+  value: origin-code-plus-recorded-at
+- property: decisionDroppedMetadata
+  value: excluded-as-capture-artifacts
+- property: decisionDateParts
+  value: retained-as-separate-integers
+- property: decisionNullWindGust
+  value: retained-nullable-sparse
+- property: decisionNullPressure
+  value: retained-nullable
+- property: decisionNullWindDirection
+  value: retained-nullable
+- property: decisionNullWindSpeed
+  value: retained-nullable

@@ -1,0 +1,70 @@
+{
+  "columns": {
+    "draft": 20,
+    "oracle": 10,
+    "ordinal_order_equal": false,
+    "shared": 3
+  },
+  "first_class_checks": {
+    "agree": 13,
+    "checked": 15,
+    "per_field": {
+      "logicalType": "2/3",
+      "physicalType": "2/3",
+      "primaryKey": "3/3",
+      "primaryKeyPosition": "3/3",
+      "required": "3/3"
+    }
+  },
+  "grain": {
+    "draft": [
+      "runway_id"
+    ],
+    "oracle": [
+      "runway_id"
+    ],
+    "order_equal": true,
+    "set_equal": true
+  },
+  "mismatches": [
+    "airport_ident: missing from the draft",
+    "length_ft: missing from the draft",
+    "width_ft: missing from the draft",
+    "surface: missing from the draft",
+    "low_end_ident: missing from the draft",
+    "high_end_ident: missing from the draft",
+    "captured_at: missing from the draft",
+    "airport_id: extra in the draft",
+    "airport_identifier: extra in the draft",
+    "length_feet: extra in the draft",
+    "width_feet: extra in the draft",
+    "surface_code: extra in the draft",
+    "low_end_identifier: extra in the draft",
+    "low_end_latitude_degrees: extra in the draft",
+    "low_end_longitude_degrees: extra in the draft",
+    "low_end_elevation_feet: extra in the draft",
+    "low_end_heading_degrees: extra in the draft",
+    "low_end_displaced_threshold_feet: extra in the draft",
+    "high_end_identifier: extra in the draft",
+    "high_end_latitude_degrees: extra in the draft",
+    "high_end_longitude_degrees: extra in the draft",
+    "high_end_elevation_feet: extra in the draft",
+    "high_end_heading_degrees: extra in the draft",
+    "high_end_displaced_threshold_feet: extra in the draft",
+    "runway_id.logicalType: oracle='string' draft='integer'",
+    "runway_id.physicalType: oracle='VARCHAR' draft='INTEGER'"
+  ],
+  "oracle_id": "silver_ourairports_runways",
+  "rule_types": {
+    "column_equal": false,
+    "table_draft": [
+      "library:rowCount",
+      "sql"
+    ],
+    "table_equal": true,
+    "table_oracle": [
+      "library:rowCount",
+      "sql"
+    ]
+  }
+}

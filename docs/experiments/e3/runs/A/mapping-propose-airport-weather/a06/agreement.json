@@ -1,0 +1,36 @@
+{
+  "first_class_checks": {
+    "agree": 68,
+    "checked": 68,
+    "per_field": {
+      "logicalType": "17/17",
+      "mappingRole": "17/17",
+      "physicalType": "17/17",
+      "required": "17/17"
+    }
+  },
+  "header": {
+    "entityGroup": false,
+    "grainType": true,
+    "sourceTable": true,
+    "timeColumn": true,
+    "timeGrain": true
+  },
+  "identifiers_equal": false,
+  "mismatches": [
+    "captured_at: extra in the draft",
+    "entityGroup: oracle='airport_weather' draft='airport_weather_observations'",
+    "degenerateIdentifiers: oracle=[('derived', 'observation_identity', 'canonical-key-v2', ('airport_code', 'observed_hour_utc'))] draft=[('derived', 'airport_hour_identity', 'canonical-key-v2', ('airport_code', 'observed_hour_utc'))]"
+  ],
+  "oracle_id": "gold_airport_weather_mapping",
+  "properties": {
+    "draft": 18,
+    "oracle": 17,
+    "ordinal_order_equal": false,
+    "shared": 17
+  },
+  "roles": {
+    "dimensions_equal": false,
+    "measures_equal": true
+  }
+}

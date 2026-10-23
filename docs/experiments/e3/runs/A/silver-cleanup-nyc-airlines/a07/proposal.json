@@ -1,0 +1,85 @@
+{
+  "target_table": "silver_airlines",
+  "columns": [
+    {
+      "source_column": "carrier",
+      "action": "rename",
+      "target_name": "carrier_code",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 across 16 rows with 16 distinct two-letter values (e.g. 9E, AA, DL, UA), so this is the carrier's code and is renamed per the operator's _code convention."
+    },
+    {
+      "source_column": "name",
+      "action": "rename",
+      "target_name": "carrier_name",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 with 16 distinct full carrier names (e.g. Delta Air Lines Inc., United Air Lines Inc.), renamed from the generic 'name' to spell out its meaning per operator convention."
+    },
+    {
+      "source_column": "_airbyte_raw_id",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "is_airbyte_metadata is true; this is a capture-tool identifier (16 UUID-shaped values) with no business meaning and is dropped per policy."
+    },
+    {
+      "source_column": "_airbyte_extracted_at",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "is_airbyte_metadata is true; all 16 rows share the single extraction timestamp 2026-09-02T23:26:17, a pipeline artifact dropped per policy."
+    },
+    {
+      "source_column": "_airbyte_meta",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "JSON",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "is_airbyte_metadata is true; the single distinct value '{}' across all rows confirms it carries no business content and is dropped per policy."
+    }
+  ],
+  "dedupe_strategy": "none",
+  "dedupe_keys": [],
+  "grain_keys": [
+    "carrier_code"
+  ],
+  "decisions": [
+    {
+      "key": "decisionGrain",
+      "value": "carrier-code-as-grain",
+      "rationale": "carrier has distinct_count 16 equal to row_count 16 with null_rate 0.0, so carrier_code alone identifies one row and is declared the grain."
+    },
+    {
+      "key": "decisionExactDuplicates",
+      "value": "no-duplicates-found",
+      "rationale": "duplicate_row_rate is 0.0 across row_count 16, so no exact-duplicate removal is needed and dedupe_strategy is none."
+    },
+    {
+      "key": "decisionDroppedMetadata",
+      "value": "excluded-as-capture-artifacts",
+      "rationale": "_airbyte_raw_id, _airbyte_extracted_at, and _airbyte_meta are all flagged is_airbyte_metadata true and carry only pipeline-capture values (a UUID, a single shared timestamp, and an empty JSON object), so all three are dropped."
+    },
+    {
+      "key": "decisionCarrierCodeRename",
+      "value": "renamed-per-naming-convention",
+      "rationale": "the operator context states code columns are named with a _code suffix, so bronze 'carrier' becomes carrier_code with no change to its 16 distinct two-letter values."
+    }
+  ],
+  "purpose": "This table is the carrier reference lookup for the nycflights13-derived warehouse: one row per airline carrier code with its full legal name, feeding joins from flight-level fact tables that record only the two-letter carrier code.",
+  "usage": "Join downstream flight tables to this table on carrier_code to resolve a human-readable carrier_name; both columns are required and non-null so no null-handling logic is needed by consumers.",
+  "limitations": "The table is a small static reference set (16 rows, no duplicates, no nulls) limited to carriers that flew from New York City airports in 2013 per the source package's scope; it does not cover carriers added or renamed after that snapshot, and all pipeline-capture columns (raw id, extraction timestamp, meta) were dropped as non-business artifacts."
+}

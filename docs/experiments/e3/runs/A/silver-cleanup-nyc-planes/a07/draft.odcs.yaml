@@ -1,0 +1,149 @@
+# Draft proposed by silver-cleanup-proposer v0.1.0 at 2026-10-23T15:33:00.136057+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_nyc_planes
+name: Silver nyc planes
+version: 1.1.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: This silver table provides a cleaned registry of aircraft tail numbers and their
+    FAA registration attributes (manufacturer, model, manufacture year, engine configuration,
+    seating, and cruising speed where known) for the subset of aircraft that appeared in 2013
+    NYC-area flights, feeding joins against flight-level fact tables on tailnum.
+  usage: Consumers should join on tailnum, the declared grain, to enrich flight records with
+    aircraft characteristics; manufacture_year and speed_mph are nullable and must be filtered
+    or coalesced explicitly before aggregation, and consumers should remember that American
+    Airlines and Envoy Air aircraft are absent because those carriers reported fleet numbers
+    rather than tail numbers.
+  limitations: speed_mph is populated for only about 0.7% of rows (null_rate 0.993076) and
+    cannot be imputed, so speed-based analysis will cover a small fraction of the fleet; manufacture_year
+    is missing for 2.1% of rows (null_rate 0.021072); and the table excludes any aircraft
+    never observed in the 2013 NYC flights dataset, including entire American Airlines and
+    Envoy Air fleets.
+schema:
+- name: silver_nyc_planes
+  physicalName: silver_nyc_planes
+  logicalType: object
+  physicalType: table
+  description: This silver table provides a cleaned registry of aircraft tail numbers and
+    their FAA registration attributes (manufacturer, model, manufacture year, engine configuration,
+    seating, and cruising speed where known) for the subset of aircraft that appeared in 2013
+    NYC-area flights, feeding joins against flight-level fact tables on tailnum.
+  properties:
+  - name: tailnum
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: distinct_count 3322 equals row_count 3322 with null_count 0, confirming tailnum
+      uniquely identifies each aircraft record; samples like N10156, N102UW, N103US show the
+      FAA tail number format.
+  - name: manufacture_year
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: year has null_rate 0.021072 (70 of 3322 nulls) with min 1956.0, max 2013.0,
+      and integral sample values (1956.0, 1959.0, 1963.0...), so it casts cleanly from DECIMAL(38,9)
+      to INTEGER; renamed to manufacture_year per operator context describing it as the year
+      manufactured.
+  - name: aircraft_type
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: type has null_rate 0.0 with only 3 distinct_values (Fixed wing multi engine,
+      Fixed wing single engine, Rotorcraft); renamed to aircraft_type to spell out the abbreviated
+      name as the operator context instructs.
+  - name: manufacturer
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: manufacturer has null_rate 0.0 with 35 distinct_count and samples like AIRBUS,
+      BOEING, BEECH, BELL showing registry free-text names; kept as-is.
+  - name: model
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: model has null_rate 0.0 with 127 distinct_count and samples like 172E, 172M,
+      310Q showing registry model codes; kept as-is.
+  - name: engine_count
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: engines has null_rate 0.0 with only 4 distinct_values (1.0, 2.0, 3.0, 4.0),
+      integral counts that cast cleanly from DECIMAL(38,9) to INTEGER; renamed to engine_count
+      to distinguish the count from the engine type column.
+  - name: seats
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: seats has null_rate 0.0 with min 2.0 and max 450.0 and integral sample values
+      (2.0, 4.0, 5.0, 6.0, 7.0...), casting cleanly from DECIMAL(38,9) to INTEGER.
+  - name: speed_mph
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: speed has null_rate 0.993076 (3299 of 3322 nulls) with only 13 distinct_values,
+      all integral (90.0 to 432.0); renamed to speed_mph per the operator's unit-suffix naming
+      convention and cast to INTEGER, retained as sparsely populated rather than dropped or
+      imputed.
+  - name: engine_type
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: engine has null_rate 0.0 with 6 distinct_values (4 Cycle, Reciprocating,
+      Turbo-fan, Turbo-jet, Turbo-prop, Turbo-shaft); renamed to engine_type to avoid confusion
+      with the new engine_count column.
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (tailnum) combinations'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT tailnum
+        FROM silver.silver_nyc_planes
+        GROUP BY tailnum
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: silver-cleanup-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.1.0
+- property: modelId
+  value: claude-sonnet-5
+- property: profileHash
+  value: sha256:d775f9080fcb9731f1489bfc4933efc20b764c7dff57f90224131c77ea50b3f5
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: cleanup
+- property: decisionGrain
+  value: tailnum-sole-grain-key
+- property: decisionExactDuplicates
+  value: no-duplicates-detected
+- property: decisionDroppedMetadata
+  value: airbyte-columns-dropped
+- property: decisionSparseSpeed
+  value: speed-retained-nullable
+- property: decisionNumericCasts
+  value: integral-decimals-cast-to-integer
+- property: decisionRenamesForClarity
+  value: columns-renamed-for-clarity

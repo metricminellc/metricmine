@@ -1,0 +1,97 @@
+# Draft proposed by silver-cleanup-proposer v0.1.0 at 2026-10-23T15:26:10.433248+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_nyc_airlines
+name: Silver nyc airlines
+version: 1.1.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: This table is the carrier reference dimension from the nycflights13 airlines source,
+    mapping each two-letter BTS carrier code to its full legal name for the sixteen carriers
+    that flew out of New York City in 2013; it is intended to feed flight fact tables that
+    need to resolve or display a carrier's full name.
+  usage: Join downstream flight records to this table on carrier_code to attach carrier_name;
+    both columns are fully populated (null_rate 0.0) and unique across the 16 rows, so no
+    null-filtering or dedupe logic is required before joining.
+  limitations: Coverage is limited to the 16 carriers observed flying from NYC airports in
+    2013 per the nycflights13 source and is not a comprehensive or current BTS carrier list;
+    the table carries no effective-date or versioning column, so carrier name changes over
+    time are not represented, and the original Airbyte capture metadata (raw id, extraction
+    timestamp, meta) was dropped as non-business data.
+schema:
+- name: silver_nyc_airlines
+  physicalName: silver_nyc_airlines
+  logicalType: object
+  physicalType: table
+  description: This table is the carrier reference dimension from the nycflights13 airlines
+    source, mapping each two-letter BTS carrier code to its full legal name for the sixteen
+    carriers that flew out of New York City in 2013; it is intended to feed flight fact tables
+    that need to resolve or display a carrier's full name.
+  properties:
+  - name: carrier_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: null_rate is 0.0 across all 16 rows and distinct_count is 16, matching row_count
+      16; renamed per operator convention that code columns carry a _code suffix (samples
+      include AA, DL, UA).
+  - name: carrier_name
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: null_rate is 0.0 with distinct_count 16 holding full carrier names such as
+      'Delta Air Lines Inc.' and 'Southwest Airlines Co.'; renamed from the ambiguous 'name'
+      to spell out what it identifies, per operator naming guidance.
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (carrier_code) combinations'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT carrier_code
+        FROM silver.silver_nyc_airlines
+        GROUP BY carrier_code
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: silver-cleanup-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.1.0
+- property: modelId
+  value: claude-sonnet-5
+- property: profileHash
+  value: sha256:563ce524575653bb56c6486fca096627efd990b3d17b0b48912886100b1cda22
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: cleanup
+- property: decisionGrain
+  value: carrier-code
+- property: decisionExactDuplicates
+  value: none-detected
+- property: decisionDroppedMetadata
+  value: excluded-as-capture-artifacts
+- property: decisionRenameCarrierCode
+  value: renamed-for-clarity
+- property: decisionRenameCarrierName
+  value: renamed-for-clarity

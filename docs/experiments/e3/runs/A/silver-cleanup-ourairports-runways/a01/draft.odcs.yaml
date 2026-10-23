@@ -1,0 +1,228 @@
+# Draft proposed by silver-cleanup-proposer v0.1.0 at 2026-10-23T15:49:45.972917+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_ourairports_runways
+name: Silver ourairports runways
+version: 1.1.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: silver_ourairports_runways cleans the bronze OurAirports runways extract into one
+    row per runway, with the low-end and high-end runway details split into clearly named
+    low_end_/high_end_ columns, airport linkage via airport_id and airport_identifier, and
+    surface/boolean flags normalized, feeding downstream runway and airport-capacity analysis.
+  usage: Join to the airports silver table on airport_identifier (or airport_id) to bring
+    in airport attributes; filter or coalesce the many nullable low_end_/high_end_ measurement
+    columns (latitude, longitude, elevation, heading, displaced threshold) since a large share
+    of runways lack one or both ends' detail, and treat surface_code as free text rather than
+    a fixed enumeration.
+  limitations: le_/he_ coordinate, elevation, heading, and displaced-threshold columns carry
+    null rates between about 0.22 and 0.90 (e.g. low_end_displaced_threshold_feet 0.884201,
+    high_end_displaced_threshold_feet 0.899907) and are retained nullable rather than imputed;
+    surface_code remains an open, unvalidated set of 239 distinct values with no fixed enumeration
+    available in the source.
+schema:
+- name: silver_ourairports_runways
+  physicalName: silver_ourairports_runways
+  logicalType: object
+  physicalType: table
+  description: silver_ourairports_runways cleans the bronze OurAirports runways extract into
+    one row per runway, with the low-end and high-end runway details split into clearly named
+    low_end_/high_end_ columns, airport linkage via airport_id and airport_identifier, and
+    surface/boolean flags normalized, feeding downstream runway and airport-capacity analysis.
+  properties:
+  - name: runway_id
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: null_count is 0 and distinct_count 10760 equals row_count 10760, confirming
+      this is the publisher's unique integer identifier for each runway; renamed to runway_id
+      for clarity and cast from VARCHAR to INTEGER since all sampled values (232758, 232759,
+      232762) are integer-like strings.
+  - name: airport_id
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: null_rate is 0.0 with distinct_count 7591; operator context describes this
+      as the internal integer key of the airport, so renamed to airport_id and cast from VARCHAR
+      to INTEGER since samples (10309, 10366, 1058) are all integer-like.
+  - name: airport_identifier
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: null_rate is 0.0 with distinct_count 7591 matching airport_ref's cardinality;
+      operator context notes this is the externally visible string key matching the airports
+      table's ident, kept as text and renamed to spell out the abbreviated 'ident' per operator
+      naming convention.
+  - name: length_feet
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: false
+    description: null_rate is 0.007993 (86 nulls) with values ranging from min 0.0 to max
+      16798.0; cast from DECIMAL(38,9) to DECIMAL(10,2) and renamed to spell out the unit
+      suffix feet per operator convention, retained nullable for the small null fraction.
+  - name: width_feet
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: false
+    description: null_rate is 0.082528 (888 nulls) with range 1.0 to 7000.0; cast to DECIMAL(10,2)
+      and renamed to width_feet to spell out the unit suffix, retained nullable given the
+      null rate.
+  - name: surface_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_rate is 0.022955 (247 nulls) with distinct_count 239 and operator context
+      stating this is not a fixed-list code (e.g. ASP, ASP-G, ASP/CON, ASPH-CONC-F); renamed
+      to surface_code per the code naming convention and kept as text since values are heterogeneous
+      free-form codes.
+  - name: is_lighted
+    logicalType: boolean
+    physicalType: BOOLEAN
+    required: true
+    description: distinct_values are exactly [0.0, 1.0] with null_count 0; cast from DECIMAL(38,9)
+      to BOOLEAN and renamed to is_lighted per the boolean naming convention, since operator
+      context confirms 1 means lighted at night and 0 otherwise.
+  - name: is_closed
+    logicalType: boolean
+    physicalType: BOOLEAN
+    required: true
+    description: distinct_values are exactly [0.0, 1.0] with null_count 0; cast to BOOLEAN
+      and renamed to is_closed per convention, since operator context confirms 1 means the
+      runway is currently closed.
+  - name: low_end_identifier
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_rate is 0.001022 (11 nulls) with distinct_count 199 and sample values
+      like '-12', '.', '00', '01C' showing free-form designators; renamed to low_end_identifier
+      to spell out the le_ prefix (low end) and the abbreviated ident, per operator convention.
+  - name: low_end_latitude_degrees
+    logicalType: number
+    physicalType: DECIMAL(9,6)
+    required: false
+    description: null_rate is 0.220911 (2377 nulls) with range -62.187801 to 82.512802 and
+      six-decimal precision samples; cast to DECIMAL(9,6) to preserve precision and renamed
+      to spell out le_ as low_end_ and deg as degrees, retained nullable given the null rate.
+  - name: low_end_longitude_degrees
+    logicalType: number
+    physicalType: DECIMAL(9,6)
+    required: false
+    description: null_rate is 0.221283 (2381 nulls) with range -179.881256 to 179.338837;
+      cast to DECIMAL(9,6) and renamed per operator convention, retained nullable.
+  - name: low_end_elevation_feet
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: false
+    description: null_rate is 0.276301 (2973 nulls) with range -1246.0 to 13202.0; cast to
+      DECIMAL(10,2) and renamed to spell out le_ and ft, retained nullable given the null
+      rate.
+  - name: low_end_heading_degrees
+    logicalType: number
+    physicalType: DECIMAL(6,2)
+    required: false
+    description: null_rate is 0.228346 (2457 nulls) with range 0.0 to 360.0 and decimal samples
+      like 1.12; cast to DECIMAL(6,2) and renamed to spell out le_ and degt as degrees, retained
+      nullable.
+  - name: low_end_displaced_threshold_feet
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: false
+    description: null_rate is 0.884201 (9514 of 10760 nulls) with range 1.0 to 4250.0; sparsely
+      populated since most runways lack a displaced threshold, retained nullable and renamed
+      to spell out le_ and ft per convention.
+  - name: high_end_identifier
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_rate is 0.004926 (53 nulls) with distinct_count 177 and samples like
+      '-', '.', '00', '01L'; renamed to high_end_identifier to spell out he_ as high_end_
+      and ident as identifier.
+  - name: high_end_latitude_degrees
+    logicalType: number
+    physicalType: DECIMAL(9,6)
+    required: false
+    description: null_rate is 0.222212 (2391 nulls) with range -62.193901 to 82.522797; cast
+      to DECIMAL(9,6) and renamed per convention, retained nullable.
+  - name: high_end_longitude_degrees
+    logicalType: number
+    physicalType: DECIMAL(9,6)
+    required: false
+    description: null_rate is 0.222212 (2391 nulls) with range -179.873184 to 179.343002;
+      cast to DECIMAL(9,6) and renamed per convention, retained nullable.
+  - name: high_end_elevation_feet
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: false
+    description: null_rate is 0.276208 (2972 nulls) with range -1210.0 to 13314.0; cast to
+      DECIMAL(10,2) and renamed to spell out he_ and ft, retained nullable.
+  - name: high_end_heading_degrees
+    logicalType: number
+    physicalType: DECIMAL(6,2)
+    required: false
+    description: null_rate is 0.227138 (2444 nulls) with range 0.0 to 362.0; cast to DECIMAL(6,2)
+      and renamed to spell out he_ and degt as degrees, retained nullable, with the max of
+      362.0 kept as-is since no evidence justifies correction.
+  - name: high_end_displaced_threshold_feet
+    logicalType: number
+    physicalType: DECIMAL(10,2)
+    required: false
+    description: null_rate is 0.899907 (9683 of 10760 nulls) with range 10.0 to 4790.0; sparsely
+      populated since most runways lack a displaced threshold at the high end, retained nullable
+      and renamed to spell out he_ and ft per convention.
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (runway_id) combinations'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT runway_id
+        FROM silver.silver_ourairports_runways
+        GROUP BY runway_id
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: silver-cleanup-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.1.0
+- property: modelId
+  value: claude-sonnet-5
+- property: profileHash
+  value: sha256:02990e96b848ac4edf287fdcca8136ca6b04008ab98d2a2f5287e450b0eecb33
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: cleanup
+- property: decisionExactDuplicates
+  value: no-duplicates-found
+- property: decisionGrain
+  value: runway-id-is-grain
+- property: decisionDroppedAirbyteMetadata
+  value: excluded-as-capture-artifacts
+- property: decisionSparseDisplacedThresholds
+  value: retained-nullable-sparse
+- property: decisionSurfaceCodeOpenSet
+  value: kept-as-text-open-set
+- property: decisionSpelledOutAbbreviations
+  value: renamed-per-operator-convention
+- property: decisionLatLongPrecision
+  value: cast-to-decimal-9-6

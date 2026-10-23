@@ -1,0 +1,231 @@
+# Draft proposed by silver-cleanup-proposer v0.1.0 at 2026-10-23T14:59:02.302765+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_nyc_flights
+name: Silver nyc flights
+version: 1.1.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: This table provides cleaned, typed NYC flight departure and arrival records for
+    January through June 2013 from EWR, JFK, and LGA, built from the nycflights13 flights
+    source, feeding downstream analytics on carrier performance, delays, and route volumes.
+  usage: Consumers should treat actual_departure_time, actual_arrival_time, departure_delay_minutes,
+    arrival_delay_minutes, and air_time_minutes as nullable and deliberately filter or account
+    for the roughly 3% of rows where a flight never departed or never completed before aggregating
+    delay metrics; carrier_code, origin_airport_code, and destination_airport_code are short
+    identifiers, not full names. Reconstruct a calendar date by combining year, month, and
+    day until a dedicated DATE column is added in a later revision.
+  limitations: dedupe_strategy is none because duplicate_row_rate is 0.0 across 166158 rows,
+    so no exact-duplicate removal was required, but this does not guarantee uniqueness on
+    any subset key. The operator's convention of a single calendar DATE column could not be
+    applied because the action model maps one bronze column to one silver column and cannot
+    merge year, month, and day into a single derived field, so they remain three separate
+    INTEGER columns. dep_time, arr_time, dep_delay, arr_delay, and air_time retain nulls (2.9%-3.3%
+    null rates) for flights that never departed or completed, and tailnum retains nulls (0.9%)
+    for unresolved aircraft identifiers; none of these were imputed or dropped.
+schema:
+- name: silver_nyc_flights
+  physicalName: silver_nyc_flights
+  logicalType: object
+  physicalType: table
+  description: This table provides cleaned, typed NYC flight departure and arrival records
+    for January through June 2013 from EWR, JFK, and LGA, built from the nycflights13 flights
+    source, feeding downstream analytics on carrier performance, delays, and route volumes.
+  properties:
+  - name: year
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: distinct_count is 1 with the single value 2013.0 and null_rate 0.0, so the
+      DECIMAL(38,9) casts cleanly to INTEGER.
+  - name: month
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 2
+    description: distinct_count is 6 with values 1.0 through 6.0 (min 1.0, max 6.0) and null_rate
+      0.0, so it casts cleanly to INTEGER.
+  - name: day
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 3
+    description: distinct_count is 31 with min 1.0 and max 31.0, null_rate 0.0, and sample
+      values 1.0-10.0 are all integral, so it casts to INTEGER.
+  - name: actual_departure_time
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: null_rate is 0.029388 (4883 of 166158 nulls); operator context states a flight
+      that never departed has no departure time, so nulls are retained; min 1.0 and max 2400.0
+      show integral HHMM/HMM-style values, cast to INTEGER and renamed to spell out the abbreviation.
+  - name: scheduled_departure_time
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: null_rate is 0.0 with distinct_count 969, min 500.0 and max 2359.0; sample
+      values like 500.0, 501.0, 505.0 are integral HHMM codes, cast to INTEGER and renamed
+      to spell out the abbreviation.
+  - name: departure_delay_minutes
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: null_rate is 0.029388, matching dep_time's null pattern for flights that
+      never departed; min -33.0 and max 1301.0 with integral samples, cast to INTEGER and
+      given the minutes unit suffix per naming convention.
+  - name: actual_arrival_time
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: null_rate is 0.0307 (5101 nulls); min 1.0 max 2400.0 with integral samples
+      1.0-10.0, cast to INTEGER and renamed to spell out the abbreviation; nulls retained
+      since they align with flights that never completed.
+  - name: scheduled_arrival_time
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: null_rate 0.0, distinct_count 1134, min 1.0 max 2359.0, integral samples,
+      cast to INTEGER and renamed to spell out the abbreviation.
+  - name: arrival_delay_minutes
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: null_rate is 0.032981 (5480 nulls), matching air_time's null rate for incomplete
+      flights; min -86.0 max 1272.0 with integral samples, cast to INTEGER with the minutes
+      unit suffix.
+  - name: carrier_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 4
+    description: distinct_count 16 with values like 9E, AA, AS and null_rate 0.0; renamed
+      with the _code suffix per naming convention for a two-letter carrier abbreviation.
+  - name: flight_number
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 5
+    description: distinct_count 2994, min 1.0 max 8500.0, integral samples 1.0-10.0, null_rate
+      0.0; cast to INTEGER and renamed for clarity as a flight number.
+  - name: tail_number
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: null_rate is 0.009154 (1521 nulls) with distinct_count 3825 and alphanumeric
+      samples like D942DN, N0EGMQ; renamed to spell out the abbreviation and retained nullable
+      since a missing tail number is a plausible data gap.
+  - name: origin_airport_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 6
+    description: distinct_count 3 (EWR, JFK, LGA) and null_rate 0.0; renamed with the _code
+      suffix per convention for airport codes.
+  - name: destination_airport_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: distinct_count 100 with samples ABQ, ACK, ALB and null_rate 0.0; renamed
+      to spell out 'dest' and apply the _code suffix convention.
+  - name: air_time_minutes
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: null_rate is 0.032981 (5480 nulls), equal to arr_delay's null rate, consistent
+      with flights that never completed; min 20.0 max 695.0 with integral samples, cast to
+      INTEGER with the minutes unit suffix.
+  - name: distance_miles
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: null_rate 0.0, distinct_count 203, min 80.0 max 4983.0 with integral samples
+      80.0, 94.0, 96.0; cast to INTEGER with the miles unit suffix per convention.
+  - name: scheduled_departure_hour
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: distinct_count 19 with min 5.0 max 23.0 and null_rate 0.0; this is the scheduled
+      departure time's hour part per operator context, cast to INTEGER and renamed for clarity.
+  - name: scheduled_departure_minute
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: distinct_count 60, min 0.0 max 59.0, null_rate 0.0, sample values 0.0-9.0;
+      this is the scheduled departure time's minute part per operator context, cast to INTEGER
+      and renamed for clarity.
+  - name: scheduled_hour_timestamp
+    logicalType: date
+    physicalType: TIMESTAMP
+    required: true
+    description: distinct_count 3439 with null_rate 0.0; samples like 2013-01-01T10:00:00Z
+      are uniformly ISO-8601 UTC instants, so this casts safely to TIMESTAMP; operator context
+      confirms it is the scheduled date and hour as a UTC instant.
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (year, month, day, carrier_code, flight_number,
+      origin_airport_code) combinations'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT year, month, day, carrier_code, flight_number, origin_airport_code
+        FROM silver.silver_nyc_flights
+        GROUP BY year, month, day, carrier_code, flight_number, origin_airport_code
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: silver-cleanup-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.1.0
+- property: modelId
+  value: claude-sonnet-5
+- property: profileHash
+  value: sha256:49b479ac0612017571579cc02b0b7e592474551a14d3adff6e06c01139bdadce
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: cleanup
+- property: decisionGrain
+  value: year-month-day-carrier-flight-origin
+- property: decisionDuplicateRows
+  value: no-dedup-needed
+- property: decisionDateComposite
+  value: retained-as-three-integer-columns
+- property: decisionTimeEncoding
+  value: retained-as-integer-hhmm
+- property: decisionNullDeparture
+  value: retained-nullable
+- property: decisionNullArrival
+  value: retained-nullable
+- property: decisionNullTailNumber
+  value: retained-nullable
+- property: decisionAirbyteMetadataDropped
+  value: dropped-capture-artifacts
+- property: decisionCodeNaming
+  value: renamed-to-code-suffix
+- property: decisionScheduledTimeParts
+  value: retained-as-separate-columns

@@ -1,0 +1,72 @@
+{
+  "agent": {
+    "name": "silver-cleanup-proposer",
+    "version": "0.1.0"
+  },
+  "api_error": null,
+  "context": "This source is the airports table of OurAirports (David Megginson and contributors, public domain), here every airport that carries an IATA code, all columns as published. As the publisher's data dictionary documents the columns: id is the publisher's internal integer identifier; ident is the text identifier used in the OurAirports URL, the ICAO code where one exists; type is one of balloonport, closed_airport, heliport, large_airport, medium_airport, seaplane_base, and small_airport; name is the official airport name; latitude_deg and longitude_deg are decimal degrees, north and east positive; elevation_ft is elevation above mean sea level in feet; continent is a two-letter continent code; iso_country is the ISO 3166-1 alpha-2 country code, and iso_region the ISO 3166-2 subdivision code; municipality is the primary municipality the airport serves; scheduled_service is yes or no; gps_code, icao_code, iata_code, and local_code are the airport's codes in those systems; home_link and wikipedia_link are URLs; keywords are comma-separated search phrases. The continent code for North America and the country code for Namibia are the text NA, which is a value, not a missing marker. We name a measure with its unit as a suffix (minutes, miles, mph, inches, degrees, feet, percent). We name a code column with `_code` and a boolean with `is_`. We carry a calendar date as one DATE column rather than three integer parts. We spell out abbreviated column names.\n",
+  "context_path": "docs/experiments/e3/contexts/silver-cleanup-ourairports-airports.md",
+  "cost_usd_estimate": 0.116122,
+  "created_at": "2026-10-23T15:43:53.163300+00:00",
+  "disposition": "draft_written",
+  "draft_path": "proposals/silver-cleanup-proposer/20261023T154353163300Z_113a0127/draft.odcs.yaml",
+  "inputs": [
+    {
+      "content_hash": "sha256:113a01272f19c485ada9b62583be7449fbfd55b60fb304b18139a17614cf0ec2",
+      "kind": "profile_artifact",
+      "path": "profiles/bronze.ourairports_airports/v0001.json",
+      "schema_version": "1.0.0"
+    },
+    {
+      "content_hash": "sha256:2489eab77d3fdb81e962c0232d0a0cdf7c82eaaa8ba21eefde3c83ddbb064055",
+      "kind": "operator_context",
+      "path": "docs/experiments/e3/contexts/silver-cleanup-ourairports-airports.md",
+      "schema_version": ""
+    }
+  ],
+  "intent": null,
+  "model_id": "claude-sonnet-5",
+  "model_source": "default",
+  "profile_hash": "sha256:113a01272f19c485ada9b62583be7449fbfd55b60fb304b18139a17614cf0ec2",
+  "profile_path": "profiles/bronze.ourairports_airports/v0001.json",
+  "profile_schema_version": "1.0.0",
+  "prompt_path": "src/metricmine/agents/prompts/e3/silver_cleanup.md",
+  "prompt_version": "1.1.0",
+  "rates": {
+    "input_per_mtok": 2.0,
+    "output_per_mtok": 10.0
+  },
+  "request_params": {
+    "effort": "high",
+    "max_tokens": 16384
+  },
+  "response_id": "msg_011CgKRext2YGeXG6Fhj1iDM",
+  "sdk_version": "1.0.0",
+  "skeleton": false,
+  "stance": "cleanup",
+  "stop_reason": "end_turn",
+  "usage": {
+    "input_tokens": 9936,
+    "output_tokens": 9625
+  },
+  "validation": {
+    "attempt_log": [
+      {
+        "completeness_pass": true,
+        "errors": [],
+        "groundedness_pass": true,
+        "lint_pass": true,
+        "schema_pass": true,
+        "staleness_pass": true,
+        "stop_reason": "end_turn"
+      }
+    ],
+    "attempts": 1,
+    "completeness_pass": true,
+    "errors": [],
+    "groundedness_pass": true,
+    "lint_pass": true,
+    "schema_pass": true,
+    "staleness_pass": true
+  }
+}

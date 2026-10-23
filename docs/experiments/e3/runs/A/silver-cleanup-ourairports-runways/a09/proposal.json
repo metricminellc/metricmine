@@ -1,0 +1,280 @@
+{
+  "target_table": "silver_runways",
+  "columns": [
+    {
+      "source_column": "id",
+      "action": "rename_and_cast",
+      "target_name": "runway_id",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate 0.0 and distinct_count 10760 equal row_count 10760, with numeric-string samples like '232758'-'232770', so this is cast from VARCHAR to INTEGER as the publisher's internal runway identifier."
+    },
+    {
+      "source_column": "airport_ref",
+      "action": "rename_and_cast",
+      "target_name": "airport_id",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate 0.0 with numeric-string samples like '10309','10366','1058', cast from VARCHAR to INTEGER as the internal integer key of the airport per operator context."
+    },
+    {
+      "source_column": "airport_ident",
+      "action": "keep",
+      "target_name": "airport_ident",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate 0.0, distinct_count 7591, samples like '03N','07FA' are the external key matching the airports table's ident, kept as VARCHAR."
+    },
+    {
+      "source_column": "length_ft",
+      "action": "rename",
+      "target_name": "length_feet",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(38,9)",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "null_count 86 (null_rate 0.008), distinct_count 3775, min 0.0 max 16798.0; renamed to spell out the feet unit per naming convention while retaining nulls."
+    },
+    {
+      "source_column": "width_ft",
+      "action": "rename",
+      "target_name": "width_feet",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(38,9)",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "null_count 888 (null_rate 0.083), distinct_count 204, min 1.0 max 7000.0; renamed to spell out the feet unit, retained nullable."
+    },
+    {
+      "source_column": "surface",
+      "action": "rename",
+      "target_name": "surface_code",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "null_count 247 (null_rate 0.023), distinct_count 239 with samples like 'ASP','ASP-G','ASP/CONC'; renamed to the _code convention since this is a non-fixed code list per operator context."
+    },
+    {
+      "source_column": "lighted",
+      "action": "rename_and_cast",
+      "target_name": "is_lighted",
+      "logical_type": "boolean",
+      "physical_type": "BOOLEAN",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate 0.0 and distinct_values are exactly [0.0, 1.0], a clear boolean flag for night lighting, renamed with the is_ prefix and cast to BOOLEAN."
+    },
+    {
+      "source_column": "closed",
+      "action": "rename_and_cast",
+      "target_name": "is_closed",
+      "logical_type": "boolean",
+      "physical_type": "BOOLEAN",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate 0.0 and distinct_values are exactly [0.0, 1.0], a clear boolean flag for closure status, renamed with the is_ prefix and cast to BOOLEAN."
+    },
+    {
+      "source_column": "le_ident",
+      "action": "rename",
+      "target_name": "low_end_ident",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "null_count 11 (null_rate 0.001), distinct_count 199, samples include free-form values like '-12','.','00' so kept as string; renamed to spell out the le_ abbreviation as low_end_."
+    },
+    {
+      "source_column": "le_latitude_deg",
+      "action": "rename",
+      "target_name": "low_end_latitude_degrees",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(38,9)",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "null_count 2377 (null_rate 0.221), distinct_count 8333, min -62.187801 max 82.512802; renamed to spell out le_ and deg as low_end_ and degrees."
+    },
+    {
+      "source_column": "le_longitude_deg",
+      "action": "rename",
+      "target_name": "low_end_longitude_degrees",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(38,9)",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "null_count 2381 (null_rate 0.221), distinct_count 8290, min -179.881256 max 179.338837; renamed per unit/end naming convention."
+    },
+    {
+      "source_column": "le_elevation_ft",
+      "action": "rename",
+      "target_name": "low_end_elevation_feet",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(38,9)",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "null_count 2973 (null_rate 0.276), distinct_count 2648, min -1246.0 max 13202.0; renamed to spell out le_ and ft as low_end_ and feet."
+    },
+    {
+      "source_column": "le_heading_degt",
+      "action": "rename",
+      "target_name": "low_end_heading_true_degrees",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(38,9)",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "null_count 2457 (null_rate 0.228), distinct_count 1458, min 0.0 max 360.0; renamed to spell out the true-heading-in-degrees abbreviation degt."
+    },
+    {
+      "source_column": "le_displaced_threshold_ft",
+      "action": "rename",
+      "target_name": "low_end_displaced_threshold_feet",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(38,9)",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "null_count 9514 (null_rate 0.884) indicates most runways lack a displaced threshold on this end; distinct_count 568, min 1.0 max 4250.0; retained as sparsely populated nullable."
+    },
+    {
+      "source_column": "he_ident",
+      "action": "rename",
+      "target_name": "high_end_ident",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "null_count 53 (null_rate 0.005), distinct_count 177, samples include '-','.','00' so kept as string; renamed to spell out he_ as high_end_."
+    },
+    {
+      "source_column": "he_latitude_deg",
+      "action": "rename",
+      "target_name": "high_end_latitude_degrees",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(38,9)",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "null_count 2391 (null_rate 0.222), distinct_count 8319, min -62.193901 max 82.522797; renamed per unit/end naming convention."
+    },
+    {
+      "source_column": "he_longitude_deg",
+      "action": "rename",
+      "target_name": "high_end_longitude_degrees",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(38,9)",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "null_count 2391 (null_rate 0.222), distinct_count 8265, min -179.873184 max 179.343002; renamed per unit/end naming convention."
+    },
+    {
+      "source_column": "he_elevation_ft",
+      "action": "rename",
+      "target_name": "high_end_elevation_feet",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(38,9)",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "null_count 2972 (null_rate 0.276), distinct_count 2668, min -1210.0 max 13314.0; renamed to spell out he_ and ft as high_end_ and feet."
+    },
+    {
+      "source_column": "he_heading_degt",
+      "action": "rename",
+      "target_name": "high_end_heading_true_degrees",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(38,9)",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "null_count 2444 (null_rate 0.227), distinct_count 1457, min 0.0 max 362.0; renamed to spell out the degt abbreviation."
+    },
+    {
+      "source_column": "he_displaced_threshold_ft",
+      "action": "rename",
+      "target_name": "high_end_displaced_threshold_feet",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(38,9)",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "null_count 9683 (null_rate 0.900) indicates nearly all runways lack a displaced threshold on this end; distinct_count 533, min 10.0 max 4790.0; retained as sparsely populated nullable."
+    },
+    {
+      "source_column": "_airbyte_raw_id",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata true; a capture-tool row identifier, dropped as pipeline metadata."
+    },
+    {
+      "source_column": "_airbyte_extracted_at",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata true; a capture-tool extraction timestamp, dropped as pipeline metadata."
+    },
+    {
+      "source_column": "_airbyte_meta",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "JSON",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata true; distinct_values is a constant '{}' across all rows, dropped as pipeline metadata."
+    }
+  ],
+  "dedupe_strategy": "none",
+  "dedupe_keys": [],
+  "grain_keys": [
+    "runway_id"
+  ],
+  "decisions": [
+    {
+      "key": "decisionGrain",
+      "value": "runway-id-primary-key",
+      "rationale": "distinct_count 10760 on id equals dataset row_count 10760 with null_rate 0.0, so runway_id (cast from id) uniquely identifies each row and is declared the grain."
+    },
+    {
+      "key": "decisionDuplicateRows",
+      "value": "no-duplicates-found",
+      "rationale": "duplicate_row_rate is 0.0 across row_count 10760, so no exact-duplicate handling is required."
+    },
+    {
+      "key": "decisionDroppedMetadata",
+      "value": "excluded-as-capture-artifacts",
+      "rationale": "_airbyte_raw_id, _airbyte_extracted_at, and _airbyte_meta are all flagged is_airbyte_metadata true and carry no business meaning, so they are dropped."
+    },
+    {
+      "key": "decisionBooleanFlags",
+      "value": "cast-to-boolean",
+      "rationale": "lighted and closed each have null_rate 0.0 and distinct_values exactly [0.0, 1.0]; both are cast to BOOLEAN and renamed is_lighted/is_closed per the is_ naming convention."
+    },
+    {
+      "key": "decisionSurfaceCode",
+      "value": "renamed-surface-code",
+      "rationale": "surface has 239 distinct values (e.g. 'ASP','ASP-G','ASP/CONC') and is documented as a non-fixed code list, so it is renamed surface_code per the operator's code-naming convention without enumeration."
+    },
+    {
+      "key": "decisionSparseDisplacedThreshold",
+      "value": "retained-nullable-sparse",
+      "rationale": "low_end_displaced_threshold_feet (null_rate 0.884) and high_end_displaced_threshold_feet (null_rate 0.900) are highly sparse but retained nullable since most runway ends simply lack a displaced threshold."
+    },
+    {
+      "key": "decisionUnitAndEndRenames",
+      "value": "spelled-out-units-and-ends",
+      "rationale": "Per operator naming conventions, le_/he_ prefixes and ft/deg/degt unit suffixes were spelled out to low_end_/high_end_ and feet/degrees/true_degrees across the runway-end geometry columns."
+    }
+  ],
+  "purpose": "This table provides one cleaned row per runway from OurAirports, capturing runway identity, physical dimensions, surface type, lighting and closure status, and the low-end and high-end geometry of each runway, feeding runway- and airport-level analysis when joined to the airports table.",
+  "usage": "Consumers should treat runway_id as the unique key, join to the airports table via airport_id or airport_ident, and expect frequent nulls on the low-end/high-end latitude, longitude, elevation, and heading columns (roughly 22%-28% null) and on the displaced-threshold columns (88%-90% null); do not assume these are populated, and filter or coalesce explicitly where completeness matters.",
+  "limitations": "Cleanup did not resolve the high null rates on low_end/high_end latitude, longitude, elevation, and heading (about 22%-28%) or on displaced-threshold columns (88%-90%); surface_code remains an open, non-enumerated code list per the publisher's own documentation and was not validated against a fixed vocabulary; length_feet and width_feet keep their source DECIMAL(38,9) precision rather than being narrowed to integer despite integral sample values."
+}

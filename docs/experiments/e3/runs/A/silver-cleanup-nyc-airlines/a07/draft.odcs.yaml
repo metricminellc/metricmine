@@ -1,0 +1,92 @@
+# Draft proposed by silver-cleanup-proposer v0.1.0 at 2026-10-23T15:27:30.765822+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_airlines
+name: Silver airlines
+version: 1.0.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: 'This table is the carrier reference lookup for the nycflights13-derived warehouse:
+    one row per airline carrier code with its full legal name, feeding joins from flight-level
+    fact tables that record only the two-letter carrier code.'
+  usage: Join downstream flight tables to this table on carrier_code to resolve a human-readable
+    carrier_name; both columns are required and non-null so no null-handling logic is needed
+    by consumers.
+  limitations: The table is a small static reference set (16 rows, no duplicates, no nulls)
+    limited to carriers that flew from New York City airports in 2013 per the source package's
+    scope; it does not cover carriers added or renamed after that snapshot, and all pipeline-capture
+    columns (raw id, extraction timestamp, meta) were dropped as non-business artifacts.
+schema:
+- name: silver_airlines
+  physicalName: silver_airlines
+  logicalType: object
+  physicalType: table
+  description: 'This table is the carrier reference lookup for the nycflights13-derived warehouse:
+    one row per airline carrier code with its full legal name, feeding joins from flight-level
+    fact tables that record only the two-letter carrier code.'
+  properties:
+  - name: carrier_code
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: null_rate is 0.0 across 16 rows with 16 distinct two-letter values (e.g.
+      9E, AA, DL, UA), so this is the carrier's code and is renamed per the operator's _code
+      convention.
+  - name: carrier_name
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: null_rate is 0.0 with 16 distinct full carrier names (e.g. Delta Air Lines
+      Inc., United Air Lines Inc.), renamed from the generic 'name' to spell out its meaning
+      per operator convention.
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (carrier_code) combinations'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT carrier_code
+        FROM silver.silver_airlines
+        GROUP BY carrier_code
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: silver-cleanup-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.1.0
+- property: modelId
+  value: claude-sonnet-5
+- property: profileHash
+  value: sha256:563ce524575653bb56c6486fca096627efd990b3d17b0b48912886100b1cda22
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: cleanup
+- property: decisionGrain
+  value: carrier-code-as-grain
+- property: decisionExactDuplicates
+  value: no-duplicates-found
+- property: decisionDroppedMetadata
+  value: excluded-as-capture-artifacts
+- property: decisionCarrierCodeRename
+  value: renamed-per-naming-convention
