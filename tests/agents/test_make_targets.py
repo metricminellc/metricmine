@@ -193,3 +193,40 @@ def test_propose_queue_is_one_capped_driver_invocation() -> None:
     assert '--max "$(MAX)"' in line
     assert '--intent "$(INTENT)"' in line
     assert "$(MODEL_FLAG)" in line  # the D-34 per-run override
+
+
+def test_every_proposer_target_carries_the_context_flag() -> None:
+    """E3a (experiment branch; docs/experiments/e3/KEY.md): the context
+    channel reaches every stance through the same make variables, as
+    the model override does, and the batch driver takes the one-line
+    form. Nothing else about the proposer lines changes."""
+    targets = _parse()
+    for name in ("propose-silver", "propose-mapping", "propose-describe", "propose-amend"):
+        _, recipe = targets[name]
+        assert len(recipe) == 1 and "$(CONTEXT_FLAG)" in recipe[0], name
+    _, recipe = targets["propose-queue"]
+    assert '$(if $(CONTEXT),--context "$(CONTEXT)",)' in recipe[0]
+
+
+def test_the_e3_targets_are_keyless_module_calls_and_the_eval_lane_takes_the_arm_flags() -> None:
+    """The dry path, the leakage counter, and the scorer call nothing
+    live; the live lane gains ARM, REPEATS, and RERUN_TECHNICAL through
+    one E3_FLAGS variable and keeps the D-34 override."""
+    targets = _parse()
+    expected = {
+        "e3-dry": "uv run python -m metricmine.agents eval $(MODEL_FLAG) $(E3_FLAGS) --dry-run",
+        "e3-leakage": "uv run python -m metricmine.agents e3-leakage",
+        "e3-score": "uv run python -m metricmine.agents e3-score",
+    }
+    for name, line in expected.items():
+        prerequisites, recipe = targets[name]
+        assert prerequisites == [], name
+        assert recipe == [line], name
+        assert "ANTHROPIC" not in line
+    _, recipe = targets["eval-agents"]
+    assert recipe == ["uv run python -m metricmine.agents eval $(MODEL_FLAG) $(E3_FLAGS)"]
+    text = MAKEFILE.read_text(encoding="utf-8")
+    assert (
+        "E3_FLAGS := $(if $(ARM),--arm $(ARM),)$(if $(REPEATS), --repeats $(REPEATS),)"
+        "$(if $(RERUN_TECHNICAL), --rerun-technical,)$(if $(CONTINUE_LOST), --continue-lost $(CONTINUE_LOST),)"
+    ) in text
