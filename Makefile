@@ -80,6 +80,13 @@ demo-fetch:
 MODEL ?=
 MODEL_FLAG := $(if $(MODEL),--model $(MODEL),)
 
+# E3 (experiment branch; docs/experiments/e3/KEY.md): CONTEXT binds the
+# operator's context verbatim to any stance as one more governed input;
+# CONTEXT_FILE reads it from a committed file and records the path.
+CONTEXT ?=
+CONTEXT_FILE ?=
+CONTEXT_FLAG := $(if $(CONTEXT),--context "$(CONTEXT)",)$(if $(CONTEXT_FILE),--context-file "$(CONTEXT_FILE)",)
+
 # The multi-source selectors (D-41): SOURCE picks the bronze table the
 # cleanup stance profiles (default: the configured retail table), TABLE
 # picks the silver table the propose stance profiles, TARGET names the
@@ -95,11 +102,11 @@ MAPPING_TABLE_FLAG = $(if $(TABLE),--table $(TABLE),)
 
 .PHONY: propose-silver
 propose-silver:
-	uv run python -m metricmine.agents propose silver $(SOURCE_FLAG) $(TARGET_FLAG) $(ORACLE_FLAG) $(MODEL_FLAG)
+	uv run python -m metricmine.agents propose silver $(SOURCE_FLAG) $(TARGET_FLAG) $(ORACLE_FLAG) $(MODEL_FLAG) $(CONTEXT_FLAG)
 
 .PHONY: propose-mapping
 propose-mapping:
-	uv run python -m metricmine.agents propose mapping $(MAPPING_TABLE_FLAG) $(TARGET_FLAG) $(ORACLE_FLAG) $(MODEL_FLAG)
+	uv run python -m metricmine.agents propose mapping $(MAPPING_TABLE_FLAG) $(TARGET_FLAG) $(ORACLE_FLAG) $(MODEL_FLAG) $(CONTEXT_FLAG)
 
 # The keyless replay (D-24; docs/demo.md path B in one command): land the
 # committed sample into bronze, build the contracted models, export the
@@ -133,7 +140,7 @@ ORACLE_FLAG := $(if $(ORACLE),--oracle $(ORACLE),)
 
 .PHONY: propose-describe
 propose-describe:
-	uv run python -m metricmine.agents propose describe --table "$(TABLE)" $(MODEL_FLAG) $(ORACLE_FLAG)
+	uv run python -m metricmine.agents propose describe --table "$(TABLE)" $(MODEL_FLAG) $(ORACLE_FLAG) $(CONTEXT_FLAG)
 
 # The amend stance (D-35): evolve a COMMITTED contract by a declared change
 # set applied as a patch; the diff is the declared set by construction.
@@ -145,7 +152,7 @@ RELAX_FLAG := $(if $(ALLOW_RELAXATION),--allow-relaxation,)
 
 .PHONY: propose-amend
 propose-amend:
-	uv run python -m metricmine.agents propose amend --table "$(TABLE)" --intent "$(INTENT)" $(MODEL_FLAG) $(RELAX_FLAG)
+	uv run python -m metricmine.agents propose amend --table "$(TABLE)" --intent "$(INTENT)" $(MODEL_FLAG) $(RELAX_FLAG) $(CONTEXT_FLAG)
 
 # The batch driver (D-35): walk the derived queue's adopt and amend items in
 # plan order, one structured call per item, stopping at the explicit MAX cap or
@@ -154,7 +161,7 @@ propose-amend:
 # their exact per-item command. Deterministic sequencing, never an agent.
 .PHONY: propose-queue
 propose-queue:
-	uv run python -m metricmine.agents propose-queue --max "$(MAX)" --intent "$(INTENT)" $(MODEL_FLAG)
+	uv run python -m metricmine.agents propose-queue --max "$(MAX)" --intent "$(INTENT)" $(MODEL_FLAG) $(if $(CONTEXT),--context "$(CONTEXT)",)
 
 # Deterministic adoption tools (D-35): never agents, keyless by construction.
 # The scan derives the review queue from the tree and the read-only warehouse
@@ -199,6 +206,27 @@ doc-verify:
 # The live eval lane over the golden-profile set (D-25): first-attempt lint
 # and groundedness pass rates with token and cost actuals; honors the D-34
 # override the same way. Needs the key; never runs in CI.
+ARM ?=
+REPEATS ?=
+RERUN_TECHNICAL ?=
+CONTINUE_LOST ?=
+E3_FLAGS := $(if $(ARM),--arm $(ARM),)$(if $(REPEATS), --repeats $(REPEATS),)$(if $(RERUN_TECHNICAL), --rerun-technical,)$(if $(CONTINUE_LOST), --continue-lost $(CONTINUE_LOST),)
+
 .PHONY: eval-agents
 eval-agents:
-	uv run python -m metricmine.agents eval $(MODEL_FLAG)
+	uv run python -m metricmine.agents eval $(MODEL_FLAG) $(E3_FLAGS)
+
+# E3 (experiment branch; docs/experiments/e3/KEY.md): the dry path prints
+# what each fixture's call would carry with no call; the leakage counter
+# and the scorer read committed files only. All three are keyless.
+.PHONY: e3-dry
+e3-dry:
+	uv run python -m metricmine.agents eval $(MODEL_FLAG) $(E3_FLAGS) --dry-run
+
+.PHONY: e3-leakage
+e3-leakage:
+	uv run python -m metricmine.agents e3-leakage
+
+.PHONY: e3-score
+e3-score:
+	uv run python -m metricmine.agents e3-score
