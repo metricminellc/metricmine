@@ -1,0 +1,80 @@
+{
+  "target_table": "silver_nyc_airlines",
+  "columns": [
+    {
+      "source_column": "carrier",
+      "action": "keep",
+      "target_name": "carrier",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 with null_count 0 and distinct_count 16 equal to the row_count of 16, and the operator context confirms carrier is the two-letter carrier abbreviation, so each value plausibly identifies one row."
+    },
+    {
+      "source_column": "name",
+      "action": "keep",
+      "target_name": "name",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 with null_count 0 and distinct_count 16 matching carrier's distinct_count, and the operator context confirms name is the carrier's full name such as 'Delta Air Lines Inc.' and 'United Air Lines Inc.'."
+    },
+    {
+      "source_column": "_airbyte_raw_id",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "is_airbyte_metadata is true for this column, marking it a capture-tool artifact (sample uuid 06a98b09-9d5f-7d1f-8000-66033e8441d3) rather than a business column."
+    },
+    {
+      "source_column": "_airbyte_extracted_at",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "is_airbyte_metadata is true with a single constant value 2026-09-02T23:26:17 across all 16 rows (distinct_count 1), confirming it is a pipeline capture timestamp, not business data."
+    },
+    {
+      "source_column": "_airbyte_meta",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "JSON",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "is_airbyte_metadata is true and the only observed value is the empty JSON object '{}' (distinct_count 1), confirming it carries no business information."
+    }
+  ],
+  "dedupe_strategy": "none",
+  "dedupe_keys": [],
+  "grain_keys": [
+    "carrier"
+  ],
+  "decisions": [
+    {
+      "key": "decisionGrain",
+      "value": "carrier-is-grain",
+      "rationale": "carrier has distinct_count 16 equal to dataset.row_count of 16 with null_rate 0.0, and the operator context confirms carrier is the two-letter carrier code, so carrier alone plausibly identifies one row per airline."
+    },
+    {
+      "key": "decisionExactDuplicates",
+      "value": "no-duplicates-found",
+      "rationale": "dataset.duplicate_row_rate is 0.0 across dataset.row_count 16, so no exact duplicate rows exist in bronze and no dedupe step is proposed."
+    },
+    {
+      "key": "decisionDroppedMetadata",
+      "value": "dropped-airbyte-columns",
+      "rationale": "_airbyte_raw_id, _airbyte_extracted_at, and _airbyte_meta are all flagged is_airbyte_metadata: true in the profile and are excluded as capture-tool artifacts, not business columns."
+    }
+  ],
+  "purpose": "This table is the cleaned carrier lookup for the nycflights13 dataset, mapping the two-letter carrier code used across NYC 2013 flight records to the carrier's full legal name; it feeds joins against any silver flights table keyed on carrier.",
+  "usage": "Join on carrier to resolve a flight record's airline to its full name; carrier is the declared grain so consumers can expect at most one name per carrier code with no deduplication needed given the zero observed duplicate rate.",
+  "limitations": "The profile shows a small, fully populated table (16 rows, zero nulls, zero duplicate rows) so no null-handling or dedupe decisions were required; the only exclusions are the three Airbyte capture-metadata columns, which carry no business content."
+}

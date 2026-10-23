@@ -1,0 +1,72 @@
+{
+  "agent": {
+    "name": "silver-cleanup-proposer",
+    "version": "0.1.0"
+  },
+  "api_error": null,
+  "context": "This source is the weather table of the nycflights13 R data package: hourly ASOS observations at the three New York City airports (EWR, JFK, LGA), downloaded from the Iowa Environmental Mesonet, here the January to June 2013 window. As the package documents the columns: origin is the weather station, named to match the flights table's origin column; year, month, day, and hour are the local time of the recording; temp and dewp are temperature and dewpoint in degrees Fahrenheit; humid is relative humidity in percent; wind_dir is in degrees, and wind_speed and wind_gust are in mph; precip is in inches; pressure is sea-level pressure in millibars; visib is visibility in miles; time_hour is the date and hour of the recording, here as a UTC instant. The publisher writes NA where a value is missing.\n",
+  "context_path": "docs/experiments/e3/contexts/docs-only/silver-cleanup-nyc-weather.md",
+  "cost_usd_estimate": 0.099548,
+  "created_at": "2026-10-23T17:41:42.972555+00:00",
+  "disposition": "draft_written",
+  "draft_path": "proposals/silver-cleanup-proposer/20261023T174142972555Z_1dee708b/draft.odcs.yaml",
+  "inputs": [
+    {
+      "content_hash": "sha256:1dee708bb140addbdb172a3727f79d85a2d7a611bd9c191d56d3e433a8c5777b",
+      "kind": "profile_artifact",
+      "path": "profiles/bronze.nyc_weather/v0001.json",
+      "schema_version": "1.0.0"
+    },
+    {
+      "content_hash": "sha256:6e48de7d4b1a63efa3b0af832add50f42b12a6b37f0e27ea79c03c4aace3f61c",
+      "kind": "operator_context",
+      "path": "docs/experiments/e3/contexts/docs-only/silver-cleanup-nyc-weather.md",
+      "schema_version": ""
+    }
+  ],
+  "intent": null,
+  "model_id": "claude-sonnet-5",
+  "model_source": "default",
+  "profile_hash": "sha256:1dee708bb140addbdb172a3727f79d85a2d7a611bd9c191d56d3e433a8c5777b",
+  "profile_path": "profiles/bronze.nyc_weather/v0001.json",
+  "profile_schema_version": "1.0.0",
+  "prompt_path": "src/metricmine/agents/prompts/e3/silver_cleanup.md",
+  "prompt_version": "1.1.0",
+  "rates": {
+    "input_per_mtok": 2.0,
+    "output_per_mtok": 10.0
+  },
+  "request_params": {
+    "effort": "high",
+    "max_tokens": 16384
+  },
+  "response_id": "msg_011CgKae7PGViEgasYPbAtjc",
+  "sdk_version": "1.0.0",
+  "skeleton": false,
+  "stance": "cleanup",
+  "stop_reason": "end_turn",
+  "usage": {
+    "input_tokens": 8579,
+    "output_tokens": 8239
+  },
+  "validation": {
+    "attempt_log": [
+      {
+        "completeness_pass": true,
+        "errors": [],
+        "groundedness_pass": true,
+        "lint_pass": true,
+        "schema_pass": true,
+        "staleness_pass": true,
+        "stop_reason": "end_turn"
+      }
+    ],
+    "attempts": 1,
+    "completeness_pass": true,
+    "errors": [],
+    "groundedness_pass": true,
+    "lint_pass": true,
+    "schema_pass": true,
+    "staleness_pass": true
+  }
+}

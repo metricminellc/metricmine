@@ -1,0 +1,80 @@
+{
+  "target_table": "silver_nyc_airlines",
+  "columns": [
+    {
+      "source_column": "carrier",
+      "action": "keep",
+      "target_name": "carrier",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate 0.0 with 16 distinct values matching row_count 16 (e.g. '9E','AA','DL'), consistent with the operator context's two-letter carrier abbreviation used as the BTS carrier lookup key."
+    },
+    {
+      "source_column": "name",
+      "action": "keep",
+      "target_name": "name",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate 0.0 with 16 distinct values (e.g. 'Delta Air Lines Inc.', 'JetBlue Airways'), matching the operator context's description of the carrier's full name."
+    },
+    {
+      "source_column": "_airbyte_raw_id",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "is_airbyte_metadata is true, so this capture-tool identifier is dropped as a non-business column per the airbyte metadata rule."
+    },
+    {
+      "source_column": "_airbyte_extracted_at",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "is_airbyte_metadata is true with a single constant value '2026-09-02T23:26:17' across all rows, confirming it is a capture-tool timestamp dropped per the airbyte metadata rule."
+    },
+    {
+      "source_column": "_airbyte_meta",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "JSON",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "is_airbyte_metadata is true with a constant value '{}' across all rows, confirming it is a capture-tool artifact dropped per the airbyte metadata rule."
+    }
+  ],
+  "dedupe_strategy": "none",
+  "dedupe_keys": [],
+  "grain_keys": [
+    "carrier"
+  ],
+  "decisions": [
+    {
+      "key": "decisionExactDuplicates",
+      "value": "no-dedupe-needed",
+      "rationale": "dataset.duplicate_row_rate is 0.0 across row_count 16, so no exact duplicate rows exist in bronze and no dedupe strategy is required."
+    },
+    {
+      "key": "decisionGrain",
+      "value": "carrier-is-grain",
+      "rationale": "carrier has distinct_count 16 equal to row_count 16 with null_rate 0.0, so it uniquely identifies each row and is a natural, stable business key per the operator context describing it as the carrier abbreviation."
+    },
+    {
+      "key": "decisionDroppedMetadata",
+      "value": "excluded-as-capture-artifacts",
+      "rationale": "the three columns _airbyte_raw_id, _airbyte_extracted_at, and _airbyte_meta all carry is_airbyte_metadata true and are capture-tool fields, not business data, so they are dropped."
+    }
+  ],
+  "purpose": "This table is the cleaned carrier lookup from the nycflights13 airlines source, listing the sixteen Bureau of Transportation Statistics carriers that flew out of New York City in 2013, and it feeds joins to flight-level fact tables keyed on the carrier abbreviation.",
+  "usage": "Consumers should join on carrier, the declared grain, to enrich flight records with the full carrier name; the table is small (16 rows), fully populated, and requires no filtering for nulls or duplicates.",
+  "limitations": "The cleanup excluded all three Airbyte capture-tool metadata columns (_airbyte_raw_id, _airbyte_extracted_at, _airbyte_meta) as non-business artifacts; no duplicate rows or null values were present (duplicate_row_rate 0.0, null_rate 0.0 on both retained columns) so no further remediation was needed."
+}

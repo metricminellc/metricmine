@@ -1,0 +1,80 @@
+{
+  "target_table": "silver_nyc_airlines",
+  "columns": [
+    {
+      "source_column": "carrier",
+      "action": "keep",
+      "target_name": "carrier",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 with null_count 0 and distinct_count 16 equal to row_count 16; operator context confirms this is the two-letter carrier abbreviation (samples: 9E, AA, AS, DL, UA, WN), so it is retained as-is and required."
+    },
+    {
+      "source_column": "name",
+      "action": "keep",
+      "target_name": "name",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 with null_count 0 and distinct_count 16; distinct_values show full carrier names (e.g. 'Delta Air Lines Inc.', 'Southwest Airlines Co.') matching the operator context's description of the carrier's full name, so it is retained as required text."
+    },
+    {
+      "source_column": "_airbyte_raw_id",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "is_airbyte_metadata is true; this is a capture-tool identifier (sample UUIDs like 06a98b09-9d5f-7d1f-8000-66033e8441d3) with no business meaning, so it is dropped."
+    },
+    {
+      "source_column": "_airbyte_extracted_at",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "is_airbyte_metadata is true and distinct_count is 1 (constant value 2026-09-02T23:26:17 across all 16 rows), confirming this is a pipeline extraction timestamp with no business value, so it is dropped."
+    },
+    {
+      "source_column": "_airbyte_meta",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "JSON",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "is_airbyte_metadata is true and the single distinct_value is the empty object '{}' across all rows, confirming it is an unused capture-tool artifact, so it is dropped."
+    }
+  ],
+  "dedupe_strategy": "none",
+  "dedupe_keys": [],
+  "grain_keys": [
+    "carrier"
+  ],
+  "decisions": [
+    {
+      "key": "decisionGrain",
+      "value": "carrier-as-grain",
+      "rationale": "carrier has distinct_count 16 equal to dataset.row_count 16 and null_rate 0.0, and operator context confirms it is the two-letter carrier code uniquely identifying each airline, so it is declared the sole grain key."
+    },
+    {
+      "key": "decisionExactDuplicates",
+      "value": "no-dedupe-needed",
+      "rationale": "dataset.duplicate_row_rate is 0.0 against row_count 16, so no exact duplicate rows exist in bronze and no dedupe step is proposed."
+    },
+    {
+      "key": "decisionDropAirbyteMetadata",
+      "value": "excluded-as-capture-artifacts",
+      "rationale": "_airbyte_raw_id, _airbyte_extracted_at, and _airbyte_meta are all flagged is_airbyte_metadata: true and carry no business meaning (constant extraction timestamp, empty JSON meta, and internal UUIDs), so all three are dropped from silver."
+    }
+  ],
+  "purpose": "This table is the cleaned carrier lookup for the nycflights13-derived bronze dataset, mapping each two-letter carrier code to its full airline name for the sixteen carriers that flew from New York City in 2013; it is intended to be joined against flight-level fact tables on the carrier code.",
+  "usage": "Consumers should join on carrier to resolve full airline names for flight records; both carrier and name are fully populated (null_rate 0.0) and carrier is unique across all 16 rows, so no null-handling or duplicate-filtering logic is required for this table.",
+  "limitations": "The table is a small static reference (16 rows, duplicate_row_rate 0.0) with no observed data quality issues; however, it only covers carriers that flew from NYC in 2013 and will not include carriers introduced or retired since, so joins against newer flight data may produce unmatched carrier codes."
+}

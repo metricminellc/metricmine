@@ -1,0 +1,80 @@
+{
+  "target_table": "silver_airlines",
+  "columns": [
+    {
+      "source_column": "carrier",
+      "action": "keep",
+      "target_name": "carrier",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 with null_count 0, and distinct_count 16 equals the row_count of 16, matching the two-letter codes in distinct_values such as 9E, AA, DL, UA."
+    },
+    {
+      "source_column": "name",
+      "action": "keep",
+      "target_name": "name",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 with null_count 0, and distinct_count 16 matches the 16 full carrier names listed, e.g. 'Delta Air Lines Inc.' and 'United Air Lines Inc.'."
+    },
+    {
+      "source_column": "_airbyte_raw_id",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Marked is_airbyte_metadata: true; it is a capture-tool UUID column, not a business column, so it is dropped."
+    },
+    {
+      "source_column": "_airbyte_extracted_at",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Marked is_airbyte_metadata: true with a single constant value 2026-09-02T23:26:17 across all rows (distinct_count 1), confirming it is a pipeline timestamp, so it is dropped."
+    },
+    {
+      "source_column": "_airbyte_meta",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "JSON",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Marked is_airbyte_metadata: true with constant value '{}' across all rows (distinct_count 1), so it is dropped as a capture-tool artifact."
+    }
+  ],
+  "dedupe_strategy": "none",
+  "dedupe_keys": [],
+  "grain_keys": [
+    "carrier"
+  ],
+  "decisions": [
+    {
+      "key": "decisionDedupe",
+      "value": "no-duplicates-found",
+      "rationale": "duplicate_row_rate is 0.0 across row_count 16, so no exact-duplicate or clock-drift dedupe logic is applied."
+    },
+    {
+      "key": "decisionGrain",
+      "value": "carrier-is-grain",
+      "rationale": "carrier has null_rate 0.0 and distinct_count 16, exactly matching dataset.row_count of 16, so each carrier code identifies exactly one row; operator context confirms carrier is the two-letter BTS abbreviation."
+    },
+    {
+      "key": "decisionDropMetadata",
+      "value": "excluded-as-capture-artifacts",
+      "rationale": "_airbyte_raw_id, _airbyte_extracted_at, and _airbyte_meta are all marked is_airbyte_metadata: true in the profile and carry no business meaning, so all three are dropped."
+    }
+  ],
+  "purpose": "This table is the cleaned lookup of airline carriers that flew from New York City in 2013, mapping each two-letter carrier code to its full legal name, sourced from the Bureau of Transportation Statistics via the nycflights13 package, feeding downstream joins from flight records to human-readable carrier names.",
+  "usage": "Join on carrier to enrich flight-level records with the carrier's full name; carrier is the declared grain and unique business key, with 16 distinct codes covering all rows and no nulls in either column.",
+  "limitations": "The dataset is static and tiny (16 rows, duplicate_row_rate 0.0), covering only carriers active in the 2013 NYC flights snapshot; three Airbyte capture-metadata columns (_airbyte_raw_id, _airbyte_extracted_at, _airbyte_meta) were dropped as they carried no business content."
+}

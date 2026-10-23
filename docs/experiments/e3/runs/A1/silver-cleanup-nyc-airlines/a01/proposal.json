@@ -1,0 +1,80 @@
+{
+  "target_table": "silver_nyc_airlines",
+  "columns": [
+    {
+      "source_column": "carrier",
+      "action": "keep",
+      "target_name": "carrier",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 across 16 rows and distinct_count is 16, matching row_count 16, so carrier (the two-letter BTS carrier code per operator context) uniquely identifies each row with samples like 9E, AA, DL, UA."
+    },
+    {
+      "source_column": "name",
+      "action": "keep",
+      "target_name": "name",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 with distinct_count 16 matching carrier's cardinality; distinct_values include full legal names such as 'Delta Air Lines Inc.' and 'Southwest Airlines Co.', confirming a one-to-one mapping with carrier."
+    },
+    {
+      "source_column": "_airbyte_raw_id",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata true; it is the capture-tool's internal row identifier (16 distinct UUIDs) and carries no business meaning."
+    },
+    {
+      "source_column": "_airbyte_extracted_at",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata true; distinct_count is 1 with min and max both '2026-09-02T23:26:17', a single ingestion-batch timestamp with no business content."
+    },
+    {
+      "source_column": "_airbyte_meta",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "JSON",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata true; distinct_count is 1 with the sole value '{}', an empty capture-tool metadata blob."
+    }
+  ],
+  "dedupe_strategy": "none",
+  "dedupe_keys": [],
+  "grain_keys": [
+    "carrier"
+  ],
+  "decisions": [
+    {
+      "key": "decisionGrain",
+      "value": "carrier-is-grain",
+      "rationale": "carrier has distinct_count 16 equal to row_count 16 and null_rate 0.0, so it alone identifies each row of this 16-carrier lookup table; name has the same cardinality but carrier matches the operator's stated two-letter code convention and is the natural key."
+    },
+    {
+      "key": "decisionExactDuplicates",
+      "value": "no-dedupe-needed",
+      "rationale": "dataset.duplicate_row_rate is 0.0 across row_count 16, so no exact duplicate rows exist in bronze and no dedupe step is required."
+    },
+    {
+      "key": "decisionDroppedMetadata",
+      "value": "excluded-as-capture-artifacts",
+      "rationale": "_airbyte_raw_id, _airbyte_extracted_at, and _airbyte_meta are all flagged is_airbyte_metadata true and are capture-tool artifacts, not business columns, so all three are dropped."
+    }
+  ],
+  "purpose": "This table is a clean, deduplication-free lookup of the sixteen airline carriers that flew out of New York City airports in 2013, mapping each two-letter BTS carrier code to its full legal carrier name, intended to feed joins against flight-level fact tables keyed on carrier code.",
+  "usage": "Join downstream flight records to this table on carrier to resolve a human-readable airline name; both carrier and name are fully populated (null_rate 0.0) and unique across all 16 rows, so no null-handling or deduplication logic is required by consumers.",
+  "limitations": "The table covers only the 16 carriers observed in the 2013 NYC-origin flights dataset and will not resolve codes for carriers outside that set; all Airbyte capture metadata (raw id, extraction timestamp, meta blob) was dropped as non-business data and is unavailable for lineage debugging downstream."
+}

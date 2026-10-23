@@ -1,0 +1,231 @@
+{
+  "target_table": "silver_nyc_weather",
+  "columns": [
+    {
+      "source_column": "origin",
+      "action": "keep",
+      "target_name": "origin",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate 0.0 across 13014 rows; distinct_values are exactly the three NYC airport codes (EWR, JFK, LGA) that the operator context confirms match the flights table's origin column."
+    },
+    {
+      "source_column": "year",
+      "action": "cast",
+      "target_name": "year",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate 0.0; distinct_count 1 with the single value 2013.0, an integral year landed as DECIMAL(38,9), safe to cast to INTEGER."
+    },
+    {
+      "source_column": "month",
+      "action": "cast",
+      "target_name": "month",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate 0.0; distinct_values 1.0 through 6.0 are all integral, safe cast from DECIMAL(38,9) to INTEGER."
+    },
+    {
+      "source_column": "day",
+      "action": "cast",
+      "target_name": "day",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate 0.0; min 1.0 max 31.0 with integral sample_values (1.0-10.0 shown), safe cast to INTEGER."
+    },
+    {
+      "source_column": "hour",
+      "action": "cast",
+      "target_name": "hour",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate 0.0; min 0.0 max 23.0 with integral sample_values, safe cast to INTEGER representing local hour of day."
+    },
+    {
+      "source_column": "temp",
+      "action": "cast",
+      "target_name": "temp",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(5,2)",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate 0.0; sample_values range 10.94-93.92 degrees Fahrenheit with two decimal places, so DECIMAL(38,9) was reduced to DECIMAL(5,2)."
+    },
+    {
+      "source_column": "dewp",
+      "action": "cast",
+      "target_name": "dewp",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(5,2)",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate 0.0; min -9.94 max 73.94 with two-decimal sample_values, so DECIMAL(38,9) was reduced to DECIMAL(5,2)."
+    },
+    {
+      "source_column": "humid",
+      "action": "cast",
+      "target_name": "humid",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(5,2)",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate 0.0; min 12.74 max 100.0 relative humidity percent per operator context, two-decimal samples, reduced DECIMAL(38,9) to DECIMAL(5,2)."
+    },
+    {
+      "source_column": "wind_dir",
+      "action": "cast",
+      "target_name": "wind_dir",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(5,1)",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "null_rate 0.016828 (219 of 13014 nulls); sample_values are multiples of 10 degrees up to max 360.0, reduced DECIMAL(38,9) to DECIMAL(5,1), nulls retained as missing wind-direction readings."
+    },
+    {
+      "source_column": "wind_speed",
+      "action": "cast",
+      "target_name": "wind_speed",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(10,5)",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "null_rate 0.000154 (2 of 13014 nulls); sample_values carry five decimal places up to max 1048.36058 mph, reduced to DECIMAL(10,5), nulls retained."
+    },
+    {
+      "source_column": "wind_gust",
+      "action": "cast",
+      "target_name": "wind_gust",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(10,5)",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "null_rate 0.745505 (9702 of 13014 nulls), sparsely populated; sample_values show five decimal places up to max 62.14212 mph, reduced to DECIMAL(10,5), nulls retained rather than imputed."
+    },
+    {
+      "source_column": "precip",
+      "action": "cast",
+      "target_name": "precip",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(4,2)",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate 0.0; sample_values 0.0-0.09 two-decimal inches up to max 1.06, reduced DECIMAL(38,9) to DECIMAL(4,2)."
+    },
+    {
+      "source_column": "pressure",
+      "action": "cast",
+      "target_name": "pressure",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(6,1)",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "null_rate 0.114953 (1496 of 13014 nulls); sample_values are one-decimal millibars from 983.8 up to max 1038.4, reduced to DECIMAL(6,1), nulls retained."
+    },
+    {
+      "source_column": "visib",
+      "action": "cast",
+      "target_name": "visib",
+      "logical_type": "number",
+      "physical_type": "DECIMAL(4,2)",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate 0.0; distinct_values are 20 discrete two-decimal values from 0.0 to 10.0 miles, reduced DECIMAL(38,9) to DECIMAL(4,2)."
+    },
+    {
+      "source_column": "time_hour",
+      "action": "cast",
+      "target_name": "time_hour",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate 0.0; sample_values are consistently ISO8601 UTC instants with Z suffix (e.g. 2013-01-01T06:00:00Z), safe cast from VARCHAR to TIMESTAMP."
+    },
+    {
+      "source_column": "_airbyte_raw_id",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata true, a capture-tool identifier with distinct_count 13014 equal to row_count and no business meaning."
+    },
+    {
+      "source_column": "_airbyte_extracted_at",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata true; records only the capture timestamp of the ingestion run, not business data."
+    },
+    {
+      "source_column": "_airbyte_meta",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "JSON",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata true; distinct_count 1 with constant value {}, a capture-tool artifact carrying no business meaning."
+    }
+  ],
+  "dedupe_strategy": "none",
+  "dedupe_keys": [],
+  "grain_keys": [
+    "origin",
+    "time_hour"
+  ],
+  "decisions": [
+    {
+      "key": "decisionGrain",
+      "value": "origin-time-hour",
+      "rationale": "origin has 3 distinct station codes and time_hour has 4341 distinct UTC hour instants; together they identify one weather reading per station per hour, consistent with row_count 13014 (~3 stations x ~4341 hours)."
+    },
+    {
+      "key": "decisionExactDuplicates",
+      "value": "no-duplicates-found",
+      "rationale": "duplicate_row_rate is 0.0 across row_count 13014, so no exact-duplicate removal is applied."
+    },
+    {
+      "key": "decisionDroppedMetadata",
+      "value": "excluded-as-capture-artifacts",
+      "rationale": "_airbyte_raw_id, _airbyte_extracted_at, and _airbyte_meta are all flagged is_airbyte_metadata true and carry no business meaning."
+    },
+    {
+      "key": "decisionSparseWindGust",
+      "value": "retained-nullable-sparse",
+      "rationale": "wind_gust has null_rate 0.745505 (9702 of 13014 rows); retained as nullable rather than imputed or dropped."
+    },
+    {
+      "key": "decisionCastTimeHour",
+      "value": "cast-to-timestamp",
+      "rationale": "time_hour sample_values are consistently ISO8601 UTC instants (e.g. 2013-01-01T06:00:00Z), supporting a safe cast from VARCHAR to TIMESTAMP."
+    },
+    {
+      "key": "decisionCastDateParts",
+      "value": "cast-decimal-to-integer",
+      "rationale": "year, month, day, and hour landed as DECIMAL(38,9) but all sample and distinct values are integral (e.g. month 1.0-6.0, hour 0.0-23.0), supporting a cast to INTEGER."
+    },
+    {
+      "key": "decisionPrecisionReduction",
+      "value": "reduced-decimal-precision",
+      "rationale": "temp, dewp, humid, wind_dir, wind_speed, wind_gust, precip, pressure, and visib landed as DECIMAL(38,9) but sample_values show at most five decimal places, so precision was reduced to measurement-appropriate DECIMAL types."
+    }
+  ],
+  "purpose": "This table provides cleaned hourly weather observations at the three NYC airports (EWR, JFK, LGA) for January through June 2013, feeding downstream analytics that join weather conditions to flight records by station and time.",
+  "usage": "Consumers should join on origin and time_hour to relate weather to flight records; treat wind_gust, wind_dir, wind_speed, and pressure as nullable and handle missing readings explicitly rather than assuming zero or imputing a value, since bronze used NA for missing observations; numeric fields are typed as measurement-appropriate DECIMAL rather than the bronze DECIMAL(38,9).",
+  "limitations": "wind_gust is missing in 74.6% of rows (9702 of 13014) and pressure is missing in 11.5% (1496 of 13014); these are retained as nulls and not imputed. wind_dir (1.68% null, 219 rows) and wind_speed (0.015% null, 2 rows) are also retained nullable. No exact duplicate rows were found (duplicate_row_rate 0.0 across 13014 rows), so no deduplication was applied, and the dataset covers only January-June 2013 per the operator context."
+}

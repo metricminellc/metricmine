@@ -1,0 +1,90 @@
+# Draft proposed by silver-cleanup-proposer v0.1.0 at 2026-10-23T17:43:33.608154+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_nyc_airlines
+name: Silver nyc airlines
+version: 1.1.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: This table is a static reference lookup of the sixteen airline carriers that flew
+    from New York City airports in 2013, mapping each two-letter carrier code to its full
+    legal carrier name; it feeds joins against flight-level fact tables keyed on carrier code.
+  usage: Join downstream flight tables to this table on the carrier column to resolve human-readable
+    airline names; both carrier and name are fully populated (null_rate 0.0) and carrier is
+    unique, so it is safe to use as a lookup key without additional filtering.
+  limitations: The table is tiny (16 rows) and reflects only the carriers observed in the
+    2013 nycflights13 source extract; it excludes any airbyte capture metadata and does not
+    capture carriers that began or ceased NYC service after that period.
+schema:
+- name: silver_nyc_airlines
+  physicalName: silver_nyc_airlines
+  logicalType: object
+  physicalType: table
+  description: This table is a static reference lookup of the sixteen airline carriers that
+    flew from New York City airports in 2013, mapping each two-letter carrier code to its
+    full legal carrier name; it feeds joins against flight-level fact tables keyed on carrier
+    code.
+  properties:
+  - name: carrier
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: null_rate 0.0 and distinct_count 16 equal to row_count 16, with distinct_values
+      like AA, DL, UA confirming this is the two-letter carrier code per operator context;
+      no nulls across all 16 rows.
+  - name: name
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: null_rate 0.0 with distinct_count 16 matching row_count 16; distinct_values
+      such as 'Delta Air Lines Inc.' and 'United Air Lines Inc.' confirm this is the carrier's
+      full name per operator context.
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (carrier) combinations'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT carrier
+        FROM silver.silver_nyc_airlines
+        GROUP BY carrier
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: silver-cleanup-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.1.0
+- property: modelId
+  value: claude-sonnet-5
+- property: profileHash
+  value: sha256:563ce524575653bb56c6486fca096627efd990b3d17b0b48912886100b1cda22
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: cleanup
+- property: decisionGrain
+  value: carrier-as-grain
+- property: decisionNoDedupe
+  value: no-duplicates-found
+- property: decisionDropAirbyteMetadata
+  value: excluded-as-capture-artifacts

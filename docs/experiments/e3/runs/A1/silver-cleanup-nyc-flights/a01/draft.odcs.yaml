@@ -1,0 +1,220 @@
+# Draft proposed by silver-cleanup-proposer v0.1.0 at 2026-10-23T17:23:39.410875+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_nyc_flights
+name: Silver nyc flights
+version: 1.1.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: silver_nyc_flights cleans the bronze capture of the nycflights13 flights table,
+    covering every January-June 2013 departure from JFK, LGA, and EWR, for downstream analytics
+    on flight punctuality, routing, and carrier performance.
+  usage: Consumers should treat dep_time, sched_dep_time, arr_time, and sched_arr_time as
+    HHMM-encoded integers (not clock times; values like 2400 occur) and parse them explicitly
+    if a true time is needed. Rows with null dep_time, dep_delay, arr_time, arr_delay, or
+    air_time represent flights that never departed or arrived and must be filtered or handled
+    explicitly before computing delay statistics; tailnum may also be null. time_hour is a
+    parsed UTC TIMESTAMP suitable for time-series joins.
+  limitations: Pipeline metadata columns (_airbyte_raw_id, _airbyte_extracted_at, _airbyte_meta)
+    were dropped and carry no business meaning. dep_time and dep_delay are null for 2.9% of
+    rows, arr_time for 3.1%, and arr_delay and air_time for 3.3%, reflecting flights that
+    never departed or arrived; tailnum is null for 0.9% of rows; none of these nulls were
+    imputed. No duplicate rows were found (duplicate_row_rate 0.0 across 166158 rows), so
+    no dedupe logic was applied, and the declared grain (year, month, day, carrier, flight,
+    sched_dep_time) has not been measured against the full warehouse.
+schema:
+- name: silver_nyc_flights
+  physicalName: silver_nyc_flights
+  logicalType: object
+  physicalType: table
+  description: silver_nyc_flights cleans the bronze capture of the nycflights13 flights table,
+    covering every January-June 2013 departure from JFK, LGA, and EWR, for downstream analytics
+    on flight punctuality, routing, and carrier performance.
+  properties:
+  - name: year
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: year lands as DECIMAL(38,9) but has distinct_count 1 with the single value
+      2013.0 and null_rate 0.0, so it is cast to INTEGER as the date-part of the flight.
+  - name: month
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 2
+    description: month has distinct_count 6 with values 1.0 through 6.0 (the January-June
+      window) and null_rate 0.0, integral samples support casting DECIMAL to INTEGER.
+  - name: day
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 3
+    description: day ranges min 1.0 to max 31.0 with null_rate 0.0 and integral sample_values,
+      cast to INTEGER.
+  - name: dep_time
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: dep_time is HHMM-encoded actual departure time (max 2400.0, not a valid clock
+      time, so kept as INTEGER rather than TIME); null_count 4883 (null_rate 0.029388) per
+      operator context reflects flights that never departed, retained as null.
+  - name: sched_dep_time
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 6
+    description: sched_dep_time ranges min 500.0 to max 2359.0 with null_rate 0.0, kept as
+      INTEGER HHMM encoding and used as a grain component since every row has a scheduled
+      departure.
+  - name: dep_delay
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: dep_delay in minutes (min -33.0 max 1301.0) has null_count 4883 (null_rate
+      0.029388), matching dep_time's null pattern for flights that never departed; retained
+      as null.
+  - name: arr_time
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: arr_time is HHMM-encoded actual arrival time (max 2400.0), null_count 5101
+      (null_rate 0.0307) for flights that never arrived, kept INTEGER and nullable.
+  - name: sched_arr_time
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: sched_arr_time ranges min 1.0 to max 2359.0 with null_rate 0.0, cast to INTEGER
+      HHMM encoding.
+  - name: arr_delay
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: arr_delay in minutes (min -86.0 max 1272.0) has null_count 5480 (null_rate
+      0.032981), consistent with missing arrival data; retained as null rather than imputed.
+  - name: carrier
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 4
+    description: carrier has distinct_count 16 two-letter codes (9E, AA, AS, ... YV) with
+      null_rate 0.0, kept as VARCHAR.
+  - name: flight
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 5
+    description: flight ranges min 1.0 to max 8500.0 with distinct_count 2994 and null_rate
+      0.0, cast to INTEGER and used in the grain.
+  - name: tailnum
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: tailnum has distinct_count 3825 alphanumeric codes (e.g. D942DN, N0EGMQ)
+      with null_count 1521 (null_rate 0.009154), retained nullable rather than imputed.
+  - name: origin
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: origin has distinct_count 3 (EWR, JFK, LGA) with null_rate 0.0, the three
+      NYC origin airports per operator context.
+  - name: dest
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: dest has distinct_count 100 airport codes (e.g. ABQ, ACK, ALB) with null_rate
+      0.0, kept as VARCHAR.
+  - name: air_time
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: air_time in minutes (min 20.0 max 695.0) has null_count 5480 (null_rate 0.032981)
+      matching arr_delay's missing-arrival pattern, retained as null.
+  - name: distance
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: distance in miles ranges min 80.0 to max 4983.0 with null_rate 0.0 and integral
+      samples, cast to INTEGER.
+  - name: hour
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: hour has distinct_count 19 with values 5.0 to 23.0 and null_rate 0.0, cast
+      to INTEGER as the scheduled hour part.
+  - name: minute
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: minute has distinct_count 60 ranging 0.0 to 59.0 with null_rate 0.0, cast
+      to INTEGER as the scheduled minute part.
+  - name: time_hour
+    logicalType: date
+    physicalType: TIMESTAMP
+    required: true
+    description: time_hour lands as VARCHAR but every sample is a well-formed ISO8601 UTC
+      instant (e.g. 2013-01-01T10:00:00Z) with null_rate 0.0, cast to TIMESTAMP.
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (year, month, day, carrier, flight, sched_dep_time)
+      combinations'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT year, month, day, carrier, flight, sched_dep_time
+        FROM silver.silver_nyc_flights
+        GROUP BY year, month, day, carrier, flight, sched_dep_time
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: silver-cleanup-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.1.0
+- property: modelId
+  value: claude-sonnet-5
+- property: profileHash
+  value: sha256:49b479ac0612017571579cc02b0b7e592474551a14d3adff6e06c01139bdadce
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: cleanup
+- property: decisionExactDuplicates
+  value: no-duplicates-found
+- property: decisionGrain
+  value: year-month-day-carrier-flight-sched-dep-time
+- property: decisionDropAirbyteMetadata
+  value: excluded-as-capture-artifacts
+- property: decisionHhmmTimesKeptAsInteger
+  value: retained-as-hhmm-integer
+- property: decisionNullDepTimeAndDelay
+  value: retained-nullable-never-departed
+- property: decisionNullArrTimeDelayAirTime
+  value: retained-nullable-never-arrived
+- property: decisionNullTailnum
+  value: retained-nullable
+- property: decisionTimeHourCast
+  value: cast-to-timestamp
