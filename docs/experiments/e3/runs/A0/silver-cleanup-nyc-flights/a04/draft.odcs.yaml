@@ -1,0 +1,210 @@
+# Draft proposed by silver-cleanup-proposer v0.1.0 at 2026-10-23T16:38:08.573660+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_nyc_flights
+name: Silver nyc flights
+version: 1.1.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: This table provides a cleaned record of individual NYC-area flight departures and
+    arrivals for 2013, covering scheduling, delay, and routing fields, intended to feed downstream
+    analytics on carrier punctuality, route volume, and delay patterns.
+  usage: Consumers should treat dep_time, sched_dep_time, dep_delay, arr_time, sched_arr_time,
+    arr_delay, air_time, and tailnum as nullable and filter or branch logic accordingly when
+    a flight was cancelled or diverted; time_hour is a UTC timestamp and hour/minute are the
+    scheduled departure's local hour/minute components, not independently authoritative times.
+  limitations: Roughly 2.9% to 3.3% of rows lack dep_time, arr_time, dep_delay, arr_delay,
+    and air_time, most plausibly cancelled flights, and this cleanup neither imputes nor removes
+    those rows; tailnum is missing for about 0.9% of rows and is retained as-is; no exact-duplicate
+    rows were found (duplicate_row_rate 0.0) so no dedupe logic was applied, and the declared
+    grain has not been measured against the warehouse for actual uniqueness.
+schema:
+- name: silver_nyc_flights
+  physicalName: silver_nyc_flights
+  logicalType: object
+  physicalType: table
+  description: This table provides a cleaned record of individual NYC-area flight departures
+    and arrivals for 2013, covering scheduling, delay, and routing fields, intended to feed
+    downstream analytics on carrier punctuality, route volume, and delay patterns.
+  properties:
+  - name: year
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: Single distinct value 2013.0 with null_rate 0.0; DECIMAL(38,9) samples are
+      integral so a safe cast to INTEGER.
+  - name: month
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 2
+    description: Distinct_count 6 spanning 1.0-6.0 with null_rate 0.0; integral values support
+      cast to INTEGER.
+  - name: day
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 3
+    description: Distinct_count 31, min 1.0 max 31.0, null_rate 0.0; samples 1.0-10.0 are
+      integral so cast to INTEGER.
+  - name: dep_time
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: Null_rate 0.029388 (4883 nulls) reflects cancelled flights with no departure;
+      min 1.0 max 2400.0 HHMM-coded values are integral so cast to INTEGER, retained nullable.
+  - name: sched_dep_time
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: Null_rate 0.0 across 969 distinct HHMM values from 500.0 to 2359.0; integral
+      samples support cast to INTEGER.
+  - name: dep_delay
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: Null_rate 0.029388 matching dep_time nulls (cancelled flights); samples -33.0
+      to 1301.0 are integral minutes so cast to INTEGER, retained nullable.
+  - name: arr_time
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: Null_rate 0.0307 (5101 nulls) for flights without recorded arrival; min 1.0
+      max 2400.0 HHMM-coded integral values cast to INTEGER.
+  - name: sched_arr_time
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: Null_rate 0.0 with 1134 distinct HHMM values from 1.0 to 2359.0; integral
+      samples cast to INTEGER.
+  - name: arr_delay
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: Null_rate 0.032981 (5480 nulls) aligning with missing arr_time/air_time;
+      samples -86.0 to 1272.0 are integral minutes cast to INTEGER.
+  - name: carrier
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 4
+    description: Null_rate 0.0 with 16 distinct two-character IATA codes (9E, AA, ..., YV);
+      kept as VARCHAR.
+  - name: flight
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 5
+    description: Null_rate 0.0, 2994 distinct values from 1.0 to 8500.0, all integral; cast
+      to INTEGER.
+  - name: tailnum
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: Null_rate 0.009154 (1521 nulls), likely missing registration for some flights;
+      3825 distinct alphanumeric values like N0EGMQ kept as VARCHAR, nullable.
+  - name: origin
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 6
+    description: Null_rate 0.0 with exactly 3 distinct NYC airport codes (EWR, JFK, LGA);
+      kept as VARCHAR.
+  - name: dest
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: Null_rate 0.0 with 100 distinct destination airport codes (ABQ, ACK, ALB,
+      ...); kept as VARCHAR.
+  - name: air_time
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: Null_rate 0.032981 (5480 nulls) matching arr_delay nulls for flights without
+      recorded arrival; samples 20.0-695.0 are integral minutes cast to INTEGER, retained
+      nullable.
+  - name: distance
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: Null_rate 0.0, 203 distinct values from 80.0 to 4983.0, samples like 80.0,
+      94.0, 116.0 are integral so cast to INTEGER.
+  - name: hour
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: Null_rate 0.0, 19 distinct values 5.0 through 23.0, integral so cast to INTEGER.
+  - name: minute
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: Null_rate 0.0, 60 distinct values 0.0 through 59.0, integral so cast to INTEGER.
+  - name: time_hour
+    logicalType: date
+    physicalType: TIMESTAMP
+    required: true
+    description: Null_rate 0.0 with ISO-8601 Z-suffixed samples like 2013-01-01T10:00:00Z
+      across 3439 distinct values; consistent ISO shape supports cast from VARCHAR to TIMESTAMP.
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (year, month, day, carrier, flight, origin)
+      combinations'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT year, month, day, carrier, flight, origin
+        FROM silver.silver_nyc_flights
+        GROUP BY year, month, day, carrier, flight, origin
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: silver-cleanup-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.1.0
+- property: modelId
+  value: claude-sonnet-5
+- property: profileHash
+  value: sha256:49b479ac0612017571579cc02b0b7e592474551a14d3adff6e06c01139bdadce
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: cleanup
+- property: decisionExactDuplicates
+  value: no-duplicates-found
+- property: decisionGrain
+  value: year-month-day-carrier-flight-origin
+- property: decisionDropAirbyteMetadata
+  value: excluded-as-capture-artifacts
+- property: decisionNullDepTimeArrTime
+  value: retained-nullable
+- property: decisionNullTailnum
+  value: retained-nullable
+- property: decisionCastDecimalToInteger
+  value: cast-decimal-to-integer
+- property: decisionCastTimeHourTimestamp
+  value: cast-varchar-to-timestamp

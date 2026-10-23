@@ -1,0 +1,85 @@
+{
+  "target_table": "silver_airlines",
+  "columns": [
+    {
+      "source_column": "carrier",
+      "action": "keep",
+      "target_name": "carrier",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "carrier has null_rate 0.0 and null_count 0, with distinct_count 16 exactly matching the dataset's row_count of 16; distinct values like 'AA', 'DL', 'WN' are standard two-character IATA carrier codes, making this a reliable identifier."
+    },
+    {
+      "source_column": "name",
+      "action": "rename",
+      "target_name": "carrier_name",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "name has null_rate 0.0 and distinct_count 16 matching row_count 16, with values such as 'Delta Air Lines Inc.' and 'Southwest Airlines Co.' showing full legal carrier names; renamed from the generic 'name' to carrier_name to disambiguate it alongside the carrier code."
+    },
+    {
+      "source_column": "_airbyte_raw_id",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata true; it is a capture-tool identifier with null_rate 0.0 but no business meaning, so it is dropped."
+    },
+    {
+      "source_column": "_airbyte_extracted_at",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata true; min and max both equal '2026-09-02T23:26:17' across all 16 rows, confirming this is a single capture-batch timestamp with no business value, so it is dropped."
+    },
+    {
+      "source_column": "_airbyte_meta",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "JSON",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata true; distinct_count 1 with the sole value '{}' across all rows shows it carries no information, so it is dropped."
+    }
+  ],
+  "dedupe_strategy": "none",
+  "dedupe_keys": [],
+  "grain_keys": [
+    "carrier"
+  ],
+  "decisions": [
+    {
+      "key": "decisionGrain",
+      "value": "carrier-code-grain",
+      "rationale": "carrier has distinct_count 16 exactly equal to dataset.row_count 16 and null_rate 0.0, making the single carrier column a defensible grain for this reference table."
+    },
+    {
+      "key": "decisionExactDuplicates",
+      "value": "no-duplicates-found",
+      "rationale": "dataset.duplicate_row_rate is 0.0 across dataset.row_count 16, so no exact-duplicate rows exist in bronze and no dedupe logic is required."
+    },
+    {
+      "key": "decisionDropAirbyteMetadata",
+      "value": "excluded-as-capture-artifacts",
+      "rationale": "_airbyte_raw_id, _airbyte_extracted_at, and _airbyte_meta are each flagged is_airbyte_metadata true and carry capture-tool values (a raw id, a single batch timestamp, and an always-empty JSON object), so all three are excluded from silver."
+    },
+    {
+      "key": "decisionRenameName",
+      "value": "renamed-to-carrier-name",
+      "rationale": "The bronze column 'name' is ambiguous on its own; it was renamed to carrier_name since its sample values like 'American Airlines Inc.' and 'JetBlue Airways' represent the carrier's full legal name paired with the carrier code."
+    }
+  ],
+  "purpose": "This table is a small reference dataset mapping each IATA carrier code to its full legal airline name, intended to feed downstream flight and performance tables that need to resolve or display carrier identity.",
+  "usage": "Consumers should join on the carrier column to enrich carrier-coded records with carrier_name; no row filtering is required since the table is fully populated (null_rate 0.0 on both columns) and free of exact duplicates.",
+  "limitations": "The bronze source is very small (row_count 16) and carries only a code and a name with no other carrier attributes such as country, alliance, or active status; the grain assumption (carrier uniquely identifies a row) is based on this single snapshot where distinct_count equals row_count, and should be re-verified if the source grows."
+}

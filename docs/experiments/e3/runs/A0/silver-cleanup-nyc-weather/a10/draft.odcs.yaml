@@ -1,0 +1,181 @@
+# Draft proposed by silver-cleanup-proposer v0.1.0 at 2026-10-23T16:53:04.725170+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_nyc_weather
+name: Silver nyc weather
+version: 1.1.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: This table provides hourly weather observations (temperature, dew point, humidity,
+    wind, precipitation, pressure, and visibility) for NYC-area airports (EWR, JFK, LGA) in
+    2013, cleaned to support flight-delay correlation and weather analytics.
+  usage: Consumers should join on origin and time_hour to align readings with flight records,
+    and must handle nulls explicitly in wind_gust, pressure, wind_dir, and wind_speed rather
+    than assuming zero or average values; wind_gust in particular is null in over 74% of rows.
+  limitations: The cleanup could not resolve the high null rate in wind_gust (0.745505) or
+    the moderate null rate in pressure (0.114953); these are retained as nulls rather than
+    imputed. Redundant year, month, day, and hour fields duplicate information already encoded
+    in time_hour but are kept since the profile shows no conflicting evidence between them.
+schema:
+- name: silver_nyc_weather
+  physicalName: silver_nyc_weather
+  logicalType: object
+  physicalType: table
+  description: This table provides hourly weather observations (temperature, dew point, humidity,
+    wind, precipitation, pressure, and visibility) for NYC-area airports (EWR, JFK, LGA) in
+    2013, cleaned to support flight-delay correlation and weather analytics.
+  properties:
+  - name: origin
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: origin has 3 distinct values (EWR, JFK, LGA) and null_rate 0.0, identifying
+      the weather station airport.
+  - name: year
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: year is a single constant value (2013.0) with null_rate 0.0; landed as DECIMAL(38,9)
+      but the value is integral, so cast to INTEGER.
+  - name: month
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: month has 6 distinct integral values ranging 1.0 to 6.0 with null_rate 0.0,
+      so cast DECIMAL(38,9) to INTEGER.
+  - name: day
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: day has 31 distinct integral sample values (1.0 through 10.0 shown) ranging
+      1.0 to 31.0 with null_rate 0.0, so cast to INTEGER.
+  - name: hour
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: hour has 24 distinct integral sample values ranging 0.0 to 23.0 with null_rate
+      0.0, so cast to INTEGER.
+  - name: temp
+    logicalType: number
+    physicalType: DECIMAL(5,2)
+    required: true
+    description: temp ranges 10.94 to 93.92 across 130 distinct values with fractional samples
+      (10.94, 12.02, 12.92...) and null_rate 0.0.
+  - name: dewp
+    logicalType: number
+    physicalType: DECIMAL(5,2)
+    required: true
+    description: dewp ranges -9.94 to 73.94 across 119 distinct values with fractional samples
+      and null_rate 0.0.
+  - name: humid
+    logicalType: number
+    physicalType: DECIMAL(5,2)
+    required: true
+    description: humid ranges 12.74 to 100.0 across 2178 distinct values with null_rate 0.0.
+  - name: wind_dir
+    logicalType: integer
+    physicalType: INTEGER
+    required: false
+    description: wind_dir has exactly 37 distinct values spanning 0.0 to 360.0 in 10-degree
+      increments (sample 0,10,20...90), matching the count of integral multiples of 10 in
+      that range, so cast to INTEGER; null_rate 0.016828 (219 of 13014 nulls) is retained
+      nullable.
+  - name: wind_speed
+    logicalType: number
+    physicalType: DECIMAL(10,5)
+    required: false
+    description: wind_speed ranges 0.0 to 1048.36058 across 36 distinct values with fractional
+      samples; null_rate 0.000154 (2 nulls) retained nullable.
+  - name: wind_gust
+    logicalType: number
+    physicalType: DECIMAL(10,5)
+    required: false
+    description: wind_gust ranges 16.11092 to 62.14212 across 35 distinct values but null_rate
+      0.745505 (9702 of 13014 nulls) shows the column is sparsely populated; retained nullable
+      rather than dropped.
+  - name: precip
+    logicalType: number
+    physicalType: DECIMAL(5,2)
+    required: true
+    description: precip ranges 0.0 to 1.06 across 50 distinct values with null_rate 0.0.
+  - name: pressure
+    logicalType: number
+    physicalType: DECIMAL(6,1)
+    required: false
+    description: pressure ranges 983.8 to 1038.4 across 430 distinct values; null_rate 0.114953
+      (1496 nulls) retained nullable rather than imputed.
+  - name: visib
+    logicalType: number
+    physicalType: DECIMAL(4,2)
+    required: true
+    description: visib has 20 distinct values from 0.0 to 10.0 (e.g. 0.06, 0.25, 0.5, 1.0)
+      with null_rate 0.0.
+  - name: time_hour
+    logicalType: date
+    physicalType: TIMESTAMP
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 2
+    description: time_hour samples are consistently ISO8601 UTC timestamps (e.g. 2013-01-01T06:00:00Z)
+      across 4341 distinct values with null_rate 0.0, so cast VARCHAR to TIMESTAMP.
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (origin, time_hour) combinations'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT origin, time_hour
+        FROM silver.silver_nyc_weather
+        GROUP BY origin, time_hour
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: silver-cleanup-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.1.0
+- property: modelId
+  value: claude-sonnet-5
+- property: profileHash
+  value: sha256:1dee708bb140addbdb172a3727f79d85a2d7a611bd9c191d56d3e433a8c5777b
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: cleanup
+- property: decisionGrain
+  value: origin-time-hour
+- property: decisionDuplicates
+  value: no-duplicates-found
+- property: decisionDroppedAirbyteColumns
+  value: excluded-as-capture-artifacts
+- property: decisionNullWindGust
+  value: retained-nullable-sparse
+- property: decisionNullPressure
+  value: retained-nullable
+- property: decisionNullWindDir
+  value: retained-nullable
+- property: decisionNullWindSpeed
+  value: retained-nullable
+- property: decisionCastIntegralFields
+  value: cast-decimal-to-integer
+- property: decisionCastTimeHour
+  value: cast-varchar-to-timestamp

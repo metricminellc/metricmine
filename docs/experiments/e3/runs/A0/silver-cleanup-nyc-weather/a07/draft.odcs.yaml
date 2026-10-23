@@ -1,0 +1,174 @@
+# Draft proposed by silver-cleanup-proposer v0.1.0 at 2026-10-23T16:50:25.023905+00:00.
+# Review before approval (D-24): merge is approval; drafts never auto-land.
+apiVersion: v3.1.0
+kind: DataContract
+id: silver_nyc_weather
+name: Silver nyc weather
+version: 1.1.0
+status: draft
+domain: retail
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: This table provides cleaned hourly weather observations for NYC-area airports (EWR,
+    JFK, LGA), feeding downstream flight-delay and airport-operations analytics that join
+    weather conditions to flight records by origin and hour.
+  usage: Consumers should join on origin and time_hour to align weather with flight data;
+    wind_gust, pressure, wind_dir, and wind_speed may be null and must be explicitly handled
+    (coalesced, filtered, or flagged) rather than assumed present in every row.
+  limitations: wind_gust is missing in 74.6% of rows (9702 of 13014) and pressure is missing
+    in 11.5% of rows (1496 of 13014); these gaps were not imputed and remain nullable. wind_dir
+    (1.68%) and wind_speed (0.015%) carry minor residual nulls retained as-is. The dataset
+    covers only year 2013 (distinct_count 1) and should not be used to infer multi-year trends.
+schema:
+- name: silver_nyc_weather
+  physicalName: silver_nyc_weather
+  logicalType: object
+  physicalType: table
+  description: This table provides cleaned hourly weather observations for NYC-area airports
+    (EWR, JFK, LGA), feeding downstream flight-delay and airport-operations analytics that
+    join weather conditions to flight records by origin and hour.
+  properties:
+  - name: origin
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: distinct_count 3 with distinct_values EWR, JFK, LGA and null_rate 0.0; identifies
+      the weather station airport.
+  - name: year
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: distinct_count 1, min and max both 2013.0, null_rate 0.0; single integral
+      value supports casting DECIMAL(38,9) to INTEGER.
+  - name: month
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: distinct_count 6, values 1.0 through 6.0 (min 1.0, max 6.0), all integral;
+      cast to INTEGER.
+  - name: day
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: distinct_count 31, min 1.0 max 31.0, sample_values 1.0-10.0 all integral;
+      cast to INTEGER.
+  - name: hour
+    logicalType: integer
+    physicalType: INTEGER
+    required: true
+    description: distinct_count 24, min 0.0 max 23.0, sample_values 0.0-9.0 all integral;
+      cast to INTEGER.
+  - name: temp
+    logicalType: number
+    physicalType: DECIMAL(5,2)
+    required: true
+    description: distinct_count 130, min 10.94 max 93.92, null_rate 0.0; two-decimal precision
+      observed in sample_values retained.
+  - name: dewp
+    logicalType: number
+    physicalType: DECIMAL(5,2)
+    required: true
+    description: distinct_count 119, min -9.94 max 73.94, null_rate 0.0; two-decimal precision
+      observed in sample_values retained.
+  - name: humid
+    logicalType: number
+    physicalType: DECIMAL(5,2)
+    required: true
+    description: distinct_count 2178, min 12.74 max 100.0, null_rate 0.0; two-decimal precision
+      observed in sample_values retained.
+  - name: wind_dir
+    logicalType: number
+    physicalType: DECIMAL(5,2)
+    required: false
+    description: null_rate 0.016828 (219 of 13014 null), distinct_count 37, min 0.0 max 360.0;
+      retained nullable since nulls occur naturally.
+  - name: wind_speed
+    logicalType: number
+    physicalType: DECIMAL(12,5)
+    required: false
+    description: null_rate 0.000154 (2 of 13014 null), distinct_count 36, min 0.0 max 1048.36058;
+      five-decimal precision matches sample_values like 3.45234, retained nullable.
+  - name: wind_gust
+    logicalType: number
+    physicalType: DECIMAL(10,5)
+    required: false
+    description: null_rate 0.745505 (9702 of 13014 null), sparsely populated; distinct_count
+      35, min 16.11092 max 62.14212, retained nullable per sparse-column policy.
+  - name: precip
+    logicalType: number
+    physicalType: DECIMAL(5,2)
+    required: true
+    description: distinct_count 50, min 0.0 max 1.06, null_rate 0.0; two-decimal precision
+      observed in sample_values retained.
+  - name: pressure
+    logicalType: number
+    physicalType: DECIMAL(7,2)
+    required: false
+    description: null_rate 0.114953 (1496 of 13014 null), distinct_count 430, min 983.8 max
+      1038.4; retained nullable due to notable missingness.
+  - name: visib
+    logicalType: number
+    physicalType: DECIMAL(5,2)
+    required: true
+    description: distinct_count 20 with distinct_values spanning 0.0 to 10.0 including fractional
+      values 0.06 and 0.12, null_rate 0.0.
+  - name: time_hour
+    logicalType: date
+    physicalType: TIMESTAMP
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 2
+    description: distinct_count 4341, null_rate 0.0, sample_values are ISO8601 timestamps
+      with Z suffix such as 2013-01-01T06:00:00Z; cast VARCHAR to TIMESTAMP.
+  quality:
+  - type: library
+    metric: rowCount
+    description: The table is never empty
+    severity: error
+    mustBeGreaterThan: 0
+  - type: sql
+    description: 'Grain enforcement: no duplicate (origin, time_hour) combinations'
+    severity: error
+    query: |
+      SELECT COUNT(*) FROM (
+        SELECT origin, time_hour
+        FROM silver.silver_nyc_weather
+        GROUP BY origin, time_hour
+        HAVING COUNT(*) > 1
+      )
+    mustBe: 0
+servers:
+- server: local
+  type: duckdb
+  database: warehouse/metricmine.duckdb
+  schema: silver
+customProperties:
+- property: proposedBy
+  value: silver-cleanup-proposer
+- property: proposerVersion
+  value: 0.1.0
+- property: promptVersion
+  value: 1.1.0
+- property: modelId
+  value: claude-sonnet-5
+- property: profileHash
+  value: sha256:1dee708bb140addbdb172a3727f79d85a2d7a611bd9c191d56d3e433a8c5777b
+- property: proposedAt
+  value: '2026-10-23'
+- property: proposerStance
+  value: cleanup
+- property: decisionExactDuplicates
+  value: no-duplicates-observed
+- property: decisionGrain
+  value: origin-time-hour
+- property: decisionDroppedMetadata
+  value: excluded-as-capture-artifacts
+- property: decisionWindGustSparse
+  value: retained-nullable-sparse
+- property: decisionDateTimeCast
+  value: cast-to-timestamp
+- property: decisionIntegerCast
+  value: cast-to-integer

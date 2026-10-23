@@ -1,0 +1,280 @@
+{
+  "target_table": "silver_nyc_flights",
+  "columns": [
+    {
+      "source_column": "year",
+      "action": "cast",
+      "target_name": "year",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "year is constant at 2013.0 (distinct_count=1, min=max=2013.0) with null_rate 0.0, an integral calendar year safe to cast from DECIMAL(38,9) to INTEGER."
+    },
+    {
+      "source_column": "month",
+      "action": "cast",
+      "target_name": "month",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "month takes only the integral distinct_values 1.0 through 6.0 with null_rate 0.0, supporting a cast to INTEGER."
+    },
+    {
+      "source_column": "day",
+      "action": "cast",
+      "target_name": "day",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "day ranges min=1.0 to max=31.0 across distinct_count=31 with all sample_values integral and null_rate 0.0."
+    },
+    {
+      "source_column": "dep_time",
+      "action": "cast",
+      "target_name": "dep_time",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "dep_time has null_rate 0.029388 (null_count=4883) and integral samples spanning min=1.0 to max=2400.0 representing an HHMM clock value, likely null for cancelled flights so retained nullable."
+    },
+    {
+      "source_column": "sched_dep_time",
+      "action": "cast",
+      "target_name": "sched_dep_time",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "sched_dep_time has null_rate 0.0 with integral samples from 500.0 to 530.0 and max 2359.0, consistent with an HHMM scheduled time."
+    },
+    {
+      "source_column": "dep_delay",
+      "action": "cast",
+      "target_name": "dep_delay",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "dep_delay shares null_rate 0.029388 (null_count=4883) with dep_time and has integral samples from -33.0 to 1301.0, so it is retained nullable rather than imputed."
+    },
+    {
+      "source_column": "arr_time",
+      "action": "cast",
+      "target_name": "arr_time",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "arr_time has null_rate 0.0307 (null_count=5101) and integral samples from 1.0 to 2400.0, likely null for cancelled or diverted flights."
+    },
+    {
+      "source_column": "sched_arr_time",
+      "action": "cast",
+      "target_name": "sched_arr_time",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "sched_arr_time has null_rate 0.0 with integral samples from 1.0 to max 2359.0."
+    },
+    {
+      "source_column": "arr_delay",
+      "action": "cast",
+      "target_name": "arr_delay",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "arr_delay has null_rate 0.032981 (null_count=5480) with integral samples from -86.0 to 1272.0, retained nullable for cancelled/diverted flights."
+    },
+    {
+      "source_column": "carrier",
+      "action": "keep",
+      "target_name": "carrier",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "carrier has null_rate 0.0 and distinct_count 16 with distinct_values like 9E, AA, DL, UA forming a clean categorical airline code."
+    },
+    {
+      "source_column": "flight",
+      "action": "cast",
+      "target_name": "flight",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "flight has null_rate 0.0, distinct_count 2994, integral samples from 1.0 to max 8500.0, a flight number safely cast to INTEGER."
+    },
+    {
+      "source_column": "tailnum",
+      "action": "keep",
+      "target_name": "tailnum",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "tailnum has null_rate 0.009154 (null_count=1521) with distinct_count 3825 and samples like D942DN, N0EGMQ, indicating sparse missingness kept as nullable text."
+    },
+    {
+      "source_column": "origin",
+      "action": "keep",
+      "target_name": "origin",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "origin has null_rate 0.0 and only distinct_values EWR, JFK, LGA, a clean low-cardinality categorical."
+    },
+    {
+      "source_column": "dest",
+      "action": "keep",
+      "target_name": "dest",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "dest has null_rate 0.0 and distinct_count 100 with samples like ABQ, ACK, ALB covering airport codes."
+    },
+    {
+      "source_column": "air_time",
+      "action": "cast",
+      "target_name": "air_time",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": false,
+      "null_handling": "retain_null",
+      "rationale": "air_time has null_rate 0.032981 (null_count=5480) matching arr_delay's null pattern, with integral samples from 20.0 to max 695.0, retained nullable."
+    },
+    {
+      "source_column": "distance",
+      "action": "cast",
+      "target_name": "distance",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "distance has null_rate 0.0 with integral samples from 80.0 to max 4983.0, a flight distance safely cast to INTEGER."
+    },
+    {
+      "source_column": "hour",
+      "action": "cast",
+      "target_name": "hour",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "hour has null_rate 0.0 and distinct_values 5.0 through 23.0, an integral hour-of-day bucket."
+    },
+    {
+      "source_column": "minute",
+      "action": "cast",
+      "target_name": "minute",
+      "logical_type": "integer",
+      "physical_type": "INTEGER",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "minute has null_rate 0.0, distinct_count 60, min 0.0 max 59.0, an integral minute-of-hour value."
+    },
+    {
+      "source_column": "time_hour",
+      "action": "cast",
+      "target_name": "time_hour",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "time_hour has null_rate 0.0 and uniformly ISO-8601 formatted sample_values like 2013-01-01T10:00:00Z across distinct_count 3439, supporting a cast from VARCHAR to TIMESTAMP."
+    },
+    {
+      "source_column": "_airbyte_raw_id",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "_airbyte_raw_id is flagged is_airbyte_metadata=true, a capture-tool identifier with no business meaning, so it is dropped."
+    },
+    {
+      "source_column": "_airbyte_extracted_at",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "_airbyte_extracted_at is flagged is_airbyte_metadata=true and only records capture timestamps like 2026-09-02T23:25:51, so it is dropped."
+    },
+    {
+      "source_column": "_airbyte_meta",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "JSON",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "_airbyte_meta is flagged is_airbyte_metadata=true with a single constant value {} across distinct_count 1, so it is dropped."
+    }
+  ],
+  "dedupe_strategy": "none",
+  "dedupe_keys": [],
+  "grain_keys": [
+    "year",
+    "month",
+    "day",
+    "carrier",
+    "flight",
+    "origin"
+  ],
+  "decisions": [
+    {
+      "key": "decisionGrain",
+      "value": "year-month-day-carrier-flight-origin",
+      "rationale": "Combining year, month, day, carrier, flight, and origin (all null_rate 0.0 and required) yields a key that plausibly identifies one scheduled flight departure per day given flight distinct_count=2994 and origin distinct_count=3."
+    },
+    {
+      "key": "decisionExactDuplicates",
+      "value": "no-duplicates-found",
+      "rationale": "dataset.duplicate_row_rate is 0.0 across row_count=166158, so no exact-duplicate row removal is needed and dedupe_strategy is set to none."
+    },
+    {
+      "key": "decisionDroppedMetadata",
+      "value": "excluded-as-capture-artifacts",
+      "rationale": "_airbyte_raw_id, _airbyte_extracted_at, and _airbyte_meta are all flagged is_airbyte_metadata=true with no business meaning, so they are dropped."
+    },
+    {
+      "key": "decisionCastIntegralTimes",
+      "value": "cast-decimal-to-integer",
+      "rationale": "year, month, day, dep_time, sched_dep_time, dep_delay, arr_time, sched_arr_time, arr_delay, flight, air_time, distance, hour, and minute all land as DECIMAL(38,9) but every sampled and extreme value is a whole number (e.g. dep_time min=1.0 max=2400.0, distance min=80.0 max=4983.0), so each is cast to INTEGER."
+    },
+    {
+      "key": "decisionCastTimeHour",
+      "value": "cast-iso-string-to-timestamp",
+      "rationale": "time_hour samples are uniformly ISO-8601 formatted strings like 2013-01-01T10:00:00Z with null_rate 0.0, supporting a cast from VARCHAR to TIMESTAMP."
+    },
+    {
+      "key": "decisionNullDepartureFields",
+      "value": "retained-nullable-cancelled-flights",
+      "rationale": "dep_time and dep_delay share null_rate 0.029388 (null_count=4883), consistent with cancelled flights, so both retain_null rather than fail_on_null."
+    },
+    {
+      "key": "decisionNullArrivalFields",
+      "value": "retained-nullable-cancelled-flights",
+      "rationale": "arr_time (null_rate 0.0307, null_count 5101), arr_delay and air_time (both null_rate 0.032981, null_count 5480) share null patterns consistent with cancelled or diverted flights, so all retain_null."
+    },
+    {
+      "key": "decisionNullTailnum",
+      "value": "retained-nullable",
+      "rationale": "tailnum has null_rate 0.009154 (null_count=1521) out of distinct_count 3825, a small but nonzero missingness not warranting fail_on_null."
+    }
+  ],
+  "purpose": "This table provides cleaned, typed NYC flight departure and arrival records for 2013 H1 sourced from bronze.nyc_flights, feeding downstream analytics on carrier on-time performance and route volume.",
+  "usage": "Consumers should treat dep_time, dep_delay, arr_time, arr_delay, and air_time as nullable and filter or explicitly handle nulls when a record represents a cancelled or diverted flight; join on the declared grain (year, month, day, carrier, flight, origin) to identify a unique flight occurrence, and treat time_hour as the scheduled hour bucket for time-series rollups.",
+  "limitations": "Cleanup could not resolve the roughly 2.9%-3.3% null rates in dep_time, dep_delay, arr_time, arr_delay, and air_time, which likely represent cancelled or diverted flights and are retained as nulls rather than imputed; tailnum is also nullable (0.9% null, null_count=1521) and dest/tailnum values were not validated against an external airport or aircraft registry."
+}

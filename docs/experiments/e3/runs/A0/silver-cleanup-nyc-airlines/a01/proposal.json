@@ -1,0 +1,85 @@
+{
+  "target_table": "silver_airlines",
+  "columns": [
+    {
+      "source_column": "carrier",
+      "action": "keep",
+      "target_name": "carrier",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 across 16 rows and distinct_count is 16, matching row_count exactly; sample values like AA, DL, UA are standard two-letter IATA carrier codes."
+    },
+    {
+      "source_column": "name",
+      "action": "rename",
+      "target_name": "carrier_name",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "Renamed from the generic 'name' to 'carrier_name' for clarity; null_rate is 0.0 and distinct_count is 16 with samples like 'American Airlines Inc.' and 'Delta Air Lines Inc.' confirming full airline names."
+    },
+    {
+      "source_column": "_airbyte_raw_id",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata true; this is a capture-tool UUID with no business meaning and is dropped per policy."
+    },
+    {
+      "source_column": "_airbyte_extracted_at",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata true; min and max are both 2026-09-02T23:26:17 confirming a single capture batch timestamp with no business value, dropped per policy."
+    },
+    {
+      "source_column": "_airbyte_meta",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "JSON",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata true; the sole distinct value is the empty object '{}', carrying no business information, dropped per policy."
+    }
+  ],
+  "dedupe_strategy": "none",
+  "dedupe_keys": [],
+  "grain_keys": [
+    "carrier"
+  ],
+  "decisions": [
+    {
+      "key": "decisionGrain",
+      "value": "carrier-code-grain",
+      "rationale": "carrier has distinct_count 16 exactly matching row_count 16 with null_rate 0.0, making it a defensible single-column natural key for this carrier reference table."
+    },
+    {
+      "key": "decisionDuplicateRows",
+      "value": "no-duplicates-found",
+      "rationale": "dataset.duplicate_row_rate is 0.0 across row_count 16, so no exact-duplicate or clock-drift dedupe logic is required."
+    },
+    {
+      "key": "decisionDroppedMetadata",
+      "value": "excluded-as-capture-artifacts",
+      "rationale": "_airbyte_raw_id, _airbyte_extracted_at, and _airbyte_meta all carry is_airbyte_metadata true and are capture-tool artifacts, not business columns, so all three are dropped."
+    },
+    {
+      "key": "decisionRenameName",
+      "value": "renamed-to-carrier-name",
+      "rationale": "The bronze column 'name' is ambiguous outside context; renamed to 'carrier_name' to clearly indicate it holds the full airline name, supported by samples like 'United Air Lines Inc.'"
+    }
+  ],
+  "purpose": "This table is a small reference dataset mapping two-letter airline carrier codes to their full legal airline names, intended to be joined against flight fact tables to enrich records with human-readable carrier names.",
+  "usage": "Join downstream flight tables to this table on carrier_code (carrier) to resolve carrier_name; since null_rate is 0.0 for both columns and no duplicates exist, no additional filtering or null-handling logic is required by consumers.",
+  "limitations": "The table covers only the 16 carriers present in this bronze snapshot at profiling time (row_count 16, duplicate_row_rate 0.0); new or retired carriers are not reflected unless the source is re-profiled, and no historical versioning of carrier names is retained."
+}

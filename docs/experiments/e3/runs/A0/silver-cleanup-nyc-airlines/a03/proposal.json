@@ -1,0 +1,85 @@
+{
+  "target_table": "silver_airlines",
+  "columns": [
+    {
+      "source_column": "carrier",
+      "action": "keep",
+      "target_name": "carrier",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 with 16 distinct_count across 16 rows (e.g. '9E','AA','DL','UA'), so every row carries a unique, populated two-letter carrier code."
+    },
+    {
+      "source_column": "name",
+      "action": "rename",
+      "target_name": "airline_name",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 with 16 distinct_count matching samples like 'Delta Air Lines Inc.' and 'Southwest Airlines Co.'; renamed from the generic 'name' to 'airline_name' for clarity since this is a reference table of carriers."
+    },
+    {
+      "source_column": "_airbyte_raw_id",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata: true; this is a capture-tool UUID, not a business column."
+    },
+    {
+      "source_column": "_airbyte_extracted_at",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata: true; constant value '2026-09-02T23:26:17' across all rows confirms it is an ingestion timestamp, not business data."
+    },
+    {
+      "source_column": "_airbyte_meta",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "JSON",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata: true; the single distinct value '{}' across all rows shows it carries no business content."
+    }
+  ],
+  "dedupe_strategy": "none",
+  "dedupe_keys": [],
+  "grain_keys": [
+    "carrier"
+  ],
+  "decisions": [
+    {
+      "key": "decisionGrain",
+      "value": "carrier-code-is-grain",
+      "rationale": "carrier has distinct_count 16 equal to row_count 16 and null_rate 0.0, so the carrier code alone identifies one row in this reference table."
+    },
+    {
+      "key": "decisionExactDuplicates",
+      "value": "no-duplicates-found",
+      "rationale": "duplicate_row_rate is 0.0 across row_count 16, so no exact duplicate rows exist in bronze and no dedupe step is required."
+    },
+    {
+      "key": "decisionDroppedMetadata",
+      "value": "excluded-as-capture-artifacts",
+      "rationale": "_airbyte_raw_id, _airbyte_extracted_at, and _airbyte_meta are all flagged is_airbyte_metadata: true and carry no business meaning."
+    },
+    {
+      "key": "decisionRenameName",
+      "value": "renamed-to-airline-name",
+      "rationale": "The bronze column 'name' is ambiguous outside context; samples such as 'Alaska Airlines Inc.' and 'JetBlue Airways' confirm it holds the carrier's full legal name, so it is renamed to airline_name."
+    }
+  ],
+  "purpose": "This table is a small reference dataset mapping two-letter airline carrier codes to their full legal airline names, intended to feed joins from flight-level fact tables in downstream analytics.",
+  "usage": "Consumers should join on the carrier column to enrich flight or booking records with a human-readable airline_name; the table is complete and unique per carrier so no filtering or deduplication is required before joining.",
+  "limitations": "The table is tiny (16 rows) and fully populated with no nulls or duplicates found at profiling time (duplicate_row_rate 0.0, row_count 16), so no cleanup beyond dropping Airbyte capture metadata and renaming the ambiguous 'name' column was necessary; it does not capture carrier code changes or airline mergers over time."
+}

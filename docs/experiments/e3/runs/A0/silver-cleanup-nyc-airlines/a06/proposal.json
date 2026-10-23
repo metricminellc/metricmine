@@ -1,0 +1,85 @@
+{
+  "target_table": "silver_nyc_airlines",
+  "columns": [
+    {
+      "source_column": "carrier",
+      "action": "keep",
+      "target_name": "carrier",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 across all 16 rows and distinct_count is 16, matching row_count 16, with IATA-style codes such as 9E, AA, DL, UA in distinct_values, so this is a clean non-null identifier."
+    },
+    {
+      "source_column": "name",
+      "action": "rename",
+      "target_name": "airline_name",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "Renamed from the generic 'name' to 'airline_name' for clarity; null_rate is 0.0 and distinct_count is 16 with full airline names such as 'Delta Air Lines Inc.' and 'Southwest Airlines Co.' in distinct_values."
+    },
+    {
+      "source_column": "_airbyte_raw_id",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata: true; it is a capture-tool UUID with no business meaning, dropped per cleanup rule."
+    },
+    {
+      "source_column": "_airbyte_extracted_at",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata: true; distinct_count is 1 with a single extraction timestamp '2026-09-02T23:26:17', a pipeline artifact rather than business data."
+    },
+    {
+      "source_column": "_airbyte_meta",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "JSON",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Flagged is_airbyte_metadata: true; distinct_count is 1 with constant value '{}', carrying no business content."
+    }
+  ],
+  "dedupe_strategy": "none",
+  "dedupe_keys": [],
+  "grain_keys": [
+    "carrier"
+  ],
+  "decisions": [
+    {
+      "key": "decisionGrain",
+      "value": "carrier-is-grain",
+      "rationale": "carrier has distinct_count 16 equal to row_count 16 and null_rate 0.0, making it a reliable natural key for one row per airline carrier."
+    },
+    {
+      "key": "decisionExactDuplicates",
+      "value": "no-duplicates-found",
+      "rationale": "dataset.duplicate_row_rate is 0.0 across dataset.row_count 16, so no exact-duplicate removal is needed."
+    },
+    {
+      "key": "decisionDropAirbyteMetadata",
+      "value": "excluded-as-capture-artifacts",
+      "rationale": "_airbyte_raw_id, _airbyte_extracted_at, and _airbyte_meta are all flagged is_airbyte_metadata: true and carry no business meaning, so they are dropped."
+    },
+    {
+      "key": "decisionRenameName",
+      "value": "renamed-to-airline-name",
+      "rationale": "The bronze column 'name' is ambiguous outside context; renamed to 'airline_name' to clarify it refers to the carrier's full airline name, matching the 16 distinct values like 'United Air Lines Inc.'"
+    }
+  ],
+  "purpose": "This table provides a clean, deduplicated reference mapping of two-letter airline carrier codes to their full airline names, intended to feed joins against flight or booking fact tables keyed on carrier code.",
+  "usage": "Consumers should join on the 'carrier' column, which is the declared grain and unique across all 16 rows; 'airline_name' is safe to use directly for display with no null handling required since both columns have zero nulls.",
+  "limitations": "The profile shows only 16 rows with no duplicates and no nulls, so no row-level quality issues were found to exclude or flag; this table reflects a single small reference extract as of the profiled run and should be re-validated if the carrier list grows or changes."
+}

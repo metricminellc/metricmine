@@ -1,0 +1,49 @@
+{
+  "columns": {
+    "draft": 2,
+    "oracle": 3,
+    "ordinal_order_equal": false,
+    "shared": 0
+  },
+  "first_class_checks": {
+    "agree": 0,
+    "checked": 0,
+    "per_field": {
+      "logicalType": "0/0",
+      "physicalType": "0/0",
+      "primaryKey": "0/0",
+      "primaryKeyPosition": "0/0",
+      "required": "0/0"
+    }
+  },
+  "grain": {
+    "draft": [
+      "carrier"
+    ],
+    "oracle": [
+      "carrier_code"
+    ],
+    "order_equal": false,
+    "set_equal": false
+  },
+  "mismatches": [
+    "carrier_code: missing from the draft",
+    "carrier_name: missing from the draft",
+    "captured_at: missing from the draft",
+    "carrier: extra in the draft",
+    "airline_name: extra in the draft"
+  ],
+  "oracle_id": "silver_nyc_airlines",
+  "rule_types": {
+    "column_equal": false,
+    "table_draft": [
+      "library:rowCount",
+      "sql"
+    ],
+    "table_equal": true,
+    "table_oracle": [
+      "library:rowCount",
+      "sql"
+    ]
+  }
+}

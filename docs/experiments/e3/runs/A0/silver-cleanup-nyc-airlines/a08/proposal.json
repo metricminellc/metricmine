@@ -1,0 +1,80 @@
+{
+  "target_table": "silver_airlines",
+  "columns": [
+    {
+      "source_column": "carrier",
+      "action": "keep",
+      "target_name": "carrier",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 with 0 nulls, and distinct_count of 16 equals the table's row_count of 16, so carrier is a two-letter IATA code that uniquely identifies each row (samples: 9E, AA, AS, DL, UA, WN)."
+    },
+    {
+      "source_column": "name",
+      "action": "keep",
+      "target_name": "name",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": true,
+      "null_handling": "not_applicable",
+      "rationale": "null_rate is 0.0 with 0 nulls and distinct_count is 16, matching full airline legal names such as 'Delta Air Lines Inc.' and 'Southwest Airlines Co.' with no truncation markers observed."
+    },
+    {
+      "source_column": "_airbyte_raw_id",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "VARCHAR",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Marked is_airbyte_metadata true; it is a capture-tool UUID (e.g. 06a98b09-9d5f-7d1f-8000-66033e8441d3) with no business meaning and is dropped per policy."
+    },
+    {
+      "source_column": "_airbyte_extracted_at",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "date",
+      "physical_type": "TIMESTAMP",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Marked is_airbyte_metadata true; distinct_count 1 with min and max both 2026-09-02T23:26:17 confirms it is a single ingestion-run timestamp, dropped per policy."
+    },
+    {
+      "source_column": "_airbyte_meta",
+      "action": "drop",
+      "target_name": "",
+      "logical_type": "string",
+      "physical_type": "JSON",
+      "required": false,
+      "null_handling": "not_applicable",
+      "rationale": "Marked is_airbyte_metadata true; distinct_count 1 with the only value '{}' shows it carries no useful content and is dropped per policy."
+    }
+  ],
+  "dedupe_strategy": "none",
+  "dedupe_keys": [],
+  "grain_keys": [
+    "carrier"
+  ],
+  "decisions": [
+    {
+      "key": "decisionGrain",
+      "value": "carrier-is-grain",
+      "rationale": "distinct_count for carrier is 16 and dataset.row_count is 16, so carrier alone uniquely identifies every row; it is retained as required with not_applicable null handling, making it a safe primary key."
+    },
+    {
+      "key": "decisionDedupe",
+      "value": "no-dedupe-needed",
+      "rationale": "dataset.duplicate_row_rate is 0.0 across row_count 16, so no exact duplicate rows exist in bronze and no dedupe step is proposed."
+    },
+    {
+      "key": "decisionDroppedMetadata",
+      "value": "dropped-airbyte-columns",
+      "rationale": "_airbyte_raw_id, _airbyte_extracted_at, and _airbyte_meta are all flagged is_airbyte_metadata true in the profile and are capture-tool artifacts, so all three are dropped from silver."
+    }
+  ],
+  "purpose": "This table is a small reference dimension of airline carriers, mapping each two-letter carrier code to its full legal airline name, intended to feed joins from flight or booking fact tables that only carry the carrier code.",
+  "usage": "Join downstream fact tables to this table on carrier to resolve the human-readable airline name; both carrier and name are populated for every row (null_rate 0.0) so no null-handling logic is required by consumers.",
+  "limitations": "The table is tiny (row_count 16) and was observed with zero duplicate rows and zero nulls in this profile snapshot, so no deduplication or null-tolerance logic was built in; consumers should be aware this cleanup reflects only the columns and values present in this single profiling run, and any newly added carriers would need re-profiling."
+}
