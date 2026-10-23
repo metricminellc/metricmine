@@ -1,0 +1,1 @@
+This source is the airlines table of the nycflights13 R data package: the Bureau of Transportation Statistics carrier lookup, reduced to the sixteen carriers that flew from New York City in 2013. As the package documents the columns: carrier is the two-letter abbreviation, and name is the carrier's full name.
