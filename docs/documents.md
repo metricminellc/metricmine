@@ -369,7 +369,11 @@ not served, until the mapped column is bound in its own right. PDF, Excel, and R
 and a pin decision. `public` locations are never fetched by the scan,
 the tests, or CI. There is no CODEOWNERS file; D-43 names it as the
 control for a steward when one exists. Document change kinds in the
-context proposal path stay HW-22.
+context proposal path are enumerated by D-44 (`add_document`,
+`bind_document`, `unbind_document`, `recertify_document`,
+`retire_document`) and land with the slice that serves governed
+meaning; until then a document change beyond `bind` is a hand edit a
+reviewer reads.
 
 ## Rules that bind this surface
 
