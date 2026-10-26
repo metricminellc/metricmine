@@ -89,6 +89,7 @@ order by design.
 | [F-70](#f-70) | The common Python readers' convenient reads return a Word file's body paragraphs and a deck's text boxes only: tables, text boxes, headers, footers, footnotes, endnotes, grouped shapes, and notes each need a separate call, and a pending redline reads as neither view | Governed documents rung |
 | [F-71](#f-71) | An anchor check measures that a quote is still present: an untouched quote beside a new sentence that contradicts it reads as intact, a whitespace re-wrap reads as unchanged, and a punctuation edit inside the quote reads as broken | Governed documents rung |
 | [F-72](#f-72) | DuckDB's `query`, `query_table`, and `json_execute_serialized_sql` table functions evaluate a string as a statement or a table, `duckdb_table_sample` and `pragma_storage_info` take a table's name, and a flat exclusion of CTE names passes a CTE that shadows its own source, so a scope gate on a statement's base tables alone is open; the served `query` refuses the five functions by name and reads CTE names by scope | Serving rung, continued |
+| [F-73](#f-73) | At head's describe stance the first attempt on the 34-column `silver_flights` table stops on the 16384 `max_tokens` cap in 14 of 20 live runs, and the bounded retry re-sends the truncated response, so a two-attempt run's input tokens run about 2.4 times a clean run's | Agent rung, continued |
 
 ## Command surface (datacontract-cli 1.0.12)
 
@@ -2065,3 +2066,54 @@ a gold view that read another schema would pass it, and the project's
 gold views read gold alone. (Evidence: the Prep C probe transcript;
 `tests/test_query_scope.py`, which lands with the implementing pull
 request.)
+
+## Agent rung, continued (the E3 experiment, October 2026)
+
+### F-73
+**At head's describe stance, the first attempt on the 34-column
+`silver_flights` table stops on the `max_tokens` cap of 16384 in 14 of
+20 live runs, and the bounded retry then re-sends the truncated
+response, so a two-attempt run's input tokens are about 2.4 times a
+clean run's and a three-attempt run's about four.** Measured on October
+23, 2026, through the real proposer path on the branch
+`experiment/e3-skeleton-and-context` at `cb27197` (the eval lane's arms
+`B-baseline` and `B`, 10 runs each on `describe-silver-flights`, the
+34-column `silver_flights` profile at `v0001`), at `claude-sonnet-5`
+under effort `high` with `max_tokens` 16384, the value
+`config/default.yaml` has carried since Session P (raised from 8192
+after both Session O first attempts stopped on the cap, as the comment
+beside the value records). `B-baseline` ran head's describe prompt at
+1.0.0 and head's table-contract schema; `B` ran the branch's skeleton
+with the 1.1.0 prompt. The first attempt stopped on `max_tokens` in 8 of
+10 `B-baseline` runs and 6 of 10 `B` runs; each run's `record.json`
+carries `response stopped on 'max_tokens', not end_turn; the proposal is
+incomplete` as its first attempt's only error. Every retry stopped on
+`end_turn`. Three `B-baseline` runs needed a third attempt because the
+second attempt failed a groundedness check (`accepted_values_subset on
+'is_cancelled' lists values absent from the profiled distinct_values`),
+not the cap. The harness feeds the errors back with the truncated
+response, so a two-attempt run's input tokens ran 27286 to 30197 against
+12048 for a clean `B-baseline` run, 2.42 times at the median, and a
+three-attempt run's 46295 to 49262; the three three-attempt runs cost
+$0.4342, $0.4204, and $0.4319 against $0.1656 and $0.1769 for the two
+clean runs, past three times the fixture's estimate of $0.1194, the
+threshold the runner marks `COST-HIGH`. The clean first attempts
+finished at 14149 to 16383 output tokens, so the cap sits inside the
+range this table's describe output needs. No other fixture in any arm at
+any of the three models stopped on the cap: 406 of 420 first attempts
+passed lint and groundedness, and the 14 that did not are these. What
+this bounds: the cap is a configuration value and not a register one
+(the value's own comment: D-21 requires a cap, not this cap), so a fix
+is a configuration or prompt change and never a register one; the two
+shapes the backlog item names are a cap per stance and an output budget
+the describe prompt states, and whichever lands is measured on the same
+fixture first. Until then a describe run on a table of this width pays
+about twice its clean input cost whenever the first attempt is cut,
+which is where the `B-baseline` batch ran to 185 percent of its
+estimate. The skeleton does not remove the cut: under `B` the model
+still writes every column's description, and the clean `B` runs finished
+at 14409 to 16383 output tokens. (Evidence: the branch's
+`docs/experiments/e3/ledger.jsonl` and the records under
+`docs/experiments/e3/runs/B-baseline/describe-silver-flights/` and
+`docs/experiments/e3/runs/B/describe-silver-flights/`; the record
+`docs/experiments/e3-skeleton-and-context.md`.)
