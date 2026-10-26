@@ -101,7 +101,7 @@ A bounding case (profile near the 30k-input-token cap, contract near 5k output t
 
 ## 7. What this layer never does
 
-No third runtime agent; the generate-and-verify authoring loop stays in the SDLC layer as Claude Code pull requests (D-10). No autonomous multi-step agents (a standing non-goal, now backed structurally: one call, no loop, no tools). No MCP at proposer runtime. No writes to `contracts/`, `transform/`, or the warehouse. No API key in the replay path.
+No third runtime agent; the generate-and-verify authoring loop stays in the SDLC layer as Claude Code pull requests (D-10). No autonomous multi-step agents (a standing non-goal, now backed structurally: one call, no loop, no tools). No MCP at proposer runtime. No writes to `contracts/`, `transform/`, or the warehouse. No API key in the replay path. No glossary term and no ontology concept as a proposer input: a context proposal is a change set a person runs through a deterministic command and certifies by pull request, never a proposer call (D-44).
 
 ## Appendix A: Proposal record fields
 

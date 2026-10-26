@@ -39,7 +39,11 @@ document states), and findings F-68 to F-71. Decision Record 015
 (October 19, 2026) carries Amendment AA to D-30 and D-31 jointly
 (governed documents served: the compiled-schema bump, the harvest, the
 budget, the staleness check), Amendment AB to D-31 (the tools'
-annotations and the query tool's gold scope), and finding F-72. The
+annotations and the query tool's gold scope), and finding F-72.
+Decision Record 016 (October 26, 2026) carries D-44, governed meaning
+(the glossary and ontology registers, the binding by id and content
+digest, the change-set command, the module's boundary), and Amendment
+AC to D-35 (the scan's meaning states). The
 lettering past Z: amendments take two letters in spreadsheet column
 order (AA, AB, and so on through AZ, then BA).
 
@@ -85,7 +89,7 @@ unless amended.
 | [D-32](#d-32) | MCP SDK: official mcp as a project dependency | adopted |
 | [D-33](#d-33) | Demo export: content equality by query, never bytes | adopted |
 | [D-34](#d-34) | Proposer model selection: pinned default, allow-listed override | adopted |
-| [D-35](#d-35) | Proposer stances and the adoption scan; the scan reports document states (Amendment Z) | adopted |
+| [D-35](#d-35) | Proposer stances and the adoption scan; the scan reports document states (Amendment Z) and meaning states (Amendment AC) | adopted |
 | [D-36](#d-36) | The typed surface: a materialized mart by default | adopted |
 | [D-37](#d-37) | Local enforcement hooks in the SDLC layer | adopted |
 | [D-38](#d-38) | Incremental materialization behind engine.materialization | adopted |
@@ -94,6 +98,7 @@ unless amended.
 | [D-41](#d-41) | The multi-source proof and the star trial | adopted |
 | [D-42](#d-42) | Supported platforms: macOS, Linux, Windows x64; the task entry point | adopted |
 | [D-43](#d-43) | Governed documents: the register, the binding, the derived state | adopted |
+| [D-44](#d-44) | Governed meaning: the glossary and ontology registers, the binding, the change-set command | adopted |
 
 ## The decisions
 
@@ -1052,6 +1057,39 @@ overdue review included. The calendar is a parameter: the scan derives
 the states for the run's UTC day, the two commands that read a calendar
 (`bind` and `verify`) take `--today` and default to the same UTC day,
 and every test fixes it.
+Amended October 26, 2026 (Record 016, Amendment AC): the adoption scan
+also reports the state of every glossary and ontology binding the
+meaning registers carry ([D-44](#d-44)), derived on every run by the
+governed meaning module, written to the outbox with the plan, and never
+stored. The plan carries a Governed meaning section beside the queue and
+the Governed documents section: each register's standing (`conforms`,
+`nonconforming` with the reason, or `absent`), the state counts in a
+fixed order, and one item per binding with its next command. The states
+are `in_sync` (the term's or the concept's current digest equals the one
+the binding recorded and the element is in a committed contract),
+`term_changed` and `concept_changed` (the digest moved under a standing
+binding; the item names the binding and the re-bind that clears it),
+`term_missing` and `concept_missing` (the binding names a row the
+register no longer carries), `term_deprecated` and `concept_deprecated`
+(the row's status is `deprecated`, served as declared with its
+`superseded_by` when one exists), and `binding_broken` (a binding names
+a contract or column `contracts/` does not carry); the flag is
+`review_overdue`. Meaning items never enter the queue the batch driver
+walks, and a meaning state's next command never routes a term or a
+concept into a proposer (D-23 as amended by Amendment H). The plan's
+`scan_schema_version` moves to `1.2.0` for the added `meaning` key; the
+model keys and the `documents` key are unchanged. The scan reports and
+never judges: the gate of record is the unit lane's test that every
+committed register conforms and every committed binding reads
+`in_sync`, and the module's `verify` command is the person's local form
+of it, failing on a register that does not conform, a failing
+error-severity rule, a `term_changed`, `concept_changed`,
+`term_missing`, or `concept_missing` binding, or a `binding_broken`
+one, and reporting everything else, a deprecation and an overdue review
+included. The calendar is a parameter: the scan derives the states for
+the run's UTC day, the commands that read a calendar (`propose` and
+`verify`) take `--today` and default to the same UTC day, and every
+test fixes it.
 
 ### D-36
 **The typed surface: a materialized mart by default.** For every fact
@@ -1469,6 +1507,192 @@ where authored meaning lives (D-05, D-06); an upstream contribution;
 document change kinds in the context proposal path. Full
 text: Decision Record 014.
 
+### D-44
+**Governed meaning: the glossary and ontology registers, the binding,
+the change-set command.** A business term or a concept a person has
+certified as the label of a contracted element is governed by one
+sentence: the contract's sentence stays the certified claim, the term or
+the concept is its label, a register records each label with a content
+digest and records the binding between a label and a contract element,
+the scan derives each binding's state on every run, and the merge stays
+the only approval this project gives. Meaning is descriptive only: a
+term or a concept labels an element and never drives a join, a key, a
+type, or a transform, and the shared business-entity dimensions the
+[D-41](#d-41) verdict kept out of gold stay out. **The two registers**
+take the documents register's shape ([D-43](#d-43)): two ordinary ODCS
+contracts with no dbt model, `contracts/glossary_register.odcs.yaml`
+(`glossary_terms`, `glossary_bindings`) and
+`contracts/ontology_register.odcs.yaml` (`ontology_concepts`,
+`ontology_bindings`), their rows as committed YAML under
+`meaning/glossary/` and `meaning/ontology/`, held to their contracts by
+the module's loader, and their quality rules executed in the module's
+`verify` command and the unit lane at the severity each rule declares
+(D-28). `glossary_terms` holds one row per term: a stable `term_id`
+(lowercase, underscores; never the label), the term as people say it,
+the definition in the owner's words, the synonyms (separated by `; `;
+a synonym belongs to one term and never equals a term's label), the
+owner (a person or a team, never an agent or a model name), the status
+(`active` or `deprecated`, a closed field), for a deprecated term the
+`superseded_by` id of the term that replaces it when one exists, who
+declared the row and when, and a review date. `glossary_bindings` holds
+one row per contract element a term labels: the term's id, the contract
+id, the column name (the empty string for the table itself), the term's
+content digest as the term read when the binding was made, the person's
+intent verbatim with its sha256 (the Amendment I pattern), and who bound
+it and when. `ontology_concepts` holds one row per concept: a stable
+`concept_id`, the label, the parent concept's id or none at a root, the
+definition, the owner, the status, `superseded_by`, who declared it and
+when, and a review date; `ontology_bindings` holds one row per element a
+concept labels, with the concept's digest in place of the term's, and an
+element carries one concept: a table's concept is its entity type and a
+column's concept is what the column carries. The contracts' `error`
+rules hold the closed fields, the unique ids and labels, the synonym
+ownership, `superseded_by` (only a deprecated row names one, and it
+names a row the register carries), the parent (a concept the register
+carries, never the concept itself, and a parent graph with no cycle,
+measured by a recursive rule), every binding naming a row the register
+carries, and a binding's digest and uniqueness; the review date is a
+`warn` rule, never a red gate. **Identity is a stable id and a content
+digest.** A term's digest is the sha256 of the canonical bytes of its
+`term_id`, `term`, and `definition` after NFKC and whitespace
+normalization and nothing else; synonyms are served and never hashed,
+so adding or removing one moves no binding. A concept's digest is a node
+digest over its `concept_id`, `label`, `parent_id`, and `definition`: a
+parent change re-asks the bindings of the concept whose parent moved and
+not its descendants' (the ancestor path is not hashed). A re-wrapped or
+differently normalized definition keeps its digest; a changed word moves
+it. **A register, never a source.** A glossary kept as a spreadsheet is
+a table and an ontology is a graph, and both are governed as registers
+and never as documents, but neither lands through the ingestion path:
+the samples gate asks every landed sample for a publisher's source and
+license and a pinned digest, which a steward's own glossary does not
+have; a landed table is a profiling target and its samples are a
+proposer's input ([D-23](#d-23) as amended by Amendment H), where a
+glossary's text is pasted text; and a source moves the configuration,
+the profile, a silver contract and model, the landing's counts and
+digests, the README, the source and demo pages, the samples gate, the
+Windows workflow, and the website's source counts, where a register row
+moves none of them (the samples gate's refusal measured and the
+surfaces counted by reading, October 26, 2026). A register's rows change by
+pull request under the register's digest with no contract version bump
+of their own; the register contract's version moves when its schema or
+its rules move (D-08 as usual). **The binding lives in the register
+first.** No data contract carries a pointer in this slice and no data
+contract moves per binding; the compiler, when it harvests bindings,
+joins them to fields at compile time. When a column-level pointer comes
+it is rendered from the register by its own slice and never uses a link
+type the linter resolves
+([F-68](../verification/gate_proof_findings.md#f-68)): the pinned linter
+accepts `authoritativeDefinitions` entries of type `glossary`, `ontology`,
+and a custom type at the table and the column level and `businessName`
+at both levels (measured October 26, 2026, twice at 1.0.12 and once at
+1.2.8), and it refuses `apiVersion: v3.2.0`, a `context` block under
+v3.1.0, and any `relationships` type but `foreignKey`, so the pin holds
+(D-05, D-06). A contract pull request that renames a bound element
+carries the register's re-pointed rows, because the rows are neither
+contract nor transform and the unit lane holds every committed binding
+to a column a committed contract carries. **The change set and the
+command.** A context proposal is a declared change set: a file in the
+gitignored outbox (`proposals/meaning/<name>.changes.yaml`) listing
+changes in a closed vocabulary, each with its fields and its rationale,
+and two fields the person supplies, `by` (the person's name) and
+`intent` (the person's words, verbatim). The vocabulary is, for the
+glossary, `add_term`, `amend_definition`, `rename_term`, `add_synonym`,
+`remove_synonym`, `deprecate_term`, `drop_term`, `bind`, and `unbind`;
+for the ontology, `add_concept`, `amend_concept` (the definition or the
+parent), `relabel`, `deprecate_concept`, `drop_concept`, `bind_concept`,
+and `unbind_concept`; and for governed documents, `add_document`,
+`bind_document`, `unbind_document`, `recertify_document`, and
+`retire_document`, which take the same command, record, and pull request
+when the slice that serves meaning lands them (until then a document
+change beyond `bind` is a hand edit a reviewer reads). The command,
+`python -m metricmine.meaning propose <file>` with a one-line Makefile
+target, validates by code: every kind is in the vocabulary; every bound
+element exists in a committed contract (`contracts/` is read, never the
+warehouse); every term or concept named exists in the register or is
+added in the same set; a label or a synonym owned elsewhere is refused;
+an amended definition equal to the current one is refused; a deprecation
+names a successor the register carries or the set adds, or none; a drop
+is refused while a binding stands, while the item is not yet deprecated,
+or, for a concept, while a child names it as parent; a parent change
+that would close a cycle is refused; `by` is a person. It classifies
+every change: additive (no existing binding's digest moves), changing
+(a term's or a concept's digest moves, and the command re-binds every
+binding that cites it under the set's intent, `by`, and day, listing
+each by name), or removing (a deprecation first, additive in its
+mechanics and served as declared; then a drop; HW-35, deprecate then
+drop). It renders into `proposals/meaning/<name>/`, named from the
+change-set file so a repeated draft overwrites itself and no clock is
+read, the four register files as they would read after the set, the
+re-bound rows carrying this set's intent and day, `record.json` (the set
+verbatim, the intent verbatim and hashed, the classification per change,
+the re-bound elements by name, the register digests before and after,
+who and when), and `summary.md` for the pull request body. It touches
+nothing under `meaning/` or `contracts/`, and it has no flag that
+certifies anything and no flag that relaxes a check. The person copies
+the rendered files onto a branch and opens the pull request; the
+reviewer reads the definition diff and each re-bound element beside it;
+the unit lane holds the registers to their contracts and every binding
+to its term; the merge is the only approval, and `make context` runs in
+the same pull request once the compiled context harvests the registers
+(F-29). A changed definition is never neutral: a binding whose term
+moved without a re-bind reads `term_changed` (Amendment AC) and blocks
+the merge. **Who certifies.** As D-43: a declarer, a binder, or the
+`by` of a change set is a person; code refuses the names it can check
+(the two proposers' names, the D-34 model identifiers, the resident
+subagent's name, and any `claude-` name) and the rest is the person's
+own attestation, a value in a file or on a make line being something an
+agent can supply exactly as `bind --by` is today. Consent in chat is
+permission to draft, never certification; what a person approves into
+the record is rendered by code; text gathered from a chat or a pasted
+document is untrusted, labeled authored, never executed, and read by a
+person before merge. The control for a steward, when one exists, is
+CODEOWNERS on `meaning/`; with one maintainer this slice adds none.
+**The host door is a command, not a tool.** The host's agent reads what
+exists (the register files, the module's `find`, and the served context
+through the five tools), drafts the change set, asks for consent, and
+runs the command; no MCP tool is added, the `mm` entry point is not
+widened (D-42), and a sixth tool would need a [D-31](#d-31) amendment
+and a measured need, which no host measured so far supplies (a chat host
+without a shell cannot run a command, and a host that drops the server's
+instructions cannot be steered to one). The command is host-neutral and
+model-neutral: every check that matters is code. **The boundary.** The
+governed meaning module (`src/metricmine/meaning/`) is deterministic
+code of the kind D-10 as amended by Amendment G names beside the
+proposers, never a third agent; a glossary term or an ontology concept
+is never a proposer input (D-23 as amended by Amendment H), the governed
+inputs stay the three Amendment H kinds, and the unit lane holds that no
+module under the agents package imports the meaning module or the
+compiler, as it holds for documents. The carried-by list (which elements
+carry a term) is derived from the bindings, never authored. The demo's
+terms and concepts come from the two public sources, nycflights13 and
+OurAirports, in the steward's own words. The server never prints an
+assurance it cannot check: when a term is served, the note says what the
+compile checked and never that a term is current. Two truths: when a
+term's definition and a contract's sentence disagree, the contract's
+sentence is the certified claim and the term is its label; no state
+detects the disagreement, the review date is what forces a read, and the
+disagreement is an item for a person, never an automatic override
+(D-43's rule, restated for terms). **The slices.** The decision mints by
+this documentation pull request. The implementing slice lands the two
+register contracts by their own pull request, then the module, the
+scan's section (Amendment AC), the tests, the demo's registers, and the
+spec (`docs/spec/meaning.md`) with the CLAUDE.md edits that name the
+module; the serving slice amends D-30 and D-31. **Not decided here:**
+what `get_context` serves and the budget's number (a `meaning` block
+beside `documents`, declared apart from measured, under a note; the
+per-field `terms` and `concept` lists; the served edges in Amendment
+AA's shape; a recommended budget of 6,000 characters of compact JSON per
+entry, set and measured by the amendment that serves it; the freshness
+check's two new sources; the compiled schema's next version); the
+contract-plane pointer rendered from the register; an import of a
+spreadsheet glossary or a SKOS file into the outbox; the origin of a
+draft's words per change (HW-23); the silver contracts' naming
+convention (a Backlog item), which touches the same contracts a glossary
+binds; and ODCS v3.2.0's
+`context` block, which changes where authored meaning lives only when
+the pin moves (D-05, D-06). Full text: Decision Record 016.
+
 ## Session-decision and finding IDs
 
 IDs of the form `A<n>` (working-session decisions, e.g. A4) and `F-0x`
@@ -1502,7 +1726,7 @@ authority. The mapping:
 | 12 (unified event star; the conformed calendar; conformance in silver, declared at the contract plane; the declared cross-category joins; materialization modes; the typed mart default; projections; batch-scoped gates) | D-17 (Amendments P, R), D-36 (Amendment Q), D-38, D-39, D-41 |
 | 13 (canonical_key v2, deterministic payloads) | D-18 |
 | 14 (registry binding; fact key; declared grain) | D-19 |
-| 15 (proposer runtime: one structured call; proposal schema projection; allow-listed model override; governed inputs per stance; no tools/MCP/loops; outbox-only; the deterministic code named beside the proposers) | D-21 (Amendment F), D-23 (Amendment H), D-34, D-35, D-43, evidence [F-26](../verification/gate_proof_findings.md#f-26) |
+| 15 (proposer runtime: one structured call; proposal schema projection; allow-listed model override; governed inputs per stance; no tools/MCP/loops; outbox-only; the deterministic code named beside the proposers; a term or a concept never a proposer input) | D-21 (Amendment F), D-23 (Amendment H), D-34, D-35, D-43, D-44, evidence [F-26](../verification/gate_proof_findings.md#f-26) |
 | 16 (versioned prompts; contract provenance incl. proposerStance and amendsContract; pattern-derived absence rule) | D-22 (Amendment I), D-29 |
 | 17 (human-only draft-to-contract flow; no relaxation without the flag; report-and-stop on fail-closed; keyless make demo) | D-24, D-08, D-10 (Amendment G), D-35 |
 | 18 (serving boundary: shared module, three-layer read-only, capped results, the typed-surface steer; the data and expert-context split; the served sources and their budget; the gold scope and the tools' annotations; the demo artifact as a release asset) | D-31 (Amendments W, AA, AB), D-32, D-33 (Amendment S), D-03 (Amendment S), D-30 (Amendments W, AA), D-43, evidence [F-72](../verification/gate_proof_findings.md#f-72) |
@@ -1529,7 +1753,8 @@ of the September 6, 2026 revision (Decision Record 012), and Amendments
 X and Y as of the October 3, 2026 revision (Decision Record 013), and
 D-43 (with Amendment Z to D-35) as of the October 17, 2026 revision
 (Decision Record 014), and Amendments AA and AB as of the October 19,
-2026 revision (Decision Record 015). D-20's
+2026 revision (Decision Record 015), and D-44 (with Amendment AC to
+D-35) as of the October 26, 2026 revision (Decision Record 016). D-20's
 substance
 is encoded directly in
 [`.github/workflows/contract-gate.yml`](../../.github/workflows/contract-gate.yml)
