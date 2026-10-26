@@ -36,6 +36,21 @@ measurements.
   response. Nothing
   in the lane binds; no decision is minted; the proposers, the
   prompts, the pins, and the serving layer on main are unchanged.
+- D-44, governed meaning, and Amendment AC to D-35 in the decision
+  register (Decision Record 016): the glossary and ontology registers
+  as ordinary contracts with rows in git, in the documents register's
+  shape; a term identified by a stable id and a content digest over
+  its label and definition, a concept by a node digest; a binding by
+  id and digest, in the register first and in no data contract; the
+  change-set command with its closed vocabulary, its classes
+  (additive, changing, removing; deprecate then drop; a changed
+  definition re-binds every element that cites it under one recorded
+  intent), and the pull request as the only approval; the scan's
+  Governed meaning section with its derived states; and the module's
+  boundary, under which a term or a concept is never a proposer
+  input (CLAUDE.md rule 15, the agent-layer spec's section 7). The
+  decision mints before any implementing change: no code, contract,
+  pin, prompt, or model changes here.
 
 ### Changed
 
