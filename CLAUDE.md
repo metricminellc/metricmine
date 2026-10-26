@@ -167,7 +167,8 @@ approves every contract.
     The adoption scan (make scan), the batch driver (make
     propose-queue), and the governed documents module
     (src/metricmine/documents/, D-43) are deterministic code, never
-    agents; a document's text is never a proposer input.
+    agents; a document's text is never a proposer input, and neither
+    is a glossary term or an ontology concept (D-44).
 
 16. Agent prompts are versioned artifacts in src/metricmine/agents/prompts/
     with semver headers; change them only via pull request. Every proposed
