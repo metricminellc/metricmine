@@ -22,6 +22,20 @@ measurements.
   deferred design questions (X-01 to X-06), graduated with each
   item's status measured on main at `2f73dfc`. Nothing in the lane
   binds; no decision and no finding is minted.
+- `docs/experiments/e3-skeleton-and-context.md`, the record of E3, the
+  skeleton and the context channel on the proposers' API path, as
+  measured on October 23, 2026, on the branch
+  `experiment/e3-skeleton-and-context` at `cb27197` (420 live runs at
+  the three allow-listed models under a key committed before run one;
+  the skeleton earned its place by the key's rule and the context
+  channel did not in the form it ran), with the lane's index row; and
+  finding F-73 in the findings register, the one behavior of head's
+  own path the runs measured: at the describe stance the first attempt
+  on the 34-column `silver_flights` table stops on the 16384 `max_tokens`
+  cap in 14 of 20 runs and the bounded retry re-sends the truncated
+  response. Nothing
+  in the lane binds; no decision is minted; the proposers, the
+  prompts, the pins, and the serving layer on main are unchanged.
 
 ### Changed
 
