@@ -196,6 +196,31 @@ doc-bind:
 doc-verify:
 	uv run python -m metricmine.documents verify
 
+# Governed meaning (D-44): deterministic commands, never agents, and never
+# an MCP tool. meaning-find lists terms and concepts with what carries each
+# (derived from the bindings); meaning-show prints one with its bindings
+# and their states; meaning-propose runs a change-set file (by, intent,
+# changes in the closed vocabulary) and renders the registers as they would
+# read into the gitignored outbox, never under meaning/ or contracts/;
+# meaning-verify holds both registers to their contracts and exits 1 on
+# what blocks a merge. The day is a parameter on the `uv run` line
+# (--today) when a test or a replay fixes it.
+.PHONY: meaning-find
+meaning-find:
+	uv run python -m metricmine.meaning find "$(QUERY)"
+
+.PHONY: meaning-show
+meaning-show:
+	uv run python -m metricmine.meaning show "$(ID)"
+
+.PHONY: meaning-propose
+meaning-propose:
+	uv run python -m metricmine.meaning propose "$(CHANGES)"
+
+.PHONY: meaning-verify
+meaning-verify:
+	uv run python -m metricmine.meaning verify
+
 # The live eval lane over the golden-profile set (D-25): first-attempt lint
 # and groundedness pass rates with token and cost actuals; honors the D-34
 # override the same way. Needs the key; never runs in CI.
