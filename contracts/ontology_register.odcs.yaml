@@ -1,0 +1,222 @@
+# Contract: ontology_register v1.0.0 (ODCS v3.1.0), the governed ontology
+# register (D-44). Two tables about concepts, never a bronze source:
+# ontology_concepts (one row per concept: an entity type a table carries
+# or a concept a column carries, with its parent concept where one exists,
+# its certified definition, its owner, its status, who declared it and
+# until when) and ontology_bindings (one row per contract element a
+# concept labels, carrying the concept's node digest as it read when the
+# binding was made; an element carries one concept). The rows live in
+# meaning/ontology/ as YAML and are held to this contract by the meaning
+# module (verify) and by the unit lane; gate three records the contract as
+# having no model. Descriptive only: a concept labels an element and never
+# declares a join, a key, a type, or a transform.
+# Hand-authored (rule 16: proposedBy human, no stance keys, provenanceNote
+# because no profile artifact exists for a register).
+apiVersion: v3.1.0
+kind: DataContract
+id: ontology_register
+name: Governed ontology register
+version: 1.0.0
+status: active
+domain: governance
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: 'The register of concepts a person has certified: an entity type per
+    table and a concept per column, with a parent concept where one exists, and
+    one binding row per contract element a concept labels.'
+  usage: 'Read a concept row as a certified label with its parent and its
+    definition. Read a binding row as a claim: this contract element carries
+    this concept, as the concept read (its content digest) when the binding
+    was made. A binding never says the concept is current; the scan derives
+    that on every run and stores nothing.'
+  limitations: 'A concept labels an element. It never declares a join, a key, a
+    type, or a transform; the shared business-entity dimensions the D-41
+    verdict kept out of gold stay out.'
+servers:
+- server: repository
+  type: local
+  path: meaning/ontology
+  format: yaml
+  description: Where the register rows live.
+schema:
+- name: ontology_concepts
+  physicalName: ontology_concepts
+  logicalType: object
+  physicalType: table
+  description: One row per concept.
+  dataGranularityDescription: One row per concept_id.
+  properties:
+  - name: concept_id
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: Stable id of the concept (lowercase, underscores), independent of its label.
+  - name: label
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: The concept's label as people say it.
+  - name: parent_id
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: The parent concept's id, or none at a root. A parent is a concept the register carries, never the concept itself, and the parent graph has no cycle.
+  - name: definition
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: The certified definition, in the owner's words.
+  - name: owner
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: The person or team who owns the concept; never an agent or a model name.
+  - name: status
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: active or deprecated. A concept is deprecated before it is dropped, and a drop is refused while a binding stands or a child names it as parent (HW-35).
+  - name: superseded_by
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: For a deprecated concept, the id of the concept that replaces it, when one exists; the register carries that concept.
+  - name: declared_by
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: The person who declared the row; never an agent or a model name.
+  - name: declared_on
+    logicalType: date
+    physicalType: DATE
+    required: true
+    description: The day the person declared the row.
+  - name: review_by
+    logicalType: date
+    physicalType: DATE
+    required: true
+    description: Certify again or expire. After this day the row reads as review_overdue.
+  quality:
+  - type: sql
+    description: Status is a closed field.
+    query: SELECT COUNT(*) FROM ontology_concepts WHERE status NOT IN ('active', 'deprecated')
+    mustBe: 0
+    severity: error
+  - type: sql
+    description: A concept id is unique.
+    query: SELECT COUNT(*) - COUNT(DISTINCT concept_id) FROM ontology_concepts
+    mustBe: 0
+    severity: error
+  - type: sql
+    description: A concept id is lowercase letters, digits, and underscores.
+    query: SELECT COUNT(*) FROM ontology_concepts WHERE NOT regexp_matches(concept_id, '^[a-z][a-z0-9_]*$')
+    mustBe: 0
+    severity: error
+  - type: sql
+    description: A concept's label is unique.
+    query: SELECT COUNT(*) - COUNT(DISTINCT lower(trim(label))) FROM ontology_concepts
+    mustBe: 0
+    severity: error
+  - type: sql
+    description: A parent is a concept the register carries, and never the concept itself.
+    query: SELECT COUNT(*) FROM ontology_concepts c WHERE parent_id IS NOT NULL AND (parent_id = concept_id OR NOT EXISTS (SELECT 1 FROM ontology_concepts p WHERE p.concept_id = c.parent_id))
+    mustBe: 0
+    severity: error
+  - type: sql
+    description: The parent graph has no cycle.
+    query: WITH RECURSIVE up(start_id, concept_id, depth) AS (SELECT concept_id, parent_id, 1 FROM ontology_concepts WHERE parent_id IS NOT NULL UNION ALL SELECT up.start_id, c.parent_id, up.depth + 1 FROM up JOIN ontology_concepts c ON c.concept_id = up.concept_id WHERE c.parent_id IS NOT NULL AND up.depth < 64) SELECT COUNT(DISTINCT start_id) FROM up WHERE concept_id = start_id
+    mustBe: 0
+    severity: error
+  - type: sql
+    description: A superseding concept exists in the register, and only a deprecated concept names one.
+    query: SELECT COUNT(*) FROM ontology_concepts c WHERE superseded_by IS NOT NULL AND (status <> 'deprecated' OR NOT EXISTS (SELECT 1 FROM ontology_concepts s WHERE s.concept_id = c.superseded_by))
+    mustBe: 0
+    severity: error
+  - type: sql
+    description: No concept is past its review date.
+    query: SELECT COUNT(*) FROM ontology_concepts WHERE review_by < current_date
+    mustBe: 0
+    severity: warn
+- name: ontology_bindings
+  physicalName: ontology_bindings
+  logicalType: object
+  physicalType: table
+  description: One row per contract element a concept labels.
+  dataGranularityDescription: One row per (contract_id, column_name); an element carries one concept.
+  properties:
+  - name: concept_id
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: The concept's id.
+  - name: contract_id
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: The committed contract whose element carries the concept.
+  - name: column_name
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 2
+    description: The column, or the empty string for the table's entity type.
+  - name: concept_sha256
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: The concept's content digest when the binding was made; the scan reads concept_changed when the concept's current digest differs.
+  - name: intent
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: The person's words, verbatim.
+  - name: intent_sha256
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: sha256 of the intent, so a record that drifts from the words is refused.
+  - name: bound_by
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: The person who bound the concept; never an agent or a model name.
+  - name: bound_on
+    logicalType: date
+    physicalType: DATE
+    required: true
+    description: The day the person bound it.
+  quality:
+  - type: sql
+    description: Every binding names a concept the register carries.
+    query: SELECT COUNT(*) FROM ontology_bindings b WHERE NOT EXISTS (SELECT 1 FROM ontology_concepts c WHERE c.concept_id = b.concept_id)
+    mustBe: 0
+    severity: error
+  - type: sql
+    description: A binding carries the concept's digest.
+    query: SELECT COUNT(*) FROM ontology_bindings WHERE concept_sha256 IS NULL OR length(concept_sha256) <> 64
+    mustBe: 0
+    severity: error
+  - type: sql
+    description: An element carries one concept.
+    query: SELECT COUNT(*) - COUNT(DISTINCT contract_id || '|' || column_name) FROM ontology_bindings
+    mustBe: 0
+    severity: error
+team:
+  name: metricmine-maintainers
+  members:
+  - username: justinrgoff
+    role: steward
+customProperties:
+- property: proposedBy
+  value: human
+- property: proposedAt
+  value: '2026-10-26'
+- property: provenanceNote
+  value: 'Hand-authored register contract (D-44). No profile artifact exists: the
+    register is data about concepts and is never profiled or landed as a source.'
