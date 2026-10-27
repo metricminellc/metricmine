@@ -17,8 +17,8 @@ current diff when none is named). Read the committed version and the
 proposed version side by side (`git diff main -- contracts/`). Every
 item below is answered yes or no with the evidence (file and line). The
 rules are CLAUDE.md hard rules 4, 5, 6, 9, 11, 16, and 17; the decisions
-are D-08, D-22, D-30, D-35, and D-43; the findings are F-06, F-28, F-29,
-F-62, and F-68.
+are D-08, D-22, D-30, D-35, D-43, and D-44; the findings are F-06, F-28,
+F-29, F-62, and F-68.
 
 ## Checklist
 
@@ -78,6 +78,15 @@ F-62, and F-68.
     `glossary`, `ontology`, `taxonomy`, or a custom type, which the
     linter treats as an opaque link. In this slice no data contract
     carries a pointer: the binding lives in the register.
+12. Bound elements (D-44). When a contract pull request renames or
+    drops a column, or renames the contract, read
+    `meaning/glossary/bindings.yaml` and `meaning/ontology/bindings.yaml`
+    for a binding that names it: the same pull request carries the
+    re-pointed or removed rows (rows are neither contract nor
+    transform, so D-08's separation holds), because the unit lane
+    holds every committed binding to an element a committed contract
+    carries and reads `binding_broken` otherwise. A term or a concept
+    labels meaning and never justifies a type, a rule, or a grain.
 
 ## Report
 
