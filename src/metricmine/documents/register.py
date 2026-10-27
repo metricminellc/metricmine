@@ -18,6 +18,12 @@ so a record that drifts from the words a person typed is refused.
 
 Nothing here writes. The register changes only by pull request; drafts
 land in the outbox through `bind`.
+
+The mechanisms a second register in this shape needs are public here
+and take their contract or their rows as arguments: `load_yaml`,
+`parse_contract`, `rows_from`, `conform_rows`, `execute_rules`,
+`is_person`, and `sha256_text`. The governed meaning module (D-44)
+imports them; nothing is copied.
 """
 
 from __future__ import annotations
@@ -115,7 +121,7 @@ class Register:
 # ---------------------------------------------------------------- loading
 
 
-def _load_yaml(path: Path) -> dict:
+def load_yaml(path: Path) -> dict:
     """A YAML mapping, or a RegisterError that names the file and the parser's
     reason; a malformed file is nonconforming, never a traceback."""
     try:
@@ -129,8 +135,10 @@ def _load_yaml(path: Path) -> dict:
     return doc
 
 
-def load_contract(repo: Path) -> Contract:
-    doc = _load_yaml(repo / CONTRACT_PATH)
+def parse_contract(doc: dict, tables: tuple[str, ...], where: str) -> Contract:
+    """The columns and the sql rules of a register contract's table objects;
+    `tables` names the objects the contract must declare, and `where` is the
+    contract's path for the refusal."""
     columns: dict[str, tuple[Column, ...]] = {}
     rules: list[Rule] = []
     for obj in doc.get("schema") or []:
@@ -150,16 +158,21 @@ def load_contract(repo: Path) -> Contract:
                         severity=str(rule.get("severity", "error")),
                     )
                 )
-    for table in (STANDING_TABLE, BINDINGS_TABLE):
+    for table in tables:
         if table not in columns:
-            raise RegisterError(f"{CONTRACT_PATH.as_posix()} declares no schema object {table}")
+            raise RegisterError(f"{where} declares no schema object {table}")
     return Contract(id=str(doc.get("id")), version=str(doc.get("version")), columns=columns, rules=tuple(rules))
 
 
-def _rows(path: Path, key: str) -> list[dict]:
+def load_contract(repo: Path) -> Contract:
+    return parse_contract(load_yaml(repo / CONTRACT_PATH), (STANDING_TABLE, BINDINGS_TABLE), CONTRACT_PATH.as_posix())
+
+
+def rows_from(path: Path, key: str) -> list[dict]:
+    """The rows under `key` in a YAML file, or none when the file is absent."""
     if not path.is_file():
         return []
-    doc = _load_yaml(path)
+    doc = load_yaml(path)
     rows = doc.get(key)
     if rows is None:
         return []
@@ -172,10 +185,10 @@ def load_register(repo: Path) -> Register:
     """The two tables, validated against the contract. Raises RegisterError
     on the first violation, naming the file, the row, and the column."""
     contract = load_contract(repo)
-    standing = _rows(repo / REGISTER_DIR / STANDING_FILE, "documents")
-    bindings = _rows(repo / REGISTER_DIR / BINDINGS_FILE, "bindings")
-    _conform(standing, contract.columns[STANDING_TABLE], STANDING_FILE)
-    _conform(bindings, contract.columns[BINDINGS_TABLE], BINDINGS_FILE)
+    standing = rows_from(repo / REGISTER_DIR / STANDING_FILE, "documents")
+    bindings = rows_from(repo / REGISTER_DIR / BINDINGS_FILE, "bindings")
+    conform_rows(standing, contract.columns[STANDING_TABLE], STANDING_FILE)
+    conform_rows(bindings, contract.columns[BINDINGS_TABLE], BINDINGS_FILE)
     register = Register(contract=contract, standing=standing, bindings=bindings)
     for problem in integrity_problems(register):
         raise RegisterError(problem)
@@ -192,7 +205,11 @@ def _as_date(value, where: str) -> date:
     raise RegisterError(f"{where}: not a date: {value!r}")
 
 
-def _conform(rows: list[dict], columns: tuple[Column, ...], file: str) -> None:
+def conform_rows(rows: list[dict], columns: tuple[Column, ...], file: str) -> None:
+    """Every row carries the columns the contract declares and no other,
+    every required column is present, every date parses, and every other
+    value is text; the first violation names the file, the row, and the
+    column. Dates are parsed in place."""
     names = {column.name for column in columns}
     for index, row in enumerate(rows, 1):
         where = f"{file} row {index}"
@@ -263,10 +280,27 @@ def run_rules(register: Register, today: date | None) -> list[RuleResult]:
     ``today`` None the rules that read `current_date` are not run: the
     context compiler holds the register to the contract's other rules and
     reads no calendar (D-30 as amended by Amendment AA)."""
+    return execute_rules(
+        register.contract.columns,
+        {STANDING_TABLE: register.standing, BINDINGS_TABLE: register.bindings},
+        register.contract.rules,
+        today,
+    )
+
+
+def execute_rules(
+    columns_by_table: dict[str, tuple[Column, ...]],
+    rows_by_table: dict[str, list[dict]],
+    rules: tuple[Rule, ...],
+    today: date | None,
+) -> list[RuleResult]:
+    """The rule runner `run_rules` delegates to, for any register in this
+    shape: one in-memory table per entry of `rows_by_table`, typed from
+    the contract's columns, then every rule in declared order."""
     con = duckdb.connect()
     try:
-        for table, rows in ((STANDING_TABLE, register.standing), (BINDINGS_TABLE, register.bindings)):
-            columns = register.contract.columns[table]
+        for table, rows in rows_by_table.items():
+            columns = columns_by_table[table]
             ddl = ", ".join(f'"{c.name}" {"DATE" if c.physical_type.upper() == "DATE" else "VARCHAR"}' for c in columns)
             con.execute(f'CREATE TABLE "{table}" ({ddl})')
             if rows:
@@ -276,7 +310,7 @@ def run_rules(register: Register, today: date | None) -> list[RuleResult]:
                     [[row.get(c.name) for c in columns] for row in rows],
                 )
         results = []
-        for rule in register.contract.rules:
+        for rule in rules:
             if today is None:
                 if _CURRENT_DATE.search(rule.query):
                     continue

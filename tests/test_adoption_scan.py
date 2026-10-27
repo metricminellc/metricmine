@@ -442,19 +442,113 @@ def test_a_nonconforming_register_is_reported_not_raised(repo: Path) -> None:
     assert docs["register"] == "nonconforming" and "not valid YAML" in docs["detail"]
 
 
-def test_the_plan_pair_carries_the_documents_at_schema_1_1_0(repo: Path) -> None:
+def test_the_plan_pair_carries_the_documents_and_the_meaning_at_schema_1_2_0(repo: Path) -> None:
     _with_register(repo)
     assert scan.run(repo) == 0
     runs = sorted((repo / "proposals" / "scan").iterdir())
     plan = json.loads((runs[0] / "plan.json").read_text(encoding="utf-8"))
-    assert plan["scan_schema_version"] == "1.1.0"
+    assert plan["scan_schema_version"] == "1.2.0"
     assert plan["documents"]["register"] == "conforms"
     assert plan["documents"]["items"][0]["document_id"] == "policy"
-    assert "documents" not in plan["counts"]  # the model counts are unchanged in shape
+    assert plan["meaning"]["registers"] == {
+        "glossary": {"register": "absent", "detail": "no contracts/glossary_register.odcs.yaml in this tree"},
+        "ontology": {"register": "absent", "detail": "no contracts/ontology_register.odcs.yaml in this tree"},
+    }
+    assert plan["meaning"]["items"] == [] and plan["meaning"]["counts"] == {}
+    assert "documents" not in plan["counts"] and "meaning" not in plan["counts"]  # the model counts are unchanged in shape
     docs = scan.documents(repo, date(2026, 10, 17))
-    body_one = scan.render_md(repo, scan.inventory(repo), "fixedhead", docs)
-    body_two = scan.render_md(repo, scan.inventory(repo), "fixedhead", scan.documents(repo, date(2026, 10, 17)))
+    body_one = scan.render_md(repo, scan.inventory(repo), "fixedhead", docs, scan.meaning(repo, date(2026, 10, 17)))
+    body_two = scan.render_md(repo, scan.inventory(repo), "fixedhead", scan.documents(repo, date(2026, 10, 17)), scan.meaning(repo, date(2026, 10, 17)))
     assert body_one == body_two
+
+
+# ---------------------------------------------------------------- governed meaning (D-44, Amendment AC)
+
+
+def _with_meaning(repo: Path) -> None:
+    """The two register contracts, the demo's rows, and the small data
+    contracts the bindings name, beside the adopted silver_daily model."""
+    from meaning_fixtures import write_repo as write_meaning_repo
+
+    _adopted(repo)
+    write_meaning_repo(repo)
+
+
+def test_a_tree_without_the_meaning_registers_reports_them_absent(repo: Path) -> None:
+    section = scan.meaning(repo, date(2026, 10, 26))
+    assert section["registers"]["glossary"]["register"] == "absent" and section["items"] == []
+    assert "meaning" not in scan.inventory(repo)  # the batch driver's inventory never reads a term
+    body = scan.render_md(repo, scan.inventory(repo), "testhead", None, section)
+    assert "## Governed meaning" in body
+    assert "- glossary register: absent (no contracts/glossary_register.odcs.yaml in this tree)" in body
+    assert "- ontology register: absent (no contracts/ontology_register.odcs.yaml in this tree)" in body
+    assert "Empty. No binding is registered in this tree." in body
+    body = scan.render_md(repo, scan.inventory(repo), "testhead")
+    assert "- glossary register: absent\n- ontology register: absent" in body
+
+
+def test_meaning_states_ride_the_plan_and_never_the_queue(repo: Path) -> None:
+    _with_meaning(repo)
+    inv = scan.inventory(repo)
+    section = scan.meaning(repo, date(2026, 10, 26))
+    assert section["registers"]["glossary"] == {"register": "conforms", "detail": "glossary_register@1.0.0: 6 term(s), 7 binding(s)"}
+    assert section["registers"]["ontology"] == {"register": "conforms", "detail": "ontology_register@1.0.0: 7 concept(s), 4 binding(s)"}
+    assert section["counts"] == {"in_sync": 11}
+    assert all(item["state"] == "in_sync" and item["next_command"] == "none" for item in section["items"])
+    # The queue is the models' alone: no term or concept reaches a proposer (D-23 H).
+    assert [m["name"] for m in scan.queued_models(inv["models"])] == ["silver_daily"]
+    assert all("glossary" not in m["name"] and "ontology" not in m["name"] for m in inv["models"])
+    body = scan.render_md(repo, inv, "testhead", None, section)
+    assert "1. **`glossary:departure_delay`** on `silver_flights.dep_delay_minutes`: `in_sync` (flags: none)" in body
+    assert "8. **`ontology:flight`** on `silver_flights (table)`: `in_sync` (flags: none)" in body
+    assert body.index("## The queue") < body.index("## Governed documents") < body.index("## Governed meaning") < body.index("## Skipped, by decision")
+    assert "proposer" not in body.split("## Governed meaning")[1].split("## Skipped")[0]
+
+
+def test_a_planted_term_changed_and_an_overdue_review_show_in_the_plan(repo: Path) -> None:
+    from meaning_fixtures import TERMS, write_registers
+
+    _with_meaning(repo)
+    write_registers(repo, terms=[dict(TERMS[0], definition="Edited by hand, no re-bind.")] + TERMS[1:])
+    section = scan.meaning(repo, date(2028, 1, 1))
+    assert section["counts"] == {"in_sync": 9, "term_changed": 2, "review_overdue": 11}
+    item = section["items"][0]
+    assert item["state"] == "term_changed" and item["flags"] == ["review_overdue (review_by 2027-10-26)"]
+    assert item["next_command"].startswith("re-bind by pull request")  # the moved digest outranks the overdue review
+    body = scan.render_md(repo, scan.inventory(repo), "testhead", None, section)
+    assert "`term_changed` (flags: review_overdue (review_by 2027-10-26))" in body
+    assert "| `term_changed` | 2 |" in body
+    # The calendar is a parameter: on time, the flag is gone and the state stays.
+    on_time = scan.meaning(repo, date(2026, 10, 26))
+    assert on_time["counts"] == {"in_sync": 9, "term_changed": 2}
+
+
+def test_a_nonconforming_meaning_register_is_reported_not_raised(repo: Path) -> None:
+    _with_meaning(repo)
+    terms = repo / "meaning" / "glossary" / "terms.yaml"
+    terms.write_text(terms.read_text(encoding="utf-8").replace("justinrgoff", "claude-sonnet-5"), encoding="utf-8")
+    section = scan.meaning(repo, date(2026, 10, 26))
+    assert section["registers"]["glossary"]["register"] == "nonconforming" and "is not a person" in section["registers"]["glossary"]["detail"]
+    assert section["registers"]["ontology"]["register"] == "conforms" and section["counts"] == {"in_sync": 4}
+    assert "- glossary register: nonconforming (" in scan.render_md(repo, scan.inventory(repo), "testhead", None, section)
+    terms.write_text("terms: [unclosed\n", encoding="utf-8")
+    section = scan.meaning(repo, date(2026, 10, 26))
+    assert section["registers"]["glossary"]["register"] == "nonconforming" and "not valid YAML" in section["registers"]["glossary"]["detail"]
+
+
+def test_the_plan_pair_carries_the_meaning_key(repo: Path) -> None:
+    _with_meaning(repo)
+    assert scan.run(repo) == 0
+    runs = sorted((repo / "proposals" / "scan").iterdir())
+    plan = json.loads((runs[0] / "plan.json").read_text(encoding="utf-8"))
+    assert plan["scan_schema_version"] == "1.2.0"
+    assert plan["meaning"]["counts"] == {"in_sync": 11} and len(plan["meaning"]["items"]) == 11
+    assert plan["meaning"]["items"][0] == {
+        "register": "glossary", "id": "departure_delay", "label": "Departure delay", "contract_id": "silver_flights",
+        "column_name": "dep_delay_minutes", "state": "in_sync", "detail": "digest unchanged; the element is in a committed contract",
+        "flags": [], "next_command": "none",
+    }
+    assert "## Governed meaning" in (runs[0] / "plan.md").read_text(encoding="utf-8")
 
 
 @pytest.mark.local
@@ -504,4 +598,11 @@ def test_the_committed_repository_scans_clean() -> None:
     assert [item["document_id"] for item in section["items"]] == [
         "nycflights13-flights-rd"
     ]
+    # The governed meaning registers ride along too (D-44, Amendment AC):
+    # the demo's eleven bindings in sync, derived for a fixed day, and
+    # never queued.
+    meaning = scan.meaning(repo_root, date(2026, 10, 26))
+    assert meaning["registers"]["glossary"]["register"] == "conforms"
+    assert meaning["registers"]["ontology"]["register"] == "conforms"
+    assert meaning["counts"] == {"in_sync": 11}
     assert scan.queued_models(inv["models"]) == []

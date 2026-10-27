@@ -1,0 +1,37 @@
+# The governed ontology register, bindings (D-44): one row per contract
+# element a concept labels (a table's concept is its entity type), carrying
+# the concept's node digest as it read when the binding was made. Changes
+# only by pull request; a change set is rendered by `propose`.
+bindings:
+- concept_id: flight
+  contract_id: silver_flights
+  column_name: ''
+  concept_sha256: a823432585c998717bca5336da40905a48c9f9309537f1b50641176e4e4ecca2
+  intent: the unified flights table's entity type is Flight.
+  intent_sha256: a98fd5726ec05939d018310aaca6aa715b13fe0934287d4fd0d421d1bd172b5c
+  bound_by: justinrgoff
+  bound_on: 2026-10-26
+- concept_id: weather_observation
+  contract_id: silver_airport_weather
+  column_name: ''
+  concept_sha256: 627e4b05f6d0ce3fcf9225b12ef3a801d29e90566fea803853e9f55e46b4dbff
+  intent: the airport weather table's entity type is Airport weather observation.
+  intent_sha256: 5bba45448ff53989892a54d3ecc947b9e747812417535e2bd279968b25eb92f8
+  bound_by: justinrgoff
+  bound_on: 2026-10-26
+- concept_id: departure_delay
+  contract_id: silver_flights
+  column_name: dep_delay_minutes
+  concept_sha256: a7d358dd8614e9545a65e7a7bcf13a78ff1be954971a579eb31c94d59dc3e41e
+  intent: dep_delay_minutes carries the Departure delay concept.
+  intent_sha256: 67a8333e44aee4770d7ec863b5d40f28882d1d6eadba862ae790ee2e6c302224
+  bound_by: justinrgoff
+  bound_on: 2026-10-26
+- concept_id: airport
+  contract_id: silver_ourairports_airports
+  column_name: ''
+  concept_sha256: e84fcf210a1f1cc9686399c31e972351ae9f7d95862df31d1673d1e041a02be9
+  intent: 'the airports reference table''s entity type is Airport (a level-zero table: recorded and reported, never served).'
+  intent_sha256: b5415084f1e318f25fd440b9eb013de230b9f6d1966cad8128f19dd3de615f37
+  bound_by: justinrgoff
+  bound_on: 2026-10-26

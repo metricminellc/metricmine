@@ -378,13 +378,15 @@ def test_the_compile_reads_no_calendar(tmp_path: Path) -> None:
 
 
 def test_the_harvest_reaches_no_proposer() -> None:
-    """A document's text is never a proposer input (D-23 as amended by
-    Amendment H; D-43). Held three ways: no module under the agents
-    package imports the documents module or the context compiler; the
-    one agents module that imports the adoption scan (whose document
-    states never enter the queue it walks, Amendment Z) is the batch
-    driver, never a proposer; and the governed input kinds are the three
-    Amendment H names, so the harvest has no path into a proposal."""
+    """A document's text is never a proposer input, and neither is a
+    glossary term or an ontology concept (D-23 as amended by Amendment
+    H; D-43; D-44). Held three ways: no module under the agents package
+    imports the documents module, the meaning module, or the context
+    compiler; the one agents module that imports the adoption scan
+    (whose document and meaning states never enter the queue it walks,
+    Amendments Z and AC) is the batch driver, never a proposer; and the
+    governed input kinds are the three Amendment H names, so neither
+    harvest has a path into a proposal."""
     agents = REPO / "src" / "metricmine" / "agents"
     imports_by_module: dict[str, set[str]] = {}
     kinds: set[str] = set()
@@ -400,7 +402,7 @@ def test_the_harvest_reaches_no_proposer() -> None:
                 kinds.add(str(node.value.value))
         imports_by_module[path.relative_to(agents).as_posix()] = imported
     forbidden = {
-        module: {m for m in imported if m.startswith(("metricmine.context", "metricmine.documents"))}
+        module: {m for m in imported if m.startswith(("metricmine.context", "metricmine.documents", "metricmine.meaning"))}
         for module, imported in imports_by_module.items()
     }
     assert all(not hit for hit in forbidden.values()), forbidden

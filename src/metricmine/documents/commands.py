@@ -30,9 +30,10 @@ renders, merged by pull request.
 
 from __future__ import annotations
 
+import argparse
 import os
 from dataclasses import dataclass, field
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path, PurePosixPath
 
 import yaml
@@ -480,27 +481,100 @@ def render_yaml(key: str, rows: list[dict], header: str) -> str:
     return header + body
 
 
+class FenceError(Exception):
+    """A write would leave the outbox; the message names the path."""
+
+
+def fenced_dir(repo: Path, out: Path, fence: Path) -> Path:
+    """`out` as a directory a draft may be written into: under `fence`
+    (a folder of the gitignored outbox, never the fence itself), with no
+    symbolic link on the path from the repository to it, so a link
+    planted in the outbox cannot carry a write into the register or
+    anywhere else (F-74). The path is read as written, before any link
+    is followed, so a planted link is named as a link; a path that still
+    resolves outside the fence is named as outside it. The directory is
+    created. Raises FenceError, naming the path, before anything is
+    written."""
+    rel = fence.relative_to(repo).as_posix()
+    outside = f"{out.as_posix()} is outside {rel}/; a draft lands only in the gitignored outbox, never in the register or outside the repository"
+    lexical = Path(os.path.normpath(out.absolute()))
+    try:
+        inside = lexical.relative_to(Path(os.path.normpath(fence.absolute())))
+    except ValueError:
+        raise FenceError(outside) from None
+    if not inside.parts:
+        raise FenceError(f"{out.as_posix()} is {rel}/ itself; a draft lands in a directory of its own under it")
+    probe = Path(os.path.normpath(repo.absolute()))
+    for part in fence.relative_to(repo).parts + inside.parts:
+        probe = probe / part
+        if probe.is_symlink():
+            raise FenceError(f"{probe.as_posix()} is a symbolic link; a draft is written through no link")
+    try:
+        out.resolve().relative_to(fence.resolve())
+    except ValueError:
+        raise FenceError(outside) from None
+    out.mkdir(parents=True, exist_ok=True)
+    return out
+
+
+def check_fenced(path: Path) -> None:
+    """Refuse a symbolic link where a draft file or its directory stands;
+    writes nothing. A writer checks every path it will write before it
+    writes the first, so a refusal leaves nothing behind (F-74)."""
+    if path.is_symlink() or path.parent.is_symlink():
+        raise FenceError(f"{path.as_posix()} is a symbolic link; a draft is written through no link")
+
+
+def write_fenced(path: Path, text: str) -> None:
+    """Write `text` to a path under a fenced directory, after the same
+    check, so a link planted between the check and the write is refused
+    as well."""
+    check_fenced(path)
+    path.write_text(text, encoding="utf-8")
+
+
+def tree_digest(root: Path) -> str:
+    """One sha256 over every file under `root` (its relative path and its
+    bytes), so a command can check that a protected folder is unchanged
+    before it says so (design rule 5: never print an assurance that was
+    not checked)."""
+    import hashlib
+
+    digest = hashlib.sha256()
+    for path in sorted(p for p in root.rglob("*") if p.is_file()):
+        digest.update(path.relative_to(root).as_posix().encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(path.read_bytes())
+        digest.update(b"\0")
+    return digest.hexdigest()
+
+
 def write_draft(repo: Path, draft: Draft, outbox: Path | None = None) -> Path:
     """Write the two register files and a DRAFT.md into the outbox. The
     directory is named from the binding, so a repeated draft overwrites
     itself and no clock is read. The outbox is fenced to `proposals/` in
     the repository: a path anywhere else, the register's own folder
-    included, is refused before anything is written, so the printed
-    assurance that the register is unchanged is a checked one."""
+    included, is refused before anything is written, and no file is
+    written through a symbolic link (F-74), so the printed assurance that
+    the register is unchanged is a checked one."""
     b = draft.binding_row
     out = outbox or (repo / OUTBOX / f"{b['bound_on'].isoformat()}_{b['document_id']}_{b['contract_id']}.{b['column_name']}")
-    fence = repo / "proposals"
     try:
-        out.resolve().relative_to(fence.resolve())
-    except ValueError:
-        raise CommandError(
-            f"--outbox {out.as_posix()} is outside {fence.relative_to(repo).as_posix()}/; a draft lands only in the"
-            " gitignored outbox, never in the register or outside the repository"
-        ) from None
-    out.mkdir(parents=True, exist_ok=True)
-    (out / STANDING_FILE).write_text(render_yaml("documents", draft.standing, STANDING_HEADER), encoding="utf-8")
-    (out / BINDINGS_FILE).write_text(render_yaml("bindings", draft.bindings, BINDINGS_HEADER), encoding="utf-8")
-    (out / "DRAFT.md").write_text(render_draft(repo, draft, out), encoding="utf-8")
+        out = fenced_dir(repo, out, repo / "proposals")
+    except FenceError as exc:
+        raise CommandError(f"--outbox {exc}") from exc
+    files = (
+        (out / STANDING_FILE, render_yaml("documents", draft.standing, STANDING_HEADER)),
+        (out / BINDINGS_FILE, render_yaml("bindings", draft.bindings, BINDINGS_HEADER)),
+        (out / "DRAFT.md", render_draft(repo, draft, out)),
+    )
+    try:
+        for path, _ in files:
+            check_fenced(path)
+        for path, text in files:
+            write_fenced(path, text)
+    except FenceError as exc:
+        raise CommandError(str(exc)) from exc
     return out
 
 
@@ -620,6 +694,20 @@ def render_verify(v: Verification, today: date, root: Path | None) -> str:
 
 
 # ---------------------------------------------------------------- helpers for the CLI
+
+
+def today_or_utc(value: date | None) -> date:
+    """The day a command reasons with: `--today` when given, else the UTC
+    day, as the scan uses (`datetime.now(timezone.utc).date()`)."""
+    return value if value is not None else datetime.now(timezone.utc).date()
+
+
+def parse_date(value: str) -> date:
+    """An argparse type for `--today`: YYYY-MM-DD or a usage error."""
+    try:
+        return date.fromisoformat(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(f"not a date (YYYY-MM-DD): {value!r}") from exc
 
 
 def parse_reading_copies(repo: Path, values: list[str]) -> dict[str, Path]:

@@ -1,0 +1,65 @@
+# The governed glossary register, terms (D-44): one row per business term
+# a person certified. Held to contracts/glossary_register.odcs.yaml by the
+# meaning module (verify) and the unit lane. Changes only by pull request;
+# a change set is rendered by `python -m metricmine.meaning propose`.
+terms:
+- term_id: departure_delay
+  term: Departure delay
+  definition: Minutes between the actual and the scheduled departure of a flight. Negative when the flight left early. Absent when the flight was cancelled.
+  synonyms: dep delay; dep_delay
+  owner: aviation stewards
+  status: active
+  superseded_by: null
+  declared_by: justinrgoff
+  declared_on: 2026-10-26
+  review_by: 2027-10-26
+- term_id: arrival_delay
+  term: Arrival delay
+  definition: Minutes between the actual and the scheduled arrival of a flight. Negative when the flight arrived early. Absent when the flight was cancelled or no arrival was recorded.
+  synonyms: arr delay; arr_delay
+  owner: aviation stewards
+  status: active
+  superseded_by: null
+  declared_by: justinrgoff
+  declared_on: 2026-10-26
+  review_by: 2027-10-26
+- term_id: carrier
+  term: Carrier
+  definition: The airline operating a flight, identified by the two-character code its publisher assigns.
+  synonyms: airline code; carrier code
+  owner: aviation stewards
+  status: active
+  superseded_by: null
+  declared_by: justinrgoff
+  declared_on: 2026-10-26
+  review_by: 2027-10-26
+- term_id: tail_number
+  term: Tail number
+  definition: The registration painted on an aircraft's tail, which identifies the airframe across flights.
+  synonyms: tailnum; registration
+  owner: aviation stewards
+  status: active
+  superseded_by: null
+  declared_by: justinrgoff
+  declared_on: 2026-10-26
+  review_by: 2027-10-26
+- term_id: airport_ident
+  term: Airport identifier
+  definition: The identifier OurAirports assigns to an airport, the ICAO code where one exists and a local or generated code otherwise.
+  synonyms: ident
+  owner: aviation stewards
+  status: active
+  superseded_by: null
+  declared_by: justinrgoff
+  declared_on: 2026-10-26
+  review_by: 2027-10-26
+- term_id: cancellation
+  term: Cancellation
+  definition: A scheduled departure that never departed. It keeps its row, carries no actual times and no delays, and is counted from its flag.
+  synonyms: cancelled flight
+  owner: aviation stewards
+  status: active
+  superseded_by: null
+  declared_by: justinrgoff
+  declared_on: 2026-10-26
+  review_by: 2027-10-26
