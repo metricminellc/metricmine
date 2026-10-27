@@ -41,6 +41,16 @@ which the batch driver walks, and a document's text never reaches a
 proposer. The vocabulary and the commands are in
 [docs/documents.md](documents.md).
 
+The plan's Governed meaning section (D-44; D-35 as amended by Amendment
+AC) carries a third vocabulary for the glossary and ontology bindings the
+meaning registers carry (`in_sync`, `term_changed`, `concept_changed`,
+`term_missing`, `concept_missing`, `term_deprecated`,
+`concept_deprecated`, `binding_broken`, with the flag `review_overdue`),
+derived the same way on every run and never stored. Meaning items never
+enter the queue above, and a term or a concept never reaches a proposer.
+The vocabulary and the commands are in
+[docs/spec/meaning.md](spec/meaning.md).
+
 ## The checklist
 
 For an existing hand-written silver model with no contract:
