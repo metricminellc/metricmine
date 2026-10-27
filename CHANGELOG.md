@@ -62,6 +62,19 @@ measurements.
   folder is unchanged only after it checked. The fix rides the
   governed meaning slice as a fence both modules share; nothing on
   main changes here.
+- `contracts/glossary_register.odcs.yaml` and
+  `contracts/ontology_register.odcs.yaml`, the governed meaning registers'
+  contracts (D-44), v1.0.0 under ODCS v3.1.0, in the documents register's
+  shape: two tables each (`glossary_terms` and `glossary_bindings`;
+  `ontology_concepts` and `ontology_bindings`), no dbt model, hand-authored
+  provenance, and the quality rules the decision names (the closed
+  status, the unique ids and labels, the well-formed id, synonym
+  ownership, `superseded_by`, the parent and the acyclic parent graph,
+  every binding naming a row the register carries, the binding's digest
+  and uniqueness, at error severity; the review date at warn). The rows
+  under `meaning/`, the module that holds them to these contracts, and
+  the scan's section land with the implementing slice; a contract is its
+  own pull request (D-08). The contract-change issue form lists both.
 
 ### Changed
 
