@@ -1,0 +1,76 @@
+# The governed ontology register, concepts (D-44): one row per concept a
+# person certified, with its parent where one exists. Held to
+# contracts/ontology_register.odcs.yaml by the meaning module (verify) and
+# the unit lane. Changes only by pull request; a change set is rendered by
+# `python -m metricmine.meaning propose`.
+concepts:
+- concept_id: flight
+  label: Flight
+  parent_id: null
+  definition: A scheduled movement of an aircraft from an origin airport to a destination airport.
+  owner: aviation stewards
+  status: active
+  superseded_by: null
+  declared_by: justinrgoff
+  declared_on: 2026-10-26
+  review_by: 2027-10-26
+- concept_id: airport
+  label: Airport
+  parent_id: null
+  definition: A place where aircraft take off and land, identified by a code.
+  owner: aviation stewards
+  status: active
+  superseded_by: null
+  declared_by: justinrgoff
+  declared_on: 2026-10-26
+  review_by: 2027-10-26
+- concept_id: aircraft
+  label: Aircraft
+  parent_id: null
+  definition: An airframe identified by its registration.
+  owner: aviation stewards
+  status: active
+  superseded_by: null
+  declared_by: justinrgoff
+  declared_on: 2026-10-26
+  review_by: 2027-10-26
+- concept_id: weather_observation
+  label: Airport weather observation
+  parent_id: airport
+  definition: One hour of weather observed at an airport.
+  owner: aviation stewards
+  status: active
+  superseded_by: null
+  declared_by: justinrgoff
+  declared_on: 2026-10-26
+  review_by: 2027-10-26
+- concept_id: delay
+  label: Delay
+  parent_id: flight
+  definition: A difference between a flight's actual and scheduled time, in minutes.
+  owner: aviation stewards
+  status: active
+  superseded_by: null
+  declared_by: justinrgoff
+  declared_on: 2026-10-26
+  review_by: 2027-10-26
+- concept_id: departure_delay
+  label: Departure delay
+  parent_id: delay
+  definition: The delay measured at departure.
+  owner: aviation stewards
+  status: active
+  superseded_by: null
+  declared_by: justinrgoff
+  declared_on: 2026-10-26
+  review_by: 2027-10-26
+- concept_id: arrival_delay
+  label: Arrival delay
+  parent_id: delay
+  definition: The delay measured at arrival.
+  owner: aviation stewards
+  status: active
+  superseded_by: null
+  declared_by: justinrgoff
+  declared_on: 2026-10-26
+  review_by: 2027-10-26
