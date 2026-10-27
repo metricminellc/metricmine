@@ -51,6 +51,17 @@ measurements.
   input (CLAUDE.md rule 15, the agent-layer spec's section 7). The
   decision mints before any implementing change: no code, contract,
   pin, prompt, or model changes here.
+- Finding F-74 in the findings register, measured at head on October
+  26, 2026: the governed documents `bind` command fences its draft
+  directory by resolving it under `proposals/` and then writes each
+  file by path, so a symbolic link planted at a draft file's path
+  carries the draft into `documents/register/bindings.yaml` while the
+  command prints that the register is unchanged. The finding bounds the
+  assurance (design rule 5 of the governed host plan): a draft is
+  written through no link, and a command prints that a protected
+  folder is unchanged only after it checked. The fix rides the
+  governed meaning slice as a fence both modules share; nothing on
+  main changes here.
 
 ### Changed
 
