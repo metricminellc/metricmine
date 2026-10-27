@@ -9,6 +9,7 @@ Keyless, no network. Every date is fixed and the root is passed in.
 
 from __future__ import annotations
 
+import os
 from datetime import date
 from pathlib import Path
 
@@ -315,6 +316,43 @@ def test_bind_refuses_a_reading_copy_under_the_inbox(bare: Path) -> None:
     # inspect still reads it: a reading copy is a discussion aid
     target = resolve_target(bare, None, "documents/inbox/policy.md", None)
     assert commands._extract(target).contains(ANCHOR)
+
+
+@pytest.mark.skipif(os.name == "nt", reason="a symbolic link is a POSIX fixture")
+def test_a_symbolic_link_in_the_outbox_never_carries_a_write_into_the_register(bound: Path) -> None:
+    # F-74: before this fix a link planted in the draft directory carried
+    # the draft's bindings.yaml into documents/register/bindings.yaml while
+    # the command printed that the register was unchanged.
+    register = load_register(bound)
+    target = resolve_target(bound, register, "docs/policy.md", None)
+    draft = bind(bound, register, target, "silver_demo", "carrier", "Delays are measured in minutes.", "words", "a.person", TODAY)
+    out = bound / "proposals" / "documents" / "link"
+    out.mkdir(parents=True)
+    (out / "bindings.yaml").symlink_to(bound / "documents" / "register" / "bindings.yaml")
+    before = (bound / "documents" / "register" / "bindings.yaml").read_bytes()
+    with pytest.raises(CommandError, match="bindings.yaml is a symbolic link; a draft is written through no link"):
+        write_draft(bound, draft, out)
+    assert (bound / "documents" / "register" / "bindings.yaml").read_bytes() == before
+    # bindings.yaml is the second file written; the link is found before
+    # the first, so standing.yaml is not written either.
+    assert sorted(p.name for p in out.iterdir()) == ["bindings.yaml"]
+    # A directory link is named as a link whether it points out of the
+    # outbox or within it, and a plain path out of it is named as outside.
+    away = bound / "proposals" / "documents" / "away"
+    away.symlink_to(bound / "documents" / "register", target_is_directory=True)
+    with pytest.raises(CommandError, match="away is a symbolic link; a draft is written through no link"):
+        write_draft(bound, draft, away)
+    with pytest.raises(CommandError, match="is outside proposals/"):
+        write_draft(bound, draft, bound / "proposals" / "documents" / ".." / ".." / "documents" / "register")
+    (bound / "proposals" / "documents" / "other").mkdir()
+    near = bound / "proposals" / "documents" / "near"
+    near.symlink_to(bound / "proposals" / "documents" / "other", target_is_directory=True)
+    with pytest.raises(CommandError, match="near is a symbolic link; a draft is written through no link"):
+        write_draft(bound, draft, near)
+    assert not list((bound / "proposals" / "documents" / "other").iterdir())
+    with pytest.raises(CommandError, match="is proposals/ itself"):
+        write_draft(bound, draft, bound / "proposals")
+    assert (bound / "documents" / "register" / "bindings.yaml").read_bytes() == before
 
 
 def test_a_repeated_draft_overwrites_itself(bare: Path) -> None:
