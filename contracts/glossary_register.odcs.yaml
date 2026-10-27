@@ -1,0 +1,218 @@
+# Contract: glossary_register v1.0.0 (ODCS v3.1.0), the governed glossary
+# register (D-44). Two tables about business terms, never a bronze source:
+# glossary_terms (one row per term: the term as people say it, its
+# certified definition, its synonyms, its owner, its status, who declared
+# it and until when) and glossary_bindings (one row per contract element
+# a term labels, carrying the term's content digest as it read when the
+# binding was made, and the person's intent verbatim with its hash). The
+# rows live in meaning/glossary/ as YAML and are held to this contract by
+# the meaning module (verify) and by the unit lane; gate three records the
+# contract as having no model. A term is descriptive meaning: it labels an
+# element and never drives a join, a key, a type, or a transform.
+# Hand-authored (rule 16: proposedBy human, no stance keys, provenanceNote
+# because no profile artifact exists for a register).
+apiVersion: v3.1.0
+kind: DataContract
+id: glossary_register
+name: Governed glossary register
+version: 1.0.0
+status: active
+domain: governance
+dataProduct: metricmine
+tenant: metricmine
+description:
+  purpose: 'The register of business terms a person has certified: one row per
+    term and one binding row per contract element the term labels. A term is
+    descriptive meaning; it never drives a join or a transform.'
+  usage: 'Read a term row as a certified definition with its synonyms and its
+    owner. Read a binding row as a claim: this contract element carries this
+    term, as the term read (its content digest) when the binding was made. A
+    binding never says the term is current; the scan derives that on every
+    run and stores nothing.'
+  limitations: 'A term labels meaning. Nothing here changes a type, a rule, or a
+    grain; the contract that carries the element stays the certified claim and
+    the term is its label.'
+servers:
+- server: repository
+  type: local
+  path: meaning/glossary
+  format: yaml
+  description: Where the register rows live.
+schema:
+- name: glossary_terms
+  physicalName: glossary_terms
+  logicalType: object
+  physicalType: table
+  description: One row per business term.
+  dataGranularityDescription: One row per term_id.
+  properties:
+  - name: term_id
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: Stable id of the term (lowercase, underscores), independent of its label.
+  - name: term
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: The term as people say it.
+  - name: definition
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: The certified definition, in the owner's words.
+  - name: synonyms
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: Other names for the term, separated by '; '. A synonym belongs to one term and is served, never hashed.
+  - name: owner
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: The person or team who owns the definition; never an agent or a model name.
+  - name: status
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: active or deprecated. A term is deprecated before it is dropped, and a drop is refused while a binding stands (HW-35).
+  - name: superseded_by
+    logicalType: string
+    physicalType: VARCHAR
+    required: false
+    description: For a deprecated term, the id of the term that replaces it, when one exists; the register carries that term.
+  - name: declared_by
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: The person who declared the row; never an agent or a model name.
+  - name: declared_on
+    logicalType: date
+    physicalType: DATE
+    required: true
+    description: The day the person declared the row.
+  - name: review_by
+    logicalType: date
+    physicalType: DATE
+    required: true
+    description: Certify again or expire. After this day the row reads as review_overdue.
+  quality:
+  - type: sql
+    description: Status is a closed field.
+    query: SELECT COUNT(*) FROM glossary_terms WHERE status NOT IN ('active', 'deprecated')
+    mustBe: 0
+    severity: error
+  - type: sql
+    description: A term id is unique.
+    query: SELECT COUNT(*) - COUNT(DISTINCT term_id) FROM glossary_terms
+    mustBe: 0
+    severity: error
+  - type: sql
+    description: A term id is lowercase letters, digits, and underscores.
+    query: SELECT COUNT(*) FROM glossary_terms WHERE NOT regexp_matches(term_id, '^[a-z][a-z0-9_]*$')
+    mustBe: 0
+    severity: error
+  - type: sql
+    description: A superseding term exists in the register, and only a deprecated term names one.
+    query: SELECT COUNT(*) FROM glossary_terms t WHERE superseded_by IS NOT NULL AND (status <> 'deprecated' OR NOT EXISTS (SELECT 1 FROM glossary_terms s WHERE s.term_id = t.superseded_by))
+    mustBe: 0
+    severity: error
+  - type: sql
+    description: A term's label is unique.
+    query: SELECT COUNT(*) - COUNT(DISTINCT lower(trim(term))) FROM glossary_terms
+    mustBe: 0
+    severity: error
+  - type: sql
+    description: A synonym is owned by one term and never equals a term's label.
+    query: SELECT COUNT(*) FROM (SELECT name FROM (SELECT lower(trim(s.synonym)) AS name FROM glossary_terms t, unnest(string_split(coalesce(t.synonyms, ''), ';')) AS s(synonym) WHERE trim(s.synonym) <> '' UNION ALL SELECT lower(trim(term)) FROM glossary_terms) names GROUP BY name HAVING COUNT(*) > 1) dup
+    mustBe: 0
+    severity: error
+  - type: sql
+    description: No term is past its review date.
+    query: SELECT COUNT(*) FROM glossary_terms WHERE review_by < current_date
+    mustBe: 0
+    severity: warn
+- name: glossary_bindings
+  physicalName: glossary_bindings
+  logicalType: object
+  physicalType: table
+  description: One row per contract element a term labels.
+  dataGranularityDescription: One row per (term_id, contract_id, column_name).
+  properties:
+  - name: term_id
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 1
+    description: The term's id.
+  - name: contract_id
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 2
+    description: The committed contract whose element carries the term.
+  - name: column_name
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    primaryKey: true
+    primaryKeyPosition: 3
+    description: The column, or the empty string for the table itself.
+  - name: term_sha256
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: The term's content digest when the binding was made; the scan reads term_changed when the term's current digest differs.
+  - name: intent
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: The person's words, verbatim.
+  - name: intent_sha256
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: sha256 of the intent, so a record that drifts from the words is refused.
+  - name: bound_by
+    logicalType: string
+    physicalType: VARCHAR
+    required: true
+    description: The person who bound the term; never an agent or a model name.
+  - name: bound_on
+    logicalType: date
+    physicalType: DATE
+    required: true
+    description: The day the person bound it.
+  quality:
+  - type: sql
+    description: Every binding names a term the register carries.
+    query: SELECT COUNT(*) FROM glossary_bindings b WHERE NOT EXISTS (SELECT 1 FROM glossary_terms t WHERE t.term_id = b.term_id)
+    mustBe: 0
+    severity: error
+  - type: sql
+    description: A binding carries the term's digest.
+    query: SELECT COUNT(*) FROM glossary_bindings WHERE term_sha256 IS NULL OR length(term_sha256) <> 64
+    mustBe: 0
+    severity: error
+  - type: sql
+    description: A binding is unique per term and element.
+    query: SELECT COUNT(*) - COUNT(DISTINCT term_id || '|' || contract_id || '|' || column_name) FROM glossary_bindings
+    mustBe: 0
+    severity: error
+team:
+  name: metricmine-maintainers
+  members:
+  - username: justinrgoff
+    role: steward
+customProperties:
+- property: proposedBy
+  value: human
+- property: proposedAt
+  value: '2026-10-26'
+- property: provenanceNote
+  value: 'Hand-authored register contract (D-44). No profile artifact exists: the
+    register is data about terms and is never profiled or landed as a source.'
