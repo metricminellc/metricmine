@@ -18,7 +18,12 @@ and the queue flips. The governed documents register (D-43; D-35 as
 amended by Amendment Z) is read the same way: each registered document's
 state is derived on this run by metricmine.documents.states and reported
 in its own section, never stored, and never queued for a proposer (D-23
-Amendment H: a document's text is never a proposer input). Output lands under the gitignored proposals/
+Amendment H: a document's text is never a proposer input). The governed
+meaning registers (D-44; D-35 as amended by Amendment AC) are read the
+same way: each glossary and ontology binding's state is derived on this
+run by metricmine.meaning.states and reported in its own section, never
+stored, and never queued; a term or a concept is never a proposer
+input. Output lands under the gitignored proposals/
 outbox (D-24) as plan.md plus plan.json; the plan body carries a
 content hash and no timestamp, so the same state always hashes the
 same.
@@ -47,6 +52,7 @@ from pathlib import Path
 import yaml
 
 from metricmine.documents.states import documents_section, mapped_root
+from metricmine.meaning.states import meaning_section
 from metricmine.warehouse.duckdb import DuckDBWarehouse
 
 LAYER_ORDER = {"bronze": 0, "silver": 1, "gold": 2}
@@ -519,6 +525,14 @@ def documents(repo: Path, today: date) -> dict:
     return documents_section(repo, today, mapped_root())
 
 
+def meaning(repo: Path, today: date) -> dict:
+    """The governed meaning states for the plan (D-44; D-35 as amended by
+    Amendment AC), derived for `today` through the meaning module and
+    never stored or queued: each register's standing, the counts, and one
+    item per binding with its next command."""
+    return meaning_section(repo, today)
+
+
 def queued_models(models: list[dict]) -> list[dict]:
     """The review queue in plan order: queue-state order, then layer,
     then name. Public because the batch driver (make propose-queue,
@@ -593,10 +607,11 @@ def _row(model: dict) -> str:
     )
 
 
-def render_md(repo: Path, inv: dict, head: str, docs: dict | None = None) -> str:
+def render_md(repo: Path, inv: dict, head: str, docs: dict | None = None, meaning_states: dict | None = None) -> str:
     """The plan body: no timestamp, so the same state hashes the same.
-    `docs` is the governed documents section from `documents()`; without
-    it the section reads `register: absent`."""
+    `docs` is the governed documents section from `documents()` and
+    `meaning_states` the governed meaning section from `meaning()`;
+    without either, that section reads `absent`."""
     models = inv["models"]
     counts = _counts(models)
     lines = [
@@ -607,7 +622,8 @@ def render_md(repo: Path, inv: dict, head: str, docs: dict | None = None) -> str
         " config/default.yaml, and the live warehouse on this run;"
         " nothing is stored. Re-run after each step and the states flip."
         " The governed documents section (D-43) is derived the same way"
-        " from documents/register/ and the documents it names.",
+        " from documents/register/ and the documents it names, and the"
+        " governed meaning section (D-44) from meaning/ and contracts/.",
         "",
         f"- repo head: `{head}`",
         f"- warehouse: `{_relative_warehouse(repo)}`"
@@ -639,6 +655,7 @@ def render_md(repo: Path, inv: dict, head: str, docs: dict | None = None) -> str
             "",
         ]
     lines += _documents_lines(docs)
+    lines += _meaning_lines(meaning_states)
     lines += ["## Skipped, by decision", ""]
     skipped = [
         f"- `{model['name']}`: `{model['state']}`: {model['reason']}"
@@ -703,6 +720,44 @@ def _documents_lines(section: dict | None) -> list[str]:
     return lines
 
 
+def _meaning_lines(section: dict | None) -> list[str]:
+    """The governed meaning section of the plan (D-44; D-35 as amended by
+    Amendment AC): each register's standing, the state counts in the
+    fixed order, and one item per binding with its next command. Items
+    never enter the queue above, which the batch driver walks, and no
+    next command routes a term or a concept into a proposer."""
+    lines = [
+        "## Governed meaning",
+        "",
+        "Derived on this run from `meaning/glossary/`, `meaning/ontology/`,"
+        " and `contracts/` (D-44). A state is a measurement that a binding's"
+        " digest still equals its term's or concept's, never a certification;"
+        " the merge certifies.",
+        "",
+    ]
+    if not section:
+        return lines + ["- glossary register: absent", "- ontology register: absent", ""]
+    for kind in ("glossary", "ontology"):
+        standing = section["registers"][kind]
+        lines.append(f"- {kind} register: {standing['register']} ({standing['detail']})")
+    if section["counts"]:
+        lines += ["", "| state | bindings |", "| --- | --- |"]
+        lines += [f"| `{state}` | {count} |" for state, count in section["counts"].items()]
+    lines.append("")
+    if not section["items"]:
+        return lines + ["Empty. No binding is registered in this tree.", ""]
+    for position, item in enumerate(section["items"], 1):
+        flags = "; ".join(item["flags"]) if item["flags"] else "none"
+        element = f"{item['contract_id']}.{item['column_name']}" if item["column_name"] else f"{item['contract_id']} (table)"
+        lines += [
+            f"{position}. **`{item['register']}:{item['id']}`** on `{element}`: `{item['state']}` (flags: {flags})  ",
+            f"   why: {item['detail']}  ",
+            f"   next: `{item['next_command']}`",
+            "",
+        ]
+    return lines
+
+
 def run(repo: Path, now: datetime | None = None) -> int:
     """Derive the queue, write plan.md and plan.json to the outbox,
     print the plan. Always 0: the scan reports, it never judges. The
@@ -711,7 +766,8 @@ def run(repo: Path, now: datetime | None = None) -> int:
     now = now or datetime.now(timezone.utc)
     inv = inventory(repo)
     docs = documents(repo, now.date())
-    body = render_md(repo, inv, head, docs)
+    meaning_states = meaning(repo, now.date())
+    body = render_md(repo, inv, head, docs, meaning_states)
     plan_hash = _sha256_text(body)
     stamp = f"{now.strftime('%Y%m%dT%H%M%S')}{now.microsecond:06d}Z"
     out_dir = repo / "proposals" / "scan" / stamp
@@ -723,8 +779,9 @@ def run(repo: Path, now: datetime | None = None) -> int:
     )
     (out_dir / "plan.md").write_text(md, encoding="utf-8")
     plan = {
-        # 1.1.0: the documents key (D-43); the model keys are unchanged.
-        "scan_schema_version": "1.1.0",
+        # 1.1.0: the documents key (D-43); 1.2.0: the meaning key (D-44,
+        # Amendment AC); the model keys and the documents key are unchanged.
+        "scan_schema_version": "1.2.0",
         # generated_at is excluded from plan_hash by construction: the
         # hash covers the plan body, which carries no time.
         "generated_at": now.isoformat(),
@@ -735,6 +792,7 @@ def run(repo: Path, now: datetime | None = None) -> int:
         "models": inv["models"],
         "mapping_contracts": inv["mapping_contracts"],
         "documents": docs,
+        "meaning": meaning_states,
     }
     (out_dir / "plan.json").write_text(
         json.dumps(plan, indent=2, sort_keys=True) + "\n", encoding="utf-8"
