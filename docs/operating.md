@@ -62,10 +62,13 @@ The daily commands, in the order they depend on each other:
 | `make driver` | writes `.adbc/duckdb.toml`, the ADBC driver manifest that points dbt at the engine inside the pinned duckdb wheel (D-05 as amended); every `make` target exports `ADBC_DRIVER_PATH` for it, and a dbt line typed by hand needs the export `make doctor` prints, the `datacontract dbt test` lines below included, since they run dbt (without it, a machine that reaches the CDN would use a driver this project does not pin) | the project venv | `.adbc/duckdb.toml` (gitignored) |
 | `make ingest` | lands every `ingestion.sources` entry into bronze, replace semantics | the committed extracts | the warehouse's bronze schema |
 | `make profile ONLY=<schema>.<table>` | measures a table into a committed artifact | the warehouse, read-only | `profiles/<schema>.<table>/vNNNN.json` |
-| `make scan` | derives the adoption queue and names the next command per item, and reports the governed documents' states (D-43) | the tree, the contracts, the profiles, the warehouse, the documents register | `proposals/plan.md` (gitignored) |
+| `make scan` | derives the adoption queue and names the next command per item, and reports the governed documents' states (D-43) and the governed meaning states (D-44) | the tree, the contracts, the profiles, the warehouse, the documents register, the meaning registers | `proposals/plan.md` (gitignored) |
 | `make doc-find QUERY=<name>`, `make doc-inspect DOC=<path> GREP=<word>` | lists candidate documents with their text digests; prints a document's parts and the sentences that match, each with its locator (D-43) | the repository, and `MM_DOCS_ROOT` when mapped | nothing |
 | `make doc-bind DOC=... CONTRACT=... COLUMN=... ANCHOR="..." INTENT="..." BY=<you> TITLE="..."` | validates a binding (the column exists, the quote is in the extraction, the text is not registered elsewhere, the binder is a person) and drafts the register as it would read | the document, `contracts/`, the register | `proposals/documents/<draft>/` (gitignored); never the register |
 | `make doc-verify` | holds the register to its contract, runs its rules, derives every document's state; exits 1 on what blocks a merge | the register, the documents | nothing |
+| `make meaning-find QUERY=<text>`, `make meaning-show ID=<id>` | lists terms and concepts by text, each with what carries it (derived from the bindings); prints one with its bindings and their states (D-44) | the meaning registers, `contracts/` | nothing |
+| `make meaning-propose CHANGES=<file>` | runs a change set (by, intent, changes in the closed vocabulary): validates and classifies by code, re-binds what a changed digest touches under the set's intent, and renders the registers as they would read with a record and a summary | the change-set file, the registers, `contracts/` | `proposals/meaning/<name>/` (gitignored); never the registers |
+| `make meaning-verify` | holds both registers to their contracts, runs their rules, derives every binding's state; exits 1 on what blocks a merge | the registers, `contracts/` | nothing |
 | `make context` | compiles every governing contract into the next context artifact | `contracts/` | `context/compiled/vNNNN.json` |
 | `make regen` | emits the gold star from the mapping contracts | `contracts/`, the newest context | `transform/models/gold/`, the ownership manifest |
 | `uv run dbt run --project-dir transform --target local`, then `uv run dbt test --project-dir transform --target local` | builds every model with contract enforcement, then runs every test (D-20 as amended: the models first, because the generated tests of the level-zero silver tables carry no dependency edge, F-51, F-66) | | the warehouse |
@@ -220,6 +223,19 @@ rests on; `make scan` reads it on every run and reports `in_sync`,
 document. The commands, the states, and the demo's binding are in
 [docs/documents.md](documents.md).
 
+Governed meaning (D-44) rides the same scan. A business term or a
+concept a person has certified as the label of a contracted element is
+registered under `meaning/glossary/` or `meaning/ontology/` with a
+content digest; `make scan` compares each binding's recorded digest with
+the row's current one on every run and reports `in_sync`,
+`term_changed`, or `concept_changed` with the next command, and `make
+meaning-verify` exits 1 when a digest moved under a standing binding. A
+change set in the closed vocabulary runs through `make meaning-propose
+CHANGES=<file>`, which re-binds what a changed definition touches and
+renders the registers as they would read into the outbox; the pull
+request is the only approval. The commands, the states, the vocabulary,
+and the demo's registers are in [docs/spec/meaning.md](spec/meaning.md).
+
 ## 6. Running the proposers
 
 Two agents exist: the silver cleanup proposer (stances cleanup,
@@ -264,6 +280,7 @@ oracle and reports agreement; it needs the key and never runs in CI.
 | The engine's drift guard | `make regen` | an emitted file was edited by hand (rule 8) | discard the edit; change the contract instead |
 | The scan | `make scan` | not a failure: a queue of what is out of sync, each with its next command, and the governed documents' states | follow the command |
 | The documents verify | `make doc-verify` | the register does not conform to its contract, a rule at error severity fails, a bound quote is gone from a repository document, or a binding names a column no contract carries (D-43) | re-anchor with `bind`, or amend the contract's sentence or the binding by its own pull request; an overdue review only reports |
+| The meaning verify | `make meaning-verify` | a register does not conform to its contract, a rule at error severity fails, a term's or a concept's digest moved under a standing binding or its row is gone, or a binding names a contract or column no contract carries (D-44) | re-bind the element in a change set (`make meaning-propose`) or restore the row, by its own pull request; a deprecation and an overdue review only report |
 
 The symptom table:
 
@@ -445,13 +462,20 @@ gates, which land the samples, build cold, sync, and test; the DCO) and
 - **The outbox**: `proposals/`, gitignored, where drafts and records
   land and nothing else does.
 - **The scan**: `make scan`, the derived queue of what is out of sync,
-  and the governed documents' states beside it.
+  and the governed documents' and meaning states beside it.
 - **Governed document**: a document a person certified as the source of
   a column's meaning, registered under `documents/register/` with the
   quote the contract's sentence rests on (D-43); its identity is its
   extracted text, never its bytes.
 - **Anchor**: the verbatim quote a binding rests on, checked against the
   extraction at bind time and on every scan.
+- **Governed term, governed concept**: a business term or a concept a
+  person certified as the label of a contracted element, registered
+  under `meaning/` with a content digest (D-44); a term labels meaning
+  and never drives a join, a key, a type, or a transform.
+- **Change set**: a YAML file in the closed vocabulary (by, intent,
+  changes) that `make meaning-propose` validates, classifies, and renders
+  into the outbox; the pull request is the only approval.
 - **The window (F-13)**: the state between a star bump that adds a
   category and the regeneration that emits it.
 - **Cold build**: an empty warehouse and no parse cache, then land and
