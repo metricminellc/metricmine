@@ -75,6 +75,34 @@ measurements.
   under `meaning/`, the module that holds them to these contracts, and
   the scan's section land with the implementing slice; a contract is its
   own pull request (D-08). The contract-change issue form lists both.
+- Governed meaning, the implementing slice (D-44; D-35 as amended by
+  Amendment AC): the module `src/metricmine/meaning/` (deterministic
+  code, never an agent) holds the glossary and ontology registers
+  under `meaning/glossary/` and `meaning/ontology/` to their contracts,
+  computes a term's content digest over its id, label, and definition
+  and a concept's node digest over its id, label, parent, and
+  definition (synonyms served, never hashed), derives every binding's
+  state on every run (`in_sync`, `term_changed`, `concept_changed`,
+  `term_missing`, `concept_missing`, `term_deprecated`,
+  `concept_deprecated`, `binding_broken`, with the flag
+  `review_overdue`), and runs a change set in the closed vocabulary
+  (`python -m metricmine.meaning propose <file>`, validated against
+  the committed schema `docs/spec/meaning/change-set.schema.json`,
+  classified as additive, changing, or removing, every binding a
+  changed digest touches re-bound under the set's intent) into the
+  gitignored outbox, never under `meaning/` or `contracts/`; `find`,
+  `show`, and `verify` with the Makefile targets `meaning-find`,
+  `meaning-show`, `meaning-propose`, and `meaning-verify`; the scan's
+  Governed meaning section with `scan_schema_version` 1.2.0 (the
+  `meaning` key); the demo's registers (six terms and seven concepts
+  from nycflights13 and OurAirports, eleven bindings: eight on the
+  mapped silver contracts and three level-zero examples); the unit-lane
+  tests that pin the digests to the Prep H probe's values, hold the
+  committed registers in sync, and hold that no agents module imports
+  the module; the spec `docs/spec/meaning.md`; and the CLAUDE.md
+  blocks that name the module (Decision Record 016, Appendix A). The
+  five document change kinds are refused by name until the slice that
+  serves meaning; nothing is served yet.
 
 ### Changed
 
@@ -83,6 +111,16 @@ measurements.
   regenerated star with compiled context v0014 and the corrected
   quantity sentence (F-62; HW-51 closed for anyone who fetches the
   demo); the front door names v1.2.0 as the current tagged release.
+
+### Fixed
+
+- The governed documents `bind` command writes its draft through no
+  symbolic link: the outbox fence both modules share refuses a link at
+  the draft directory, at any folder on the way, and at a file it
+  writes, naming the path before anything is written, and the command
+  prints that the register is unchanged only after it digested
+  `documents/register/` before and after the write and read the two
+  equal (F-74, measured at head on October 26, 2026).
 
 ## [1.2.0] - 2026-10-21
 
