@@ -90,6 +90,7 @@ order by design.
 | [F-71](#f-71) | An anchor check measures that a quote is still present: an untouched quote beside a new sentence that contradicts it reads as intact, a whitespace re-wrap reads as unchanged, and a punctuation edit inside the quote reads as broken | Governed documents rung |
 | [F-72](#f-72) | DuckDB's `query`, `query_table`, and `json_execute_serialized_sql` table functions evaluate a string as a statement or a table, `duckdb_table_sample` and `pragma_storage_info` take a table's name, and a flat exclusion of CTE names passes a CTE that shadows its own source, so a scope gate on a statement's base tables alone is open; the served `query` refuses the five functions by name and reads CTE names by scope | Serving rung, continued |
 | [F-73](#f-73) | At head's describe stance the first attempt on the 34-column `silver_flights` table stops on the 16384 `max_tokens` cap in 14 of 20 live runs, and the bounded retry re-sends the truncated response, so a two-attempt run's input tokens run about 2.4 times a clean run's | Agent rung, continued |
+| [F-74](#f-74) | The governed documents `bind` command fences its draft directory by resolving it under `proposals/` and then writes each file by path, so a symbolic link planted at a draft file's path carries the draft into `documents/register/bindings.yaml` while the command prints that the register is unchanged; a draft is written through no link and the assurance is printed only after a check | Governed documents rung, continued |
 
 ## Command surface (datacontract-cli 1.0.12)
 
@@ -2117,3 +2118,55 @@ at 14409 to 16383 output tokens. (Evidence: the branch's
 `docs/experiments/e3/runs/B-baseline/describe-silver-flights/` and
 `docs/experiments/e3/runs/B/describe-silver-flights/`; the record
 `docs/experiments/e3-skeleton-and-context.md`.)
+
+## Governed documents rung, continued (Prep I, October 2026)
+
+### F-74
+**The governed documents `bind` command fences its draft directory by
+resolving it under `proposals/` and then writes each file by path, so a
+symbolic link planted at a draft file's path carries the draft into
+`documents/register/bindings.yaml` while the command prints that the
+register is unchanged; a draft is written through no link, and the
+assurance is printed only after a check.** Measured on October 26,
+2026, on a fresh clone at `f848167`, through the command's own path. A
+link was planted at
+`proposals/documents/2026-10-26_nycflights13-flights-rd_silver_flights.arr_delay_minutes/bindings.yaml`,
+the directory `bind` names for the binding, pointing at
+`documents/register/bindings.yaml` (sha256
+`4ebf285a57840b11869d9ea1d92eb6818a9938609244b1bd6e70bed61d5e9382`). `uv run python
+-m metricmine.documents bind documents/sources/nycflights13/flights.Rd
+--contract silver_flights --column arr_delay_minutes --anchor
+"Departure and arrival delays, in minutes. Negative times represent
+early departures/arrivals." --intent "arr_delay_minutes rests on the
+same sentence." --by justinrgoff --today 2026-10-26` exited 0 and
+printed, as its last line, `wrote
+proposals/documents/2026-10-26_nycflights13-flights-rd_silver_flights.arr_delay_minutes/
+(standing.yaml, bindings.yaml, DRAFT.md); the register is unchanged`;
+`git status --short` then read ` M documents/register/bindings.yaml`
+and `git diff --stat` read `1 file changed, 9 insertions(+)`: the
+register file's sha256 had moved to
+`0a14f1499839c2a67894af48053ab6af3ff3ae62fbd4ae56e9c7c2beb14c6ef9`
+and it carried the drafted binding as a third row. The directory fence
+held as designed (a path outside `proposals/` and the register's own
+folder are refused before any write), and `write_draft` checked
+nothing at the file level: `mkdir` accepted the existing directory,
+`write_text` followed the link, and the final line was printed
+unconditionally. The register is tracked by git and changes only by
+pull request, so a merge would still have read the diff; what the
+finding bounds is the assurance, which design rule 5 of the governed
+host plan forbids printing unchecked, and the window between a command
+that misreports and a reviewer who reads. What
+this bounds: an outbox fence that resolves the directory alone does not
+fence the files under it; a draft is written through no symbolic link
+on the path from the repository to the file (the directory, each folder
+on the way, and the file itself refused by name before any write), and
+a command prints that a protected folder is unchanged only after it
+digested the folder before and after the write and read the two equal.
+The governed meaning module's `propose`, cut in the same prep, shared
+the fence by construction and so shared the defect before its first
+merge; the fix lands with the meaning slice as a helper both modules
+call (`fenced_dir`, `write_fenced`, and `tree_digest` in
+`metricmine.documents.commands`), and `tests/test_documents_commands.py`
+and `tests/test_meaning_changes.py` each plant the link and hold the
+refusal and the register's bytes. (Evidence: the Prep I probe
+transcript; the implementing pull request's tests.)
