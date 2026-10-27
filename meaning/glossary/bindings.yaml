@@ -1,0 +1,61 @@
+# The governed glossary register, bindings (D-44): one row per contract
+# element a term labels, carrying the term's content digest as it read when
+# the binding was made. The scan reads term_changed when the digest moves.
+# Changes only by pull request; a change set is rendered by `propose`.
+bindings:
+- term_id: departure_delay
+  contract_id: silver_flights
+  column_name: dep_delay_minutes
+  term_sha256: 8ff9e9b055c486cd7eb43837b16e56b350ad4af16bacb0e4abea2a9787799b9b
+  intent: dep_delay_minutes carries the departure delay term.
+  intent_sha256: 1e8ca80b1d2647df81ecc772a0e8b804a61acff607f56534c5e903ced7e3d600
+  bound_by: justinrgoff
+  bound_on: 2026-10-26
+- term_id: arrival_delay
+  contract_id: silver_flights
+  column_name: arr_delay_minutes
+  term_sha256: 85b954443b102d00b832108f55e30b88f219250692ae7e5fa30df459ef422746
+  intent: arr_delay_minutes carries the arrival delay term.
+  intent_sha256: 80f27f00fc7a21b9905cd1465cd95021f5fcf7d1c183a0f03b3d9c106f9cf857
+  bound_by: justinrgoff
+  bound_on: 2026-10-26
+- term_id: carrier
+  contract_id: silver_flights
+  column_name: carrier_code
+  term_sha256: 7d6e9dea41c2c3fcce83db2cb8e0fb2297f424729f10dbb4a3a43ce486bf3309
+  intent: carrier_code carries the carrier term.
+  intent_sha256: f782856c128986c3af6573f3142542bf75d6d8b2fb11f3677e6b0050a03e2c87
+  bound_by: justinrgoff
+  bound_on: 2026-10-26
+- term_id: tail_number
+  contract_id: silver_flights
+  column_name: tail_number
+  term_sha256: f56be72c72ab5213ac78cbdad76b9f54814fa7fe6191102503b0e5bd6aa27f9e
+  intent: tail_number carries the tail number term.
+  intent_sha256: a2a06a579d82ad67c36150938bcf9890ca73734629ec321d9a7fd3132614b3ff
+  bound_by: justinrgoff
+  bound_on: 2026-10-26
+- term_id: cancellation
+  contract_id: silver_flights
+  column_name: ''
+  term_sha256: 843d321eb15b8b0a1049a6286f8a88beb05a63c339b2dfe21de0cdcf8c5ac341
+  intent: the unified flights table carries the cancellation term; cancellations are counted from the flag.
+  intent_sha256: ffd553f1297fe826766381e44ae053594eb0bcb85de0eb5a54558fc1ca24c110
+  bound_by: justinrgoff
+  bound_on: 2026-10-26
+- term_id: departure_delay
+  contract_id: silver_nyc_flights
+  column_name: dep_delay_minutes
+  term_sha256: 8ff9e9b055c486cd7eb43837b16e56b350ad4af16bacb0e4abea2a9787799b9b
+  intent: 'the level-zero table carries the same term (recorded and reported, never served: the served fields are the mapped silver contracts'' columns).'
+  intent_sha256: 22c95905d02669711c0e8cfdff5bf877b87fe0d6227bf789f84ecf6729c2ae16
+  bound_by: justinrgoff
+  bound_on: 2026-10-26
+- term_id: airport_ident
+  contract_id: silver_ourairports_airports
+  column_name: airport_ident
+  term_sha256: 82b455f40c84f95fc84f366da1915ff06be8be7da9941bb4608a7ac742c3a5fa
+  intent: airport_ident carries the airport identifier term (a level-zero table; recorded and reported).
+  intent_sha256: 047beac46fd7b1d245dbe3eaa0628c064334de148e7f5bdaa1c5834532c851f2
+  bound_by: justinrgoff
+  bound_on: 2026-10-26
