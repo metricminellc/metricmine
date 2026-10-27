@@ -21,25 +21,13 @@ from __future__ import annotations
 
 import argparse
 import sys
-from datetime import date, datetime, timezone
 from pathlib import Path
 
 from metricmine.documents import commands
+from metricmine.documents.commands import parse_date as _date
+from metricmine.documents.commands import today_or_utc as _today
 from metricmine.documents.register import RegisterError
 from metricmine.documents.states import mapped_root
-
-
-def _today(value: date | None) -> date:
-    """The day the commands reason with: `--today` when given, else the UTC
-    day, as the scan uses (`datetime.now(timezone.utc).date()`)."""
-    return value if value is not None else datetime.now(timezone.utc).date()
-
-
-def _date(value: str) -> date:
-    try:
-        return date.fromisoformat(value)
-    except ValueError as exc:
-        raise argparse.ArgumentTypeError(f"not a date (YYYY-MM-DD): {value!r}") from exc
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -124,12 +112,16 @@ def main(argv: list[str] | None = None) -> int:
             gate_strength=args.gate_strength, upstream_url=args.upstream_url,
             upstream_sha256=args.upstream_sha256, license=args.license, durable_id=args.durable_id,
         )
+        before = commands.tree_digest(repo / commands.REGISTER_DIR)
         out = commands.write_draft(repo, draft, args.outbox)
         print(commands.render_draft(repo, draft, out), end="")
         try:
             where = out.relative_to(repo).as_posix()
         except ValueError:
             where = out.as_posix()
+        if commands.tree_digest(repo / commands.REGISTER_DIR) != before:
+            print(f"wrote {where}/; STOP: {commands.REGISTER_DIR.as_posix()}/ changed during the write; restore it from git", file=sys.stderr)
+            return 1
         print(f"wrote {where}/ (standing.yaml, bindings.yaml, DRAFT.md); the register is unchanged")
         return 0
     except (commands.CommandError, RegisterError) as exc:
