@@ -165,8 +165,9 @@ approves every contract.
     hashed artifacts (the profile; for amend, the committed contract and
     the operator's intent), never anything retrieved (D-23 Amendment H).
     The adoption scan (make scan), the batch driver (make
-    propose-queue), and the governed documents module
-    (src/metricmine/documents/, D-43) are deterministic code, never
+    propose-queue), the governed documents module
+    (src/metricmine/documents/, D-43), and the governed meaning module
+    (src/metricmine/meaning/, D-44) are deterministic code, never
     agents; a document's text is never a proposer input, and neither
     is a glossary term or an ontology concept (D-44).
 
@@ -265,9 +266,9 @@ approves every contract.
   gold mapping proposer. Both emit ODCS contracts. Neither writes
   code, touches data, or runs transformations. The count is of named
   proposers; stances are modes of those two (D-35), and the adoption
-  scan, verify-grain, enforce-properties, the batch driver, and the
-  governed documents module are deterministic code, never agents (D-10
-  Amendment G; D-43).
+  scan, verify-grain, enforce-properties, the batch driver, the
+  governed documents module, and the governed meaning module are
+  deterministic code, never agents (D-10 Amendment G; D-43; D-44).
 - The governed documents module (src/metricmine/documents/) is
   deterministic code, not an agent (D-43). It opens a document only in
   the repository working tree or under the root a person mapped through
@@ -286,6 +287,26 @@ approves every contract.
   register's record; no module under src/metricmine/agents/ imports this
   module or the compiler, and the batch driver's scan never puts a
   document in the queue it walks. Spec: docs/documents.md.
+- The governed meaning module (src/metricmine/meaning/) is
+  deterministic code, not an agent (D-44). It holds the glossary and
+  ontology registers (meaning/glossary/ and meaning/ontology/, under
+  contracts/glossary_register.odcs.yaml and
+  contracts/ontology_register.odcs.yaml) to their contracts, computes
+  a term's content digest over its id, label, and definition and a
+  concept's over its id, label, parent, and definition, derives each
+  binding's state on every run (D-35 as amended by Amendment AC), and
+  writes nothing but a change set's rendering to the gitignored outbox
+  (fenced to proposals/meaning/) and the plan the scan writes. The
+  registers are the record and change only by pull request; a
+  declarer, a binder, or a change set's by is a person, and code
+  refuses the agent and model names it knows. A term or a concept
+  labels meaning and never drives a join, a key, a type, or a
+  transform; a term or a concept is never a proposer input (D-23 as
+  amended by Amendment H): no module under src/metricmine/agents/
+  imports this module or the compiler, and the batch driver's scan
+  never puts a meaning item in the queue it walks. No MCP tool serves
+  the producer side; the host's agent runs the command. Spec:
+  docs/spec/meaning.md.
 - The auto-modeling engine (src/metricmine/engine/) is deterministic code,
   not an agent: approved contracts in, emitted gold dbt models out, per
   docs/spec/engine.md. It never runs at proposer runtime, never executes
@@ -380,7 +401,9 @@ proposal validator), read
 contract gates, or working on the adoption scan and its helpers, read
 `docs/adoption.md`. Before working on governed documents (the register,
 the extractors, the document states, or the find, inspect, bind, and
-verify commands), read `docs/documents.md`. Before adding a source (a
+verify commands), read `docs/documents.md`. Before working on governed
+meaning (the two registers, the change-set command, the meaning
+states), read `docs/spec/meaning.md`. Before adding a source (a
 fetch script, a landing, a cleanup contract, a category), read
 `docs/adding-a-source.md`; the operator's procedures are
 `docs/operating.md`.
