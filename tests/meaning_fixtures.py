@@ -200,7 +200,10 @@ def write_registers(root: Path, terms=None, glossary_bindings=None, concepts=Non
     ):
         (root / "meaning" / folder).mkdir(parents=True, exist_ok=True)
         for file, key, rows, which in files:
-            (root / "meaning" / folder / file).write_text(render_yaml(key, rows, HEADERS[(folder, which)]), encoding="utf-8")
+            # The committed registers are LF on every checkout
+            # (.gitattributes), so the fixture writes those bytes on every
+            # platform; a text-mode write is CRLF on Windows (F-75).
+            (root / "meaning" / folder / file).write_bytes(render_yaml(key, rows, HEADERS[(folder, which)]).encode("utf-8"))
 
 
 def write_repo(root: Path, **registers) -> Path:

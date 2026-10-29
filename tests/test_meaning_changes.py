@@ -438,6 +438,21 @@ def test_an_untouched_register_renders_byte_for_byte_as_committed(repo: Path) ->
         assert (out / "ontology" / file).read_bytes() == (repo / "meaning" / "ontology" / file).read_bytes()
 
 
+def test_every_rendered_file_is_lf_bytes_and_the_record_digests_the_bytes(repo: Path) -> None:
+    # F-75: a text-mode write turned each newline into CRLF on Windows, so
+    # record.json claimed a digest the file did not have. Every file is
+    # written as its UTF-8 bytes on every platform.
+    _, _, out = _run(repo, "bytes", [{"kind": "add_synonym", "term_id": "carrier", "synonym": "operator", "rationale": "r"}])
+    files = sorted(p for p in out.rglob("*") if p.is_file())
+    assert len(files) == 6
+    for path in files:
+        assert b"\r" not in path.read_bytes(), path.relative_to(out).as_posix()
+    record = json.loads((out / "record.json").read_bytes().decode("utf-8"))
+    assert len(record["rendered"]) == 4
+    for rel, digest in record["rendered"].items():
+        assert hashlib.sha256((out / rel).read_bytes()).hexdigest() == digest
+
+
 def test_a_repeated_draft_overwrites_itself_and_reads_no_clock(repo: Path) -> None:
     _, _, first = _run(repo, "twice", [{"kind": "add_synonym", "term_id": "carrier", "synonym": "operator", "rationale": "r"}])
     stale = first / "glossary" / "stale.txt"
