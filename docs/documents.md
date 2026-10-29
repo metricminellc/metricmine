@@ -233,7 +233,9 @@ register itself never changes here, and `--outbox` is fenced to
 `proposals/`, so a path into the register or outside the repository is
 refused before anything is written (a relative `--outbox` resolves
 against the working directory, so run the command from the repository
-root). A new standing row defaults to
+root). Each draft file is written as UTF-8 bytes with LF line endings on
+every platform, as the register's own files are (F-75). A new standing
+row defaults to
 `in_repo`, `git_merge`, `publication_gate`, and a review one year out for
 a repository document, and to `pinned`, `none`, `none`, and six months for
 a document under the root; every default is a flag away. `bind` refuses a
