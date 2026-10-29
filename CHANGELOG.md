@@ -103,6 +103,17 @@ measurements.
   blocks that name the module (Decision Record 016, Appendix A). The
   five document change kinds are refused by name until the slice that
   serves meaning; nothing is served yet.
+- Finding F-75 in the findings register, measured by the governed
+  meaning slice's Windows legs and reproduced on Linux on October 27,
+  2026: on Windows the `propose` command's `record.json` claimed a
+  sha256 over each rendered register file's text with `\n` while the
+  shared writer's text mode wrote `\r\n`, so the record's claim was
+  false there, and the governed documents drafts carried CRLF the same
+  way under the simulation; the adoption scan's `plan.md` trailer is named as an open
+  instance of the same class. The finding bounds the writer (a file a
+  record digests is written as its encoded bytes) and the test fixture
+  that models a committed file (written as the repository's bytes).
+  Documentation only: nothing on main changes here.
 
 ### Changed
 
