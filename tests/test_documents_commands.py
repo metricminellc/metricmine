@@ -283,6 +283,23 @@ def test_write_draft_lands_in_the_outbox_and_the_register_is_unchanged(bare: Pat
     assert "The merge is the certification." in draft_md
 
 
+def test_a_draft_is_written_as_lf_bytes_on_every_platform(bare: Path) -> None:
+    # F-75: the shared writer wrote through a text mode, so a draft carried
+    # CRLF on Windows. Each file is the renderer's text as UTF-8 bytes,
+    # newline for newline.
+    draft = _bind(bare)
+    out = write_draft(bare, draft)
+    expected = {
+        "standing.yaml": commands.render_yaml("documents", draft.standing, commands.STANDING_HEADER),
+        "bindings.yaml": commands.render_yaml("bindings", draft.bindings, commands.BINDINGS_HEADER),
+        "DRAFT.md": commands.render_draft(bare, draft, out),
+    }
+    for name, text in expected.items():
+        data = (out / name).read_bytes()
+        assert b"\r" not in data, name
+        assert data == text.encode("utf-8"), name
+
+
 def test_an_applied_draft_loads_and_verifies(bare: Path) -> None:
     out = write_draft(bare, _bind(bare))
     for name in ("standing.yaml", "bindings.yaml"):
