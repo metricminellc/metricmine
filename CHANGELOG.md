@@ -132,6 +132,13 @@ measurements.
   prints that the register is unchanged only after it digested
   `documents/register/` before and after the write and read the two
   equal (F-74, measured at head on October 26, 2026).
+- The shared draft writer writes UTF-8 bytes with the renderer's LF line
+  endings on every platform, never through a platform's text mode, so
+  each rendered file's digest in the governed meaning `record.json` is
+  the file's digest on every platform, and the governed documents drafts
+  carry LF as the registers do (F-75). The meaning tests' fixture writes its
+  registers the same way, and two tests hold that no rendered file and
+  no draft file carries `\r`.
 
 ## [1.2.0] - 2026-10-21
 
