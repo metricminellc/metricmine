@@ -274,8 +274,12 @@ they would read (`glossary/terms.yaml`, `glossary/bindings.yaml`,
 set verbatim, the intent verbatim and hashed, the classification per
 change, the re-bound elements by name, the standing drift, the register
 digests before and after, the rendered files' digests, who and when, the
-module's id), and `summary.md` for the pull request body. Nothing under
-`meaning/` or `contracts/` is touched; `--outbox` is fenced to
+module's id), and `summary.md` for the pull request body. Every file is
+written as UTF-8 bytes with the LF line endings the renderer produced,
+on every platform and never through a text mode that translates them,
+so each rendered file's digest in `record.json` is the digest of the
+file as written (F-75). Nothing under `meaning/` or `contracts/` is
+touched; `--outbox` is fenced to
 `proposals/meaning/`, so a path into the registers or outside the
 repository, the outbox folder itself, or any symbolic link on the way to
 the draft or at a file it writes is refused before anything is written
