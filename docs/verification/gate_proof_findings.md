@@ -91,6 +91,7 @@ order by design.
 | [F-72](#f-72) | DuckDB's `query`, `query_table`, and `json_execute_serialized_sql` table functions evaluate a string as a statement or a table, `duckdb_table_sample` and `pragma_storage_info` take a table's name, and a flat exclusion of CTE names passes a CTE that shadows its own source, so a scope gate on a statement's base tables alone is open; the served `query` refuses the five functions by name and reads CTE names by scope | Serving rung, continued |
 | [F-73](#f-73) | At head's describe stance the first attempt on the 34-column `silver_flights` table stops on the 16384 `max_tokens` cap in 14 of 20 live runs, and the bounded retry re-sends the truncated response, so a two-attempt run's input tokens run about 2.4 times a clean run's | Agent rung, continued |
 | [F-74](#f-74) | The governed documents `bind` command fences its draft directory by resolving it under `proposals/` and then writes each file by path, so a symbolic link planted at a draft file's path carries the draft into `documents/register/bindings.yaml` while the command prints that the register is unchanged; a draft is written through no link and the assurance is printed only after a check | Governed documents rung, continued |
+| [F-75](#f-75) | On Windows the governed meaning `propose` command's `record.json` claimed a sha256 over each rendered register file's text with `\n` while the shared writer's text mode wrote `\r\n`, so the claim was false there; a writer whose output a record digests writes the encoded bytes, and a test's fixture writes the repository's bytes | Governed meaning rung |
 
 ## Command surface (datacontract-cli 1.0.12)
 
@@ -2170,3 +2171,65 @@ call (`fenced_dir`, `write_fenced`, and `tree_digest` in
 and `tests/test_meaning_changes.py` each plant the link and hold the
 refusal and the register's bytes. (Evidence: the Prep I probe
 transcript; the implementing pull request's tests.)
+
+## Governed meaning rung (Prep I2, October 2026)
+
+### F-75
+**On Windows, the governed meaning `propose` command's `record.json`
+claimed a sha256 over each rendered register file that the file did not
+have: the digest is taken over the text with `\n`, and the shared
+writer's text mode wrote every `\n` as `\r\n` there; a digest a record
+claims over a file is taken over the bytes written.** Measured by the
+`demo-windows` legs of the governed meaning slice's pull request (#261,
+run 40512320277), on both shells:
+`tests/test_meaning_changes.py::test_the_rendering_carries_the_four_files_the_record_and_the_summary`
+failed at `tests\test_meaning_changes.py:419` with `AssertionError:
+assert 'acc0a269f134...aa9aa9572a846' == '76f404c239cc...9c8a394f21ecf'`:
+the record's `rendered` digest for `glossary/bindings.yaml` (the first
+key the loop reads, named by the reproduction below) was
+`76f404c239ccfca0527824ae9202598ab74e5a98365a27214cb9c8a394f21ecf` and
+the file's bytes hashed to
+`acc0a269f134b01619a5618c2bd51c26daafcea343c422617dfaa9aa9572a846`. The
+legs' summaries read `1 failed, 1087 passed, 72 skipped, 13 warnings in
+103.13s (0:01:43)` (`pwsh`) and `1 failed, 1087 passed, 72 skipped, 13
+warnings in 133.35s (0:02:13)` (`powershell`). The pull request merged
+with both legs red, and main's own `demo-windows` run at `d73e614`
+(40514001609) concluded `failure`. The cause, reproduced on Linux on a
+fresh clone at `d73e614` on October 27, 2026: `write_fenced` in
+`src/metricmine/documents/commands.py` wrote
+`path.write_text(text, encoding="utf-8")`, a text-mode write, while
+`write_proposal` in `src/metricmine/meaning/changes.py` records
+`hashlib.sha256(text.encode("utf-8"))`; the same file's bytes with each
+`\n` written as `\r\n` hash to `acc0a269f134...`, the legs' value. Under
+simulated Windows newline semantics on Linux (every text-mode write
+translated as CPython translates it on Windows, installed through
+`sitecustomize`, the method [F-67](#f-67) used for delete semantics),
+the unit lane at `d73e614` read `1 failed, 1072 passed, 87 deselected`,
+the same test with the same digest, and both commands, run through
+their CLIs, wrote `\r` into every file they drafted. The governed
+documents `bind` drafts have been written through the same text mode
+since that module landed (#236), so on Windows they carried CRLF
+(under the simulation, `\r` in every draft file); nothing digests them.
+The adoption scan's `plan.md` is the same class: its trailer states a
+`plan_hash` over the body above it, taken over the text with `\n`, and
+the file is written in text mode, so under the simulation the body's
+bytes do not hash to it; nothing in the code reads that hash back, and
+it is left for its own change. The meaning tests' fixture wrote its registers
+the same way, so the byte-for-byte comparison of an untouched rendered
+register with its fixture passed on Windows only because both sides
+translated: under the simulation, `write_fenced` writing bytes alone
+fails `test_an_untouched_register_renders_byte_for_byte_as_committed`.
+What this bounds: a writer whose output a record digests writes the
+encoded bytes (`path.write_bytes(text.encode("utf-8"))`), so the file
+and the digest are the same bytes on every platform; `.gitattributes`
+holds what git checks out to LF
+([D-42](../decisions/decision-register.md#d-42)), and only the code
+holds what the code writes; a test that compares a written file with a
+fixture writes the fixture as the repository's bytes. The sitting
+that merged the slice read the legs' summaries through a pattern that
+began at the passed count, so `1 failed, ` did not print, and it ran
+the ready and merge steps after its checks step printed that the checks
+were not green: a reported summary carries the whole pytest line, the
+`failed` count included, and a pull request's ready and merge steps
+are gated in code on its checks' green result. (Evidence: the pull
+request's run 40512320277; the Prep I2 probe transcript.)
