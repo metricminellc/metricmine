@@ -528,9 +528,12 @@ def check_fenced(path: Path) -> None:
 def write_fenced(path: Path, text: str) -> None:
     """Write `text` to a path under a fenced directory, after the same
     check, so a link planted between the check and the write is refused
-    as well."""
+    as well. The text is written as its UTF-8 bytes, with the LF line
+    endings the renderer produced, on every platform: a text-mode write
+    turns each newline into CRLF on Windows, and a digest a record takes
+    over the text would then not be the file's (F-75)."""
     check_fenced(path)
-    path.write_text(text, encoding="utf-8")
+    path.write_bytes(text.encode("utf-8"))
 
 
 def tree_digest(root: Path) -> str:
