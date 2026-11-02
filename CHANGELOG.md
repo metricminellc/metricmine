@@ -11,6 +11,17 @@ measurements.
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-11-02
+
+Governed meaning, served: the compiled context carries the glossary and
+ontology registers' certified bindings into `get_context` as the terms
+and concepts a person certified, declared apart from measured, under a
+measured budget, and the regenerated star behind it embeds compiled
+context v0015. The server's instructions are trimmed and relied on
+less: what a host must act on travels in the tool descriptions. The
+five document change kinds take the change-set command. The demo asset
+this release ships serves the meaning block to anyone who fetches it.
+
 ### Added
 
 - `docs/experiments/`, the experiments lane's written records
