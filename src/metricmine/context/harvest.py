@@ -48,15 +48,13 @@ amendment.
 
 from __future__ import annotations
 
-import hashlib
 import json
 from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
 
-from metricmine.documents.register import CONTRACT_PATH, RegisterError, load_register, run_rules
+from metricmine.documents.register import CONTRACT_PATH, Register, RegisterError, load_register, register_digest, run_rules
 from metricmine.documents.states import derive
-from metricmine.profiling.canonical import canonical_bytes
 
 # Characters of compact JSON per registry entry (the documents block plus
 # every field's sources list). The number is Amendment AA's; it was set
@@ -165,13 +163,10 @@ def _plain(value):
     return value
 
 
-def _rows_as_json(rows: list[dict]) -> list[dict]:
-    return [{k: _plain(v) for k, v in row.items()} for row in rows]
-
-
 def _register_digest(standing: list[dict], bindings: list[dict]) -> str:
-    payload = {"standing": _rows_as_json(standing), "bindings": _rows_as_json(bindings)}
-    return hashlib.sha256(canonical_bytes(payload)).hexdigest()
+    # The same digest the change-set command records before and after a
+    # document change (Amendment AD), so a record and an artifact agree.
+    return register_digest(Register(contract=None, standing=standing, bindings=bindings))
 
 
 def _declared(row: dict) -> dict:
