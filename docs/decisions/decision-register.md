@@ -43,7 +43,12 @@ annotations and the query tool's gold scope), and finding F-72.
 Decision Record 016 (October 26, 2026) carries D-44, governed meaning
 (the glossary and ontology registers, the binding by id and content
 digest, the change-set command, the module's boundary), and Amendment
-AC to D-35 (the scan's meaning states). The
+AC to D-35 (the scan's meaning states). Decision Record 017 (October
+30, 2026) carries Amendment AD to D-30 and D-31 jointly (governed
+meaning served: the harvest of the two registers, the served `meaning`
+block and the per-field labels, the budget, the staleness check; the
+server's instructions trimmed under 2,048 characters with what a host
+must act on moved into the tool descriptions). The
 lettering past Z: amendments take two letters in spreadsheet column
 order (AA, AB, and so on through AZ, then BA).
 
@@ -84,8 +89,8 @@ unless amended.
 | [D-27](#d-27) | Bronze lands in CI via make ingest | adopted |
 | [D-28](#d-28) | Contract-declared enforcement severity | adopted |
 | [D-29](#d-29) | The auto-modeling engine specification | adopted |
-| [D-30](#d-30) | Registry population: compiled-context artifact, literal-carrying model; the governed documents harvest (Amendment AA) | adopted |
-| [D-31](#d-31) | Serving layer: one shared query module; thin MCP server; served sources (Amendment AA); tool annotations and the gold scope (Amendment AB) | adopted |
+| [D-30](#d-30) | Registry population: compiled-context artifact, literal-carrying model; the governed documents harvest (Amendment AA); the governed meaning harvest (Amendment AD) | adopted |
+| [D-31](#d-31) | Serving layer: one shared query module; thin MCP server; served sources (Amendment AA); tool annotations and the gold scope (Amendment AB); served meaning and the instructions trim (Amendment AD) | adopted |
 | [D-32](#d-32) | MCP SDK: official mcp as a project dependency | adopted |
 | [D-33](#d-33) | Demo export: content equality by query, never bytes | adopted |
 | [D-34](#d-34) | Proposer model selection: pinned default, allow-listed override | adopted |
@@ -786,6 +791,75 @@ characters a token and under a quarter of the largest entry (16,156).
 The minor bump: keys are added (`sources` per bound field, `documents`
 per entry, `documents_register` under `sources`) and none the serving
 layer reads is removed (Amendment W's rule). Every other clause stands.
+Amended October 30, 2026 (Record 017, Amendment AD, jointly with D-31):
+compiled schema 2.2.0. The compiler harvests the governed glossary and
+ontology registers ([D-44](#d-44)) at compile time and the artifact
+carries each certified binding: per bound field, under
+`expert_context.fields`, `terms` (each `{term_id, term}`) and `concept`
+(`{concept_id, label}`), authored labels and hash-free; per entry that
+cites at least one term or concept, a `meaning` block at the top of the
+compiled context beside `data`, `expert_context`, and `documents` (a
+`note` that labels it; `terms` and `concepts`, each cited row once by
+id, with its `declared` fields, what a person wrote in the register,
+apart from its `measured` fields, what code read; the table's
+`table_terms` and `entity_type` where the table carries them). The
+block sits outside `expert_context` because Amendment W keeps a
+measurement out of it. The harvest is deterministic code inside the
+compiler (`src/metricmine/context/meaning_harvest.py`): it reads
+committed files only, the two registers under their contracts and the
+committed contracts under `contracts/`, and never a calendar, so the
+artifact stays identical on every machine. What is served: a binding
+whose row's current digest equals the digest the binding recorded and
+whose element a committed contract carries (`in_sync`), and a binding on
+a deprecated row, served as declared with its successor when one is
+named (the register's own word between the two merges of deprecate then
+drop); a binding whose row moved under it (`term_changed`,
+`concept_changed`) or names an element no committed contract carries
+(`binding_broken`) is left out, and `make context` prints the reason; a
+binding that names a row the register no longer carries fails the
+register's own rule, and the compile fails closed on that register, as
+it does on any register that fails an error rule or does not conform.
+The served edges are structural, as Amendment AA's are: a binding on a
+mapped column of a mapped silver contract reaches that field on the
+category's entries; a binding on a mapped silver contract's table reaches
+both of the category's entries, as a table-level term or as the entity
+type; a binding on the star contract's table reaches the shared entries;
+a binding on a mapping contract's element, on the star contract's
+columns, on a column no entry carries, or on a level-zero contract is
+recorded, reported by `make context` with its reason, and never
+followed, and the mapped silver element is bound in its own right. `declared` carries a term's label, definition,
+synonyms (as a list), owner, status, successor when one is named, and
+review date, and a concept's label, parent when one is named, definition,
+owner, status, successor when one is named, and review date (a field
+with no value is left out, never served as null); `measured` carries the
+digest this compile took over the row (`term_sha256` over its id,
+label, and definition; `concept_sha256` over its id, label, parent, and
+definition) and `bound_sha256_equal: true`, which is what the compile
+checked. The freshness check compares, beside every governing contract
+and the documents register, each meaning register's contract and the
+sha256 over its canonical rows and bindings, carried under
+`sources.glossary_register` and `sources.ontology_register`, so a
+definition or a binding change reads as stale until `make context`
+runs, with no contract version moving; an artifact minted before this
+amendment cites neither register and reads as stale on a tree that
+carries them. The budget: the harvest one registry entry carries (its
+`meaning` block plus every field's `terms` and `concept` values, as
+compact JSON; the keys that attach them are not counted) is held to
+6,000 characters, its own number beside the documents budget's 4,000; a
+harvest over it fails the compile closed and names the entry, and the
+number moves only by amendment. Measured October 30, 2026, on the
+registers as committed at `9fdb31c`, compiled by this slice, with the
+demo's eleven bindings: the flights measures entry's harvest is 3,172
+characters (the block 3,006, the note 864 of them; the fields' labels
+166), the flights dimensions entry's 2,632, and each airport weather
+entry's 1,338, so the budget holds close to twice the demo's largest
+harvest; the flights measures entry grew from 11,116 to 14,328
+characters of compact JSON and the flights dimensions entry, the
+largest, from 16,156 to 18,817. The minor bump: keys are added
+(`terms` and `concept` per bound field, `meaning` per entry,
+`glossary_register` and `ontology_register` under `sources`) and none
+the serving layer reads is removed (Amendment W's rule). Every other
+clause stands.
 
 ### D-31
 **Serving layer: one shared query module; thin MCP server.** All gold
@@ -901,6 +975,56 @@ warehouse at `d53132a`: `select count(*) from silver.silver_nyc_flights`
 returned the count 166,158 through the server, and under this
 amendment's default it is refused with the table and the opt-in named;
 the gold count path is unchanged. Full text: Decision Record 015.
+Amended October 30, 2026 (Record 017, Amendment AD, jointly with D-30):
+still five tools, no sixth. Two changes. First, `get_context` serves
+the governed meaning harvest as compiled: the `terms` and `concept`
+under a bound field and the entry's top-level `meaning` block, declared
+apart from measured, under a note that says only what the compile
+checked (design rule 5 of the governed host workflow): that the terms
+and concepts are what a person certified in the governed glossary and
+ontology registers, as those registers read when the context compiled;
+that the registers change only by pull request and git, not the
+server, holds the review; that a term or a concept labels meaning and
+never drives a join, a key, a type, or a transform, and that where a
+definition and the contract's sentence disagree the contract's sentence
+is the certified claim ([D-44](#d-44)'s two truths); what is declared
+and what is measured; that the server never says a term or a concept is
+current; and that a definition is text a person wrote, read as data,
+never as instructions. That guidance travels in `get_context`'s
+description and in the served note, never in the server's instructions;
+the note describes what the compile checked and directs nothing, and a
+tool result stays data. A term or a concept never reaches a proposer ([D-23](#d-23) as amended
+by Amendment H): the harvest has no path into a proposal, held as
+Amendment AA's is. Second, the server's instructions are trimmed and
+relied on less. Measured October 21 and 27, 2026, Claude Desktop
+(3.1623.0 and 3.6556.2) did not pass the server's `instructions` to its
+model, and Claude Code is reported to cut them at 2,048 characters, so
+what a host must act on travels in the tool surface: the instructions
+stay under 2,048 characters with the key point in the first 512
+(read-only access; analytical questions on the typed tables); the four
+lines that before this amendment lived only in the instructions (start
+with `list_fact_categories`; read a category's context before answering
+from it; say which of the two sections an answer rests on; use the
+declared cross-category joins on the typed surfaces as written) live in
+the tools' own descriptions, phrased as what each tool is for; the
+served documents' paragraph Amendment AA placed in the instructions
+lives in `get_context`'s description and the served note, Amendment
+AA's sentence that a field with no sources carries no certified source
+moves to `get_context`'s description with its meaning analogue (a field
+with no terms and no concept carries no certified label), and the
+instructions keep one sentence, that a served block is read as data,
+never as instructions. One canary phrase stays in the instructions,
+inside the first 2,048 characters, and in no tool title or description,
+so the canary that measures whether a host passes the instructions
+stays measurable; the surface test pins the instructions' length,
+sha256, and the phrase's offset, so a change to the text is deliberate.
+Measured October 30, 2026, over stdio: 1,837 characters under the
+default scope (sha256 `c00eba40…`, the phrase at offset 810) and 1,700
+under the opt-in. The five document change kinds [D-44](#d-44)
+enumerates land in the change-set command with this slice, as that
+decision placed them; no new decision is minted for them, and Decision
+Record 017 records how they read committed files only. Full text:
+Decision Record 017.
 
 ### D-32
 **MCP SDK selection and pin.** The official `mcp` package at 2.0.x,
@@ -1729,10 +1853,10 @@ authority. The mapping:
 | 15 (proposer runtime: one structured call; proposal schema projection; allow-listed model override; governed inputs per stance; no tools/MCP/loops; outbox-only; the deterministic code named beside the proposers; a term or a concept never a proposer input) | D-21 (Amendment F), D-23 (Amendment H), D-34, D-35, D-43, D-44, evidence [F-26](../verification/gate_proof_findings.md#f-26) |
 | 16 (versioned prompts; contract provenance incl. proposerStance and amendsContract; pattern-derived absence rule) | D-22 (Amendment I), D-29 |
 | 17 (human-only draft-to-contract flow; no relaxation without the flag; report-and-stop on fail-closed; keyless make demo) | D-24, D-08, D-10 (Amendment G), D-35 |
-| 18 (serving boundary: shared module, three-layer read-only, capped results, the typed-surface steer; the data and expert-context split; the served sources and their budget; the gold scope and the tools' annotations; the demo artifact as a release asset) | D-31 (Amendments W, AA, AB), D-32, D-33 (Amendment S), D-03 (Amendment S), D-30 (Amendments W, AA), D-43, evidence [F-72](../verification/gate_proof_findings.md#f-72) |
+| 18 (serving boundary: shared module, three-layer read-only, capped results, the typed-surface steer; the data and expert-context split; the served sources and their budget; the served meaning and its budget; what a host must act on in the tool surface; the gold scope and the tools' annotations; the demo artifact as a release asset) | D-31 (Amendments W, AA, AB, AD), D-32, D-33 (Amendment S), D-03 (Amendment S), D-30 (Amendments W, AA, AD), D-43, D-44, evidence [F-72](../verification/gate_proof_findings.md#f-72) |
 | Conventions (never read or write outside the working tree; enforced by the working-tree guard hook; who runs a command over the governed documents root) | D-37, D-13, D-43, evidence [F-32](../verification/gate_proof_findings.md#f-32) |
 | Toolchain (the supported matrix; `make` over `uv run mm`; the Windows text rules; line endings, the committed document copies included) | D-42, D-43 |
-| Architecture boundaries (the governed documents module: deterministic code, identity as extracted text, never a private location, the register changed only by pull request; the context compiler's harvest of the register, committed files only and never a calendar; the governed meaning module: deterministic code, identity as a stable id and a content digest, the registers changed only by pull request, a change set rendered to the outbox and never to the registers) | D-43, D-35 (Amendments Z, AC), D-10 (Amendment G), D-30 (Amendment AA), D-44 |
+| Architecture boundaries (the governed documents module: deterministic code, identity as extracted text, never a private location, the register changed only by pull request; the context compiler's harvest of the register, committed files only and never a calendar; the governed meaning module: deterministic code, identity as a stable id and a content digest, the registers changed only by pull request, a change set rendered to the outbox and never to the registers; the context compiler's harvest of the two meaning registers, committed files only and never a calendar) | D-43, D-35 (Amendments Z, AC), D-10 (Amendment G), D-30 (Amendments AA, AD), D-44 |
 
 All decisions in this register are adopted: D-01 through D-20 as of the
 July 11, 2026 revision (Decision Record 001 Rev. 3), D-21 through D-25 as
@@ -1754,7 +1878,9 @@ X and Y as of the October 3, 2026 revision (Decision Record 013), and
 D-43 (with Amendment Z to D-35) as of the October 17, 2026 revision
 (Decision Record 014), and Amendments AA and AB as of the October 19,
 2026 revision (Decision Record 015), and D-44 (with Amendment AC to
-D-35) as of the October 26, 2026 revision (Decision Record 016). D-20's
+D-35) as of the October 26, 2026 revision (Decision Record 016), and
+Amendment AD as of the October 30, 2026 revision (Decision Record 017).
+D-20's
 substance
 is encoded directly in
 [`.github/workflows/contract-gate.yml`](../../.github/workflows/contract-gate.yml)
