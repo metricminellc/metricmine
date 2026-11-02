@@ -45,6 +45,19 @@ no document's text beyond the bound quote, is held to a per-entry
 budget, and joins the register's digest and each served document's text
 digest into ``sources`` so a binding change reads as stale with no
 contract version moving.
+
+Since Amendment AD (D-30 and D-31; compiled schema 2.2.0) the compiled
+context also carries the governed meaning registers' certified bindings
+(D-44): per bound field, under ``expert_context.fields``, `terms` (each
+`{term_id, term}`) and `concept` (`{concept_id, label}`), authored labels
+and hash-free; and per entry a top-level ``meaning`` block beside
+``data``, ``expert_context``, and ``documents``, listing each cited term
+and concept once, declared apart from measured, with the table's
+`entity_type` and `table_terms` where the table carries them. The
+harvest lives in ``meaning_harvest.py``; it reads committed files only,
+reads no calendar, is held to its own per-entry budget, and joins each
+register's digest into ``sources`` so a row change reads as stale with
+no contract version moving.
 """
 
 from __future__ import annotations
@@ -64,6 +77,13 @@ from metricmine.context.harvest import (
     harvest,
     harvest_size,
 )
+from metricmine.context.meaning_harvest import (
+    MEANING_BUDGET,
+    MeaningHarvest,
+    MeaningHarvestError,
+    meaning_size,
+)
+from metricmine.context.meaning_harvest import harvest as harvest_meaning
 from metricmine.engine.emitters import Emission, StarEmission
 from metricmine.engine.reader import (
     compiled_sources,
@@ -77,8 +97,11 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 
 # 2.1.0 since Amendment AA: the harvest adds keys (`sources` per bound
 # field, `documents` per entry, `documents_register` under sources) and
-# removes none the serving layer reads.
-COMPILED_SCHEMA_VERSION = "2.1.0"
+# removes none the serving layer reads. 2.2.0 since Amendment AD: the
+# meaning harvest adds `terms` and `concept` per bound field, `meaning`
+# per entry, and `glossary_register` and `ontology_register` under
+# sources, and removes none.
+COMPILED_SCHEMA_VERSION = "2.2.0"
 
 EXPERT_CONTEXT_NOTE = (
     "Authored knowledge, not a measurement: what the people who approved the "
@@ -190,11 +213,14 @@ def _fields_context(
     silver_fields: dict[str, str],
     silver_id: str | None = None,
     documents: Harvest | None = None,
+    meaning: MeaningHarvest | None = None,
 ) -> dict:
     """Each field's two descriptions: the mapping's meaning within the
     category, and the silver column's own where it says something
-    different; and, where the governed documents register binds the
-    silver column, the sources a person certified (Amendment AA)."""
+    different; where the governed documents register binds the silver
+    column, the sources a person certified (Amendment AA); and where the
+    governed meaning registers bind it, the terms and the concept a
+    person certified as its labels (Amendment AD)."""
     fields = {}
     for name in names:
         entry = {"meaning": _text(properties[name].get("description"))}
@@ -205,6 +231,13 @@ def _fields_context(
             sources = documents.sources_for(silver_id, name)
             if sources:
                 entry["sources"] = sources
+        if meaning is not None and silver_id is not None:
+            terms = meaning.terms_for(silver_id, name)
+            if terms:
+                entry["terms"] = terms
+            concept = meaning.concept_for(silver_id, name)
+            if concept:
+                entry["concept"] = concept
         fields[name] = entry
     return fields
 
@@ -235,6 +268,28 @@ def _hold_budget(category: str, role: str, context: dict, documents_block: dict 
         )
 
 
+def _meaning_block(fields: dict, meaning: MeaningHarvest, table_id: str) -> dict | None:
+    """The cited terms and concepts of one entry, each once, keyed by id,
+    under the note that labels them, with the table's own labels (its
+    `table_terms` and its `entity_type`, bound under the empty column
+    name); None when the entry cites nothing. The block is placed beside
+    `data`, `expert_context`, and `documents`, never inside
+    `expert_context` (Amendment W: expert_context carries no measurement)."""
+    return meaning.block_for(fields, meaning.terms_for(table_id, ""), meaning.concept_for(table_id, ""))
+
+
+def _hold_meaning_budget(category: str, role: str, fields: dict, meaning_block: dict | None) -> None:
+    """Amendment AD's budget: fail the compile closed when one entry's
+    meaning harvest exceeds it, naming the entry and the size."""
+    size = meaning_size(meaning_block, fields)
+    if size > MEANING_BUDGET:
+        raise MeaningHarvestError(
+            f"the governed meaning harvest of the {category} {role} entry is {size} characters"
+            f" of compact JSON, over the {MEANING_BUDGET} budget (D-31 as amended by Amendment AD);"
+            " the budget moves only by amendment, and a binding leaves the register by pull request"
+        )
+
+
 def _expert_context(
     silver: dict,
     mapping: dict,
@@ -243,6 +298,7 @@ def _expert_context(
     names: list[str],
     properties: dict,
     documents: Harvest | None = None,
+    meaning: MeaningHarvest | None = None,
 ) -> dict:
     """What people wrote about a category: the silver contract's subject,
     usage, and limitations, its lineage and vintage and declared joins,
@@ -265,7 +321,7 @@ def _expert_context(
             "star": f"{star['id']} v{star['version']}",
         },
         "fields": _fields_context(
-            names, properties, _silver_descriptions(silver), silver.get("id"), documents
+            names, properties, _silver_descriptions(silver), silver.get("id"), documents, meaning
         ),
     }
     for key, label in _SILVER_CONTEXT_KEYS:
@@ -358,6 +414,7 @@ def _category_entries(
     rules: dict[str, dict],
     shared: dict[str, dict[str, list[str]]],
     documents: Harvest,
+    meaning: MeaningHarvest,
 ) -> list[dict]:
     """The two entries a mapping contract owns: its dimensions manifest
     and its measures manifest, both citing the mapping. Each carries the
@@ -399,18 +456,25 @@ def _category_entries(
 
     dim_names = list(emission.dim_payload_columns)
     measure_names = list(emission.measure_manifest)
+    silver_id = str(silver["id"])
     dim_context = _expert_context(
-        silver, mapping, star, category, dim_names + [emission.time_column], properties, documents
+        silver, mapping, star, category, dim_names + [emission.time_column], properties, documents, meaning
     )
     dim_documents = _documents_block(dim_context["fields"], documents)
     _hold_budget(category, "dimensions", dim_context, dim_documents)
-    measure_context = _expert_context(silver, mapping, star, category, measure_names, properties, documents)
+    dim_meaning = _meaning_block(dim_context["fields"], meaning, silver_id)
+    _hold_meaning_budget(category, "dimensions", dim_context["fields"], dim_meaning)
+    measure_context = _expert_context(silver, mapping, star, category, measure_names, properties, documents, meaning)
     measure_documents = _documents_block(measure_context["fields"], documents)
     _hold_budget(category, "measures", measure_context, measure_documents)
+    measure_meaning = _meaning_block(measure_context["fields"], meaning, silver_id)
+    _hold_meaning_budget(category, "measures", measure_context["fields"], measure_meaning)
 
-    def with_documents(compiled: dict, block: dict | None) -> dict:
+    def with_documents(compiled: dict, block: dict | None, meaning_block: dict | None = None) -> dict:
         if block is not None:
             compiled["documents"] = block
+        if meaning_block is not None:
+            compiled["meaning"] = meaning_block
         return compiled
 
     return [
@@ -440,7 +504,7 @@ def _category_entries(
                     "where_to_query": _where_to_query(category, typed_surface, emission.source_table),
                 },
                 "expert_context": dim_context,
-            }, dim_documents),
+            }, dim_documents, dim_meaning),
         ),
         entry(
             emission.fact_col_key,
@@ -456,7 +520,7 @@ def _category_entries(
                     "where_to_query": _where_to_query(category, typed_surface, emission.source_table),
                 },
                 "expert_context": measure_context,
-            }, measure_documents),
+            }, measure_documents, measure_meaning),
         ),
     ]
 
@@ -479,14 +543,20 @@ def _star_context(star: dict, subject: str, how_to_read: str, **extra) -> dict:
     return context
 
 
-def _shared_entries(star: StarEmission, inputs) -> list[dict]:
+def _shared_entries(star: StarEmission, inputs, meaning: MeaningHarvest) -> list[dict]:
     """The three shared-group entries, once per star, citing the star
     contract: the source group names every mapped table, the run group
     carries build lineage only, the timeframe group is the conformed
-    calendar with every category's declared time column and grain."""
+    calendar with every category's declared time column and grain. A
+    term or an entity type bound on the star contract's table reaches
+    each of them as a `meaning` block (Amendment AD)."""
     contract = star.star
+    star_meaning = _meaning_block({}, meaning, str(contract["id"]))
 
     def entry(schema_key: str, entity_group: str, compiled: dict) -> dict:
+        if star_meaning is not None:
+            _hold_meaning_budget("shared", entity_group, {}, star_meaning)
+            compiled["meaning"] = star_meaning
         return {
             "schema_key": schema_key,
             "entity_group": entity_group,
@@ -697,28 +767,30 @@ def _shared_entries(star: StarEmission, inputs) -> list[dict]:
 
 def build_compiled_context(repo_root: Path, report: list[str] | None = None) -> dict:
     """The artifact content dict, pure: contracts and the committed
-    register in, no writes (D-30).
+    registers in, no writes (D-30).
 
     Schema keys and manifests come from the same Emission the emitters
     use, so every registry key equals its emitted manifest_key literal by
     construction; that identity is what makes C3 pass. Category entries
     cite their MAPPING contract (its approval created the keys); shared
     entries cite the star contract, which governs the container; every
-    contract sits in sources, and so does the governed documents register
-    when the tree carries one. ``report``, when given, receives one line
-    per binding the harvest left out, with the reason.
+    contract sits in sources, and so do the governed documents register
+    and the two governed meaning registers when the tree carries them.
+    ``report``, when given, receives one line per binding a harvest left
+    out, with the reason.
     """
     inputs = load_inputs(repo_root)
     validate_inputs(inputs)
     star = StarEmission(inputs.mappings, inputs.star)
     documents = harvest(repo_root)
+    meaning = harvest_meaning(repo_root)
 
-    entries = _shared_entries(star, inputs)
+    entries = _shared_entries(star, inputs, meaning)
     rules = _conformed_rules(inputs.star)
     shared = _shared_key_map(star, inputs)
     for emission in star.categories:
         silver = inputs.silvers[emission.source_model]
-        entries.extend(_category_entries(repo_root, emission, silver, rules, shared, documents))
+        entries.extend(_category_entries(repo_root, emission, silver, rules, shared, documents, meaning))
 
     sources = compiled_sources(inputs)
     by_id = {mapping["id"]: mapping for mapping in inputs.mappings}
@@ -730,17 +802,24 @@ def build_compiled_context(repo_root: Path, report: list[str] | None = None) -> 
     # compares (Amendment AA): its digest and each served document's text
     # digest, so a binding change reads as stale with no contract moving.
     sources["documents_register"] = documents.register_source
+    # The two meaning registers join the same comparison (Amendment AD):
+    # each register's contract and the sha256 over its canonical rows and
+    # bindings, so a definition or a binding change reads as stale with
+    # no contract moving.
+    sources["glossary_register"] = meaning.sources.get("glossary_register")
+    sources["ontology_register"] = meaning.sources.get("ontology_register")
 
     artifact = {
         "entries": entries,
         "schema_version": COMPILED_SCHEMA_VERSION,
         "sources": sources,
     }
-    # What the harvest left out and why, one line each, for the caller to
+    # What the harvests left out and why, one line each, for the caller to
     # print: `make context` says which bindings the served context does
-    # not carry (Amendment AA).
+    # not carry (Amendments AA and AD).
     if report is not None:
         report.extend(documents.unserved_lines())
+        report.extend(meaning.unserved_lines())
     return artifact
 
 
