@@ -305,7 +305,7 @@ and in findings
 
 ## Status and roadmap
 
-[v1.2.0](https://github.com/metricminellc/metricmine/releases/tag/v1.2.0)
+[v1.3.0](https://github.com/metricminellc/metricmine/releases/tag/v1.3.0)
 is the current tagged release; v1.0.0 (September 2, 2026) began the
 stable line. v0.1.0 shipped Phases 0
 through 5: the scaffold and pinned toolchain, bronze ingestion, the
@@ -340,7 +340,13 @@ meaning, the compiled context carries each certified binding into
 `get_context` as document text a person bound in the register, the
 query tool reads gold by default with an explicit opt-in, the star is
 rebuilt on dbt Core v2, and the refreshed demo asset carries the
-corrected quantity sentence. The
+corrected quantity sentence. v1.3.0 serves governed meaning: the
+glossary and ontology registers record the terms and concepts a person
+certified for a contracted column or table, the compiled context
+carries each certified binding into `get_context` as labels declared
+apart from what the compile measured, the server's instructions are
+trimmed so that what a host must act on travels in the tool
+descriptions, and the refreshed demo asset serves the meaning block. The
 live roadmap is the
 [Issues tab](https://github.com/metricminellc/metricmine/issues); the
 [changelog](CHANGELOG.md) records what landed in each release.
