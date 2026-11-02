@@ -113,6 +113,40 @@
         }
       },
       "expert_context": "flights measures, fields.dep_delay_minutes.sources: the sentence a person bound from the nycflights13 flights help page (D-43), listed once under documents.cited with its declared fields apart from its measured ones; the note says the server never opens the document and never says it is current. A good answer quotes the anchor, names the document and where its approval lives (the merge; in_repo), and says the contract's own sentence (the field's meaning) is the certified claim the quote supports."
+    },
+    {
+      "id": "Q9",
+      "question": "What term labels the departure delay, and what does the term mean?",
+      "categories": ["flights"],
+      "tool": "get_context",
+      "context_key": "measures",
+      "field": "dep_delay_minutes",
+      "expected_terms": [{"term_id": "departure_delay", "term": "Departure delay"}],
+      "expected_concept": {"concept_id": "departure_delay", "label": "Departure delay"},
+      "expected_meaning": {
+        "terms": {
+          "departure_delay": {
+            "declared": {
+              "term": "Departure delay",
+              "definition": "Minutes between the actual and the scheduled departure of a flight. Negative when the flight left early. Absent when the flight was cancelled.",
+              "synonyms": ["dep delay", "dep_delay"],
+              "owner": "aviation stewards",
+              "status": "active",
+              "review_by": "2027-10-26"
+            },
+            "measured": {"bound_sha256_equal": true}
+          }
+        },
+        "concepts": {
+          "departure_delay": {
+            "declared": {"label": "Departure delay", "parent_id": "delay", "status": "active"},
+            "measured": {"bound_sha256_equal": true}
+          }
+        },
+        "table_terms": [{"term_id": "cancellation", "term": "Cancellation"}],
+        "entity_type": {"concept_id": "flight", "label": "Flight"}
+      },
+      "expert_context": "flights measures, fields.dep_delay_minutes.terms and .concept: the labels a person certified in the glossary and ontology registers (D-44), listed once under meaning.terms and meaning.concepts with the definition and the other declared fields apart from the digest the compile measured; the entity type is Flight and the table-level term is Cancellation. A good answer names the term and quotes its definition, says the contract's own sentence (the field's meaning) is the certified claim the term labels, and repeats what the note says: a term labels meaning and never drives a join, a key, a type, or a transform, and the server never says a term is current."
     }
   ]
 }

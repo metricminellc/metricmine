@@ -205,7 +205,13 @@ the person testing it) can tell what was measured from what was written:
   (the sentence a person bound, verbatim) and lists the cited document
   once, what was declared apart from what was measured, under a note
   that says the server never opens a document and never says one is
-  current (D-43; Amendment AA).
+  current (D-43; Amendment AA). Where the governed glossary and ontology
+  registers bind a field, the entry carries that field's `terms` and
+  `concept` (the labels a person certified) and lists each cited term
+  and concept once under `meaning`, declared apart from measured, under
+  a note that says a term labels meaning and never drives a join, a key,
+  a type, or a transform, and that the server never says a term is
+  current (D-44; Amendment AD).
 
 That split is the point of the multi-source demo. The weather table
 says that a null gust means no gust was reported, not zero; the flights
@@ -266,6 +272,19 @@ asking, and what to check for:
   definition is the certified claim the quote supports, and repeats
   what the note says: the server never opened the document and never
   says it is current.
+- *"What term labels the departure delay, and what does the term
+  mean?"*: the served meaning. The same entry carries, under
+  `fields.dep_delay_minutes.terms` and `.concept`, the labels a person
+  certified in the glossary and ontology registers (Departure delay,
+  under the Delay concept), and lists each cited term and concept once
+  under `meaning`, the definition and the other declared fields apart
+  from the digest the compile measured; the table's entity type is
+  Flight and its table-level term is Cancellation (D-44; Amendment AD).
+  A good answer names the term, quotes its definition, says the
+  contract's own sentence is the certified claim the term labels, and
+  repeats what the note says: a term labels meaning and never drives a
+  join, a key, a type, or a transform, and the server never says a term
+  is current.
 
 ## Path B: replay the whole pipeline (about 8 minutes)
 
@@ -358,8 +377,8 @@ What to expect, step by step:
    `datacontract` tool is not on PATH (F-54), and on Windows the 55
    working-tree guard cases skip as well, because that guard is
    POSIX-only (D-42), so a Windows run reports 70 skipped where a Linux
-   or macOS run without the tool reports 15. The ten demo-question
-   tests (seven SQL questions, one context question, and two checks on
+   or macOS run without the tool reports 15. The eleven demo-question
+   tests (seven SQL questions, two context questions, and two checks on
    the set) read `MM_SERVE_DB`, then `MM_WAREHOUSE_PATH`, then the built
    `warehouse/metricmine.duckdb`, and skip until Path B has built it;
    to run them against the fetched asset after Path A alone, point
