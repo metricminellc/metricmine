@@ -26,6 +26,7 @@ import jsonschema
 import yaml
 
 from metricmine.context.harvest import register_source
+from metricmine.context.meaning_harvest import meaning_sources
 from metricmine.profiling.writer import latest_version
 
 # Every emitted model carries one of these prefixes or the reserved name,
@@ -161,8 +162,8 @@ def load_compiled_context(repo_root: Path) -> tuple[str, dict]:
 
     Resolves the context: block of config/default.yaml, picks the newest
     vNNNN, and refuses an artifact whose cited contract versions, or whose
-    cited governed documents register, diverge from the tree; the
-    registry must never embed stale context.
+    cited governed documents register or governed meaning registers,
+    diverge from the tree; the registry must never embed stale context.
     """
     config_path = Path(repo_root) / "config" / "default.yaml"
     cfg = yaml.safe_load(config_path.read_text(encoding="utf-8"))
@@ -205,6 +206,16 @@ def load_compiled_context(repo_root: Path) -> tuple[str, dict]:
     # cites no register and reads as stale on a tree that carries one.
     if cited.get("documents_register") != register_source(repo_root):
         stale.append("documents_register")
+    # The two governed meaning registers join it (D-30 as amended by
+    # Amendment AD): each register's digest over its canonical rows and
+    # bindings, read from the tree, so a definition or a binding change
+    # reads as stale with no contract version moving; an artifact minted
+    # before the amendment cites neither and reads as stale on a tree
+    # that carries them.
+    meaning = meaning_sources(repo_root)
+    for key in ("glossary_register", "ontology_register"):
+        if cited.get(key) != meaning.get(key):
+            stale.append(key)
     if stale:
         raise EngineContractError(
             f"compiled-context artifact {version} is stale on"
