@@ -216,6 +216,46 @@ def write_repo(root: Path, **registers) -> Path:
     return root
 
 
+POLICY_MD = "# Delay policy\n\nA flight is late when it leaves after its scheduled time.\nDelays are measured in minutes.\nNegative values are early departures.\n"
+POLICY_ANCHOR = "Delays are measured in minutes."
+
+
+def write_documents(root: Path, standing: list[dict] | None = None, bindings: list[dict] | None = None,
+                    policy: str = POLICY_MD) -> Path:
+    """The governed documents register beside the meaning registers (the
+    five document kinds take the same command, Amendment AD): the
+    repository's register contract, a committed copy of a small policy at
+    docs/policy.md, and the rows given (by default one in_repo standing
+    row bound on silver_flights.dep_delay_minutes). The files are written
+    as LF bytes, as every checkout carries them (F-75)."""
+    from metricmine.documents.commands import BINDINGS_HEADER, STANDING_HEADER
+    from metricmine.documents.extract import EXTRACTOR_ID, extract_bytes
+
+    shutil.copy(REPO / "contracts" / "documents_register.odcs.yaml", root / "contracts" / "documents_register.odcs.yaml")
+    (root / "docs").mkdir(parents=True, exist_ok=True)
+    (root / "docs" / "policy.md").write_bytes(policy.encode("utf-8"))
+    digest = extract_bytes(policy.encode("utf-8"), "markdown").text_sha256
+    if standing is None:
+        standing = [{
+            "document_id": "policy", "title": "Delay policy", "governance": "in_repo", "access": "in_repo",
+            "location": "docs/policy.md", "format": "markdown", "certification_source": "git_merge",
+            "gate_strength": "publication_gate", "declared_by": BY, "declared_on": DAY, "review_by": REVIEW,
+            "text_sha256": digest, "extractor": EXTRACTOR_ID, "verified_against": "location", "verified_on": DAY,
+        }]
+    if bindings is None:
+        intent = "dep_delay_minutes rests on the policy's delay sentence."
+        bindings = [{
+            "document_id": "policy", "contract_id": "silver_flights", "column_name": "dep_delay_minutes",
+            "anchor": POLICY_ANCHOR, "locator": "text, line 4", "intent": intent, "intent_sha256": sha256_text(intent),
+            "bound_by": BY, "bound_on": DAY,
+        }]
+    folder = root / "documents" / "register"
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / "standing.yaml").write_bytes(render_yaml("documents", standing, STANDING_HEADER).encode("utf-8"))
+    (folder / "bindings.yaml").write_bytes(render_yaml("bindings", bindings, BINDINGS_HEADER).encode("utf-8"))
+    return root
+
+
 def write_change_set(root: Path, name: str, changes: list[dict], by: str = BY,
                      intent: str = "the steward's words, verbatim.") -> Path:
     """A change-set file in the outbox, as a host's agent would write it."""

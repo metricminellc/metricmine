@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://metricmine.ai/spec/meaning/change-set.schema.json",
   "title": "MetricMine governed meaning change set (D-44)",
-  "description": "A context proposal: a declared change set a person runs through `python -m metricmine.meaning propose <file>`. The vocabulary is closed. The five document kinds are enumerated by D-44 and ride the slice that serves governed meaning; the command refuses them by name until then. Every check a schema cannot express (a row the register carries, a label owned elsewhere, a drop while a binding stands, a parent cycle, a person as `by`) runs in code, in order, against a working copy of the registers.",
+  "description": "A context proposal: a declared change set a person runs through `python -m metricmine.meaning propose <file>`. The vocabulary is closed: the glossary's nine kinds, the ontology's seven, and governed documents' five (D-44; Amendment AD). Every check a schema cannot express (a row the register carries, a label owned elsewhere, a drop while a binding stands, a parent cycle, a quote in a committed copy, a person as `by`) runs in code, in order, against a working copy of the registers.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -120,6 +120,107 @@
           "column_name": {
             "type": "string",
             "description": "The column, or the empty string for the table."
+          },
+          "document_id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9._-]*$",
+            "description": "The stable id of a governed document (D-43)."
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "governance": {
+            "type": "string",
+            "enum": [
+              "in_repo",
+              "platform_governed",
+              "pinned"
+            ]
+          },
+          "access": {
+            "type": "string",
+            "enum": [
+              "in_repo",
+              "public",
+              "local_path",
+              "pointer_only"
+            ]
+          },
+          "location": {
+            "type": "string",
+            "minLength": 1,
+            "description": "A repository-relative path for in_repo; a display link otherwise. Never opened here unless in_repo."
+          },
+          "format": {
+            "type": "string",
+            "minLength": 1
+          },
+          "certification_source": {
+            "type": "string",
+            "enum": [
+              "git_merge",
+              "platform_approval",
+              "steward_attestation",
+              "none"
+            ]
+          },
+          "gate_strength": {
+            "type": "string",
+            "enum": [
+              "publication_gate",
+              "attestation_badge",
+              "none"
+            ]
+          },
+          "durable_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "approver_role": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "pinned_version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "upstream_url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "upstream_sha256": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "license": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "text_sha256": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[0-9a-f]{64}$",
+            "description": "Declared for a public or pointer_only document; measured from the committed copy, never declared, for in_repo."
+          },
+          "anchor": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The verbatim quote the contract's sentence rests on; checked against the committed copy."
           }
         },
         "allOf": [
@@ -359,6 +460,88 @@
               "required": [
                 "concept_id",
                 "contract_id"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "const": "add_document"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "document_id",
+                "title",
+                "governance",
+                "access",
+                "location",
+                "format",
+                "certification_source",
+                "gate_strength"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "const": "bind_document"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "document_id",
+                "contract_id",
+                "column_name",
+                "anchor"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "const": "unbind_document"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "document_id",
+                "contract_id",
+                "column_name"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "const": "recertify_document"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "document_id"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "const": "retire_document"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "document_id"
               ]
             }
           }

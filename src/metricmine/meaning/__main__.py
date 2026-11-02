@@ -75,17 +75,19 @@ def main(argv: list[str] | None = None) -> int:
             print(commands.show(repo, registers, args.id), end="")
             return 0
         today = _today(args.today)
-        before = (tree_digest(repo / "meaning"), tree_digest(repo / "contracts"))
+        protected = ("meaning", "contracts", "documents/register")
+        before = tuple(tree_digest(repo / folder) for folder in protected)
         proposal, change_set, out = commands.propose(repo, registers, args.file, today, args.outbox)
         print((out / "summary.md").read_text(encoding="utf-8"), end="")
         try:
             where = out.relative_to(repo).as_posix()
         except ValueError:
             where = out.as_posix()
-        if (tree_digest(repo / "meaning"), tree_digest(repo / "contracts")) != before:
-            print(f"wrote {where}/; STOP: meaning/ or contracts/ changed during the write; restore them from git", file=sys.stderr)
+        if tuple(tree_digest(repo / folder) for folder in protected) != before:
+            print(f"wrote {where}/; STOP: meaning/, contracts/, or documents/register/ changed during the write; restore them from git", file=sys.stderr)
             return 1
-        print(f"wrote {where}/ (glossary/, ontology/, record.json, summary.md); meaning/ and contracts/ are unchanged")
+        folders = "glossary/, ontology/, documents/, " if proposal.documents is not None else "glossary/, ontology/, "
+        print(f"wrote {where}/ ({folders}record.json, summary.md); meaning/, contracts/, and documents/register/ are unchanged")
         return 0
     except (commands.CommandError, RegisterError) as exc:
         print(f"refused: {exc}", file=sys.stderr)

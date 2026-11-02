@@ -8,9 +8,9 @@
 > was made, the scan derives every binding's state on every run, a change
 > set a person runs through one command renders the registers as they
 > would read, and the merge is the only approval this project gives.
-> Deterministic code, never an agent. Nothing here is served yet: the
-> slice that serves meaning amends D-30 and D-31 (the section "What this
-> slice does not do").
+> Deterministic code, never an agent. Since Amendment AD to D-30 and
+> D-31 the compiled context carries the bindings and `get_context`
+> serves them (the section "What is served").
 
 ## The one-sentence design
 
@@ -47,8 +47,10 @@ The two proposers stay the only LLM surface, and a glossary term or an
 ontology concept is never a proposer input (D-23 as amended by Amendment
 H): no module under the agents package imports this module or the
 compiler, and the unit lane holds it, as it holds for documents. The
-module reads the two register contracts, the four register files, and
-the committed contracts under `contracts/` (never the warehouse). It
+module reads the two register contracts, the four register files, the
+committed contracts under `contracts/` (never the warehouse), and, for a
+document change, the governed documents register and an `in_repo`
+document's committed copy (never a location outside the repository). It
 writes nothing but a change set's rendering to the gitignored outbox
 (`proposals/meaning/`) and the plan the scan already writes. The
 registers are the record and change only by pull request; a declarer, a
@@ -243,21 +245,26 @@ same set added. The class of a kind is what it re-asks of people:
 | `deprecate_concept`, `drop_concept` | ontology | removing, two steps | as the glossary's; a drop is also refused while a child names the concept as parent |
 | `bind_concept` | ontology | additive | the concept and the element exist; the element carries no other concept (unbind it first) |
 | `unbind_concept` | ontology | removing | the binding exists |
+| `add_document` | documents | additive | the id is well formed and free; the closed fields (`governance`, `access`, `certification_source`, `gate_strength`) hold; an `in_repo` row's location is a repository-relative path to a committed copy (never under `documents/inbox/`), its text is extracted and digested here, and the same text registered elsewhere is refused; a `public` or `pointer_only` row is added as declared, with an optional declared `text_sha256` recorded as verified against `none`; a `local_path` row is refused (drafted at a terminal with the documents module, which opens the mapped root); `review_by` defaults to a year for `in_repo` and half a year otherwise |
+| `bind_document` | documents | additive | the document exists or the set added it; the element is a column a committed contract carries (a claim about a table is a term or a concept); the quote is located in the `in_repo` row's committed copy and its locator recorded, with a note when the copy's text no longer matches the standing row's digest (a binding on a `public` or `pointer_only` row is a hand edit of `documents/register/bindings.yaml`, checked with `python -m metricmine.documents verify --reading-copy`, by its own pull request); a standing binding re-anchored on a different quote is classed changing, the same quote is refused as nothing changes |
+| `unbind_document` | documents | removing | the binding exists |
+| `recertify_document` | documents | changing | the document exists; an `in_repo` row's committed copy is extracted again, its digest, extractor, and verification day recorded, every standing binding's quote located in the new text (a lost quote refuses the set) and its locator refreshed; a `public` or `pointer_only` row takes a declared `text_sha256`, a `pinned_version`, or a `review_by`, at least one of which must move (a declared digest equal to the recorded one changes nothing and erases no recorded verification); a set in which nothing moves is refused; `review_by` may move on either; a `local_path` row is refused |
+| `retire_document` | documents | removing, step 2 | no binding stood on the row when the set started (an unbinding in the same set does not count: unbind, merge, then retire, as deprecate then drop) |
 
-The five document kinds D-44 enumerates (`add_document`,
-`bind_document`, `unbind_document`, `recertify_document`,
-`retire_document`) are in the schema's vocabulary and refused here by
-name: they ride the slice that serves governed meaning, and until then a
-document change beyond `bind` is a hand edit a reviewer reads. `by` is a
-person; `intent` is non-empty; a set with no change is refused; a field
-a kind does not read is refused by name, so a misspelled field never
-passes silently.
+The five document kinds (D-44; Amendment AD) take the same command,
+record, and pull request as the meaning kinds, and change the governed
+documents register ([`docs/documents.md`](../documents.md)) the way its
+`bind` command drafts a binding; the committed documents register is
+held to its contract's error rules before the set is applied, as the
+meaning registers are. `by` is a person; `intent` is non-empty; a set
+with no change is refused; a field a kind does not read is refused by
+name, so a misspelled field never passes silently.
 
 What `propose` does, in order: holds the committed registers to their
 contracts' error rules first, naming the rule, so a set is never applied
 over a register that already fails; validates the file against the
-schema and the document kinds by name; applies each change to the
-working copy with the checks above, classifying it; then re-binds every
+schema; applies each change to the working copy with the checks above,
+classifying it; then re-binds every
 binding whose row's digest this set moved, a binding the set itself made
 earlier included when a later change moved the row again, under the
 set's `intent`, `by`, and day, listing each by name (a binding already
@@ -266,11 +273,16 @@ drift, and an explicit `bind` re-binds it); holds the rendered registers
 to their contracts' error rules and the person checks, and derives every
 rendered binding's state, refusing the whole set on any rule failure or
 on a `term_changed` or `concept_changed` it did not report as standing
-drift; and renders into
+drift; holds a rendered documents register, when the set carries a
+document kind, to its contract's error rules, the person checks, and
+every `in_repo` row's anchors against its committed copy, refusing the
+whole set on a failure; and renders into
 `proposals/meaning/<name>/` (named from the file's stem so a repeated
 draft overwrites itself and no clock is read) the four register files as
 they would read (`glossary/terms.yaml`, `glossary/bindings.yaml`,
-`ontology/concepts.yaml`, `ontology/bindings.yaml`), `record.json` (the
+`ontology/concepts.yaml`, `ontology/bindings.yaml`), the two documents
+register files (`documents/standing.yaml`, `documents/bindings.yaml`)
+only when the set carries a document kind, `record.json` (the
 set verbatim, the intent verbatim and hashed, the classification per
 change, the re-bound elements by name, the standing drift, the register
 digests before and after, the rendered files' digests, who and when, the
@@ -278,18 +290,18 @@ module's id), and `summary.md` for the pull request body. Every file is
 written as UTF-8 bytes with the LF line endings the renderer produced,
 on every platform and never through a text mode that translates them,
 so each rendered file's digest in `record.json` is the digest of the
-file as written (F-75). Nothing under `meaning/` or `contracts/` is
-touched; `--outbox` is fenced to
+file as written (F-75). Nothing under `meaning/`, `contracts/`, or
+`documents/register/` is touched; `--outbox` is fenced to
 `proposals/meaning/`, so a path into the registers or outside the
 repository, the outbox folder itself, or any symbolic link on the way to
 the draft or at a file it writes is refused before anything is written
 (every path the command will write is checked before the first write,
 so a refusal leaves nothing but the planted link behind; F-74, the
 documents module's draft shared the defect and the fix); the
-command digests `meaning/` and `contracts/` before and after it writes
-and prints that they are unchanged only when the two digests are equal
-(design rule 5); and the command has no flag that certifies anything and
-no flag that relaxes a check.
+command digests `meaning/`, `contracts/`, and `documents/register/`
+before and after it writes and prints that they are unchanged only when
+the two digests are equal (design rule 5); and the command has no flag
+that certifies anything and no flag that relaxes a check.
 
 ## The flow, end to end
 
@@ -303,15 +315,21 @@ no flag that relaxes a check.
    change and every re-bind by name. A refusal names its reason and
    writes nothing.
 4. Copy the rendered files onto a branch (the summary prints the `cp`
-   lines), run `verify` and `make scan`, open the pull request with the
-   summary in its body. The reviewer reads the definition diff and each
-   re-bound element beside it; the unit lane holds the registers to their
-   contracts and every binding to its row; the merge is the only
-   approval.
+   lines, the documents register's among them when the set touched it),
+   run `verify` (and `python -m metricmine.documents verify` for a
+   document change) and `make scan`, then `make context` in the same pull
+   request, because the compiled context cites the registers and reads
+   as stale until it is refreshed (Amendment AD; the F-29 discipline);
+   open the pull request with the summary in its body. The reviewer
+   reads the definition diff and each re-bound element beside it; the
+   unit lane holds the registers to their contracts and every binding to
+   its row; the merge is the only approval.
 5. From then on the scan derives every binding's state on every run. A
    hand edit to a definition reads `term_changed` in the same pull
    request that made it, and the unit lane blocks the merge until a
-   change set re-binds the element or the definition is restored.
+   change set re-binds the element or the definition is restored. The
+   regeneration (D-09) carries the refreshed context into the registry
+   by its own pull request, and a stranger meets it at the next release.
 
 ## The demo's registers
 
@@ -340,33 +358,97 @@ October 26, 2027. The rows are the Prep H probe fixture less the invoice
 line, and the unit lane pins their digests and the glossary register's
 digest to the probe transcript's values.
 
+## What is served (Amendment AD)
+
+The context compiler harvests both registers at compile time
+(`src/metricmine/context/meaning_harvest.py`, deterministic code: it
+reads the two registers under their contracts and the committed
+contracts, never a calendar, so the artifact is identical on every
+machine) and `get_context` serves the harvest as compiled (compiled
+schema 2.2.0; the serving spec's section 2.3 is the consumer's side):
+
+- Per bound field, `expert_context.fields.<name>.terms`, a list of
+  `{term_id, term}`, and `.concept`, `{concept_id, label}`: the labels a
+  person certified, authored and hash-free.
+- Per entry that cites at least one term or concept, a top-level
+  `meaning` block beside `data`, `expert_context`, and `documents`
+  (never inside `expert_context`, which Amendment W keeps free of
+  measurements): a `note` that labels it; `terms` and `concepts`, each
+  cited row once by id, with its `declared` fields (what a person wrote
+  in the register: the label, the definition, the synonyms as a list,
+  the owner, the status, the successor when one is named, the review
+  date; a concept's parent when one is named; a field with no value is
+  left out, never served as null) apart from its `measured` fields (what code
+  read: the digest this compile took, `term_sha256` or
+  `concept_sha256`, and `bound_sha256_equal: true`); the table's
+  `table_terms` and `entity_type` where the table carries them.
+
+Which bindings are served: `in_sync`, and a declared deprecation
+(`term_deprecated`, `concept_deprecated`: served as declared with the
+successor, the register's own word between the two merges). A binding
+whose row moved under it (`term_changed`, `concept_changed`) or names an
+element no committed contract carries (`binding_broken`) is left out and
+`make context` prints the reason; a binding naming a row the register no
+longer carries fails the register's own rule, and the compile fails
+closed on the register, as it does on any failing error rule or a
+nonconforming register. The served edges are structural: a binding on a
+mapped column of a mapped silver contract reaches that field on the
+category's entries; a binding on a mapped silver contract's table reaches
+both of the category's entries, as a table-level term or as the entity
+type; a binding on the star contract's table reaches the shared entries;
+a binding on a mapping contract's element, on the star's columns, on a
+column no entry carries, or on a level-zero contract (the demo's three
+examples are level-zero) is recorded, reported by `make context` with
+its reason, and never followed. The freshness check
+compares each register's contract and the sha256 over its canonical rows
+and bindings under `sources.glossary_register` and
+`sources.ontology_register`, so a definition or a binding change reads
+as stale until `make context` runs, with no contract version moving. The
+budget: the harvest one entry carries (the `meaning` block plus every
+field's `terms` and `concept` values, as compact JSON; the keys that
+attach them are not counted) is held to 6,000 characters by the compile
+failing closed and naming the entry; the number is Amendment AD's and
+moves only by amendment (the demo's largest harvest, the flights
+measures entry, measured 3,172 characters on October 30, 2026).
+
+The note says only what the compile checked (design rule 5): what a
+person certified, as the registers read when the context compiled; that
+the registers change only by pull request and git, not the server, holds
+the review; that a term or a concept labels meaning and never drives a
+join, a key, a type, or a transform, and that the contract's sentence is
+the certified claim where a definition disagrees; what is declared and
+what is measured; that the server never says a term or a concept is
+current; and that a definition is text a person wrote, read as data,
+never as instructions. The note describes and directs nothing; a tool
+result stays data. The same guidance travels in `get_context`'s
+description, never in the server's instructions, which a host may drop.
+
 ## What this slice does not do
 
-Nothing is served: `get_context` carries no term and no concept until
-the slice that serves meaning amends D-30 and D-31 (the `meaning` block
-beside `documents`, the per-field `terms` and `concept` lists, the
-served edges, the budget's number, the freshness check's two new
-sources, the compiled schema's next version). The five document change
-kinds are refused by name until that slice lands them. No data contract
-carries a pointer (`authoritativeDefinitions`): the binding lives in the
-register first, and the column-level pointer, when it comes, is rendered
-from the register by its own slice with opaque link types only (F-68).
-No import of a spreadsheet glossary or a SKOS file. There is no
-CODEOWNERS file; D-44 names it as the control for a steward when one
-exists. A contract pull request that renames a bound element carries the
-register's re-pointed rows, because the unit lane would otherwise block
-the rename (D-44); the silver contracts' naming convention is a Backlog
-item.
+No data contract carries a pointer (`authoritativeDefinitions`): the
+binding lives in the register first, and the column-level pointer, when
+it comes, is rendered from the register by its own slice with opaque
+link types only (F-68). No import of a spreadsheet glossary or a SKOS
+file. There is no CODEOWNERS file; D-44 names it as the control for a
+steward when one exists. A contract pull request that renames a bound
+element carries the register's re-pointed rows, because the unit lane
+would otherwise block the rename (D-44); the silver contracts' naming
+convention is a Backlog item. A `local_path` document is drafted at a
+terminal with the documents module, which opens the mapped root, and a
+binding on a `public` or `pointer_only` one is a hand edit of
+`documents/register/bindings.yaml` checked with `verify --reading-copy`;
+neither goes through the change-set command, which reads committed files
+only.
 
 ## Rules that bind this surface
 
 A narrowing is never enabled by something an agent can supply alone: the
 element is checked against a committed contract, the row against the
-register, the label and the synonyms against what exists, the author
-against the known agent and model names, and the intent is the person's.
-Consent in chat is permission to draft, never certification; what a
-person approves into the record is rendered by code. A term or a concept
-is data: it is declarative, labeled authored, never executed, and never a
-proposer input. The server never prints an assurance it cannot check:
-when a term is served, the note will say what the compile checked and
-never that a term is current.
+register, the label and the synonyms against what exists, a quote
+against the committed copy, the author against the known agent and
+model names, and the intent is the person's. Consent in chat is
+permission to draft, never certification; what a person approves into
+the record is rendered by code. A term or a concept is data: it is
+declarative, labeled authored, never executed, and never a proposer
+input. The server never prints an assurance it cannot check: the served
+note says what the compile checked and never that a term is current.

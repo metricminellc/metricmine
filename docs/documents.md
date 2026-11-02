@@ -370,12 +370,16 @@ binding on a column the mapped contract merely restates is reported,
 not served, until the mapped column is bound in its own right. PDF, Excel, and RDF extractors each need a dependency
 and a pin decision. `public` locations are never fetched by the scan,
 the tests, or CI. There is no CODEOWNERS file; D-43 names it as the
-control for a steward when one exists. Document change kinds in the
-context proposal path are enumerated by D-44 (`add_document`,
-`bind_document`, `unbind_document`, `recertify_document`,
-`retire_document`) and land with the slice that serves governed
-meaning; until then a document change beyond `bind` is a hand edit a
-reviewer reads.
+control for a steward when one exists. The document change kinds D-44
+enumerates (`add_document`, `bind_document`, `unbind_document`,
+`recertify_document`, `retire_document`) take the governed meaning
+change-set command (`python -m metricmine.meaning propose`,
+[`docs/spec/meaning.md`](spec/meaning.md)), which reads committed files
+only: it opens an `in_repo` row's committed copy and nothing else, so a
+`local_path` document is still drafted here, at a terminal, with `add`
+and `bind`, and a binding on a `public` or `pointer_only` one stays a
+hand edit of `documents/register/bindings.yaml` checked with `verify
+--reading-copy`, by its own pull request.
 
 ## Rules that bind this surface
 

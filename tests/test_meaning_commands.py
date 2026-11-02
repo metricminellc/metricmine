@@ -157,7 +157,7 @@ def test_cli_propose_prints_the_summary_and_the_wrote_line(repo: Path, capsys: p
     assert cli.main(["--repo", str(repo), "propose", str(path), "--today", "2026-10-26"]) == 0
     out = capsys.readouterr().out
     assert out.startswith("# Governed meaning: a change set, rendered (D-44)\n")
-    assert out.endswith("wrote proposals/meaning/cli/ (glossary/, ontology/, record.json, summary.md); meaning/ and contracts/ are unchanged\n")
+    assert out.endswith("wrote proposals/meaning/cli/ (glossary/, ontology/, record.json, summary.md); meaning/, contracts/, and documents/register/ are unchanged\n")
     record = json.loads((repo / "proposals" / "meaning" / "cli" / "record.json").read_text(encoding="utf-8"))
     assert record["day"] == "2026-10-26" and record["by"] == BY
     assert cli.main(["--repo", str(repo), "propose", str(path), "--today", "2026-10-26", "--outbox", str(repo / "meaning" / "glossary")]) == 2

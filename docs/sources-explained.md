@@ -395,9 +395,9 @@ limitations, its lineage and vintage, the joins with their measured
 completeness, the cross-category joins with their example, the
 decisions, and a meaning per field, carried from the contracts
 unchanged and labeled as authored. The category listing names each
-category's subject and its registry keys, and the server instructions
-tell an agent to read the context before it queries and to say which of
-the two an answer rests on.
+category's subject and its registry keys, and the `get_context` tool's
+own description tells an agent to read the context before it answers
+and to say which of the two an answer rests on.
 
 Concretely, when the agent is asked about Palm Beach: the rows say
 3,471 flights to `pbi` with no destination name (data), and the flights

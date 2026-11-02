@@ -232,7 +232,28 @@ approves every contract.
     open, never print that a binding was reviewed or a document is
     current, never put the documents block inside expert_context, and
     hold the harvest to the amendment's budget (4,000 characters of
-    compact JSON per entry) by failing the compile closed. String
+    compact JSON per entry) by failing the compile closed. Where the
+    governed glossary and ontology registers bind a field, its
+    expert_context entry carries terms and a concept (the labels a
+    person certified, authored and hash-free) and the entry lists each
+    cited term and concept once under a top-level meaning block beside
+    documents, declared apart from measured, with the table's entity
+    type and table-level terms, under a note that says only what the
+    compile checked (D-30 and D-31 as amended by Amendment AD): never
+    put the meaning block inside expert_context, never print that a
+    term or a concept is current, hold the meaning harvest to its
+    budget (6,000 characters of compact JSON per entry) by failing the
+    compile closed, and never let a term or a concept drive a join, a
+    key, a type, or a transform. What a host must act on travels in the
+    tool surface, never in the instructions alone (Amendment AD;
+    measured October 21 and 27, 2026: Claude Desktop does not pass a
+    server's instructions to its model): the instructions stay under
+    2,048 characters with the key point in the first 512, the lines a
+    consumer must act on live in the tools' descriptions, one canary
+    phrase stays in the instructions and in no tool title or
+    description, and tests/test_server_surface.py pins the
+    instructions' length, digest, and the phrase's offset, so a change
+    to the text is deliberate. String
     values on the typed surface are canonical lowercase text (D-18 as
     amended); the registry, the hint, and the server instructions say
     so. The query tool reads the gold schema by default (D-31 as
@@ -313,8 +334,9 @@ approves every contract.
   DDL, and never writes outside transform/models/gold/ plus its ownership
   manifest.
 - The context compiler (src/metricmine/context/) is deterministic code,
-  not an agent: approved contracts and the committed governed documents
-  register in, the committed compiled-context artifact out
+  not an agent: approved contracts, the committed governed documents
+  register, and the committed governed meaning registers in, the
+  committed compiled-context artifact out
   (context/compiled/vNNNN.json + meta sidecar, D-30). It writes nowhere
   else and never reads the warehouse; the engine carries its newest
   artifact into the emitted context_registry model as SQL VALUES
@@ -324,7 +346,11 @@ approves every contract.
   never a calendar, so the artifact is identical on every machine; the
   register's digest and each served document's text digest sit in the
   artifact's sources, so a binding change reads as stale until make
-  context runs.
+  context runs. Its harvest of the two governed meaning registers
+  (Amendment AD; src/metricmine/context/meaning_harvest.py) reads
+  committed files only and never a calendar the same way; each
+  register's digest sits in the artifact's sources, so a definition or
+  a binding change reads as stale until make context runs.
 - All query, schema, and context-retrieval logic lives in one shared module
   (`src/metricmine/query.py`). The MCP server and the hosted app both import it.
   Neither reimplements it.
