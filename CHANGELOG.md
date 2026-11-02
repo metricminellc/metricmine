@@ -172,6 +172,14 @@ measurements.
   sha256, and the phrase's offset (Amendment AD; measured October 21 and
   27, 2026: Claude Desktop does not pass a server's instructions to its
   model).
+- The emitted `context_registry` model and the ownership manifest
+  regenerated from compiled context v0015 (D-09), so `get_context`
+  serves the governed meaning harvest from the built warehouse; the
+  digest manifest's content block refreshed from a cold build (the
+  registry digest moves, every row count holds, and the release stays
+  unpublished until the manifest pull request); demo question Q9, the
+  departure delay's term and concept read through the served path, in
+  the serving questions and the demo guide.
 
 ### Fixed
 
