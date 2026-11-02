@@ -196,6 +196,9 @@ def _mini_repo(tmp_path: Path, artifact: dict | None) -> Path:
     # outside the repository (D-43) and would read a link as unreachable.
     _contracts_into(tmp_path)
     shutil.copytree(REPO / "documents", tmp_path / "documents")
+    # The freshness check also reads the two governed meaning registers
+    # under <repo>/meaning (Amendment AD); copied for the same reason.
+    shutil.copytree(REPO / "meaning", tmp_path / "meaning")
     return tmp_path
 
 
