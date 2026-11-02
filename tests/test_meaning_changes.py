@@ -27,17 +27,21 @@ from meaning_fixtures import (
     CONCEPTS,
     DAY,
     GLOSSARY_BINDINGS,
+    POLICY_ANCHOR,
+    POLICY_MD,
     TERMS,
     glossary_binding,
     load_rendered,
     ontology_binding,
     write_change_set,
+    write_documents,
     write_registers,
     write_repo,
 )
 
 TODAY = DAY
 INTENT = "the steward's words, verbatim."
+REPO_SCHEMA = Path(__file__).resolve().parents[1] / "docs" / "spec" / "meaning" / "change-set.schema.json"
 
 
 @pytest.fixture()
@@ -80,11 +84,16 @@ def test_the_vocabulary_is_closed_and_classified() -> None:
     assert set(VOCABULARY) == {
         "add_term", "amend_definition", "rename_term", "add_synonym", "remove_synonym", "deprecate_term", "drop_term", "bind", "unbind",
         "add_concept", "amend_concept", "relabel", "deprecate_concept", "drop_concept", "bind_concept", "unbind_concept",
+        "add_document", "bind_document", "unbind_document", "recertify_document", "retire_document",
     }
-    assert {k for k, (_, c) in VOCABULARY.items() if c == "additive"} == {"add_term", "add_synonym", "remove_synonym", "bind", "add_concept", "bind_concept"}
-    assert {k for k, (_, c) in VOCABULARY.items() if c == "changing"} == {"amend_definition", "rename_term", "amend_concept", "relabel"}
-    assert {k for k, (_, c) in VOCABULARY.items() if c == "removing"} == {"deprecate_term", "drop_term", "unbind", "deprecate_concept", "drop_concept", "unbind_concept"}
+    assert {k for k, (_, c) in VOCABULARY.items() if c == "additive"} == {"add_term", "add_synonym", "remove_synonym", "bind", "add_concept", "bind_concept", "add_document", "bind_document"}
+    assert {k for k, (_, c) in VOCABULARY.items() if c == "changing"} == {"amend_definition", "rename_term", "amend_concept", "relabel", "recertify_document"}
+    assert {k for k, (_, c) in VOCABULARY.items() if c == "removing"} == {"deprecate_term", "drop_term", "unbind", "deprecate_concept", "drop_concept", "unbind_concept", "unbind_document", "retire_document"}
     assert cs.DOCUMENT_KINDS == ("add_document", "bind_document", "unbind_document", "recertify_document", "retire_document")
+    assert {k for k, (r, _) in VOCABULARY.items() if r == "documents"} == set(cs.DOCUMENT_KINDS)
+    # The schema's enum is the vocabulary, no more and no less.
+    schema = json.loads((REPO_SCHEMA).read_text(encoding="utf-8"))
+    assert set(schema["properties"]["changes"]["items"]["properties"]["kind"]["enum"]) == set(VOCABULARY)
 
 
 def test_a_kind_outside_the_vocabulary_is_refused_by_the_schema(repo: Path) -> None:
@@ -93,11 +102,12 @@ def test_a_kind_outside_the_vocabulary_is_refused_by_the_schema(repo: Path) -> N
         load_change_set(repo, path)
 
 
-@pytest.mark.parametrize("kind", cs.DOCUMENT_KINDS)
-def test_a_document_kind_is_refused_by_name_as_a_later_slice(repo: Path, kind: str) -> None:
-    path = write_change_set(repo, "x", [{"kind": kind, "rationale": "r"}])
-    with pytest.raises(ChangeError, match=f"change 1: `{kind}` is a document change kind; it rides the slice that serves governed meaning"):
-        load_change_set(repo, path)
+def test_a_document_kind_needs_the_documents_register_in_the_tree(repo: Path) -> None:
+    """The five document kinds take the same command (Amendment AD); a tree
+    with no documents register contract refuses them by name, and nothing
+    is written."""
+    _refused(repo, "nodocs", [{"kind": "retire_document", "document_id": "policy", "rationale": "r"}],
+             "a document change needs the governed documents register, and this tree has no contracts/documents_register.odcs.yaml")
 
 
 def test_a_missing_field_an_empty_set_and_a_missing_file_are_refused(repo: Path) -> None:
@@ -594,3 +604,292 @@ def test_a_symbolic_link_in_the_outbox_never_carries_a_write_into_the_registers(
         write_proposal(repo, proposal, change_set, TODAY, near)
     assert not list((repo / "proposals" / "meaning" / "other").iterdir())
     assert _tree_digest(repo) == before
+
+
+# ---------------------------------------------------------------- the document kinds (Amendment AD)
+
+
+@pytest.fixture()
+def docs_repo(tmp_path: Path) -> Path:
+    """The meaning registers beside a governed documents register: one
+    in_repo policy document bound on silver_flights.dep_delay_minutes."""
+    return write_documents(write_repo(tmp_path))
+
+
+def _documents_digest(repo: Path) -> dict[str, str]:
+    out = {}
+    for path in sorted((repo / "documents" / "register").glob("*.yaml")):
+        out[path.name] = hashlib.sha256(path.read_bytes()).hexdigest()
+    return out
+
+
+def _run_docs(repo: Path, name: str, changes: list[dict], today: date = TODAY):
+    before = _documents_digest(repo)
+    proposal, change_set, out = _run(repo, name, changes, today=today)
+    assert _documents_digest(repo) == before  # documents/register/ is never written
+    return proposal, change_set, out
+
+
+def _standing(out: Path) -> dict[str, dict]:
+    return {r["document_id"]: r for r in load_rendered(out, "documents", "standing.yaml", "documents")}
+
+
+def _doc_bindings(out: Path) -> list[dict]:
+    return load_rendered(out, "documents", "bindings.yaml", "bindings")
+
+
+def test_add_document_measures_a_committed_copy_and_renders_the_documents_register(docs_repo: Path) -> None:
+    """An in_repo document is added from its committed copy: the text
+    digest, the extractor, and the verification day are measured, never
+    declared; the row is declared by the set's author; the review date
+    defaults to a year; the rendering gains documents/standing.yaml and
+    documents/bindings.yaml beside the four meaning files, the record the
+    register's digests before and after, and the summary the cp line."""
+    (docs_repo / "docs" / "glossary-notes.md").write_bytes(b"# Notes\n\nA carrier is the airline operating a flight.\n")
+    proposal, change_set, out = _run_docs(docs_repo, "adddoc", [{
+        "kind": "add_document", "document_id": "glossary-notes", "title": "Glossary notes", "governance": "in_repo",
+        "access": "in_repo", "location": "docs/glossary-notes.md", "format": "markdown",
+        "certification_source": "git_merge", "gate_strength": "publication_gate", "license": "CC0", "rationale": "r",
+    }])
+    (done,) = proposal.applied
+    assert (done.kind, done.register, done.klass, done.target, done.element) == ("add_document", "documents", "additive", "glossary-notes", None)
+    assert done.note.startswith("added 'Glossary notes' from its committed copy; text digest ")
+    assert sorted(p.relative_to(out).as_posix() for p in out.rglob("*") if p.is_file()) == [
+        "documents/bindings.yaml", "documents/standing.yaml", "glossary/bindings.yaml", "glossary/terms.yaml",
+        "ontology/bindings.yaml", "ontology/concepts.yaml", "record.json", "summary.md",
+    ]
+    row = _standing(out)["glossary-notes"]
+    from metricmine.documents.extract import EXTRACTOR_ID, extract_bytes
+
+    assert row["text_sha256"] == extract_bytes(b"# Notes\n\nA carrier is the airline operating a flight.\n", "markdown").text_sha256
+    assert (row["extractor"], row["verified_against"], row["verified_on"], row["declared_by"], row["declared_on"]) == (
+        EXTRACTOR_ID, "location", TODAY, BY, TODAY,
+    )
+    assert row["review_by"] == date(2027, 10, 26) and row["license"] == "CC0"
+    assert _standing(out)["policy"] == {k: v for k, v in _standing(out)["policy"].items()}  # the standing row is carried
+    record = json.loads((out / "record.json").read_text(encoding="utf-8"))
+    assert set(record["register_digests"]) == {"glossary", "ontology", "documents"}
+    assert record["register_digests"]["documents"]["before"] != record["register_digests"]["documents"]["after"]
+    assert record["register_digests"]["glossary"]["before"] == record["register_digests"]["glossary"]["after"]
+    for rel, digest in record["rendered"].items():
+        assert hashlib.sha256((out / rel).read_bytes()).hexdigest() == digest
+    assert set(record["rendered"]) >= {"documents/standing.yaml", "documents/bindings.yaml"}
+    summary = (out / "summary.md").read_text(encoding="utf-8")
+    assert "cp proposals/meaning/adddoc/documents/*.yaml documents/register/\n    uv run python -m metricmine.documents verify" in summary
+    assert "- documents: `" in summary
+    # The rendered register loads under its contract and passes its rules.
+    from metricmine.documents.register import load_register as load_documents, run_rules as documents_rules
+
+    for name in ("standing.yaml", "bindings.yaml"):
+        (docs_repo / "documents" / "register" / name).write_bytes((out / "documents" / name).read_bytes())
+    register = load_documents(docs_repo)
+    assert all(r.passed for r in documents_rules(register, TODAY))
+    assert [r["document_id"] for r in register.standing] == ["policy", "glossary-notes"]
+
+
+def test_add_document_refuses_what_code_can_check(docs_repo: Path) -> None:
+    base = {"kind": "add_document", "title": "T", "governance": "in_repo", "access": "in_repo", "location": "docs/policy.md",
+            "format": "markdown", "certification_source": "git_merge", "gate_strength": "publication_gate", "rationale": "r"}
+    _refused(docs_repo, "taken", [{**base, "document_id": "policy"}], "document_id 'policy' is taken")
+    _refused(docs_repo, "badid", [{**base, "document_id": "Bad Id"}], "does not match the change-set schema at changes/0/document_id")
+    _refused(docs_repo, "local", [{**base, "document_id": "p2", "access": "local_path", "governance": "pinned", "location": "${MM_DOCS_ROOT}/x.md"}],
+             "a local_path document is drafted at a terminal")
+    _refused(docs_repo, "closed", [{**base, "document_id": "p2", "governance": "vibes"}], "does not match the change-set schema at changes/0/governance")
+    _refused(docs_repo, "sametext", [{**base, "document_id": "p2"}], "the same text is already registered as policy at docs/policy.md")
+    (docs_repo / "docs" / "other.md").write_bytes(b"# Other\n\nOther text.\n")
+    _refused(docs_repo, "declared", [{**base, "document_id": "p2", "location": "docs/other.md", "text_sha256": "a" * 64}],
+             "an in_repo document's text_sha256 is measured from the committed copy, never declared")
+    _refused(docs_repo, "fmt", [{**base, "document_id": "p2", "location": "docs/other.md", "format": "pdf"}], "no extractor for format 'pdf'")
+    _refused(docs_repo, "inbox", [{**base, "document_id": "p2", "location": "documents/inbox/other.md"}], "is a reading copy under documents/inbox/")
+    _refused(docs_repo, "escape", [{**base, "document_id": "p2", "location": "../other.md"}], "an in_repo location is a repository-relative path")
+    _refused(docs_repo, "missing", [{**base, "document_id": "p2", "location": "docs/nothing.md"}], "no file at docs/nothing.md in the repository")
+
+
+def test_add_document_as_declared_never_opens_a_public_location(docs_repo: Path) -> None:
+    """A public or pointer_only row is added as declared: an optional text
+    digest a person supplies is recorded with verified_against none, the
+    location is never opened, and the review date defaults to half a year."""
+    proposal, _, out = _run_docs(docs_repo, "public", [{
+        "kind": "add_document", "document_id": "faa-glossary", "title": "FAA glossary", "governance": "pinned", "access": "public",
+        "location": "https://example.invalid/glossary", "format": "markdown", "certification_source": "steward_attestation",
+        "gate_strength": "attestation_badge", "pinned_version": "2026.1", "text_sha256": "b" * 64, "rationale": "r",
+    }])
+    row = _standing(out)["faa-glossary"]
+    assert (row["text_sha256"], row["verified_against"], row["pinned_version"]) == ("b" * 64, "none", "2026.1")
+    assert "verified_on" not in row and "extractor" not in row
+    assert row["review_by"] == date(2027, 4, 26)
+    assert proposal.applied[0].note == "added 'FAA glossary' as declared (public); this command never opens its location"
+    _refused(docs_repo, "badsha", [{
+        "kind": "add_document", "document_id": "x", "title": "X", "governance": "pinned", "access": "pointer_only",
+        "location": "https://drive.example.invalid/d/abc", "format": "docx", "certification_source": "platform_approval",
+        "gate_strength": "publication_gate", "text_sha256": "zz", "rationale": "r",
+    }], "does not match the change-set schema at changes/0/text_sha256")
+
+
+def test_bind_document_checks_the_quote_against_the_committed_copy(docs_repo: Path) -> None:
+    """A binding is drafted as `documents bind` drafts it: the element in a
+    committed contract, the quote located in the committed copy, the
+    intent verbatim and hashed, the binder the set's author."""
+    proposal, _, out = _run_docs(docs_repo, "binddoc", [{
+        "kind": "bind_document", "document_id": "policy", "contract_id": "silver_flights", "column_name": "arr_delay_minutes",
+        "anchor": "Negative values are early departures.", "rationale": "r",
+    }])
+    (done,) = proposal.applied
+    assert (done.klass, done.element, done.note) == ("additive", "silver_flights.arr_delay_minutes", "bound on the quote at text, line 5")
+    new = [b for b in _doc_bindings(out) if b["column_name"] == "arr_delay_minutes"][0]
+    assert (new["anchor"], new["locator"], new["intent"], new["intent_sha256"], new["bound_by"], new["bound_on"]) == (
+        "Negative values are early departures.", "text, line 5", INTENT, sha256_text(INTENT), BY, TODAY,
+    )
+    assert len(_doc_bindings(out)) == 2
+    bind = {"kind": "bind_document", "document_id": "policy", "contract_id": "silver_flights", "rationale": "r"}
+    _refused(docs_repo, "noquote", [{**bind, "column_name": "arr_delay_minutes", "anchor": "Delays are measured in hours."}],
+             "the quote is not in the committed copy of docs/policy.md")
+    _refused(docs_repo, "table", [{**bind, "column_name": "", "anchor": POLICY_ANCHOR}], "a document binds a column")
+    _refused(docs_repo, "nocol", [{**bind, "column_name": "nope", "anchor": POLICY_ANCHOR}], "contract silver_flights carries no column 'nope'")
+    _refused(docs_repo, "same", [{**bind, "column_name": "dep_delay_minutes", "anchor": POLICY_ANCHOR}],
+             "silver_flights.dep_delay_minutes is already bound to policy on this quote; nothing changes")
+    _refused(docs_repo, "nodoc", [{**bind, "document_id": "nothing", "column_name": "arr_delay_minutes", "anchor": POLICY_ANCHOR}],
+             "the documents register carries no document 'nothing'")
+
+
+def test_bind_document_re_anchors_a_standing_binding_and_a_public_row_is_drafted_elsewhere(docs_repo: Path) -> None:
+    proposal, _, out = _run_docs(docs_repo, "reanchor", [{
+        "kind": "bind_document", "document_id": "policy", "contract_id": "silver_flights", "column_name": "dep_delay_minutes",
+        "anchor": "A flight is late when it leaves after its scheduled time.", "rationale": "r",
+    }])
+    (done,) = proposal.applied
+    assert done.klass == "changing" and done.note == "re-anchored at text, line 3; the draft replaces the standing binding"
+    assert [b["anchor"] for b in _doc_bindings(out)] == ["A flight is late when it leaves after its scheduled time."]
+    _refused(docs_repo, "public", [
+        {"kind": "add_document", "document_id": "pub", "title": "Pub", "governance": "pinned", "access": "public",
+         "location": "https://example.invalid/pub", "format": "markdown", "certification_source": "steward_attestation",
+         "gate_strength": "attestation_badge", "rationale": "r"},
+        {"kind": "bind_document", "document_id": "pub", "contract_id": "silver_flights", "column_name": "carrier_code", "anchor": "x", "rationale": "r"},
+    ], "pub is a public document, which this project never opens; a binding on it is a hand edit of documents/register/bindings.yaml")
+    # A binding on a committed copy that moved on from its recorded digest
+    # is checked against the text as it reads now, and the note says so.
+    (docs_repo / "docs" / "policy.md").write_bytes(POLICY_MD.replace("# Delay policy\n\n", "# Delay policy\n\nRevised in 2026.\n").encode("utf-8"))
+    proposal, _, _ = _run_docs(docs_repo, "drifted", [{
+        "kind": "bind_document", "document_id": "policy", "contract_id": "silver_flights", "column_name": "arr_delay_minutes",
+        "anchor": "Negative values are early departures.", "rationale": "r",
+    }])
+    assert proposal.applied[0].note == (
+        "bound on the quote at text, line 6; the committed copy's text differs from the standing row's recorded digest, so the quote was"
+        " checked against the text as it reads now; recertify the row in this set or by its own pull request"
+    )
+
+
+def test_unbind_document_removes_the_binding_and_refuses_a_missing_one(docs_repo: Path) -> None:
+    proposal, _, out = _run_docs(docs_repo, "unbinddoc", [{
+        "kind": "unbind_document", "document_id": "policy", "contract_id": "silver_flights", "column_name": "dep_delay_minutes", "rationale": "r",
+    }])
+    assert proposal.applied[0].klass == "removing" and _doc_bindings(out) == []
+    _refused(docs_repo, "none", [{"kind": "unbind_document", "document_id": "policy", "contract_id": "silver_flights", "column_name": "carrier_code", "rationale": "r"}],
+             "no binding of policy on silver_flights.carrier_code")
+
+
+def test_recertify_document_re_measures_the_committed_copy_and_holds_every_anchor(docs_repo: Path) -> None:
+    """A changed committed copy is recertified: the digest moves, the day
+    moves, every anchor is present and its locator refreshed; a copy that
+    lost a bound sentence is refused; an unchanged copy moves the day only;
+    a public row takes a declared digest and pinned version."""
+    policy = docs_repo / "docs" / "policy.md"
+    policy.write_bytes(POLICY_MD.replace("# Delay policy\n\n", "# Delay policy\n\nRevised in 2026.\n").encode("utf-8"))
+    later = date(2026, 11, 2)
+    proposal, _, out = _run_docs(docs_repo, "recert", [{"kind": "recertify_document", "document_id": "policy", "rationale": "r"}], today=later)
+    (done,) = proposal.applied
+    assert done.klass == "changing"
+    assert done.note.startswith("the quote bound on silver_flights.dep_delay_minutes now sits at text, line 5; the text digest moved from ")
+    row = _standing(out)["policy"]
+    from metricmine.documents.extract import extract_bytes
+
+    assert row["text_sha256"] == extract_bytes(policy.read_bytes(), "markdown").text_sha256
+    assert (row["verified_on"], row["verified_against"]) == (later, "location")
+    (binding,) = _doc_bindings(out)
+    assert binding["locator"] == "text, line 5" and binding["anchor"] == POLICY_ANCHOR  # one line down
+    policy.write_bytes(POLICY_MD.replace("measured in minutes", "measured in hours").encode("utf-8"))
+    _refused(docs_repo, "broken", [{"kind": "recertify_document", "document_id": "policy", "rationale": "r"}],
+             "the committed copy no longer carries the quote bound on silver_flights.dep_delay_minutes")
+    policy.write_bytes(POLICY_MD.encode("utf-8"))
+    proposal, _, out = _run_docs(docs_repo, "sameday", [{"kind": "recertify_document", "document_id": "policy", "review_by": "2028-01-01", "rationale": "r"}], today=later)
+    assert proposal.applied[0].note == "review_by moved to 2028-01-01"
+    assert _standing(out)["policy"]["verified_on"] == later
+    proposal, _, out = _run_docs(docs_repo, "dayonly", [{"kind": "recertify_document", "document_id": "policy", "rationale": "r"}], today=later)
+    assert proposal.applied[0].note == "the text is unchanged; the verification day moved"
+    _refused(docs_repo, "nothing", [{"kind": "recertify_document", "document_id": "policy", "rationale": "r"}],
+             "policy already reads as recertified; nothing changes")  # the fixture's own day: nothing moves
+    _refused(docs_repo, "declared", [{"kind": "recertify_document", "document_id": "policy", "text_sha256": "a" * 64, "rationale": "r"}],
+             "an in_repo document's text_sha256 is measured from the committed copy, never declared")
+    proposal, _, out = _run_docs(docs_repo, "pubrecert", [
+        {"kind": "add_document", "document_id": "pub", "title": "Pub", "governance": "pinned", "access": "public",
+         "location": "https://example.invalid/pub", "format": "markdown", "certification_source": "steward_attestation",
+         "gate_strength": "attestation_badge", "pinned_version": "1", "text_sha256": "a" * 64, "rationale": "r"},
+        {"kind": "recertify_document", "document_id": "pub", "pinned_version": "2", "text_sha256": "c" * 64, "rationale": "r"},
+    ])
+    assert proposal.applied[1].note == f"the declared text digest moved to {'c' * 12}; this command never opens its location; pinned_version is '2'"
+    assert _standing(out)["pub"]["text_sha256"] == "c" * 64 and _standing(out)["pub"]["pinned_version"] == "2"
+    # An equal declared digest leaves the recorded verification as it stands.
+    proposal, _, out = _run_docs(docs_repo, "pubpin", [
+        {"kind": "add_document", "document_id": "pub", "title": "Pub", "governance": "pinned", "access": "public",
+         "location": "https://example.invalid/pub", "format": "markdown", "certification_source": "steward_attestation",
+         "gate_strength": "attestation_badge", "pinned_version": "1", "text_sha256": "a" * 64, "rationale": "r"},
+        {"kind": "recertify_document", "document_id": "pub", "pinned_version": "2", "text_sha256": "a" * 64, "rationale": "r"},
+    ])
+    assert proposal.applied[1].note == "pinned_version is '2'"
+    assert _standing(out)["pub"]["text_sha256"] == "a" * 64
+    _refused(docs_repo, "pubsame", [
+        {"kind": "add_document", "document_id": "pub", "title": "Pub", "governance": "pinned", "access": "public",
+         "location": "https://example.invalid/pub", "format": "markdown", "certification_source": "steward_attestation",
+         "gate_strength": "attestation_badge", "pinned_version": "1", "rationale": "r"},
+        {"kind": "recertify_document", "document_id": "pub", "pinned_version": "1", "rationale": "r"},
+    ], "pub already reads as recertified; nothing changes")
+
+
+def test_retire_document_is_the_second_of_two_steps(docs_repo: Path) -> None:
+    """A row a binding stood on when the set started is not retired, even
+    when the same set unbinds it (unbind, merge, then retire, as deprecate
+    then drop); an unbound row retires; a missing one is refused."""
+    _refused(docs_repo, "bound", [{"kind": "retire_document", "document_id": "policy", "rationale": "r"}],
+             r"a binding stood on policy when this set started \(silver_flights.dep_delay_minutes\); unbind it in its own set")
+    _refused(docs_repo, "sameset", [
+        {"kind": "unbind_document", "document_id": "policy", "contract_id": "silver_flights", "column_name": "dep_delay_minutes", "rationale": "r"},
+        {"kind": "retire_document", "document_id": "policy", "rationale": "r"},
+    ], r"a binding stood on policy when this set started \(unbound in this set\)")
+    write_documents(docs_repo, bindings=[])
+    proposal, _, out = _run_docs(docs_repo, "retire", [{"kind": "retire_document", "document_id": "policy", "rationale": "r"}])
+    assert proposal.applied[0].klass == "removing" and _standing(out) == {}
+    _refused(docs_repo, "missing", [{"kind": "retire_document", "document_id": "nothing", "rationale": "r"}],
+             "the documents register carries no document 'nothing'")
+
+
+def test_a_document_change_is_held_to_the_documents_contract_and_renders_lf_bytes(docs_repo: Path) -> None:
+    """The rendered documents register is held to its contract's rules, the
+    person checks, and every in_repo row's anchors before anything is
+    written (a committed copy that already lost a bound sentence refuses
+    the whole set), and every rendered file is the renderer's text as
+    UTF-8 bytes (F-75)."""
+    write_documents(docs_repo, policy=POLICY_MD.replace("measured in minutes", "measured in hours"))
+    _refused(docs_repo, "anchor", [{
+        "kind": "add_document", "document_id": "x", "title": "X", "governance": "pinned", "access": "public",
+        "location": "https://example.invalid/x", "format": "markdown", "certification_source": "steward_attestation",
+        "gate_strength": "attestation_badge", "rationale": "r",
+    }], "the rendering would leave policy anchor_broken")
+    write_documents(docs_repo)
+    _, _, out = _run_docs(docs_repo, "bytes", [{
+        "kind": "unbind_document", "document_id": "policy", "contract_id": "silver_flights", "column_name": "dep_delay_minutes", "rationale": "r",
+    }])
+    files = sorted(p for p in out.rglob("*") if p.is_file())
+    assert len(files) == 8
+    for path in files:
+        assert b"\r" not in path.read_bytes(), path.relative_to(out).as_posix()
+    record = json.loads((out / "record.json").read_bytes().decode("utf-8"))
+    assert len(record["rendered"]) == 6
+    for rel, digest in record["rendered"].items():
+        assert hashlib.sha256((out / rel).read_bytes()).hexdigest() == digest
+
+
+def test_a_set_without_a_document_kind_renders_no_documents_folder(docs_repo: Path) -> None:
+    _, _, out = _run_docs(docs_repo, "meaningonly", [{"kind": "add_synonym", "term_id": "carrier", "synonym": "operator", "rationale": "r"}])
+    assert not (out / "documents").exists()
+    record = json.loads((out / "record.json").read_text(encoding="utf-8"))
+    assert set(record["register_digests"]) == {"glossary", "ontology"}
