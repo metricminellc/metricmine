@@ -114,6 +114,25 @@ measurements.
   record digests is written as its encoded bytes) and the test fixture
   that models a committed file (written as the repository's bytes).
   Documentation only: nothing on main changes here.
+- Amendment AD to D-30 and D-31 in the decision register (Decision
+  Record 017): governed meaning served. The context compiler harvests
+  the governed glossary and ontology registers (D-44) at compile time,
+  and `get_context` serves each certified binding as compiled: `terms`
+  and a `concept` per bound field, and a top-level `meaning` block per
+  entry beside `data`, `expert_context`, and `documents`, declared apart
+  from measured, under a note that says only what the compile checked;
+  the harvest is held to 6,000 characters of compact JSON per entry by
+  the compile failing closed; each register's digest joins the
+  artifact's sources, so a definition or a binding change reads as
+  stale until `make context` runs; the compiled schema moves to 2.2.0.
+  The server's instructions are trimmed and relied on less: what a host
+  must act on travels in the tool descriptions, one canary phrase stays
+  in the instructions and in no tool title or description, and the
+  surface test pins the instructions' length, digest, and the phrase's
+  offset. The five document change kinds D-44 enumerates land in the
+  change-set command with the implementing slice. The amendment mints
+  before any implementing change: no code, contract, pin, prompt, or
+  model changes here.
 
 ### Changed
 
