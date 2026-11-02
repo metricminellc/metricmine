@@ -11,6 +11,13 @@ measurements.
 
 ## [Unreleased]
 
+### Changed
+
+- The digest manifest names the v1.3.0 release asset, `demo.duckdb`
+  built from the tagged commit, so `make demo-fetch` restores the
+  regenerated star with compiled context v0015 and the served meaning
+  block; the front door names v1.3.0 as the current tagged release.
+
 ## [1.3.0] - 2026-11-02
 
 Governed meaning, served: the compiled context carries the glossary and
