@@ -273,7 +273,8 @@ def test_a_binding_on_an_unmapped_column_is_reported_and_not_served() -> None:
     edge is followed)."""
     report: list[str] = []
     artifact = build_compiled_context(REPO, report)
-    assert report == [
+    # The meaning harvest's lines follow (Amendment AD; tests/test_context_meaning.py).
+    assert [line for line in report if not line.startswith(("not served: term ", "not served: concept "))] == [
         "not served: nycflights13-flights-rd: silver_nyc_flights.dep_delay_minutes is not a served field;"
         " the served fields are the mapped columns of the mapped silver contracts, so a quote reaches a"
         " consumer through a binding on one of those"
@@ -347,11 +348,12 @@ def test_an_artifact_minted_before_the_amendment_reads_as_stale(tmp_path: Path) 
 
 
 def test_the_current_artifact_cites_the_register_the_tree_carries() -> None:
-    """The committed v0014 is fresh against the committed register."""
+    """The committed v0015 is fresh against the committed register (and the
+    meaning registers, held in tests/test_context_meaning.py)."""
     version, loaded = load_compiled_context(REPO)
-    assert version == "v0014"
+    assert version == "v0015"
     assert loaded["sources"]["documents_register"] == register_source(REPO)
-    assert loaded["schema_version"] == "2.1.0"
+    assert loaded["schema_version"] == "2.2.0"
 
 
 # ---------------------------------------------------------------- determinism, and the proposers
