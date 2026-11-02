@@ -257,6 +257,24 @@ def integrity_problems(register: Register) -> list[str]:
     return problems
 
 
+# ---------------------------------------------------------------- the digest
+
+
+def register_digest(register: Register) -> str:
+    """sha256 over the canonical bytes of the register's standing rows and
+    bindings as loaded, dates as ISO text: what the compiled context cites
+    under `sources.documents_register` (Amendment AA) and what a change
+    set's record cites as the register's digest before and after (D-44,
+    Amendment AD)."""
+    from metricmine.profiling.canonical import canonical_bytes
+
+    def plain(row: dict) -> dict:
+        return {k: (v.isoformat() if isinstance(v, date) else v) for k, v in row.items()}
+
+    payload = {"standing": [plain(r) for r in register.standing], "bindings": [plain(r) for r in register.bindings]}
+    return hashlib.sha256(canonical_bytes(payload)).hexdigest()
+
+
 # ---------------------------------------------------------------- the contract's rules
 
 
