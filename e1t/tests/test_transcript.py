@@ -1,0 +1,205 @@
+"""The Desktop protocol's guards, against a live shim held open the way
+Desktop holds one: the mark, the turn rule, finish, the one re-run door,
+and the stops. Needs the pinned served file."""
+
+import json
+import os
+import subprocess
+import sys
+import tempfile
+import time
+
+import pytest
+from conftest import E1T
+
+sys.path.insert(0, str(E1T))
+import capture_slice  # noqa: E402
+import key  # noqa: E402
+import transcript  # noqa: E402
+
+SHIM = E1T / "capture_shim.py"
+CRASH = key.TECHNICAL_FAILURES[0]
+F1_ARGS = {
+    "field": "invoice_lines.quantity", "kind": "rule_wanted",
+    "claim": "A flag that marks stock-adjustment lines is wanted.",
+    "query": "select * from gold.mart_invoice_lines_typed where not is_cancellation and quantity < 0",
+}
+
+
+class Host:
+    """A client that holds one shim open across protocol calls."""
+
+    def __init__(self, pinned, cap):
+        env = dict(os.environ, MM_SERVE_DB=str(pinned), MM_E1T_CAPTURE=str(cap))
+        self.proc = subprocess.Popen([sys.executable, str(SHIM)], stdin=subprocess.PIPE, stdout=subprocess.PIPE, env=env, cwd=tempfile.gettempdir())
+        self.n = 0
+        self.send("initialize", {"protocolVersion": "2025-11-25", "capabilities": {}, "clientInfo": {"name": "t", "version": "1"}})
+        self.proc.stdin.write(b'{"jsonrpc":"2.0","method":"notifications/initialized","params":{}}\n')
+        self.proc.stdin.flush()
+        self.send("tools/list", {})
+        time.sleep(0.3)
+
+    def send(self, method, params):
+        self.n += 1
+        self.proc.stdin.write((json.dumps({"jsonrpc": "2.0", "id": self.n, "method": method, "params": params}) + "\n").encode())
+        self.proc.stdin.flush()
+        return json.loads(self.proc.stdout.readline())
+
+    def call(self, name, args):
+        return self.send("tools/call", {"name": name, "arguments": args})
+
+    def close(self):
+        self.proc.stdin.close()
+        self.proc.wait(timeout=10)
+
+
+def paste(folder, text):
+    p = folder / "visible.md"
+    p.write_text(p.read_text(encoding="utf-8").replace(transcript.PLACEHOLDER, text, 1), encoding="utf-8")
+
+
+@pytest.fixture
+def protocol(pinned, tmp_path, monkeypatch):
+    cap = tmp_path / "cap"
+    monkeypatch.setenv("MM_E1T_CAPTURE", str(cap))
+    monkeypatch.setattr(capture_slice, "MARK", tmp_path / "MARK.json")
+    monkeypatch.setattr(transcript, "LEDGER", tmp_path / "ledger" / "claude-desktop")
+    host = Host(pinned, cap)
+    host.pinned, host.cap = pinned, cap
+    yield host
+    if host.proc.poll() is None:
+        host.close()
+
+
+def test_the_live_shim_search_counts_interpreters_and_never_a_shell_that_names_the_file(protocol):
+    bystander = subprocess.Popen(["bash", "-c", "sleep 20 # e1t/capture_shim.py"])
+    try:
+        time.sleep(0.3)
+        live = capture_slice.live_shim_pids()
+        assert protocol.proc.pid in live and bystander.pid not in live
+    finally:
+        bystander.kill()
+        bystander.wait()
+
+
+def test_the_ids_are_the_smoke_the_canary_s_two_and_nine_fixture_conversations(capsys):
+    assert transcript.main(["ids"]) == 0
+    ids = capsys.readouterr().out.split()
+    assert ids[:3] == ["cd-smoke", "cd-C1", "cd-C2"] and len(ids) == 12
+    assert transcript.prompt_for("C1") == key.CANARY_PROMPTS["C1"] and transcript.prompt_for("SMOKE") == key.SMOKE
+
+
+def test_new_turn_and_finish_follow_the_key_s_rules(protocol, capsys):
+    assert transcript.main(["new", "cd-C1", "--app-version", "t", "--model", "m"]) == 0
+    paste(transcript.LEDGER / "cd-C1", "The server sent me no instructions.")
+    assert transcript.main(["turn", "cd-C1"]) == 0
+    assert "TURN-NONE (the canary conversation has one turn)" in capsys.readouterr().out
+    assert transcript.main(["finish", "cd-C1", "--minutes", "1"]) == 0
+    assert transcript.main(["new", "cd-smoke", "--app-version", "t", "--model", "m"]) == 0
+    assert transcript.main(["new", "cd-F1-r1", "--app-version", "t", "--model", "m"]) == 1  # a mark exists
+    protocol.call("list_fact_categories", {})
+    folder = transcript.LEDGER / "cd-smoke"
+    assert transcript.main(["finish", "cd-smoke"]) == 1  # not pasted
+    paste(folder, "Three categories.")
+    assert transcript.main(["turn", "cd-smoke"]) == 0
+    assert transcript.main(["finish", "cd-smoke", "--minutes", "1"]) == 0
+    out = capsys.readouterr().out
+    assert "SMOKE-OK" in out and "TRANSCRIPT-OK cd-smoke" in out
+    # a printed path is the worktree's own form, the same on every machine
+    assert transcript.rel(transcript.HERE / "ledger" / "claude-desktop" / "x") == "e1t/ledger/claude-desktop/x"
+    assert capture_slice.rel(capture_slice.HERE / "capture") == "e1t/capture"
+    # F1: an accepted call in the first turn, no second turn
+    assert transcript.main(["new", "cd-F1-r1", "--app-version", "t", "--model", "m"]) == 0
+    msg = protocol.call("prepare_feedback", F1_ARGS)["result"]["structuredContent"]["message"]
+    paste(transcript.LEDGER / "cd-F1-r1", "Here it is:\n" + msg)
+    assert transcript.main(["turn", "cd-F1-r1"]) == 0
+    assert "TURN-NONE (accepted prepare_feedback call: yes" in capsys.readouterr().out
+    assert transcript.main(["finish", "cd-F1-r1", "--minutes", "2"]) == 0
+    meta = json.loads((transcript.LEDGER / "cd-F1-r1" / "meta.json").read_text())
+    assert meta["prepare_feedback_accepted"] == 1 and meta["second_turn_sent"] is False
+    assert (transcript.LEDGER / "cd-F1-r1" / "message.txt").read_text(encoding="utf-8") == msg
+    # F2: no accepted call and a question: the fixed second turn
+    assert transcript.main(["new", "cd-F2-r1", "--app-version", "t", "--model", "m"]) == 0
+    protocol.call("get_context", {"category": "flights"})
+    paste(transcript.LEDGER / "cd-F2-r1", "Do you want me to use the tool?")
+    assert transcript.main(["turn", "cd-F2-r1"]) == 0
+    out = capsys.readouterr().out
+    assert "TURN-SECOND" in out and key.SECOND_TURN in out
+    assert transcript.main(["turn", "cd-F2-r1"]) == 1  # user 2 already written
+    assert transcript.main(["finish", "cd-F2-r1"]) == 1  # assistant 2 not pasted
+    paste(transcript.LEDGER / "cd-F2-r1", "I could not.")
+    assert transcript.main(["finish", "cd-F2-r1", "--minutes", "3"]) == 0
+    meta = json.loads((transcript.LEDGER / "cd-F2-r1" / "meta.json").read_text())
+    assert meta["second_turn_sent"] is True and meta["first_turn_capture_lines"] == 2
+    assert transcript.main(["new", "cd-F2-r1", "--app-version", "t", "--model", "m"]) == 1  # never re-run
+    assert transcript.main(["turn", "cd-F3-r9"]) == 1 and transcript.main(["finish", "cd-F3-r1"]) == 1  # unknown, not started
+
+
+def test_the_one_re_run_door(protocol, capsys):
+    assert transcript.main(["new", "cd-F3-r1", "--app-version", "t", "--model", "m"]) == 0
+    assert transcript.main(["abandon", "cd-F3-r1", "--reason", "it broke"]) == 1
+    protocol.close()  # the host crashed before a first answer
+    assert transcript.main(["finish", "cd-F3-r1"]) == 1
+    assert transcript.main(["abandon", "cd-F3-r1", "--reason", CRASH]) == 0
+    assert (transcript.LEDGER / "cd-F3-r1.attempt1" / "capture.jsonl").is_file() and not capture_slice.MARK.exists()
+    assert json.loads((transcript.LEDGER / "cd-F3-r1.attempt1" / "meta.json").read_text())["abandoned_reason"] == CRASH
+    assert transcript.main(["new", "cd-F3-r1", "--app-version", "t", "--model", "m"]) == 1  # no live shim
+    again = Host(protocol.pinned, protocol.cap)
+    try:
+        assert transcript.main(["new", "cd-F3-r1", "--app-version", "t", "--model", "m"]) == 0  # the attempt does not block
+        paste(transcript.LEDGER / "cd-F3-r1", "Nothing to report.")
+        assert transcript.main(["finish", "cd-F3-r1"]) == 1  # a re-run must say so
+        assert transcript.main(["finish", "cd-F3-r1", "--re-run-of", CRASH]) == 0
+        assert transcript.main(["abandon", "cd-F3-r1", "--reason", CRASH]) == 1  # a pasted answer
+        assert transcript.main(["new", "cd-F1-r1", "--app-version", "t", "--model", "m"]) == 0
+        paste(transcript.LEDGER / "cd-F1-r1", "An answer.")
+        assert transcript.main(["finish", "cd-F1-r1", "--re-run-of", CRASH]) == 1  # no attempt exists
+        out = capsys.readouterr().out
+        assert "TRANSCRIPT-ABANDONED cd-F3-r1" in out and "no abandoned first attempt" in out
+    finally:
+        again.close()
+
+
+def test_paste_writes_the_reply_from_a_file_and_refuses_the_sent_words(protocol, tmp_path, capsys):
+    assert transcript.main(["new", "cd-F1-r1", "--app-version", "t", "--model", "m"]) == 0
+    sent = tmp_path / "sent.txt"
+    sent.write_text(key.BY_ID["F1"].prompt + "\n", encoding="utf-8")
+    assert transcript.main(["paste", "cd-F1-r1", "--from", str(sent)]) == 1  # the words sent, not the reply
+    empty = tmp_path / "empty.txt"
+    empty.write_text("  \n", encoding="utf-8")
+    assert transcript.main(["paste", "cd-F1-r1", "--from", str(empty)]) == 1
+    reply = tmp_path / "reply.txt"
+    reply.write_text("Here it is.\n\nFEEDBACK\nfield: x\nEND FEEDBACK\n", encoding="utf-8")
+    assert transcript.main(["paste", "cd-F1-r1", "--from", str(reply)]) == 0
+    assert transcript.main(["paste", "cd-F1-r1", "--from", str(reply)]) == 1  # no open section
+    out = capsys.readouterr().out
+    assert "PASTED cd-F1-r1 assistant 1 (" in out and "still holds the words sent" in out and "no assistant section is open" in out
+    secs = transcript.sections((transcript.LEDGER / "cd-F1-r1" / "visible.md").read_text(encoding="utf-8"))
+    assert secs["assistant 1"] == "Here it is.\n\nFEEDBACK\nfield: x\nEND FEEDBACK"
+    assert transcript.main(["turn", "cd-F1-r1"]) == 0
+    assert transcript.main(["finish", "cd-F1-r1", "--minutes", "1"]) == 0
+
+
+def test_a_server_restarted_mid_conversation_is_a_stop(protocol, capsys):
+    assert transcript.main(["new", "cd-F1-r1", "--app-version", "t", "--model", "m"]) == 0
+    paste(transcript.LEDGER / "cd-F1-r1", "An answer.")
+    protocol.close()
+    again = Host(protocol.pinned, protocol.cap)
+    try:
+        assert transcript.main(["finish", "cd-F1-r1"]) == 1
+        assert "restarted the server mid-conversation" in capsys.readouterr().out
+    finally:
+        again.close()
+
+
+def test_a_shim_that_never_initialized_is_a_stop(protocol, capsys):
+    protocol.close()
+    env = dict(os.environ, MM_SERVE_DB=str(protocol.pinned), MM_E1T_CAPTURE=str(protocol.cap))
+    idle = subprocess.Popen([sys.executable, str(SHIM)], stdin=subprocess.PIPE, stdout=subprocess.PIPE, env=env, cwd=tempfile.gettempdir())
+    try:
+        time.sleep(0.5)
+        assert transcript.main(["new", "cd-F1-r1", "--app-version", "t", "--model", "m"]) == 1
+        assert key.SERVER_DID_NOT_START in capsys.readouterr().out and not capture_slice.MARK.exists()
+    finally:
+        idle.stdin.close()
+        idle.wait(timeout=10)
