@@ -24,6 +24,10 @@ SPEC_TOOLS = {
     "lookup_record",
     "query",
 }
+# E1T, an experiment on its branch: a sixth tool for the measurement the
+# branch runs. Main holds the five; a sixth enters main only by a D-31
+# amendment, in the form that ran. The instructions stay main's text.
+EXPERIMENT_TOOLS = {"prepare_feedback"}
 
 # The instructions under the default scope, as measured over stdio on
 # October 30, 2026 (D-31 as amended by Amendment AD): under 2,048
@@ -44,12 +48,12 @@ def _list_tools():
     return anyio.run(collect)
 
 
-def test_registers_exactly_five_tools():
-    assert len(_list_tools()) == 5
+def test_registers_the_five_spec_tools_and_the_experiment_tool():
+    assert len(_list_tools()) == len(SPEC_TOOLS) + len(EXPERIMENT_TOOLS) == 6
 
 
-def test_tool_names_are_the_five_spec_names():
-    assert {tool.name for tool in _list_tools()} == SPEC_TOOLS
+def test_tool_names_are_the_five_spec_names_plus_prepare_feedback():
+    assert {tool.name for tool in _list_tools()} == SPEC_TOOLS | EXPERIMENT_TOOLS
 
 
 def test_every_tool_declares_an_output_schema():
@@ -175,6 +179,7 @@ def test_every_tool_declares_a_title_and_the_read_only_annotations():
         "get_context": "Get context",
         "query": "Query gold",
         "lookup_record": "Look up a record",
+        "prepare_feedback": "Prepare feedback",
     }
     for tool in tools:
         hints = tool.annotations
@@ -198,3 +203,22 @@ def test_instructions_state_the_scope_this_process_runs_with():
     opt_in = app.SCOPE_PARAGRAPHS["all"]
     assert opt_in.startswith("This server was started with MM_SERVE_SCOPE=all")
     assert "bronze and silver included" in opt_in
+
+
+def test_prepare_feedback_declares_its_shape_and_carries_no_canary():
+    """The experiment's tool (E1T): a title, the four annotations, an
+    output schema, four required string inputs, and a description that
+    says what the tool is for, under the cap a host is reported to apply
+    to a description, with the canary phrase nowhere in it."""
+    tool = next(t for t in _list_tools() if t.name == "prepare_feedback")
+    assert tool.title == "Prepare feedback"
+    assert tool.annotations.readOnlyHint is True and tool.annotations.destructiveHint is False
+    assert tool.annotations.idempotentHint is True and tool.annotations.openWorldHint is False
+    assert tool.outputSchema and set(tool.outputSchema["properties"]) >= {"prepared", "message", "stamp", "caller_supplied"}
+    assert tool.inputSchema["required"] == ["field", "kind", "claim", "query"]
+    description = " ".join((tool.description or "").split())
+    assert description.startswith("Prepare a feedback message about a served field")
+    assert "writes nothing, sends nothing" in description
+    assert len(description) < INSTRUCTIONS_CAP
+    assert CANARY_PHRASE not in description
+
