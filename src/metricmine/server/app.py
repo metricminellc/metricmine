@@ -38,6 +38,7 @@ from typing import TypedDict
 from mcp.server.fastmcp import FastMCP
 from mcp.types import ToolAnnotations
 
+from metricmine.feedback import FeedbackRefused, prepare, render
 from metricmine.query import (
     ROW_CAP_DEFAULT,
     SCOPE_ALL,
@@ -53,6 +54,12 @@ from metricmine.query import (
 )
 
 SERVER_NAME = "metricmine-gold"
+
+# E1T, an experiment on its branch (experiment/e1t-consumer-feedback): a
+# sixth tool, prepare_feedback, for the measurement the branch runs. On
+# main the surface is five tools (D-31 as amended), and a sixth enters
+# only by its own D-31 amendment, in the form that ran. The instructions
+# are main's text, byte for byte: nothing a host must act on lives there.
 
 # What `query` may read, resolved once at import from MM_SERVE_SCOPE (D-31
 # as amended by Amendment AB): a value that is neither `gold` nor `all`
@@ -244,3 +251,93 @@ def lookup_record(content_key: str) -> LookupResult:
     payloads. An unknown key returns found=false with no hits.
     """
     return warehouse().lookup_record(content_key)
+
+
+class FeedbackStamp(TypedDict):
+    served_file_sha256: str
+    served_file_bytes: int
+    registry_rows: int
+    registry_md5: str
+    server_version: str
+
+
+class FeedbackResult(TypedDict):
+    prepared: bool
+    reason: str | None
+    remedy: str | None
+    message: str | None
+    field: str | None
+    kind: str | None
+    rows_matching: int | None
+    contracts: dict[str, str] | None
+    stamp: FeedbackStamp | None
+    query_literals: list[str] | None
+    caller_supplied: list[str]
+    note: str
+
+
+FEEDBACK_NOTE = (
+    "The claim and the query are the caller's own text, carried as given and "
+    "checked only by the read-only gate; the rows matching, the contract "
+    "versions, and the served file stamp were measured on the served file. "
+    "The server wrote it to no file and sent it nowhere."
+)
+
+
+@server.tool(title="Prepare feedback", annotations=READ_ONLY)
+def prepare_feedback(field: str, kind: str, claim: str, query: str) -> FeedbackResult:
+    """Prepare a feedback message about a served field for the people who
+    own the data, when a person asks for one: the tool that turns what a
+    person noticed into a message a producer can re-measure.
+
+    Takes the field as <category>.<column>, one of six kinds
+    (meaning_unclear, meaning_wrong, missing_field, unexpected_values,
+    rule_wanted, i_depend_on_this), the person's claim in their own words,
+    and one SELECT that returns the rows in question (never an aggregate;
+    the same statements the query tool accepts). Re-runs that query
+    through the same read-only gate, counts the matching rows, and renders
+    the five-part message (field, kind, claim, query, rows matching) with
+    the governing contract versions and a stamp of the served file. The
+    claim and the query are carried as the caller's own text, labeled so,
+    and not checked beyond the gate. Returns the message as text; writes
+    nothing, sends nothing, and makes no network call. The person sends
+    it. A refused call comes back as prepared=false with the check that
+    failed and its remedy, rather than as an error.
+    """
+    try:
+        p = prepare(warehouse(), field, kind, claim, query, _project_version())
+    except FeedbackRefused as exc:
+        return {
+            "prepared": False,
+            "reason": exc.reason,
+            "remedy": exc.remedy,
+            "message": None,
+            "field": None,
+            "kind": None,
+            "rows_matching": None,
+            "contracts": None,
+            "stamp": None,
+            "query_literals": None,
+            "caller_supplied": ["claim", "query"],
+            "note": FEEDBACK_NOTE,
+        }
+    return {
+        "prepared": True,
+        "reason": None,
+        "remedy": None,
+        "message": render(p),
+        "field": p.field,
+        "kind": p.kind,
+        "rows_matching": p.rows_matching,
+        "contracts": dict(p.contracts),
+        "stamp": {
+            "served_file_sha256": p.served_file_sha256,
+            "served_file_bytes": p.served_file_bytes,
+            "registry_rows": p.registry_rows,
+            "registry_md5": p.registry_md5,
+            "server_version": p.server_version,
+        },
+        "query_literals": list(p.query_literals),
+        "caller_supplied": ["claim", "query"],
+        "note": FEEDBACK_NOTE,
+    }
