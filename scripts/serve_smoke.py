@@ -25,8 +25,10 @@ only the minimal environment and the protocol version. After the answers,
 stdin closes and the server's exit is measured and reported; a server
 that ignores end-of-file is terminated and the line says so.
 
-Exit 0 when the server names itself `metricmine-gold`, offers exactly five
-tools, and lists exactly three categories; 1 otherwise, naming the miss.
+Exit 0 when the server names itself `metricmine-gold`, offers exactly the
+expected tools (main's five; on the E1T experiment branch, six, with
+`prepare_feedback`), and lists exactly three categories; 1 otherwise,
+naming the miss.
 The Windows CI job runs it after `demo-fetch`. What it proves is the
 command, not the desktop: the click-through in Claude Desktop is the one
 step no runner can measure (F-55), and the demo guide says so.
@@ -48,7 +50,7 @@ from mcp.types import LATEST_PROTOCOL_VERSION
 
 REPO = Path(__file__).resolve().parents[1]
 SERVER_NAME = "metricmine-gold"
-TOOL_COUNT = 5
+TOOL_COUNT = 6  # main's five and the E1T branch's prepare_feedback (experiments lane, CLAUDE.md rule 19)
 CATEGORY_COUNT = 3
 TOOL = "list_fact_categories"
 # Seconds a single answer may take. Cycle one of the Windows check saw
