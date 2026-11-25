@@ -1,0 +1,7 @@
+FEEDBACK
+field: flights.dep_delay_minutes
+kind: unexpected_values
+claim: Some delays are negative.
+query: select * from gold.mart_flights_typed where dep_delay_minutes < -30
+rows matching: 2 at gold_flights_mapping 1.0.0
+END FEEDBACK

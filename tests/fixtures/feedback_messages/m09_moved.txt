@@ -1,0 +1,7 @@
+FEEDBACK
+field: invoice_lines.quantity
+kind: meaning_wrong
+claim: The served sentence "Units on the line; negative on cancellation lines and on zero-unit-price stock-adjustment lines, so a negative quantity alone does not mean a cancellation." is longer than the one I expected.
+query: select * from gold.mart_invoice_lines_typed where not is_cancellation and quantity < 0
+rows matching: 90 at gold_invoice_lines_mapping 1.1.2, silver_invoice_lines 1.3.0
+END FEEDBACK

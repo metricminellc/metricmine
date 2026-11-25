@@ -1,0 +1,7 @@
+FEEDBACK
+kind: meaning_wrong
+field: invoice_lines.quantity
+claim: Negative quantities on non-cancellation lines.
+query: select * from gold.mart_invoice_lines_typed where not is_cancellation and quantity < 0
+rows matching: 90 at gold_invoice_lines_mapping 1.1.1
+END FEEDBACK
