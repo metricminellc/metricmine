@@ -116,8 +116,13 @@ def test_initialize_reports_the_spec_server_name(wire):
     assert wire["init"].serverInfo.name == "metricmine-gold"
 
 
-def test_discovery_lists_the_five_tools(wire):
-    assert len(wire["tools"]) == 5
+def test_discovery_lists_the_five_tools_and_the_experiment_tool(wire):
+    # The E1T branch (experiments lane, CLAUDE.md rule 19) adds prepare_feedback
+    # beside main's five; the names are the surface test's.
+    from test_server_surface import EXPERIMENT_TOOLS, SPEC_TOOLS
+
+    assert {t.name for t in wire["tools"]} == SPEC_TOOLS | EXPERIMENT_TOOLS
+    assert len(wire["tools"]) == 6
 
 
 def test_count_query_returns_structured_rows(wire):
