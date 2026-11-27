@@ -4,32 +4,34 @@
     uv run python e1t/capture_slice.py end <transcript-dir>
     uv run python e1t/capture_slice.py count <capture-file>
 
-Claude Desktop keeps one server process per app session for its chat, so
-one capture file holds every chat conversation since the last restart.
-Desktop 6.28899.6 also opens a second connection to the same entry for
-its local agent mode, a second shim with its own file (measured on the
-Mac of record on November 27, 2026: the chat's initialize names the
-client `claude-ai` and asks for tools, prompts, and resources; the agent
-mode's names `local-agent-mode-metricmine-gold` and asks for tools
-only). `begin` reads the live shims writing under the capture folder and
-takes Desktop's chat: the one whose connection names itself `claude-ai`,
-or, when none does, the one that has not initialized yet, so a lone
-server that did not start still reaches the key's stop. Exactly one must
-qualify. A live shim of another client is watched. A shim with no file
-under the folder is never read: one writing elsewhere (another
-worktree's, a test's), one still starting before it opens its file, or
-one with no capture folder set; a misconfigured entry therefore reads as
-no chat shim, a stop. `begin` records the chat's capture file, the
-file's current line count, the time, and the watched shims in
-e1t/capture/MARK.json, and prints the file and the offset. `end`
-refuses, keeps the mark, and writes nothing while any other capture file
-in the folder holds a client tool call made since the mark (the agent
-mode's, or a chat server Desktop restarted: the record would be split,
-which goes to the Architect), and otherwise copies the lines written
-since the mark into <transcript-dir>/capture.jsonl, removes the mark,
-and prints the message counts: lines, client requests by method, and the
-tool calls with their names. `count` prints the same counts for any
-capture file. Every printed line is a measurement.
+Claude Desktop keeps its server processes for an app session, so one
+capture file holds every conversation a connection carried since the
+last restart. Desktop 6.28899.6 opens two connections to the one config
+entry, two shims with their own files: one whose initialize names the
+client `claude-ai` and asks for tools, prompts, and resources, and one
+named `local-agent-mode-metricmine-gold` that asks for tools only. The
+smoke's one tool call reached the second (both measured on the Mac of
+record on November 27, 2026, the second at the Desktop smoke). So the slice
+follows the calls. `begin` marks every live shim writing under the
+capture folder: each one's file and current line count, with the time,
+in e1t/capture/MARK.json, and prints the first file (the `claude-ai` one
+when there is one) and its offset. The conversation's connection is the
+one whose file holds the client's tool calls since its mark; when none
+does, the first. It is a stop, with nothing written and the mark kept,
+when the calls since the mark reached more than one connection, or
+reached a connection that started after the mark (a server Desktop
+restarted: the record would be split), which goes to the Architect. A
+shim with no file under the folder is never read: one writing elsewhere
+(another worktree's, a test's), one still starting before it opens its
+file, or one with no capture folder set; a misconfigured entry therefore
+reads as no live shim, a stop. `end` copies the conversation
+connection's lines since its mark into <transcript-dir>/capture.jsonl,
+removes the mark, and prints the file and the offset it sliced from and
+the message counts: lines, client requests by method, the tool calls
+with their names, and the server's results. `count` prints the same counts for any capture file. A
+mark written by the previous form of `begin` (one file, the others named
+under `watched`) is read with the others' offsets taken at the mark's
+time. Every printed line is a measurement.
 
 The capture directory is read from MM_E1T_CAPTURE, defaulting to
 e1t/capture under the worktree. Nothing here opens a model or a network.
@@ -93,9 +95,10 @@ def file_for_pid(pid: int) -> Path | None:
     return hits[-1] if hits else None
 
 
-# Desktop's chat names itself so in its initialize (measured on Desktop
-# 6.28899.6, November 27, 2026). Its local agent mode there opens a second
-# connection under another name.
+# One of Desktop 6.28899.6's two connections names itself so in its
+# initialize (measured November 27, 2026); its mark is the one printed.
+# The name says nothing about where the calls go: the smoke's went to the
+# other connection.
 CHAT_CLIENT = "claude-ai"
 
 
@@ -137,54 +140,99 @@ def live_shims() -> list[tuple[int, Path | None, str | None]]:
     return out
 
 
-def chat_candidates(shims: list[tuple[int, Path | None, str | None]]) -> list[int]:
-    """The live shims that can be Desktop's chat: those whose connection
-    names itself CHAT_CLIENT; when none does, those that have not
-    initialized yet, so a lone server that did not start still reaches
-    the key's stop. A shim of another client is watched, never sliced,
-    and so is a new shim still starting beside a named chat."""
-    named = [pid for pid, _, client in shims if client == CHAT_CLIENT]
-    return named or [pid for pid, _, client in shims if client is None]
-
-
 def shims_text(shims: list[tuple[int, Path | None, str | None]]) -> str:
     return ", ".join(f"{pid} {client if client is not None else 'no initialize'}" for pid, _, client in shims) or "none"
 
 
-def calls_since(path: Path, since: dt.datetime) -> int:
-    """The client's tool calls a capture file recorded at or after a time."""
+def _time(entry: dict) -> dt.datetime | None:
+    try:
+        return dt.datetime.fromisoformat(entry["t"])
+    except (ValueError, KeyError, TypeError):
+        return None
+
+
+def offset_at(path: Path, since: dt.datetime) -> int:
+    """The number of a capture file's leading lines stamped before a time.
+    The shim stamps a line before it takes the write lock, so a client
+    line and a server line can land out of stamp order within a moment;
+    at a mark taken while the connection is idle that cannot move the
+    count. Only a mark of the previous form is read this way."""
     n = 0
     for raw in path.read_text(encoding="utf-8").splitlines():
         try:
+            at = _time(json.loads(raw))
+        except ValueError:
+            at = None
+        if at is not None and at >= since:
+            break
+        n += 1
+    return n
+
+
+def calls_in(lines: list[str]) -> int:
+    """The client's tool calls among capture lines."""
+    n = 0
+    for raw in lines:
+        try:
             entry = json.loads(raw)
-            late = dt.datetime.fromisoformat(entry["t"]) >= since
-        except (ValueError, KeyError, TypeError):
+        except ValueError:
             continue
         msg = _message(entry)
-        if late and entry.get("dir") == "client" and msg is not None and msg.get("method") == "tools/call":
+        if entry.get("dir") == "client" and msg is not None and msg.get("method") == "tools/call":
             n += 1
     return n
 
 
-def calls_elsewhere(mark: dict) -> list[tuple[str, str | None, int]]:
-    """Every other capture file in the folder that holds a client tool
-    call made since the mark: its name, its client, and the count. A mark
-    written before the time was recorded reads as none."""
-    if not mark.get("t"):
-        return []
-    since = dt.datetime.fromisoformat(mark["t"])
-    out = []
-    for path in sorted(capture_dir().glob("capture-*.jsonl")):
-        if path.resolve() == Path(mark["file"]).resolve():
+def calls_since(path: Path, since: dt.datetime) -> int:
+    """The client's tool calls a capture file recorded at or after a time."""
+    late = []
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        try:
+            at = _time(json.loads(raw))
+        except ValueError:
             continue
-        n = calls_since(path, since)
-        if n:
-            out.append((path.name, client_of(path), n))
+        if at is not None and at >= since:
+            late.append(raw)
+    return calls_in(late)
+
+
+def marked_shims(mark: dict) -> list[dict]:
+    """The shims a mark recorded, each with its pid, file, offset, and
+    client, the printed one first. A mark from the previous form of
+    `begin` names one file and lists the others under `watched`; their
+    offsets are taken at the mark's time."""
+    if "shims" in mark:
+        return list(mark["shims"])
+    out = [{"pid": mark.get("pid"), "file": mark["file"], "offset": mark["offset"], "client": mark.get("client")}]
+    if mark.get("t"):
+        since = dt.datetime.fromisoformat(mark["t"])
+        for w in mark.get("watched", []):
+            path = file_for_pid(w["pid"])
+            if path is not None:
+                out.append({"pid": w["pid"], "file": str(path), "offset": offset_at(path, since), "client": w.get("client")})
     return out
 
 
-def elsewhere_text(items: list[tuple[str, str | None, int]]) -> str:
-    return ", ".join(f"{name} ({client}) {n}" for name, client, n in items)
+def since_mark(shim: dict) -> list[str]:
+    return Path(shim["file"]).read_text(encoding="utf-8").splitlines()[shim["offset"] :]
+
+
+def conversation(mark: dict) -> tuple[dict | None, str]:
+    """The marked shim that carried the conversation: the one whose file
+    holds the client's tool calls since its mark, or, when none does, the
+    first. (None, the reason) when the calls reached more than one
+    connection, or a connection that started after the mark."""
+    shims = marked_shims(mark)
+    marked_files = {Path(s["file"]).resolve() for s in shims}
+    if mark.get("t"):
+        since = dt.datetime.fromisoformat(mark["t"])
+        late = [(p.name, client_of(p), n) for p in sorted(capture_dir().glob("capture-*.jsonl")) if p.resolve() not in marked_files and (n := calls_since(p, since))]
+        if late:
+            return None, "tool call(s) since the mark reached a connection that started after it: " + ", ".join(f"{name} ({client}) {n}" for name, client, n in late)
+    carried = [(s, n) for s in shims if (n := calls_in(since_mark(s)))]
+    if len(carried) > 1:
+        return None, "tool calls since the mark reached more than one connection: " + ", ".join(f"{Path(s['file']).name} ({s.get('client')}) {n}" for s, n in carried)
+    return (carried[0][0] if carried else shims[0]), ""
 
 
 def counts(lines: list[str]) -> dict:
@@ -224,36 +272,32 @@ def main(argv: list[str]) -> int:
         return 0
     if cmd == "begin":
         shims = live_shims()
-        pids = chat_candidates(shims)
-        if len(pids) != 1:
-            print(f"SLICE-STOP: {len(pids)} live shim process(es) {pids} for Desktop's chat; exactly one is expected (its connection names itself {CHAT_CLIENT!r}); live shims: {shims_text(shims)}")
+        if not shims:
+            print(f"SLICE-STOP: 0 live shim process(es) writing under {rel(capture_dir())}; Desktop's must be running")
             return 1
-        path = file_for_pid(pids[0])
-        if path is None:
-            print(f"SLICE-STOP: no capture file for shim pid {pids[0]} under {rel(capture_dir())}")
-            return 1
-        offset = len(path.read_text(encoding="utf-8").splitlines())
-        watched = [{"pid": pid, "client": client} for pid, _, client in shims if pid != pids[0]]
+        shims.sort(key=lambda s: (s[2] != CHAT_CLIENT, s[0]))
         at = dt.datetime.now(dt.timezone.utc).isoformat(timespec="milliseconds")
+        marked = [{"pid": pid, "file": str(path), "offset": len(path.read_text(encoding="utf-8").splitlines()), "client": client} for pid, path, client in shims]
+        first = marked[0]
         MARK.parent.mkdir(parents=True, exist_ok=True)
-        MARK.write_text(json.dumps({"file": str(path), "offset": offset, "pid": pids[0], "client": client_of(path), "t": at, "watched": watched}) + "\n", encoding="utf-8")
-        print(f"MARK {path.name} at line {offset} (shim pid {pids[0]})")
+        MARK.write_text(json.dumps({"t": at, "shims": marked, "file": first["file"], "offset": first["offset"], "pid": first["pid"], "client": first["client"]}) + "\n", encoding="utf-8")
+        print(f"MARK {Path(first['file']).name} at line {first['offset']} (shim pid {first['pid']})")
         return 0
     if cmd == "end":
         if not MARK.exists():
             print("SLICE-STOP: no mark; run `begin` before the conversation")
             return 1
         mark = json.loads(MARK.read_text(encoding="utf-8"))
-        elsewhere = calls_elsewhere(mark)
-        if elsewhere:
-            print(f"SLICE-STOP: tool call(s) since the mark reached another connection: {elsewhere_text(elsewhere)}; nothing was sliced and the mark stands")
+        shim, why = conversation(mark)
+        if shim is None:
+            print(f"SLICE-STOP: {why}; nothing was sliced and the mark stands")
             return 1
         dest = Path(argv[1])
         dest.mkdir(parents=True, exist_ok=True)
-        lines = Path(mark["file"]).read_text(encoding="utf-8").splitlines()[mark["offset"] :]
+        lines = since_mark(shim)
         (dest / "capture.jsonl").write_text("\n".join(lines) + ("\n" if lines else ""), encoding="utf-8")
         MARK.unlink()
-        print(f"SLICED {len(lines)} lines from {Path(mark['file']).name} line {mark['offset']} into {rel(dest / 'capture.jsonl')}")
+        print(f"SLICED {len(lines)} lines from {Path(shim['file']).name} line {shim['offset']} into {rel(dest / 'capture.jsonl')}")
         print_counts(counts(lines))
         return 0
     print(f"unknown command {cmd!r}")
