@@ -15,47 +15,48 @@ MCP log keeps methods, never payloads (measured October 21, 2026). So a
 person sends the key's fixed words, pastes each reply whole with
 Desktop's copy control, and the capture shim keeps the JSON-RPC record.
 
-`new` marks the capture file of the live shim behind Desktop's chat (one
-Desktop session keeps one server process for its chat, so the initialize
-sits before the mark: "the server started" means the live file holds an
-initialize before the mark, and the handshake's instructions digest and
-tool count are checked against the key; a second connection Desktop
-opens for its local agent mode is watched, and `turn`, `finish`, and
-`abandon` stop when any other capture file in the folder holds a tool
-call made since the mark, as e1t/capture_slice.py says), refuses when a
-mark or an unfinished conversation exists, creates
+`new` marks the capture file of every live shim Desktop holds (one
+Desktop session keeps its server processes, so each connection's
+initialize sits before the mark: "the server started" means each live
+file holds an initialize before the mark, and each handshake's
+instructions digest and tool count are checked against the key), refuses
+when a mark or an unfinished conversation exists, creates
 e1t/ledger/claude-desktop/<id>/ with meta.json, prompt.txt, and a
 visible.md whose user turn is the key's text and whose assistant section
 is left for the paste, prints the SEND line, and puts the same words on
 the clipboard (`pbcopy`) so the person pastes them into Desktop rather
-than retyping them. `paste` writes the clipboard (`pbpaste`, or `--from
-<file>`) into the first open assistant section, byte for byte, so no
-editor touches the reply; it refuses an empty clipboard and a clipboard
-that still holds the words `new` or `turn` put there. `turn` reads the
-pasted first answer and the capture since the mark and applies the key's
-rule: the fixed second turn is sent only when the first turn produced no
-accepted prepare_feedback call and the first answer ended with a
-question to the person; it prints TURN-SECOND with the text, or
-TURN-NONE, and records the capture's line count at the turn boundary.
-`finish` holds every section pasted, checks the live shim of Desktop's
-chat is still the marked one, slices the capture into the folder, writes
-message.txt from the last accepted prepare_feedback result in the
-capture, warns when none of that message's labeled lines appears in the
-paste, records the measures, and prints one TRANSCRIPT-OK line.
-`abandon` is the one re-run door the key allows: a conversation with no
-pasted answer is kept as <id>.attempt1 under one of the key's
-technical-failure reasons, the mark is released, and `new` may start it
-once more; its `finish` then passes --re-run-of with that reason. Under
-the key's host-error reason (the app showed an error of its own before
-the model wrote anything or called a tool), `abandon` keeps the
-conversation under host-errors/, spends no re-run, and `new` starts it
-again. A conversation that gave a first answer is never re-run, and a
-chat server Desktop restarted mid-conversation (the live shim of its
-chat is not the marked one at `finish`) is a stop; a restarted agent
-mode's server is not. When a call since the mark reached another
-connection, `abandon` stops too and keeps nothing: the record would be
-split, which goes to the Architect. Every printed line is a measurement.
-No model, no network.
+than retyping them. The conversation's capture is the connection that
+carried its tool calls since the mark, as e1t/capture_slice.py says:
+Desktop 6.28899.6 opens two connections, and the smoke's one tool call
+reached the one it names for its local agent mode. `paste` writes the clipboard
+(`pbpaste`, or `--from <file>`) into the first open assistant section,
+byte for byte, so no editor touches the reply; it refuses an empty
+clipboard and a clipboard that still holds the words `new` or `turn` put
+there. `turn` reads the pasted first answer and the conversation's
+capture since the mark and applies the key's rule: the fixed second turn
+is sent only when the first turn produced no accepted prepare_feedback
+call and the first answer ended with a question to the person; it prints
+TURN-SECOND with the text, or TURN-NONE, and records the capture's line
+count at the turn boundary, for every marked connection, so `finish`
+keeps the count of the one it slices. `finish` holds every section pasted, checks
+every marked shim is still live, slices the conversation's capture into
+the folder, writes message.txt from the last accepted prepare_feedback
+result in the capture, warns when none of that message's labeled lines
+appears in the paste, records the measures and the connection sliced,
+and prints one TRANSCRIPT-OK line. `abandon` is the one re-run door the
+key allows: a conversation with no pasted answer is kept as
+<id>.attempt1 under one of the key's technical-failure reasons, the mark
+is released, and `new` may start it once more; its `finish` then passes
+--re-run-of with that reason. Under the key's host-error reason (the app
+showed an error of its own before the model wrote anything or called a
+tool), `abandon` keeps the conversation under host-errors/, spends no
+re-run, and `new` starts it again. A conversation that gave a first
+answer is never re-run, and a server Desktop restarted mid-conversation
+(a marked shim is not live at `finish`) is a stop. When the calls since
+the mark reached more than one connection, or a connection that started
+after the mark, `turn`, `finish`, and `abandon` stop and keep nothing:
+the record would be split, which goes to the Architect. Every printed
+line is a measurement. No model, no network.
 
 The ids and their order: cd-smoke, cd-C1, cd-C2 (the canary's two, one
 turn each, observed and never scored), then per repeat r in 1..3:
@@ -142,18 +143,28 @@ def _entries(lines: list[str]) -> list[dict]:
     return out
 
 
+def current_mark() -> dict | None:
+    if not capture_slice.MARK.exists():
+        return None
+    return json.loads(capture_slice.MARK.read_text(encoding="utf-8"))
+
+
 def capture_since_mark() -> list[dict]:
-    if not capture_slice.MARK.exists():
+    """The conversation connection's capture since its mark: the marked
+    shim that holds the client's tool calls, or the first when none does
+    (e1t/capture_slice.py). Empty with no mark, or when the calls reached
+    more than one connection or a connection that started after the mark;
+    then `turn` has stopped already, and `abandon`'s host-error door
+    stops at the slice instead of its own refusal."""
+    mark = current_mark()
+    if mark is None:
         return []
-    mark = json.loads(capture_slice.MARK.read_text(encoding="utf-8"))
-    return _entries(Path(mark["file"]).read_text(encoding="utf-8").splitlines()[mark["offset"] :])
+    shim, _ = capture_slice.conversation(mark)
+    return _entries(capture_slice.since_mark(shim)) if shim is not None else []
 
 
-def capture_before_mark() -> list[dict]:
-    if not capture_slice.MARK.exists():
-        return []
-    mark = json.loads(capture_slice.MARK.read_text(encoding="utf-8"))
-    return _entries(Path(mark["file"]).read_text(encoding="utf-8").splitlines()[: mark["offset"]])
+def capture_before_mark(shim: dict) -> list[dict]:
+    return _entries(Path(shim["file"]).read_text(encoding="utf-8").splitlines()[: shim["offset"]])
 
 
 def rel(path: Path) -> str:
@@ -194,18 +205,23 @@ def cmd_new(cid: str, app_version: str, model: str) -> int:
     code = capture_slice.main(["begin"])
     if code != 0:
         return code
-    before = capture_before_mark()
-    initialized, _ = capture_calls(before)
-    surface = capture_surface(before)
-    if not initialized:
-        capture_slice.MARK.unlink(missing_ok=True)
-        print(f"TRANSCRIPT-STOP {key.SERVER_DID_NOT_START}: the live shim's file holds no initialize before the mark")
-        return 1
-    if not surface_matches_key(surface):
-        capture_slice.MARK.unlink(missing_ok=True)
-        print(f"TRANSCRIPT-STOP the server's surface is not the key's ({json.dumps(surface)})")
-        return 1
     mark = json.loads(capture_slice.MARK.read_text(encoding="utf-8"))
+    shims = capture_slice.marked_shims(mark)
+    surfaces = []
+    for shim in shims:
+        before = capture_before_mark(shim)
+        initialized, _ = capture_calls(before)
+        surface = capture_surface(before)
+        if not initialized:
+            capture_slice.MARK.unlink(missing_ok=True)
+            print(f"TRANSCRIPT-STOP {key.SERVER_DID_NOT_START}: the live shim's file holds no initialize before the mark (shim pid {shim['pid']})")
+            return 1
+        if not surface_matches_key(surface):
+            capture_slice.MARK.unlink(missing_ok=True)
+            print(f"TRANSCRIPT-STOP the server's surface is not the key's ({json.dumps(surface)}) (shim pid {shim['pid']})")
+            return 1
+        surfaces.append(surface)
+    initialized, surface = True, surfaces[0]
     folder.mkdir(parents=True)
     meta = {
         "id": cid, "host": HOST, "fixture": fid, "repeat": run, "app_version": app_version, "model_reported": model,
@@ -213,7 +229,8 @@ def cmd_new(cid: str, app_version: str, model: str) -> int:
         "started": dt.datetime.now(dt.timezone.utc).isoformat(timespec="milliseconds"), "ended": None,
         "minutes": None, "second_turn_sent": None, "first_answer_ends_with_question": None, "first_turn_capture_lines": None,
         "capture_initialized": initialized, "capture_surface": surface, "capture_surface_matches_key": True,
-        "shim_pid": mark.get("pid"), "shim_client": mark.get("client"), "shims_watched": mark.get("watched", []),
+        "shim_pid": mark.get("pid"), "shim_client": mark.get("client"),
+        "shims_marked": [{"pid": sh["pid"], "client": sh.get("client")} for sh in shims], "conversation_shim": None,
         "capture_tool_calls": None, "capture_tool_names": None,
         "prepare_feedback_calls": None, "prepare_feedback_accepted": None, "first_answer": False, "re_run_of": None,
     }
@@ -273,10 +290,11 @@ def cmd_turn(cid: str) -> int:
     if not first or first == PLACEHOLDER:
         print("TRANSCRIPT-STOP assistant 1 is not pasted yet")
         return 1
-    if capture_slice.MARK.exists():
-        elsewhere = capture_slice.calls_elsewhere(json.loads(capture_slice.MARK.read_text(encoding="utf-8")))
-        if elsewhere:
-            print(f"TRANSCRIPT-STOP tool call(s) since the mark reached another connection: {capture_slice.elsewhere_text(elsewhere)}; the turn rule reads only the chat's capture, so nothing was decided")
+    mark = current_mark()
+    if mark is not None:
+        _, why = capture_slice.conversation(mark)
+        if why:
+            print(f"TRANSCRIPT-STOP {why}; the turn rule reads one connection's capture, so nothing was decided")
             return 1
     if BY_ID[cid][1] == "SMOKE" or BY_ID[cid][1] in key.CANARY_PROMPTS:
         print(f"TURN-NONE (the {'smoke' if BY_ID[cid][1] == 'SMOKE' else 'canary'} conversation has one turn)")
@@ -291,6 +309,10 @@ def cmd_turn(cid: str) -> int:
     meta = json.loads((folder / "meta.json").read_text(encoding="utf-8"))
     meta["first_answer_ends_with_question"] = asks
     meta["first_turn_capture_lines"] = len(since)
+    # Each marked connection's count at the boundary: a first turn with no
+    # call reads the first marked file, and a second turn's call may land
+    # on another, so `finish` keeps the count of the file it slices.
+    meta["first_turn_capture_lines_by_shim"] = {str(s["pid"]): len(capture_slice.since_mark(s)) for s in capture_slice.marked_shims(mark)} if mark is not None else {}
     (folder / "meta.json").write_text(json.dumps(meta, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
     if not accepted and asks:
         with open(folder / "visible.md", "a", encoding="utf-8") as fh:
@@ -323,14 +345,16 @@ def cmd_finish(cid: str, minutes: float | None, re_run_of: str | None) -> int:
     if re_run_of is not None and not attempt.exists():
         print(f"TRANSCRIPT-STOP --re-run-of given, but no abandoned first attempt {rel(attempt)} exists")
         return 1
-    shims = capture_slice.live_shims()
-    live = capture_slice.chat_candidates(shims)
-    if len(live) != 1:
-        print(f"TRANSCRIPT-STOP {len(live)} live shim process(es) {live} for Desktop's chat; exactly one is expected (Desktop's, pid {meta.get('shim_pid')}); live shims: {capture_slice.shims_text(shims)}")
-        return 1
-    if live[0] != meta.get("shim_pid"):
-        print(f"TRANSCRIPT-STOP the live shim {live[0]} is not the marked one ({meta.get('shim_pid')}); Desktop restarted the server mid-conversation")
-        return 1
+    mark = current_mark()
+    carried = None
+    if mark is not None:
+        marked = [sh["pid"] for sh in capture_slice.marked_shims(mark)]
+        shims = capture_slice.live_shims()
+        live = [pid for pid, _, _ in shims]
+        if any(pid not in live for pid in marked):
+            print(f"TRANSCRIPT-STOP the live shim(s) {live} are not the marked ones ({marked}); Desktop restarted the server mid-conversation; live shims: {capture_slice.shims_text(shims)}")
+            return 1
+        carried, _ = capture_slice.conversation(mark)
     code = capture_slice.main(["end", str(folder)])
     if code != 0:
         return code
@@ -355,7 +379,11 @@ def cmd_finish(cid: str, minutes: float | None, re_run_of: str | None) -> int:
         capture_tool_names=[c.get("name") for c in calls],
         prepare_feedback_calls=[{k: v for k, v in p.items() if k != "message"} for p in pfs],
         prepare_feedback_accepted=len(accepted), first_answer=True, re_run_of=re_run_of,
+        conversation_shim={"pid": carried["pid"], "client": carried.get("client")} if carried else None,
     )
+    by_shim = meta.get("first_turn_capture_lines_by_shim") or {}
+    if carried is not None and str(carried["pid"]) in by_shim:
+        meta["first_turn_capture_lines"] = by_shim[str(carried["pid"])]
     (folder / "meta.json").write_text(json.dumps(meta, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
     with open(LEDGER / "ledger.jsonl", "a", encoding="utf-8") as fh:
         keep = ("id", "fixture", "repeat", "model_reported", "app_version", "started", "ended", "minutes", "capture_initialized",
