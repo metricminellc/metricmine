@@ -10,8 +10,12 @@ by its own pull request when the sitting ends. Nothing here binds.
   second turn, the controls, the canary, the bounds, the thresholds).
 - `capture_shim.py`: the transparent stdio capture between a host and the
   server; one capture file per server process (`MM_E1T_CAPTURE`).
-- `capture_slice.py`: cuts one Desktop conversation out of the live
-  capture (`begin`, `end`).
+- `capture_slice.py`: cuts one Desktop conversation out of the capture
+  of Desktop's chat connection, the shim whose initialize names the
+  client `claude-ai` (`begin`, `end`). Desktop 6.28899.6 opens a second
+  connection for its local agent mode; its shim is watched, and a tool
+  call in any other capture file since the mark stops the turn rule,
+  the slice, and the re-run door.
 - `desktop_switch.py`: points Claude Desktop's one server entry at the
   shim (`backup`, `set`, `check`, `restore`).
 - `fetch_pinned.py`: the v1.3.0 asset by sha256 into `e1t/served/`.
