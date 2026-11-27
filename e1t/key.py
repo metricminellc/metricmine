@@ -126,12 +126,28 @@ DESKTOP_REPEATS = 3
 
 # Technical failures that allow one re-run of a conversation, each
 # recorded as re_run_of. A conversation that gave a first answer (any
-# assistant text) is never re-run. The first attempt's folder is kept
-# beside the re-run as <id>.attempt1.
+# assistant text the model wrote) is never re-run. The first attempt's
+# folder is kept beside the re-run as <id>.attempt1.
 TECHNICAL_FAILURES = (
     "the host crashed or exited before a first answer",
     "the conversation ended before a first answer",
 )
+# The host's own error is not an answer (amended before run one, November
+# 25, 2026). Claude Code writes each error of its own (a lapsed sign-in, a
+# usage limit, billing, an overload) as an assistant message whose model
+# is "<synthetic>", and ends that call with a result marked is_error (a
+# call with no assistant message at all reads the same); a call the key's
+# turn or dollar cap ended is never one. Each call is read on its own, and
+# both cases stop the batch. Before the model wrote anything in the first
+# call (and at the smoke, which is never scored): no ledger row, the
+# folder set aside under the ledger's host-errors/, and the conversation
+# runs again from its first turn as a new conversation, its one re-run
+# with it. After the model began to answer (in the first call, or at the
+# fixed second turn): the conversation is kept as it ran, with its row,
+# and never re-run.
+HOST_ERROR_STOP = "the host returned its own error before the model answered"
+HOST_ERROR_AFTER = "the host returned its own error after the model had begun to answer"
+SYNTHETIC_MODEL = "<synthetic>"
 # A server that did not start is a batch stop, never a re-run: on Claude
 # Code the conversation's capture holds no initialize; on Desktop the live
 # shim's file holds no initialize before the mark.
