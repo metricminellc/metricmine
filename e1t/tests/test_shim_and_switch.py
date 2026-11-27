@@ -116,7 +116,7 @@ def test_slice_begin_and_end_around_a_live_shim(pinned, tmp_path, monkeypatch):
     env = dict(os.environ, MM_SERVE_DB=str(pinned), MM_E1T_CAPTURE=str(cap))
     proc = subprocess.Popen([sys.executable, str(SHIM)], stdin=subprocess.PIPE, stdout=subprocess.PIPE, env=env, cwd=tempfile.gettempdir())
     try:
-        init = json.dumps({"jsonrpc": "2.0", "id": 0, "method": "initialize", "params": {"protocolVersion": "2025-11-25", "capabilities": {}, "clientInfo": {"name": "t", "version": "1"}}}) + "\n"
+        init = json.dumps({"jsonrpc": "2.0", "id": 0, "method": "initialize", "params": {"protocolVersion": "2025-11-25", "capabilities": {}, "clientInfo": {"name": capture_slice.CHAT_CLIENT, "version": "0.1.0"}}}) + "\n"
         proc.stdin.write(init.encode())
         proc.stdin.flush()
         proc.stdout.readline()
