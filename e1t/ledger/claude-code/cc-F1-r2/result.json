@@ -1,0 +1,122 @@
+[
+ {
+  "duration_api_ms": 10994,
+  "stop_reason": "end_turn",
+  "session_id": "c0d17b1a-195f-4e26-a71c-6fd709b71eb5",
+  "total_cost_usd": 0.046541,
+  "usage": {
+   "input_tokens": 8,
+   "cache_creation_input_tokens": 7339,
+   "cache_read_input_tokens": 26690,
+   "output_tokens": 1450,
+   "output_tokens_details": {
+    "thinking_tokens": 46
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 7339,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "inference_geo": "global",
+   "iterations": [
+    {
+     "input_tokens": 2,
+     "output_tokens": 794,
+     "cache_read_input_tokens": 9228,
+     "cache_creation_input_tokens": 1204,
+     "cache_creation": {
+      "ephemeral_5m_input_tokens": 0,
+      "ephemeral_1h_input_tokens": 1204
+     },
+     "type": "message"
+    }
+   ],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "modelUsage": {
+   "claude-sonnet-5-5": {
+    "inputTokens": 8,
+    "outputTokens": 1450,
+    "cacheReadInputTokens": 26690,
+    "cacheCreationInputTokens": 7339,
+    "webSearchRequests": 0,
+    "costUSD": 0.046541,
+    "contextWindow": 1000000,
+    "maxOutputTokens": 128000,
+    "thinkingTokens": 46,
+    "cacheCreationEphemeral5mInputTokens": 0,
+    "cacheCreationEphemeral1hInputTokens": 7339,
+    "canonicalModel": "claude-sonnet-5-5",
+    "provider": "firstParty",
+    "costBasis": "list"
+   }
+  },
+  "permission_denials": [],
+  "terminal_reason": "completed",
+  "fast_mode_state": "off",
+  "fast_mode_disabled_reason": "sdk_opt_in_required",
+  "subagent_stats": {
+   "spawned": 0,
+   "requested": {
+    "background": 0,
+    "foreground": 0,
+    "unset": 0
+   },
+   "started_in_background": 0,
+   "max_depth": 0,
+   "spawned_by_subagents": 0,
+   "completed": 0,
+   "failed": 0,
+   "killed": {
+    "parent": 0,
+    "user": 0,
+    "system": 0
+   },
+   "refused": {
+    "depth_limit": 0,
+    "concurrency_limit": 0,
+    "budget": 0
+   },
+   "by_type": {}
+  },
+  "safety_stops": 0,
+  "is_error": false,
+  "num_turns": 5,
+  "subtype": "success",
+  "api_error_status": null,
+  "result": "Here is the message exactly as the tool returned it:\n\n```\nFEEDBACK\nfield: invoice_lines.quantity\nkind: rule_wanted\nclaim: Negative quantities on lines that are not cancellations (is_cancellation = false) are zero-price stock adjustments. In the served data all 90 such lines have unit_price = 0.00, and none have a nonzero price. A consumer should not have to infer an adjustment from the price. Please add a rule or flag (for example an is_stock_adjustment column) that marks these lines explicitly.\nquery: SELECT * FROM gold.mart_invoice_lines_typed WHERE ((quantity < 0) AND (is_cancellation = CAST('f' AS BOOLEAN)))\nrows matching: 90 at gold_invoice_lines_mapping 1.1.2, silver_invoice_lines 1.3.0, gold_unified_event_star 1.6.0\nserved file: sha256 21f432dd516260ad43efe0bc232251b3c2e637c870fdd0f73d27dd1bad005d6b (107753472 bytes); registry 9 rows md5 574adc681fcb491a1b5ff437abc07435; server 1.3.0\nquery literals: 0, CAST('f' AS BOOLEAN)\ncaller supplied: claim and query, carried as given and checked only by the read-only gate\nEND FEEDBACK\n```\n\n- **Not sent:** The tool wrote nothing and sent nothing. You need to send the message to the data owners yourself.\n- **Check against the data:** Before preparing it, I grouped the table by cancellation, negative quantity and zero price. All 90 non-cancellation lines with negative quantity have a unit price of 0.00. Every other line with a negative quantity is a cancellation (1,013 of them, all with a nonzero price). The claim text states the 90 and the zero price as measured facts. That the lines are stock adjustments is your claim, not something the data states.\n- **Query wording:** I left the zero-price condition out of the query, so it returns all 90 non-cancellation negatives. The tool rewrote the boolean literal as `CAST('f' AS BOOLEAN)`, which means the same as `is_cancellation = false`.\n- **Sample rows:** Several of them have odd descriptions such as \"short\" or \"85123a mixed\", and many have no customer_id. That supports your point but is not in the message.",
+  "ttft_ms": 699,
+  "type": "result",
+  "duration_ms": 11238,
+  "uuid": "421adcf5-80b6-4327-9436-5ab50ef4b92c",
+  "ttft_stream_ms": 677,
+  "time_to_request_ms": 49,
+  "first_content_frame_ms": 677,
+  "queued_turn_count": 0,
+  "result_index": 0,
+  "model_usage_since_last_result": {
+   "claude-sonnet-5-5": {
+    "inputTokens": 8,
+    "outputTokens": 1450,
+    "cacheReadInputTokens": 26690,
+    "cacheCreationInputTokens": 7339,
+    "webSearchRequests": 0,
+    "costUSD": 0.046541,
+    "contextWindow": 1000000,
+    "maxOutputTokens": 128000,
+    "thinkingTokens": 46,
+    "cacheCreationEphemeral5mInputTokens": 0,
+    "cacheCreationEphemeral1hInputTokens": 7339,
+    "canonicalModel": "claude-sonnet-5-5",
+    "provider": "firstParty",
+    "costBasis": "list"
+   }
+  },
+  "credential_expires_at": "2026-12-23T16:48:10.400Z"
+ }
+]

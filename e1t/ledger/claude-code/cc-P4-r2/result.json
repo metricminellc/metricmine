@@ -1,0 +1,122 @@
+[
+ {
+  "duration_api_ms": 11000,
+  "stop_reason": "end_turn",
+  "session_id": "86e1bc6b-e254-4ef8-a7ff-77208b72a767",
+  "total_cost_usd": 0.0763758,
+  "usage": {
+   "input_tokens": 8,
+   "cache_creation_input_tokens": 15031,
+   "cache_read_input_tokens": 34758,
+   "output_tokens": 1276,
+   "output_tokens_details": {
+    "thinking_tokens": 49
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 15031,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "inference_geo": "global",
+   "iterations": [
+    {
+     "input_tokens": 2,
+     "output_tokens": 536,
+     "cache_read_input_tokens": 17438,
+     "cache_creation_input_tokens": 686,
+     "cache_creation": {
+      "ephemeral_5m_input_tokens": 0,
+      "ephemeral_1h_input_tokens": 686
+     },
+     "type": "message"
+    }
+   ],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "modelUsage": {
+   "claude-sonnet-5-5": {
+    "inputTokens": 8,
+    "outputTokens": 1276,
+    "cacheReadInputTokens": 34758,
+    "cacheCreationInputTokens": 15031,
+    "webSearchRequests": 0,
+    "costUSD": 0.0763758,
+    "contextWindow": 1000000,
+    "maxOutputTokens": 128000,
+    "thinkingTokens": 49,
+    "cacheCreationEphemeral5mInputTokens": 0,
+    "cacheCreationEphemeral1hInputTokens": 15031,
+    "canonicalModel": "claude-sonnet-5-5",
+    "provider": "firstParty",
+    "costBasis": "list"
+   }
+  },
+  "permission_denials": [],
+  "terminal_reason": "completed",
+  "fast_mode_state": "off",
+  "fast_mode_disabled_reason": "sdk_opt_in_required",
+  "subagent_stats": {
+   "spawned": 0,
+   "requested": {
+    "background": 0,
+    "foreground": 0,
+    "unset": 0
+   },
+   "started_in_background": 0,
+   "max_depth": 0,
+   "spawned_by_subagents": 0,
+   "completed": 0,
+   "failed": 0,
+   "killed": {
+    "parent": 0,
+    "user": 0,
+    "system": 0
+   },
+   "refused": {
+    "depth_limit": 0,
+    "concurrency_limit": 0,
+    "budget": 0
+   },
+   "by_type": {}
+  },
+  "safety_stops": 0,
+  "is_error": false,
+  "num_turns": 5,
+  "subtype": "success",
+  "api_error_status": null,
+  "result": "Flights leave later in hours with visibility under one mile than in hours with ten-mile visibility at all three origin airports. The gap is largest at JFK and smallest at LGA.\n\n| Origin | Avg departure delay, visibility < 1 mi | Avg departure delay, visibility = 10 mi | Difference | Flights (< 1 mi / 10 mi) |\n|---|---|---|---|---|\n| EWR | 33.0 min | 15.6 min | **+17.4 min** | 828 / 48,125 |\n| JFK | 37.6 min | 10.5 min | **+27.1 min** | 1,271 / 43,371 |\n| LGA | 14.9 min | 9.3 min | **+5.6 min** | 408 / 41,184 |\n\n- **Method:** I joined each flight to the weather at its origin in its departure hour, on origin airport and UTC hour. That join is the one the flights contract documents.\n- **Delay measure:** The delay is `dep_delay_minutes`, where negative means early. Cancelled flights have no delay value, so they are excluded.\n- **Visibility:** Ten miles is the reporting maximum, so I treated \"ten-mile visibility\" as exactly 10.\n- **Coverage:** Data covers January to June 2013. About 97 flights fall in airport-hours with no weather observation and drop out.\n- **Low-visibility samples:** These are small, especially LGA with 408 flights. The LGA gap in particular could shift with a different sample.\n- **No controls:** These are raw averages and don't account for carrier, time of day, or other weather such as precipitation or wind.",
+  "ttft_ms": 674,
+  "type": "result",
+  "duration_ms": 11117,
+  "uuid": "69467906-5658-4fd1-8406-0d6cb03f52d2",
+  "ttft_stream_ms": 625,
+  "time_to_request_ms": 37,
+  "first_content_frame_ms": 625,
+  "queued_turn_count": 0,
+  "result_index": 0,
+  "model_usage_since_last_result": {
+   "claude-sonnet-5-5": {
+    "inputTokens": 8,
+    "outputTokens": 1276,
+    "cacheReadInputTokens": 34758,
+    "cacheCreationInputTokens": 15031,
+    "webSearchRequests": 0,
+    "costUSD": 0.0763758,
+    "contextWindow": 1000000,
+    "maxOutputTokens": 128000,
+    "thinkingTokens": 49,
+    "cacheCreationEphemeral5mInputTokens": 0,
+    "cacheCreationEphemeral1hInputTokens": 15031,
+    "canonicalModel": "claude-sonnet-5-5",
+    "provider": "firstParty",
+    "costBasis": "list"
+   }
+  },
+  "credential_expires_at": "2026-12-23T16:48:10.400Z"
+ }
+]

@@ -1,0 +1,42 @@
+{
+ "aggregate_reasons": [],
+ "build": "metricmine.duckdb",
+ "claim_chars": 200,
+ "contracts_moved": {},
+ "contracts_on_build": {
+  "gold_airport_weather_mapping": "1.0.0",
+  "gold_unified_event_star": "1.6.0",
+  "silver_airport_weather": "1.0.0"
+ },
+ "contracts_stated": {
+  "gold_airport_weather_mapping": "1.0.0",
+  "gold_unified_event_star": "1.6.0",
+  "silver_airport_weather": "1.0.0"
+ },
+ "contracts_unknown": [],
+ "count_equals_key": true,
+ "extra_parts": [
+  "served file",
+  "query literals",
+  "caller supplied"
+ ],
+ "field": "airport_weather.wind_gust_mph",
+ "field_matches_key": true,
+ "key_count": 3312,
+ "key_field": "airport_weather.wind_gust_mph",
+ "key_kind": "i_depend_on_this",
+ "kind": "i_depend_on_this",
+ "kind_matches_key": true,
+ "outcome": "reproduces at the same contract versions",
+ "parse_ok": true,
+ "query": "SELECT airport_code, observed_date_local, observed_hour_local, observed_hour_utc, wind_speed_mph, wind_gust_mph FROM gold.mart_airport_weather_typed WHERE (wind_gust_mph IS NOT NULL)",
+ "query_refused": null,
+ "registry": {
+  "digest": "574adc681fcb491a1b5ff437abc07435",
+  "rows": 9
+ },
+ "rows_matching_recounted": 3312,
+ "rows_matching_stated": 3312,
+ "verifies": true,
+ "volatile_calls": []
+}

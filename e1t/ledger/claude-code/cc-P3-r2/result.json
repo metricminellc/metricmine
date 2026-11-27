@@ -1,0 +1,122 @@
+[
+ {
+  "duration_api_ms": 6508,
+  "stop_reason": "end_turn",
+  "session_id": "6e617b35-caed-42ce-8a37-e3a4bdfe1cdf",
+  "total_cost_usd": 0.054280199999999994,
+  "usage": {
+   "input_tokens": 8,
+   "cache_creation_input_tokens": 11064,
+   "cache_read_input_tokens": 30982,
+   "output_tokens": 691,
+   "output_tokens_details": {
+    "thinking_tokens": 0
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 11064,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "inference_geo": "global",
+   "iterations": [
+    {
+     "input_tokens": 2,
+     "output_tokens": 379,
+     "cache_read_input_tokens": 13656,
+     "cache_creation_input_tokens": 501,
+     "cache_creation": {
+      "ephemeral_5m_input_tokens": 0,
+      "ephemeral_1h_input_tokens": 501
+     },
+     "type": "message"
+    }
+   ],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "modelUsage": {
+   "claude-sonnet-5-5": {
+    "inputTokens": 8,
+    "outputTokens": 691,
+    "cacheReadInputTokens": 30982,
+    "cacheCreationInputTokens": 11064,
+    "webSearchRequests": 0,
+    "costUSD": 0.054280199999999994,
+    "contextWindow": 1000000,
+    "maxOutputTokens": 128000,
+    "thinkingTokens": 0,
+    "cacheCreationEphemeral5mInputTokens": 0,
+    "cacheCreationEphemeral1hInputTokens": 11064,
+    "canonicalModel": "claude-sonnet-5-5",
+    "provider": "firstParty",
+    "costBasis": "list"
+   }
+  },
+  "permission_denials": [],
+  "terminal_reason": "completed",
+  "fast_mode_state": "off",
+  "fast_mode_disabled_reason": "sdk_opt_in_required",
+  "subagent_stats": {
+   "spawned": 0,
+   "requested": {
+    "background": 0,
+    "foreground": 0,
+    "unset": 0
+   },
+   "started_in_background": 0,
+   "max_depth": 0,
+   "spawned_by_subagents": 0,
+   "completed": 0,
+   "failed": 0,
+   "killed": {
+    "parent": 0,
+    "user": 0,
+    "system": 0
+   },
+   "refused": {
+    "depth_limit": 0,
+    "concurrency_limit": 0,
+    "budget": 0
+   },
+   "by_type": {}
+  },
+  "safety_stops": 0,
+  "is_error": false,
+  "num_turns": 4,
+  "subtype": "success",
+  "api_error_status": null,
+  "result": "**ExpressJet Airlines (carrier code EV)** had the highest average departure delay, at about **23.4 minutes** across 24,971 flights.\n\nThis covers scheduled departures from NYC (JFK, LGA, EWR) in January through June 2013. Cancelled flights are excluded, and only carriers with at least 1,000 flights are included. The runners-up were:\n\n| Carrier | Flights | Avg departure delay (min) |\n|---|---|---|\n| ExpressJet (EV) | 24,971 | 23.41 |\n| Endeavor Air (9E) | 8,436 | 18.42 |\n| Southwest (WN) | 5,773 | 17.16 |\n| AirTran (FL) | 1,781 | 15.14 |\n| Virgin America (VX) | 2,321 | 14.78 |\n\nThe lowest of the 11 qualifying carriers was US Airways, at about 3.9 minutes.\n\nThe data is from `gold.mart_flights_typed`. The dataset's documentation says `dep_delay_minutes` is null for cancelled flights. I also filtered on `is_cancelled = false` explicitly.",
+  "ttft_ms": 661,
+  "type": "result",
+  "duration_ms": 6630,
+  "uuid": "1d1c8017-069c-4b09-b50f-37c7d5f3532c",
+  "ttft_stream_ms": 647,
+  "time_to_request_ms": 38,
+  "first_content_frame_ms": 647,
+  "queued_turn_count": 0,
+  "result_index": 0,
+  "model_usage_since_last_result": {
+   "claude-sonnet-5-5": {
+    "inputTokens": 8,
+    "outputTokens": 691,
+    "cacheReadInputTokens": 30982,
+    "cacheCreationInputTokens": 11064,
+    "webSearchRequests": 0,
+    "costUSD": 0.054280199999999994,
+    "contextWindow": 1000000,
+    "maxOutputTokens": 128000,
+    "thinkingTokens": 0,
+    "cacheCreationEphemeral5mInputTokens": 0,
+    "cacheCreationEphemeral1hInputTokens": 11064,
+    "canonicalModel": "claude-sonnet-5-5",
+    "provider": "firstParty",
+    "costBasis": "list"
+   }
+  },
+  "credential_expires_at": "2026-12-23T16:48:10.400Z"
+ }
+]

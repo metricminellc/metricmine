@@ -1,0 +1,152 @@
+{
+ "id": "cc-F1-r4",
+ "host": "claude-code",
+ "batch": "fixtures",
+ "fixture": "F1",
+ "repeat": 4,
+ "model_requested": "sonnet",
+ "model_reported": "claude-sonnet-5-5",
+ "models_used": [
+  "claude-sonnet-5-5"
+ ],
+ "init": {
+  "model": "claude-sonnet-5-5",
+  "claude_code_version": "2.1.332",
+  "permissionMode": "dontAsk",
+  "tools": [
+   "mcp__metricmine-gold__get_context",
+   "mcp__metricmine-gold__get_schema",
+   "mcp__metricmine-gold__list_fact_categories",
+   "mcp__metricmine-gold__lookup_record",
+   "mcp__metricmine-gold__prepare_feedback",
+   "mcp__metricmine-gold__query"
+  ],
+  "mcp_servers": [
+   {
+    "name": "metricmine-gold",
+    "status": "connected",
+    "source": "dynamic"
+   }
+  ],
+  "apiKeySource": "none",
+  "memory_paths": {
+   "auto": "<home>/.claude/projects/<tmp>-e1t-v7789k-x/memory/"
+  },
+  "skills": [
+   "deep-research",
+   "design",
+   "design-sync",
+   "dataviz",
+   "update-config",
+   "verify",
+   "debug",
+   "code-review",
+   "simplify",
+   "batch",
+   "fewer-permission-prompts",
+   "doctor",
+   "claude-approvals",
+   "loop",
+   "schedule",
+   "claude-api",
+   "workflow-authoring",
+   "run",
+   "run-skill-generator",
+   "plugin-authoring"
+  ],
+  "agents": [
+   "claude",
+   "Explore",
+   "general-purpose",
+   "Plan",
+   "statusline-setup",
+   "web-fetch"
+  ],
+  "plugins": [
+   {
+    "name": "cc-plugin-agents-md",
+    "path": "builtin",
+    "source": "cc-plugin-agents-md@builtin"
+   },
+   {
+    "name": "cc-plugin-telemetry",
+    "path": "builtin",
+    "source": "cc-plugin-telemetry@builtin"
+   },
+   {
+    "name": "cc-plugin-privacy",
+    "path": "builtin",
+    "source": "cc-plugin-privacy@builtin"
+   },
+   {
+    "name": "cc-plugin-plugin-authoring",
+    "path": "builtin",
+    "source": "cc-plugin-plugin-authoring@builtin"
+   }
+  ],
+  "cwd": "<tmp>/e1t-v7789k_x"
+ },
+ "started": "2026-11-27T16:23:38.366+00:00",
+ "ended": "2026-11-27T16:24:02.334+00:00",
+ "seconds": 13.91,
+ "seconds_per_turn": [
+  13.91
+ ],
+ "cost_usd": 0.051433,
+ "cost_usd_per_turn": [
+  0.051433099999999995
+ ],
+ "num_turns_reported": 5,
+ "result_subtype": "success",
+ "is_error": false,
+ "exit_codes": [
+  0
+ ],
+ "first_answer": true,
+ "first_answer_ends_with_question": false,
+ "second_turn_sent": false,
+ "first_turn_capture_lines": 19,
+ "capture_initialized": true,
+ "capture_surface": {
+  "instructions_sha256": "c00eba40181878be17127866f296117618c9dc15063072bc52c5d9a2efad22ab",
+  "instructions_length": 1837,
+  "tools": [
+   "list_fact_categories",
+   "get_schema",
+   "get_context",
+   "query",
+   "lookup_record",
+   "prepare_feedback"
+  ]
+ },
+ "capture_surface_matches_key": true,
+ "capture_tool_calls": 4,
+ "capture_tool_names": [
+  "list_fact_categories",
+  "get_context",
+  "query",
+  "prepare_feedback"
+ ],
+ "host_tool_uses": [
+  "mcp__metricmine-gold__list_fact_categories",
+  "mcp__metricmine-gold__get_context",
+  "mcp__metricmine-gold__query",
+  "mcp__metricmine-gold__prepare_feedback"
+ ],
+ "prepare_feedback_calls": [
+  {
+   "t": "2026-11-27T16:23:45.576+00:00",
+   "field": "invoice_lines.quantity",
+   "kind": "rule_wanted",
+   "prepared": true,
+   "reason": null,
+   "rows_matching": 90
+  }
+ ],
+ "prepare_feedback_accepted": 1,
+ "re_run_of": null,
+ "host_error": null,
+ "host_error_turn": null,
+ "set_aside": false,
+ "model_wrote_first_call": true
+}

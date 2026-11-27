@@ -1,0 +1,122 @@
+[
+ {
+  "duration_api_ms": 8791,
+  "stop_reason": "end_turn",
+  "session_id": "2499e6d2-a185-4ad4-9222-61b5d1ab8e4f",
+  "total_cost_usd": 0.0646371,
+  "usage": {
+   "input_tokens": 8,
+   "cache_creation_input_tokens": 13089,
+   "cache_read_input_tokens": 33251,
+   "output_tokens": 894,
+   "output_tokens_details": {
+    "thinking_tokens": 0
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 13089,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "inference_geo": "global",
+   "iterations": [
+    {
+     "input_tokens": 2,
+     "output_tokens": 498,
+     "cache_read_input_tokens": 15951,
+     "cache_creation_input_tokens": 231,
+     "cache_creation": {
+      "ephemeral_5m_input_tokens": 0,
+      "ephemeral_1h_input_tokens": 231
+     },
+     "type": "message"
+    }
+   ],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "modelUsage": {
+   "claude-sonnet-5-5": {
+    "inputTokens": 8,
+    "outputTokens": 894,
+    "cacheReadInputTokens": 33251,
+    "cacheCreationInputTokens": 13089,
+    "webSearchRequests": 0,
+    "costUSD": 0.0646371,
+    "contextWindow": 1000000,
+    "maxOutputTokens": 128000,
+    "thinkingTokens": 0,
+    "cacheCreationEphemeral5mInputTokens": 0,
+    "cacheCreationEphemeral1hInputTokens": 13089,
+    "canonicalModel": "claude-sonnet-5-5",
+    "provider": "firstParty",
+    "costBasis": "list"
+   }
+  },
+  "permission_denials": [],
+  "terminal_reason": "completed",
+  "fast_mode_state": "off",
+  "fast_mode_disabled_reason": "sdk_opt_in_required",
+  "subagent_stats": {
+   "spawned": 0,
+   "requested": {
+    "background": 0,
+    "foreground": 0,
+    "unset": 0
+   },
+   "started_in_background": 0,
+   "max_depth": 0,
+   "spawned_by_subagents": 0,
+   "completed": 0,
+   "failed": 0,
+   "killed": {
+    "parent": 0,
+    "user": 0,
+    "system": 0
+   },
+   "refused": {
+    "depth_limit": 0,
+    "concurrency_limit": 0,
+    "budget": 0
+   },
+   "by_type": {}
+  },
+  "safety_stops": 0,
+  "is_error": false,
+  "num_turns": 5,
+  "subtype": "success",
+  "api_error_status": null,
+  "result": "**3,471 flights** went to Palm Beach (PBI). That is about 2.1% of the 166,158 flights in the table. None of them has a destination airport name. The same goes for destination municipality and ISO region, which are also null on all 3,471 rows.\n\n**Why the name is missing:** the flights table takes its airport attributes from the OurAirports reference, which is a 2026 snapshot. The flight data itself is from January to June 2013. The reference now lists Palm Beach International under the code **DJT**, but the 2013 flights still use **PBI**. The join on the destination code therefore finds nothing for PBI, and the destination attributes stay null.\n\n- **Rows kept:** the contract says unresolved references are kept as null attributes and the flight rows are not dropped.\n- **Where it shows:** the join documentation says destination attributes resolve for 97.9% of flights (162,687 of 166,158). Every unresolved flight is a PBI flight, and 166,158 − 162,687 = 3,471, which matches my count.\n- **Other nulls:** `dest_elevation_ft` and `dest_longest_runway_ft` are also null for PBI, because they come from the same failed join. I only checked name, municipality and region directly.\n\nThe table doesn't recode PBI to DJT. If you want PBI's name in a report, you'd need to map it yourself, for example by treating PBI as DJT.\n\nThe explanation comes from the contract's authored notes, not from a measurement. The counts above come from the warehouse and agree with it.",
+  "ttft_ms": 859,
+  "type": "result",
+  "duration_ms": 8900,
+  "uuid": "ee230e0a-c109-4ebe-85ed-a377ffcdc431",
+  "ttft_stream_ms": 841,
+  "time_to_request_ms": 38,
+  "first_content_frame_ms": 842,
+  "queued_turn_count": 0,
+  "result_index": 0,
+  "model_usage_since_last_result": {
+   "claude-sonnet-5-5": {
+    "inputTokens": 8,
+    "outputTokens": 894,
+    "cacheReadInputTokens": 33251,
+    "cacheCreationInputTokens": 13089,
+    "webSearchRequests": 0,
+    "costUSD": 0.0646371,
+    "contextWindow": 1000000,
+    "maxOutputTokens": 128000,
+    "thinkingTokens": 0,
+    "cacheCreationEphemeral5mInputTokens": 0,
+    "cacheCreationEphemeral1hInputTokens": 13089,
+    "canonicalModel": "claude-sonnet-5-5",
+    "provider": "firstParty",
+    "costBasis": "list"
+   }
+  },
+  "credential_expires_at": "2026-12-23T16:48:10.400Z"
+ }
+]

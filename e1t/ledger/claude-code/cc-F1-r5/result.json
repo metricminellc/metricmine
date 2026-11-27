@@ -1,0 +1,122 @@
+[
+ {
+  "duration_api_ms": 11684,
+  "stop_reason": "end_turn",
+  "session_id": "d0f18a2e-7b2f-4295-bd30-055699fa972e",
+  "total_cost_usd": 0.0500388,
+  "usage": {
+   "input_tokens": 8,
+   "cache_creation_input_tokens": 8510,
+   "cache_read_input_tokens": 27928,
+   "output_tokens": 1319,
+   "output_tokens_details": {
+    "thinking_tokens": 42
+   },
+   "server_tool_use": {
+    "web_search_requests": 0,
+    "web_fetch_requests": 0
+   },
+   "service_tier": "standard",
+   "cache_creation": {
+    "ephemeral_1h_input_tokens": 8510,
+    "ephemeral_5m_input_tokens": 0
+   },
+   "inference_geo": "global",
+   "iterations": [
+    {
+     "input_tokens": 2,
+     "output_tokens": 697,
+     "cache_read_input_tokens": 10459,
+     "cache_creation_input_tokens": 1144,
+     "cache_creation": {
+      "ephemeral_5m_input_tokens": 0,
+      "ephemeral_1h_input_tokens": 1144
+     },
+     "type": "message"
+    }
+   ],
+   "speed": "standard",
+   "fallback_credit": null
+  },
+  "modelUsage": {
+   "claude-sonnet-5-5": {
+    "inputTokens": 8,
+    "outputTokens": 1319,
+    "cacheReadInputTokens": 27928,
+    "cacheCreationInputTokens": 8510,
+    "webSearchRequests": 0,
+    "costUSD": 0.0500388,
+    "contextWindow": 1000000,
+    "maxOutputTokens": 128000,
+    "thinkingTokens": 42,
+    "cacheCreationEphemeral5mInputTokens": 0,
+    "cacheCreationEphemeral1hInputTokens": 8510,
+    "canonicalModel": "claude-sonnet-5-5",
+    "provider": "firstParty",
+    "costBasis": "list"
+   }
+  },
+  "permission_denials": [],
+  "terminal_reason": "completed",
+  "fast_mode_state": "off",
+  "fast_mode_disabled_reason": "sdk_opt_in_required",
+  "subagent_stats": {
+   "spawned": 0,
+   "requested": {
+    "background": 0,
+    "foreground": 0,
+    "unset": 0
+   },
+   "started_in_background": 0,
+   "max_depth": 0,
+   "spawned_by_subagents": 0,
+   "completed": 0,
+   "failed": 0,
+   "killed": {
+    "parent": 0,
+    "user": 0,
+    "system": 0
+   },
+   "refused": {
+    "depth_limit": 0,
+    "concurrency_limit": 0,
+    "budget": 0
+   },
+   "by_type": {}
+  },
+  "safety_stops": 0,
+  "is_error": false,
+  "num_turns": 5,
+  "subtype": "success",
+  "api_error_status": null,
+  "result": "Here is the message, exactly as returned:\n\n```\nFEEDBACK\nfield: invoice_lines.quantity\nkind: rule_wanted\nclaim: Negative quantities on lines that are not cancellations are zero-price stock adjustments, and a consumer should not have to infer an adjustment from the price. Please add a rule or a flag (for example an is_stock_adjustment column) so the adjustment is stated, not inferred from unit_price = 0.\nquery: SELECT * FROM gold.mart_invoice_lines_typed WHERE ((quantity < 0) AND (is_cancellation = CAST('f' AS BOOLEAN)))\nrows matching: 90 at gold_invoice_lines_mapping 1.1.2, silver_invoice_lines 1.3.0, gold_unified_event_star 1.6.0\nserved file: sha256 21f432dd516260ad43efe0bc232251b3c2e637c870fdd0f73d27dd1bad005d6b (107753472 bytes); registry 9 rows md5 574adc681fcb491a1b5ff437abc07435; server 1.3.0\nquery literals: 0, CAST('f' AS BOOLEAN)\ncaller supplied: claim and query, carried as given and checked only by the read-only gate\nEND FEEDBACK\n```\n\n- **Nothing has been sent.** The tool only prepares the message, so you need to send it to the data owners yourself.\n- **Source for the claim:** the contract's expert context says negative quantity occurs on cancellation lines and on zero-unit-price stock-adjustment lines. It also says consumers must not infer cancellation from negative quantity alone. That is documentation, not a flag on the data.\n- **Check against the data:** I ran a separate query on the 90 matching lines. All 90 have `unit_price = 0`, and all 90 have a null `customer_id`. Their quantities run from -1395 to -2.\n- **The flag wording is mine.** The `is_stock_adjustment` column name is only a suggestion I added to your claim. Edit it if you'd rather leave the form of the fix to the owners.",
+  "ttft_ms": 876,
+  "type": "result",
+  "duration_ms": 11905,
+  "uuid": "47668bb9-a3da-47d2-85e1-94e789f361c6",
+  "ttft_stream_ms": 866,
+  "time_to_request_ms": 44,
+  "first_content_frame_ms": 866,
+  "queued_turn_count": 0,
+  "result_index": 0,
+  "model_usage_since_last_result": {
+   "claude-sonnet-5-5": {
+    "inputTokens": 8,
+    "outputTokens": 1319,
+    "cacheReadInputTokens": 27928,
+    "cacheCreationInputTokens": 8510,
+    "webSearchRequests": 0,
+    "costUSD": 0.0500388,
+    "contextWindow": 1000000,
+    "maxOutputTokens": 128000,
+    "thinkingTokens": 42,
+    "cacheCreationEphemeral5mInputTokens": 0,
+    "cacheCreationEphemeral1hInputTokens": 8510,
+    "canonicalModel": "claude-sonnet-5-5",
+    "provider": "firstParty",
+    "costBasis": "list"
+   }
+  },
+  "credential_expires_at": "2026-12-23T16:48:10.400Z"
+ }
+]

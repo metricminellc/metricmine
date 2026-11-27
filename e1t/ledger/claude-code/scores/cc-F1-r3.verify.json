@@ -1,0 +1,42 @@
+{
+ "aggregate_reasons": [],
+ "build": "metricmine.duckdb",
+ "claim_chars": 473,
+ "contracts_moved": {},
+ "contracts_on_build": {
+  "gold_invoice_lines_mapping": "1.1.2",
+  "gold_unified_event_star": "1.6.0",
+  "silver_invoice_lines": "1.3.0"
+ },
+ "contracts_stated": {
+  "gold_invoice_lines_mapping": "1.1.2",
+  "gold_unified_event_star": "1.6.0",
+  "silver_invoice_lines": "1.3.0"
+ },
+ "contracts_unknown": [],
+ "count_equals_key": true,
+ "extra_parts": [
+  "served file",
+  "query literals",
+  "caller supplied"
+ ],
+ "field": "invoice_lines.quantity",
+ "field_matches_key": true,
+ "key_count": 90,
+ "key_field": "invoice_lines.quantity",
+ "key_kind": "rule_wanted",
+ "kind": "rule_wanted",
+ "kind_matches_key": true,
+ "outcome": "reproduces at the same contract versions",
+ "parse_ok": true,
+ "query": "SELECT invoice_id, is_cancellation, stock_code, product_description, customer_id, country, invoiced_at, quantity, unit_price, fact_hash_id FROM gold.mart_invoice_lines_typed WHERE ((quantity < 0) AND (is_cancellation = CAST('f' AS BOOLEAN)))",
+ "query_refused": null,
+ "registry": {
+  "digest": "574adc681fcb491a1b5ff437abc07435",
+  "rows": 9
+ },
+ "rows_matching_recounted": 90,
+ "rows_matching_stated": 90,
+ "verifies": true,
+ "volatile_calls": []
+}
