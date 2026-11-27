@@ -41,7 +41,10 @@ measures, and prints one TRANSCRIPT-OK line. `abandon` is the one re-run
 door the key allows: a conversation with no pasted answer is kept as
 <id>.attempt1 under one of the key's technical-failure reasons, the mark
 is released, and `new` may start it once more; its `finish` then passes
---re-run-of with that reason. A conversation that gave a first answer is
+--re-run-of with that reason. Under the key's host-error reason (the app
+showed an error of its own before the model wrote anything or called a
+tool), `abandon` keeps the conversation under host-errors/, spends no
+re-run, and `new` starts it again. A conversation that gave a first answer is
 never re-run, and a server Desktop restarted mid-conversation (the live
 shim is not the marked one at `finish`) is a stop. Every printed line is
 a measurement. No model, no network.
@@ -355,21 +358,33 @@ def cmd_finish(cid: str, minutes: float | None, re_run_of: str | None) -> int:
 
 
 def cmd_abandon(cid: str, reason: str | None) -> int:
-    """The one re-run door: a conversation that gave no first answer is kept
-    as <id>.attempt1 with the key's reason, the mark is released, and `new`
-    may start the conversation again. Nothing is deleted."""
+    """The doors for a conversation that gave no first answer. Under one of
+    the key's two technical-failure reasons it is the one re-run door: the
+    conversation is kept as <id>.attempt1, the mark is released, and `new`
+    may start it once more. Under the key's host-error reason (the app
+    showed an error of its own before the model wrote anything) it spends
+    no re-run: the conversation, and a kept first attempt if any, are kept
+    under host-errors/, and `new` starts it again as a new conversation; it
+    refuses when the capture since the mark holds a tool call, because then
+    the model had begun to answer. Nothing is deleted."""
     folder = _open_conversation(cid)
     if folder is None:
         return 1
-    if reason not in key.TECHNICAL_FAILURES:
-        print(f"TRANSCRIPT-STOP --reason must be one of the key's: {list(key.TECHNICAL_FAILURES)}")
+    host_error = reason == key.HOST_ERROR_STOP
+    if reason not in key.TECHNICAL_FAILURES and not host_error:
+        print(f"TRANSCRIPT-STOP --reason must be one of the key's: {list(key.TECHNICAL_FAILURES) + [key.HOST_ERROR_STOP]}")
         return 1
     secs = sections((folder / "visible.md").read_text(encoding="utf-8"))
     if any(k.startswith("assistant") and v and v != PLACEHOLDER for k, v in secs.items()):
         print(f"TRANSCRIPT-STOP {cid} has a pasted answer; a conversation that gave a first answer is never re-run")
         return 1
     attempt = LEDGER / f"{cid}.attempt1"
-    if attempt.exists():
+    if host_error:
+        _, calls = capture_calls(capture_since_mark())
+        if calls:
+            print(f"TRANSCRIPT-STOP {cid}: the capture holds {len(calls)} tool call(s) since the mark, so the model had begun to answer; this goes to the Architect")
+            return 1
+    elif attempt.exists():
         print(f"TRANSCRIPT-STOP {rel(attempt)} exists; the key allows one re-run per conversation")
         return 1
     meta = json.loads((folder / "meta.json").read_text(encoding="utf-8"))
@@ -384,6 +399,18 @@ def cmd_abandon(cid: str, reason: str | None) -> int:
             return 1
     meta.update(abandoned=True, abandoned_reason=reason, ended=dt.datetime.now(dt.timezone.utc).isoformat(timespec="milliseconds"))
     (folder / "meta.json").write_text(json.dumps(meta, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+    if host_error:
+        root = LEDGER / "host-errors"
+        root.mkdir(parents=True, exist_ok=True)
+        n = 1
+        while (root / f"{cid}-{n}").exists() or (root / f"{cid}-{n}.attempt1").exists():
+            n += 1
+        dest = root / f"{cid}-{n}"
+        if attempt.exists():
+            attempt.rename(root / f"{dest.name}.attempt1")
+        folder.rename(dest)
+        print(f"TRANSCRIPT-HOST-ERROR {cid} kept as {rel(dest)} ({reason}); no re-run is spent; fix the host, then `new {cid}` starts it again")
+        return 0
     folder.rename(attempt)
     print(f"TRANSCRIPT-ABANDONED {cid} kept as {rel(attempt)} ({reason}); `new {cid}` may run once more, and its `finish` passes --re-run-of with this reason")
     return 0
