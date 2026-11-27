@@ -26,14 +26,21 @@ F1_ARGS = {
 }
 
 
-class Host:
-    """A client that holds one shim open across protocol calls."""
+AGENT_MODE = "local-agent-mode-metricmine-gold"
 
-    def __init__(self, pinned, cap):
+
+class Host:
+    """A client that holds one shim open across protocol calls. It names
+    itself as Desktop's chat does (`claude-ai`) unless told otherwise;
+    Desktop 6.28899.6's local agent mode opens a second connection under
+    its own name and asks for tools only (measured November 27, 2026)."""
+
+    def __init__(self, pinned, cap, client=capture_slice.CHAT_CLIENT):
         env = dict(os.environ, MM_SERVE_DB=str(pinned), MM_E1T_CAPTURE=str(cap))
         self.proc = subprocess.Popen([sys.executable, str(SHIM)], stdin=subprocess.PIPE, stdout=subprocess.PIPE, env=env, cwd=tempfile.gettempdir())
         self.n = 0
-        self.send("initialize", {"protocolVersion": "2025-11-25", "capabilities": {}, "clientInfo": {"name": "t", "version": "1"}})
+        version = "0.1.0" if client == capture_slice.CHAT_CLIENT else "1.0.0"
+        self.send("initialize", {"protocolVersion": "2025-11-25", "capabilities": {}, "clientInfo": {"name": client, "version": version}})
         self.proc.stdin.write(b'{"jsonrpc":"2.0","method":"notifications/initialized","params":{}}\n')
         self.proc.stdin.flush()
         self.send("tools/list", {})
@@ -72,7 +79,7 @@ def protocol(pinned, tmp_path, monkeypatch):
 
 
 def test_the_live_shim_search_counts_interpreters_and_never_a_shell_that_names_the_file(protocol):
-    bystander = subprocess.Popen(["bash", "-c", "sleep 20 # e1t/capture_shim.py"])
+    bystander = subprocess.Popen(["bash", "-c", "sleep 20; true # e1t/capture_shim.py"])  # the shell stays, its line naming the file
     try:
         time.sleep(0.3)
         live = capture_slice.live_shim_pids()
@@ -249,3 +256,122 @@ def test_the_host_error_door_spends_no_re_run_and_refuses_once_the_model_called_
     protocol.call("list_fact_categories", {})
     assert transcript.main(["abandon", "cd-F2-r1", "--reason", key.HOST_ERROR_STOP]) == 1
     assert "had begun to answer" in capsys.readouterr().out and (transcript.LEDGER / "cd-F2-r1").is_dir()
+
+
+def test_desktop_s_two_connections_slice_the_chat_and_watch_the_agent_mode(protocol, capsys):
+    """Desktop 6.28899.6 holds two shims for one entry: its chat and its
+    local agent mode. The mark takes the chat's file and records the
+    other; a conversation whose calls stay on the chat finishes; a tool
+    call on the other connection since the mark stops the slice, leaves
+    the mark, and writes nothing. Two chat connections are a stop."""
+    agent = Host(protocol.pinned, protocol.cap, client=AGENT_MODE)
+    try:
+        assert capture_slice.client_of(capture_slice.file_for_pid(agent.proc.pid)) == AGENT_MODE
+        assert capture_slice.chat_candidates(capture_slice.live_shims()) == [protocol.proc.pid]
+        assert transcript.main(["new", "cd-smoke", "--app-version", "t", "--model", "m"]) == 0
+        out = capsys.readouterr().out
+        assert f"(shim pid {protocol.proc.pid})" in out
+        meta = json.loads((transcript.LEDGER / "cd-smoke" / "meta.json").read_text())
+        assert meta["shim_client"] == capture_slice.CHAT_CLIENT
+        assert meta["shims_watched"] == [{"pid": agent.proc.pid, "client": AGENT_MODE}]
+        protocol.call("list_fact_categories", {})
+        paste(transcript.LEDGER / "cd-smoke", "Three categories.")
+        assert transcript.main(["turn", "cd-smoke"]) == 0
+        assert transcript.main(["finish", "cd-smoke", "--minutes", "1"]) == 0
+        out = capsys.readouterr().out
+        assert "TRANSCRIPT-OK cd-smoke" in out and "SMOKE-OK" in out and "tools/call: 1 ['list_fact_categories']" in out
+        # the conversation's call reaches the agent mode's connection
+        assert transcript.main(["new", "cd-C1", "--app-version", "t", "--model", "m"]) == 0
+        agent.call("list_fact_categories", {})
+        paste(transcript.LEDGER / "cd-C1", "The server sent me no instructions.")
+        assert transcript.main(["finish", "cd-C1", "--minutes", "1"]) == 1
+        out = capsys.readouterr().out
+        assert "SLICE-STOP: tool call(s) since the mark reached another connection: " in out and f"({AGENT_MODE}) 1" in out
+        assert capture_slice.MARK.exists() and not (transcript.LEDGER / "cd-C1" / "capture.jsonl").exists()
+        assert json.loads((transcript.LEDGER / "cd-C1" / "meta.json").read_text())["first_answer"] is False
+        capture_slice.MARK.unlink()
+        # a second chat connection: no shim can be chosen
+        second = Host(protocol.pinned, protocol.cap)
+        try:
+            assert capture_slice.main(["begin"]) == 1
+            out = capsys.readouterr().out
+            assert "SLICE-STOP: 2 live shim process(es) " in out and f"{agent.proc.pid} {AGENT_MODE}" in out
+            assert not capture_slice.MARK.exists()
+        finally:
+            second.close()
+    finally:
+        agent.close()
+
+
+def test_the_turn_rule_stops_when_a_call_reached_another_connection(protocol, capsys):
+    """The turn rule reads only the chat's capture, so a first turn whose
+    accepted call reached another connection is a stop before anything is
+    decided, never a second turn. A shim still starting beside the named
+    chat is not a second candidate."""
+    agent = Host(protocol.pinned, protocol.cap, client=AGENT_MODE)
+    env = dict(os.environ, MM_SERVE_DB=str(protocol.pinned), MM_E1T_CAPTURE=str(protocol.cap))
+    starting = subprocess.Popen([sys.executable, str(SHIM)], stdin=subprocess.PIPE, stdout=subprocess.PIPE, env=env, cwd=tempfile.gettempdir())
+    try:
+        time.sleep(0.5)
+        assert capture_slice.chat_candidates(capture_slice.live_shims()) == [protocol.proc.pid]
+        assert transcript.main(["new", "cd-F1-r1", "--app-version", "t", "--model", "m"]) == 0
+        msg = agent.call("prepare_feedback", F1_ARGS)["result"]["structuredContent"]["message"]
+        paste(transcript.LEDGER / "cd-F1-r1", "Do you want me to send this?\n" + msg + "\nShall I?")
+        capsys.readouterr()
+        assert transcript.main(["turn", "cd-F1-r1"]) == 1
+        out = capsys.readouterr().out
+        assert out.startswith("TRANSCRIPT-STOP tool call(s) since the mark reached another connection: ") and "TURN-" not in out
+        assert "## user 2" not in (transcript.LEDGER / "cd-F1-r1" / "visible.md").read_text(encoding="utf-8")
+    finally:
+        starting.stdin.close()
+        starting.wait(timeout=10)
+        agent.close()
+
+
+def test_the_re_run_door_stops_when_a_restarted_chat_server_took_a_call(protocol, capsys):
+    """After the chat's server crashed and Desktop restarted it, a call on
+    the new server since the mark means the record would be split: the
+    re-run door stops, keeps nothing, and the mark stands."""
+    assert transcript.main(["new", "cd-F3-r1", "--app-version", "t", "--model", "m"]) == 0
+    protocol.close()  # the chat server crashed
+    again = Host(protocol.pinned, protocol.cap)  # Desktop restarted it
+    try:
+        again.call("list_fact_categories", {})
+        capsys.readouterr()
+        assert transcript.main(["abandon", "cd-F3-r1", "--reason", CRASH]) == 1
+        assert "SLICE-STOP: tool call(s) since the mark reached another connection: " in capsys.readouterr().out
+        assert capture_slice.MARK.exists() and not (transcript.LEDGER / "cd-F3-r1.attempt1").exists()
+    finally:
+        again.close()
+
+
+def test_a_shim_writing_under_another_capture_folder_is_never_read(protocol, tmp_path, capsys):
+    """Desktop's shims during a sitting, another worktree's, or a test's:
+    a live shim whose file is not under this capture folder is neither a
+    candidate nor watched, so the mark and the slice are this folder's."""
+    elsewhere = Host(protocol.pinned, tmp_path / "elsewhere")
+    try:
+        assert elsewhere.proc.pid in capture_slice.live_shim_pids()
+        assert [pid for pid, _, _ in capture_slice.live_shims()] == [protocol.proc.pid]
+        assert transcript.main(["new", "cd-C1", "--app-version", "t", "--model", "m"]) == 0
+        elsewhere.call("list_fact_categories", {})
+        paste(transcript.LEDGER / "cd-C1", "The server sent me no instructions.")
+        assert transcript.main(["finish", "cd-C1", "--minutes", "1"]) == 0
+        assert "TRANSCRIPT-OK cd-C1" in capsys.readouterr().out
+    finally:
+        elsewhere.close()
+
+
+def test_the_agent_mode_s_earlier_calls_never_stop_a_later_conversation(protocol, capsys):
+    """A tool call on the other connection before the mark is not this
+    conversation's: the slice reads only what came after the mark."""
+    agent = Host(protocol.pinned, protocol.cap, client=AGENT_MODE)
+    try:
+        agent.call("list_fact_categories", {})
+        time.sleep(0.05)
+        assert transcript.main(["new", "cd-C1", "--app-version", "t", "--model", "m"]) == 0
+        paste(transcript.LEDGER / "cd-C1", "The server sent me no instructions.")
+        assert transcript.main(["finish", "cd-C1", "--minutes", "1"]) == 0
+        assert "TRANSCRIPT-OK cd-C1" in capsys.readouterr().out
+    finally:
+        agent.close()
