@@ -82,6 +82,31 @@ def test_the_live_shim_search_counts_interpreters_and_never_a_shell_that_names_t
         bystander.wait()
 
 
+def test_the_live_shim_pattern_reads_every_interpreter_form_and_never_a_shell():
+    """No pinned file and no process: the `ps` rows each platform prints,
+    held to the pattern. The framework form is the Mac of record's
+    (November 25, 2026): its venv's python3.12 is a launcher that starts
+    Python.app's capital-P image, so `ps` never shows a lowercase python."""
+    shim = "/Users/u/code/metricmine/e1t/capture_shim.py"
+    for row in (
+        f"/home/u/code/metricmine/.venv/bin/python {shim}",
+        f"/Library/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python {shim}",
+        f"/Library/Frameworks/Python.framework/Versions/3.12/bin/python3.12 {shim}",
+        f"/Users/u/.local/share/uv/python/cpython-3.12.12-macos-aarch64-none/bin/python3.12 {shim}",
+        f"python3 -u {shim}",
+    ):
+        assert capture_slice.SHIM_ARGS.match(row), row
+    for row in (
+        "bash -c sleep 20 # e1t/capture_shim.py",
+        "/bin/zsh -c uv run python e1t/capture_slice.py begin",
+        "/Library/Frameworks/Python.framework/Versions/3.12/Resources/Python.app/Contents/MacOS/Python -m metricmine.server",
+        "/usr/bin/python3 -m metricmine.server",
+        f"/usr/bin/python3 {shim}.bak",
+        f"vim {shim}",
+    ):
+        assert not capture_slice.SHIM_ARGS.match(row), row
+
+
 def test_the_ids_are_the_smoke_the_canary_s_two_and_nine_fixture_conversations(capsys):
     assert transcript.main(["ids"]) == 0
     ids = capsys.readouterr().out.split()
@@ -203,3 +228,24 @@ def test_a_shim_that_never_initialized_is_a_stop(protocol, capsys):
     finally:
         idle.stdin.close()
         idle.wait(timeout=10)
+
+
+def test_the_host_error_door_spends_no_re_run_and_refuses_once_the_model_called_a_tool(protocol, capsys):
+    """The app's own error before the model wrote anything: the attempt is
+    kept under host-errors/, no re-run is spent, and `new` starts the
+    conversation again; after a tool call, the door refuses."""
+    assert transcript.main(["new", "cd-F1-r1", "--app-version", "t", "--model", "m"]) == 0
+    assert transcript.main(["abandon", "cd-F1-r1", "--reason", "it broke"]) == 1
+    assert key.HOST_ERROR_STOP in capsys.readouterr().out  # the reasons the door takes are named
+    assert transcript.main(["abandon", "cd-F1-r1", "--reason", key.HOST_ERROR_STOP]) == 0
+    out = capsys.readouterr().out
+    assert "TRANSCRIPT-HOST-ERROR cd-F1-r1 kept as " in out and "no re-run is spent" in out
+    aside = transcript.LEDGER / "host-errors" / "cd-F1-r1-1"
+    assert json.loads((aside / "meta.json").read_text())["abandoned_reason"] == key.HOST_ERROR_STOP and not capture_slice.MARK.exists()
+    assert transcript.main(["new", "cd-F1-r1", "--app-version", "t", "--model", "m"]) == 0  # starts again
+    paste(transcript.LEDGER / "cd-F1-r1", "Nothing to report.")
+    assert transcript.main(["finish", "cd-F1-r1", "--minutes", "1"]) == 0  # no --re-run-of: no re-run was spent
+    assert transcript.main(["new", "cd-F2-r1", "--app-version", "t", "--model", "m"]) == 0
+    protocol.call("list_fact_categories", {})
+    assert transcript.main(["abandon", "cd-F2-r1", "--reason", key.HOST_ERROR_STOP]) == 1
+    assert "had begun to answer" in capsys.readouterr().out and (transcript.LEDGER / "cd-F2-r1").is_dir()
