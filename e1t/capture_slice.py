@@ -45,11 +45,17 @@ def rel(path: Path) -> str:
         return str(path)
 
 
-SHIM_ARGS = re.compile(r"^\S*python[\d.]*\s+.*e1t/capture_shim\.py(\s|$)")
+# The interpreter's own path ends in python, python3, python3.12, or
+# Python: on a python.org framework build for macOS, bin/python3.12 is a
+# launcher that replaces itself with Resources/Python.app/Contents/MacOS/
+# Python, with that path as its argv[0], so `ps` shows the capital-P image
+# (CPython's Mac/Tools/pythonw.c; measured on the Mac of record on
+# November 25, 2026).
+SHIM_ARGS = re.compile(r"^\S*[Pp]ython[\d.]*\s+.*e1t/capture_shim\.py(\s|$)")
 
 
 def live_shim_pids() -> list[int]:
-    """The shim processes: an interpreter whose first argument is the shim
+    """The shim processes: an interpreter whose arguments name the shim
     file. A shell whose command line merely mentions the file (this
     command's own, a runbook line) is never counted."""
     out = subprocess.run(["ps", "-axww", "-o", "pid=,args="], capture_output=True, text=True).stdout
