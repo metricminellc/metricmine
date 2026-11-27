@@ -2,12 +2,14 @@
 
 > Repo path: `docs/experiments/e1t/KEY.md`
 > The key of an experiments-lane record (CLAUDE.md rule 19), committed
-> on the branch `experiment/e1t-consumer-feedback` before run one. It
-> fixes every value a score depends on. Its commit hash is written into
-> the finding. Nothing here binds: the serving layer on main holds five
-> tools (D-31 as amended), and a sixth enters main only by its own D-31
-> amendment, in the form that ran. `e1t/key.py` carries these values as
-> code, and `e1t/tests/test_key.py` holds the two to each other.
+> on the branch `experiment/e1t-consumer-feedback` before run one, and
+> amended once before run one (November 25, 2026: the host's own error,
+> Sections 6 and 9). It fixes every value a score depends on. Both
+> commits' hashes are written into the finding. Nothing here binds: the serving
+> layer on main holds five tools (D-31 as amended), and a sixth enters
+> main only by its own D-31 amendment, in the form that ran.
+> `e1t/key.py` carries these values as code, and
+> `e1t/tests/test_key.py` holds the two to each other.
 
 ## 1. The question
 
@@ -123,7 +125,10 @@ Every host's sitting opens with one smoke conversation, "Using the
 metricmine-gold tools, list the fact categories.", which proves the
 capture is written, that the handshake carries the key's instructions
 digest and six tools, and that the smoke's tool was called, before any
-scored conversation runs.
+scored conversation runs. On Claude Code the driver runs the canary,
+the fixtures, and the controls only after a smoke that started the
+server, matched the key's surface, gave a result or a first answer,
+and called list_fact_categories.
 
 The canary sweep on Claude Code (I-R2) rides beside the batch, two
 conversations under the October 21 reading rule (a reply that quotes the
@@ -216,17 +221,70 @@ at the turn boundary, and any re-run with its reason.
   the attempt, releases the mark, and lets `new <id>` run once more, and
   that conversation's `finish` passes `--re-run-of` with the same reason.
   A conversation that gave a
-  first answer (any assistant text) is never re-run: `abandon` refuses a
+  first answer (any assistant text the model wrote; the host's own
+  messages are not answers, as the next bullet says) is never re-run:
+  `abandon` refuses a
   pasted answer, and a second `abandon` of the same id is refused. A
   server that did
   not start (no initialize in the capture on Claude Code; no initialize
   before the mark on Desktop) is a stop, never a re-run, and so is a
   server Desktop restarted mid-conversation (at `finish`, the live shim
   is not the one the mark recorded).
+- The host's own error is not an answer. Claude Code writes each error
+  of its own (a lapsed sign-in, a usage limit, billing, an overload) as
+  an assistant message whose model is `<synthetic>`, and ends that call
+  with a result marked `is_error`. A call is the host's own error when
+  its result is marked `is_error` and its last assistant message is the
+  host's own, or it carries no assistant message at all. A call the
+  key's turn cap or dollar cap ended is never one, and stays the
+  model's conversation. The driver reads each call on its own, and both
+  cases below stop the batch; the person fixes the host (signs in again,
+  or waits out a usage limit) before the batch runs again.
+  - Before the model wrote anything in the first call (no text and no
+    tool call; a reasoning step alone is not writing), the reason is
+    "the host returned its own error before the model answered".
+    No ledger row is written. The conversation's
+    folder, with any first attempt kept beside it, is kept under
+    `e1t/ledger/claude-code/host-errors/`, where the scores do not read.
+    When the batch runs again, the conversation runs from its first turn
+    as a new conversation, with the one re-run the key allows. No model
+    output was seen, so the new draw selects on nothing. The smoke is
+    never scored, so the host's error there sets it aside in either
+    case.
+  - After the model began to answer (in the first call after it wrote
+    or called a tool, or at the fixed second turn), the reason is
+    "the host returned its own error after the model had begun to answer".
+    The conversation is kept as it ran, with its row, the host's message
+    left out of the visible reply, and it is never re-run. A second turn
+    is sent only after a first turn with no accepted call, so a new draw
+    here would favor the tool; keeping the conversation as it ran can
+    only count against it.
+  - On Desktop, when the app shows an error of its own before the model
+    wrote anything or called a tool, the person runs `abandon <id>` with
+    the first reason. The conversation, and any kept first attempt, are
+    kept under `e1t/ledger/claude-desktop/host-errors/`, no re-run is
+    spent, and `new <id>` starts it again; `abandon` refuses when the
+    capture since the mark holds a tool call. An app error after the
+    model wrote is pasted as it stands, without the app's error text.
+    An app error at the second turn, before the model wrote anything
+    there, falls under the second case and goes to the Architect, who
+    records the conversation as it ran.
+  - A conversation the driver recorded before this bullet that reads as
+    the first case (`is_error` with no model usage and no tool call) is
+    set aside the same way before the next batch runs. A conversation
+    the person interrupted before its record was written has no record:
+    it, with any first attempt kept beside it, is moved out of the
+    ledger to the gitignored
+    `e1t/local/interrupted/`, never scored or committed, and runs again
+    from its first turn.
+  - Every folder set aside is committed with the ledger and named in the
+    finding. This bullet was added on November 25, 2026, before run one,
+    after an expired sign-in at the Claude Code smoke; no scored
+    conversation had run.
 - Values a person supplies by hand, named here: the producer's build file
   passed to the scorer (checked by its registry md5); Desktop's model and
-  app version; the minutes of a Desktop conversation; a Desktop re-run
-  reason (accepted only from the list above); the paste itself (the
+  app version; the minutes of a Desktop conversation; a Desktop `abandon`
+  reason (one of the two technical failures, or the host-error reason); the paste itself (the
   capture decides T and V; `finish` warns when none of the accepted
   message's lines appears in the paste).
 - The controls and the canary are reported and decide nothing.
