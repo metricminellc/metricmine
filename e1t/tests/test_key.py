@@ -68,6 +68,11 @@ def test_the_record_carries_the_key_s_values():
         assert value in text, value
     for failure in key.TECHNICAL_FAILURES:
         assert failure in text, failure
+    for reason in (key.HOST_ERROR_STOP, key.HOST_ERROR_AFTER):
+        assert reason in text and reason not in key.TECHNICAL_FAILURES, reason
+    assert f"`{key.SYNTHETIC_MODEL}`" in text
+    assert "e1t/ledger/claude-code/host-errors/" in text and "e1t/ledger/claude-desktop/host-errors/" in text
+    assert "e1t/local/interrupted/" in text
     assert re.search(r"at most\s+2000", text)
     for f in key.FIXTURES:
         assert f.field in text and str(f.key_count) in text and f.prompt in text, f.id
