@@ -15,39 +15,47 @@ MCP log keeps methods, never payloads (measured October 21, 2026). So a
 person sends the key's fixed words, pastes each reply whole with
 Desktop's copy control, and the capture shim keeps the JSON-RPC record.
 
-`new` marks the live shim's capture file (one Desktop session is one
-server process, so the initialize sits before the mark: "the server
-started" means the live file holds an initialize before the mark, and
-the handshake's instructions digest and tool count are checked against
-the key), refuses when a mark or an unfinished conversation exists,
-creates e1t/ledger/claude-desktop/<id>/ with meta.json, prompt.txt, and
-a visible.md whose user turn is the key's text and whose assistant
-section is left for the paste, prints the SEND line, and puts the same
-words on the clipboard (`pbcopy`) so the person pastes them into Desktop
-rather than retyping them. `paste` writes the clipboard (`pbpaste`, or
-`--from <file>`) into the first open assistant section, byte for byte,
-so no editor touches the reply; it refuses an empty clipboard and a
-clipboard that still holds the words `new` or `turn` put there. `turn` reads
-the pasted first answer and the capture since the mark and applies the
-key's rule: the fixed second turn is sent only when the first turn
-produced no accepted prepare_feedback call and the first answer ended
-with a question to the person; it prints TURN-SECOND with the text, or
+`new` marks the capture file of the live shim behind Desktop's chat (one
+Desktop session keeps one server process for its chat, so the initialize
+sits before the mark: "the server started" means the live file holds an
+initialize before the mark, and the handshake's instructions digest and
+tool count are checked against the key; a second connection Desktop
+opens for its local agent mode is watched, and `turn`, `finish`, and
+`abandon` stop when any other capture file in the folder holds a tool
+call made since the mark, as e1t/capture_slice.py says), refuses when a
+mark or an unfinished conversation exists, creates
+e1t/ledger/claude-desktop/<id>/ with meta.json, prompt.txt, and a
+visible.md whose user turn is the key's text and whose assistant section
+is left for the paste, prints the SEND line, and puts the same words on
+the clipboard (`pbcopy`) so the person pastes them into Desktop rather
+than retyping them. `paste` writes the clipboard (`pbpaste`, or `--from
+<file>`) into the first open assistant section, byte for byte, so no
+editor touches the reply; it refuses an empty clipboard and a clipboard
+that still holds the words `new` or `turn` put there. `turn` reads the
+pasted first answer and the capture since the mark and applies the key's
+rule: the fixed second turn is sent only when the first turn produced no
+accepted prepare_feedback call and the first answer ended with a
+question to the person; it prints TURN-SECOND with the text, or
 TURN-NONE, and records the capture's line count at the turn boundary.
-`finish` holds every section pasted, checks the live shim is still the
-marked one, slices the capture into the folder, writes message.txt from
-the last accepted prepare_feedback result in the capture, warns when
-none of that message's labeled lines appears in the paste, records the
-measures, and prints one TRANSCRIPT-OK line. `abandon` is the one re-run
-door the key allows: a conversation with no pasted answer is kept as
-<id>.attempt1 under one of the key's technical-failure reasons, the mark
-is released, and `new` may start it once more; its `finish` then passes
---re-run-of with that reason. Under the key's host-error reason (the app
-showed an error of its own before the model wrote anything or called a
-tool), `abandon` keeps the conversation under host-errors/, spends no
-re-run, and `new` starts it again. A conversation that gave a first answer is
-never re-run, and a server Desktop restarted mid-conversation (the live
-shim is not the marked one at `finish`) is a stop. Every printed line is
-a measurement. No model, no network.
+`finish` holds every section pasted, checks the live shim of Desktop's
+chat is still the marked one, slices the capture into the folder, writes
+message.txt from the last accepted prepare_feedback result in the
+capture, warns when none of that message's labeled lines appears in the
+paste, records the measures, and prints one TRANSCRIPT-OK line.
+`abandon` is the one re-run door the key allows: a conversation with no
+pasted answer is kept as <id>.attempt1 under one of the key's
+technical-failure reasons, the mark is released, and `new` may start it
+once more; its `finish` then passes --re-run-of with that reason. Under
+the key's host-error reason (the app showed an error of its own before
+the model wrote anything or called a tool), `abandon` keeps the
+conversation under host-errors/, spends no re-run, and `new` starts it
+again. A conversation that gave a first answer is never re-run, and a
+chat server Desktop restarted mid-conversation (the live shim of its
+chat is not the marked one at `finish`) is a stop; a restarted agent
+mode's server is not. When a call since the mark reached another
+connection, `abandon` stops too and keeps nothing: the record would be
+split, which goes to the Architect. Every printed line is a measurement.
+No model, no network.
 
 The ids and their order: cd-smoke, cd-C1, cd-C2 (the canary's two, one
 turn each, observed and never scored), then per repeat r in 1..3:
@@ -205,7 +213,8 @@ def cmd_new(cid: str, app_version: str, model: str) -> int:
         "started": dt.datetime.now(dt.timezone.utc).isoformat(timespec="milliseconds"), "ended": None,
         "minutes": None, "second_turn_sent": None, "first_answer_ends_with_question": None, "first_turn_capture_lines": None,
         "capture_initialized": initialized, "capture_surface": surface, "capture_surface_matches_key": True,
-        "shim_pid": mark.get("pid"), "capture_tool_calls": None, "capture_tool_names": None,
+        "shim_pid": mark.get("pid"), "shim_client": mark.get("client"), "shims_watched": mark.get("watched", []),
+        "capture_tool_calls": None, "capture_tool_names": None,
         "prepare_feedback_calls": None, "prepare_feedback_accepted": None, "first_answer": False, "re_run_of": None,
     }
     (folder / "meta.json").write_text(json.dumps(meta, indent=1) + "\n", encoding="utf-8")
@@ -264,6 +273,11 @@ def cmd_turn(cid: str) -> int:
     if not first or first == PLACEHOLDER:
         print("TRANSCRIPT-STOP assistant 1 is not pasted yet")
         return 1
+    if capture_slice.MARK.exists():
+        elsewhere = capture_slice.calls_elsewhere(json.loads(capture_slice.MARK.read_text(encoding="utf-8")))
+        if elsewhere:
+            print(f"TRANSCRIPT-STOP tool call(s) since the mark reached another connection: {capture_slice.elsewhere_text(elsewhere)}; the turn rule reads only the chat's capture, so nothing was decided")
+            return 1
     if BY_ID[cid][1] == "SMOKE" or BY_ID[cid][1] in key.CANARY_PROMPTS:
         print(f"TURN-NONE (the {'smoke' if BY_ID[cid][1] == 'SMOKE' else 'canary'} conversation has one turn)")
         return 0
@@ -309,9 +323,10 @@ def cmd_finish(cid: str, minutes: float | None, re_run_of: str | None) -> int:
     if re_run_of is not None and not attempt.exists():
         print(f"TRANSCRIPT-STOP --re-run-of given, but no abandoned first attempt {rel(attempt)} exists")
         return 1
-    live = capture_slice.live_shim_pids()
+    shims = capture_slice.live_shims()
+    live = capture_slice.chat_candidates(shims)
     if len(live) != 1:
-        print(f"TRANSCRIPT-STOP {len(live)} live shim process(es) {live}; exactly one is expected (Desktop's, pid {meta.get('shim_pid')})")
+        print(f"TRANSCRIPT-STOP {len(live)} live shim process(es) {live} for Desktop's chat; exactly one is expected (Desktop's, pid {meta.get('shim_pid')}); live shims: {capture_slice.shims_text(shims)}")
         return 1
     if live[0] != meta.get("shim_pid"):
         print(f"TRANSCRIPT-STOP the live shim {live[0]} is not the marked one ({meta.get('shim_pid')}); Desktop restarted the server mid-conversation")
