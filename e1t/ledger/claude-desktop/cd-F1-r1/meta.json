@@ -1,0 +1,72 @@
+{
+ "id": "cd-F1-r1",
+ "host": "claude-desktop",
+ "fixture": "F1",
+ "repeat": 1,
+ "app_version": "6.28899.6",
+ "model_reported": "Opus 5.5",
+ "model_reported_by": "the person, from the model picker",
+ "app_version_by": "the person, from the About box",
+ "started": "2026-11-27T19:42:10.382+00:00",
+ "ended": "2026-11-27T19:43:26.729+00:00",
+ "minutes": 2.0,
+ "second_turn_sent": false,
+ "first_answer_ends_with_question": false,
+ "first_turn_capture_lines": 12,
+ "capture_initialized": true,
+ "capture_surface": {
+  "instructions_sha256": "c00eba40181878be17127866f296117618c9dc15063072bc52c5d9a2efad22ab",
+  "instructions_length": 1837,
+  "tools": [
+   "list_fact_categories",
+   "get_schema",
+   "get_context",
+   "query",
+   "lookup_record",
+   "prepare_feedback"
+  ]
+ },
+ "capture_surface_matches_key": true,
+ "shim_pid": 3537,
+ "shim_client": "claude-ai",
+ "shims_marked": [
+  {
+   "pid": 3537,
+   "client": "claude-ai"
+  },
+  {
+   "pid": 3541,
+   "client": "local-agent-mode-metricmine-gold"
+  }
+ ],
+ "conversation_shim": {
+  "pid": 3541,
+  "client": "local-agent-mode-metricmine-gold"
+ },
+ "capture_tool_calls": 6,
+ "capture_tool_names": [
+  "list_fact_categories",
+  "get_context",
+  "get_context",
+  "query",
+  "query",
+  "prepare_feedback"
+ ],
+ "prepare_feedback_calls": [
+  {
+   "t": "2026-11-27T19:42:55.355+00:00",
+   "field": "invoice_lines.quantity",
+   "kind": "rule_wanted",
+   "prepared": true,
+   "reason": null,
+   "rows_matching": 90
+  }
+ ],
+ "prepare_feedback_accepted": 1,
+ "first_answer": true,
+ "re_run_of": null,
+ "first_turn_capture_lines_by_shim": {
+  "3537": 0,
+  "3541": 12
+ }
+}

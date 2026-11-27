@@ -1,0 +1,10 @@
+FEEDBACK
+field: invoice_lines.quantity
+kind: rule_wanted
+claim: I am asking for a rule or a flag. Negative quantities on lines that are not cancellations are zero-price stock adjustments, and a consumer should not have to infer an adjustment from the price.
+query: SELECT invoice_id, stock_code, product_description, invoiced_at, quantity, unit_price, is_cancellation, fact_hash_id FROM gold.mart_invoice_lines_typed WHERE ((quantity < 0) AND (NOT is_cancellation)) ORDER BY invoiced_at, invoice_id, stock_code
+rows matching: 90 at gold_invoice_lines_mapping 1.1.2, silver_invoice_lines 1.3.0, gold_unified_event_star 1.6.0
+served file: sha256 21f432dd516260ad43efe0bc232251b3c2e637c870fdd0f73d27dd1bad005d6b (107753472 bytes); registry 9 rows md5 574adc681fcb491a1b5ff437abc07435; server 1.3.0
+query literals: 0
+caller supplied: claim and query, carried as given and checked only by the read-only gate
+END FEEDBACK

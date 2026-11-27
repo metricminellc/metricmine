@@ -1,0 +1,44 @@
+{
+ "aggregate_reasons": [],
+ "build": "metricmine.duckdb",
+ "claim_chars": 190,
+ "contracts_moved": {},
+ "contracts_on_build": {
+  "gold_flights_mapping": "1.0.0",
+  "gold_unified_event_star": "1.6.0",
+  "silver_flights": "1.0.0"
+ },
+ "contracts_stated": {
+  "gold_flights_mapping": "1.0.0",
+  "gold_unified_event_star": "1.6.0",
+  "silver_flights": "1.0.0"
+ },
+ "contracts_unknown": [],
+ "count_equals_key": true,
+ "extra_parts": [
+  "served file",
+  "query literals",
+  "caller supplied"
+ ],
+ "field": "flights.arr_delay_minutes",
+ "field_matches_key": true,
+ "key_count": 379,
+ "key_field": "flights.arr_delay_minutes",
+ "key_kind": "meaning_unclear",
+ "kind": "meaning_unclear",
+ "kind_matches_key": true,
+ "outcome": "reproduces at the same contract versions",
+ "parse_ok": true,
+ "query": "SELECT fact_hash_id, flight_date, carrier_code, flight_number, origin_airport, dest_airport, is_cancelled, dep_hhmm, arr_hhmm, sched_arr_hhmm, dep_delay_minutes, arr_delay_minutes, air_time_minutes FROM gold.mart_flights_typed WHERE ((arr_delay_minutes IS NULL) AND (is_cancelled = CAST('f' AS BOOLEAN)) AND (arr_hhmm IS NOT NULL))",
+ "query_refused": null,
+ "quoted_sentences": [],
+ "registry": {
+  "digest": "574adc681fcb491a1b5ff437abc07435",
+  "rows": 9
+ },
+ "rows_matching_recounted": 379,
+ "rows_matching_stated": 379,
+ "served_meaning": "Arrival delay in minutes; negative is early; null when cancelled, diverted, or unreported.",
+ "verifies": true,
+ "volatile_calls": []
+}
