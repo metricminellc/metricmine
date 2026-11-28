@@ -11,6 +11,18 @@ measurements.
 
 ## [Unreleased]
 
+### Added
+
+- `docs/experiments/e1t-consumer-feedback.md`, the record of E1T, the
+  consumer feedback loop a person starts, as measured on November 27,
+  2026, on the branch `experiment/e1t-consumer-feedback` at `1b4ed1e`
+  under a key committed before run one: `prepare_feedback`, a sixth
+  server tool on the branch only, was called every time and every
+  message it returned verified on the producer's build, on Claude Code
+  2.1.332 (15 of 15) and Claude Desktop 6.28899.6 (9 of 9), with the
+  lane's index row. Nothing in the lane binds; no decision and no
+  finding is minted; the serving layer on main keeps its five tools.
+
 ### Changed
 
 - The digest manifest names the v1.3.0 release asset, `demo.duckdb`
